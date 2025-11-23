@@ -1,54 +1,56 @@
+// src/app/api/items/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/items  -> list all items (latest first)
+// GET /api/items
 export async function GET() {
   try {
     const items = await prisma.revolvrItem.findMany({
       orderBy: { createdAt: "desc" },
     });
-
     return NextResponse.json(items);
-  } catch (err: any) {
+  } catch (err) {
     console.error("GET /api/items error:", err);
-
-    return NextResponse.json(
-      {
-        error: "GET_FAILED",
-        message: String(err?.message ?? err),
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Failed to load items" }, { status: 500 });
   }
 }
 
-// POST /api/items  -> create a new item
-export async function POST(request: Request) {
+// POST /api/items
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const rawName = body?.name as string | undefined;
-    const name = rawName?.trim() ?? "";
+    const body = await req.json();
 
-    if (!name) {
+    const title = (body.title ?? "").trim();
+    const notes = (body.notes ?? "").trim();
+    const status = body.status ?? "NEW";
+    const value =
+      typeof body.value === "number"
+        ? body.value
+        : body.value
+        ? Number(body.value)
+        : null;
+
+    if (!title) {
       return NextResponse.json(
-        { error: "VALIDATION", message: "Name is required" },
+        { message: "Title is required" },
         { status: 400 }
       );
     }
 
     const item = await prisma.revolvrItem.create({
-      data: { name },
+      data: {
+        title,
+        notes: notes || null,
+        status,
+        value: Number.isNaN(value) ? null : value,
+      },
     });
 
     return NextResponse.json(item, { status: 201 });
-  } catch (err: any) {
+  } catch (err) {
     console.error("POST /api/items error:", err);
-
     return NextResponse.json(
-      {
-        error: "POST_FAILED",
-        message: String(err?.message ?? err),
-      },
+      { message: "Failed to create item" },
       { status: 500 }
     );
   }

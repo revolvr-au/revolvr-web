@@ -2,39 +2,15 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
-import { supabase } from '../../../lib/supabaseClient';
-
+import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { session, loading } = useSupabaseAuth();
-  const handleSignOut = async () => {
-  await supabase.auth.signOut();
-  router.replace('/');
-};
-<main className="min-h-screen bg-slate-950 text-white p-8">
-  <div className="flex items-center justify-between mb-6">
-    <h1 className="text-3xl font-bold">Revolvr Dashboard</h1>
-    <button
-      onClick={handleSignOut}
-      className="px-3 py-1 rounded-md border border-slate-600 hover:border-slate-400 text-sm"
-    >
-      Sign out
-    </button>
-  </div>
-
-  <p className="text-slate-300 mb-2">
-    You are logged in as <span className="font-mono">{session.user.email}</span>.
-  </p>
-  <p className="text-slate-400">
-    This is where we&apos;ll build the real control panel for your Revolvr idea.
-  </p>
-</main>
-
 
   useEffect(() => {
     if (!loading && !session) {
+      // Not logged in → back to landing
       router.replace('/');
     }
   }, [loading, session, router]);
@@ -47,7 +23,10 @@ export default function DashboardPage() {
     );
   }
 
-  if (!session) return null;
+  if (!session) {
+    // Short-circuit render while redirect happens
+    return null;
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8">

@@ -1,39 +1,45 @@
-import Link from "next/link";
+'use client';
 
-export default function Home() {
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+
+export default function HomePage() {
+  const router = useRouter();
+  const { session, loading } = useSupabaseAuth();
+
+  useEffect(() => {
+    if (!loading && session) {
+      router.replace('/dashboard');
+    }
+  }, [loading, session, router]);
+
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center px-4">
-      <div className="max-w-3xl w-full space-y-8">
-        <div>
-          <span className="inline-flex items-center rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-wide">
-            REVOLVR · EARLY PREVIEW
-          </span>
-          <h1 className="mt-4 text-4xl sm:text-5xl font-semibold">
-            The control panel for your{" "}
-            <span className="text-emerald-400">Revolvr idea here.</span>
-          </h1>
-          <p className="mt-4 text-slate-300 text-sm sm:text-base">
-            Replace this with a one–sentence description of what Revolvr
-            actually does and who it is for.
-          </p>
-        </div>
+    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+      <div className="max-w-3xl text-center px-6">
+        <p className="mb-4 text-sm tracking-[0.25em] uppercase text-emerald-400">
+          Revolvr · Early Preview
+        </p>
 
-        <div className="flex flex-wrap gap-3">
-          <Link href="/dashboard">
-            <button className="rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-medium text-slate-950 hover:bg-emerald-400">
-              Get started
-            </button>
-          </Link>
+        <h1 className="text-4xl md:text-6xl font-bold mb-4">
+          The control panel for your <span className="text-emerald-400">Revolvr idea</span>.
+        </h1>
 
-          <button className="rounded-md border border-slate-600 px-5 py-2.5 text-sm font-medium text-slate-100 hover:bg-slate-900">
+        <p className="text-slate-300 mb-8">
+          Replace this with a one–sentence description of what Revolvr actually does and who it is for.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          <button
+            className="px-6 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-semibold"
+            onClick={() => router.push('/login')}
+          >
+            Get started
+          </button>
+          <button className="px-6 py-3 rounded-lg border border-slate-600 hover:border-slate-400 font-semibold">
             Learn more
           </button>
         </div>
-
-        <p className="text-xs text-slate-500">
-          No fluff. No noise. Revolvr focuses on the one thing that matters:{" "}
-          <span className="text-slate-300">your value prop here.</span>
-        </p>
       </div>
     </main>
   );
