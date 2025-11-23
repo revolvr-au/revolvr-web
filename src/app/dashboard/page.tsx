@@ -1,36 +1,91 @@
 "use client";
 
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 
 type RevolvrItem = {
-  id: number;
+  id: string;
   name: string;
   createdAt: string;
 };
 
-export default function DashboardPage() {
+const DashboardPage: React.FC = () => {
   const [items, setItems] = useState<RevolvrItem[]>([]);
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleCreate() {
-    if (!name.trim()) return;
+  // Load items on first render
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setError(null);
 
-    const newItem: RevolvrItem = {
-      id: Date.now(),
-      name: name.trim(),
-      createdAt: new Date().toLocaleString(),
+        const res = await fetch("/api/items");
+        const body = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          console.error("GET /api/items error:", body);
+          const msg =
+            body && typeof body.message === "string"
+              ? body.message
+              : "Failed to load items.";
+          setError(msg);
+        } else {
+          setItems(body as RevolvrItem[]);
+        }
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+        setError("Could not load items. Please try again.");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setItems((prev) => [newItem, ...prev]);
-    setName("");
-  }
+    load();
+  }, []);
+
+  const handleCreate = async () => {
+    if (!name.trim()) return;
+
+    try {
+      setCreating(true);
+      setError(null);
+
+      const res = await fetch("/api/items", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      const body = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        console.error("POST /api/items error:", body);
+        const msg =
+          body && typeof body.message === "string"
+            ? body.message
+            : "Failed to create item.";
+        setError(msg);
+        return;
+      }
+
+      setItems((prev) => [body as RevolvrItem, ...prev]);
+      setName("");
+    } catch (err) {
+      console.error("Create error:", err);
+      setError("Could not create item. Please try again.");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 p-6">
       <header className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-semibold">Revolvr Dashboard</h1>
         <span className="text-xs text-slate-400">
-          v0.1 · Foundations only · No backend yet
+          v0.2 · Backed by Supabase · Prisma
         </span>
       </header>
 
@@ -42,8 +97,8 @@ export default function DashboardPage() {
               First action
             </p>
             <p className="text-sm text-slate-200">
-              Create a test “Revolvr item”. Later this becomes your real object
-              (client, project, listing, whatever Revolvr is about).
+              Create a “Revolvr item”. This is saved inside your Supabase
+              database via Prisma.
             </p>
           </div>
 
@@ -51,17 +106,21 @@ export default function DashboardPage() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Name your first Revolvr item…"
+              placeholder="Name your Revolvr item…"
               className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm outline-none focus:border-emerald-400"
             />
 
             <button
               onClick={handleCreate}
               className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-medium text-slate-950 hover:bg-emerald-400 disabled:opacity-50"
-              disabled={!name.trim()}
+              disabled={!name.trim() || creating}
             >
-              Add item
+              {creating ? "Adding…" : "Add item"}
             </button>
+
+            {error && (
+              <p className="text-xs text-red-400">{error}</p>
+            )}
           </div>
         </div>
 
@@ -71,7 +130,9 @@ export default function DashboardPage() {
             Your items
           </p>
 
-          {items.length === 0 ? (
+          {loading ? (
+            <p className="text-sm text-slate-400">Loading items…</p>
+          ) : items.length === 0 ? (
             <p className="text-sm text-slate-400">
               Nothing here yet. Add your first item on the left.
             </p>
@@ -84,7 +145,7 @@ export default function DashboardPage() {
                 >
                   <span>{item.name}</span>
                   <span className="text-xs text-slate-500">
-                    {item.createdAt}
+                    {new Date(item.createdAt).toLocaleString()}
                   </span>
                 </li>
               ))}
@@ -94,4 +155,6 @@ export default function DashboardPage() {
       </section>
     </main>
   );
-}
+};
+
+export default DashboardPage;
