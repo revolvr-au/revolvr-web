@@ -1,16 +1,21 @@
+cat > src/app/dashboard/page.tsx << 'EOF'
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import {
+  useEffect,
+  useState,
+  FormEvent,
+  ChangeEvent,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { useSupabaseAuth } from '../../../hooks/useSupabaseAuth';
 import { supabase } from '../../../lib/supabaseClient';
 
-type RevolvrItem = {
+type Post = {
   id: string;
-  name: string;
-  notes: string | null;
-  status: 'NEW' | 'ACTIVE' | 'WON' | 'LOST';
-  value: number | null;
+  userEmail: string;
+  imageUrl: string;
+  caption: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -19,8 +24,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const { session, loading } = useSupabaseAuth();
 
-  const [items, setItems] = useState<RevolvrItem[]>([]);
-  const [newTitle, setNewTitle] = useState('');
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [caption, setCaption] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,24 +37,22 @@ export default function DashboardPage() {
     }
   }, [loading, session, router]);
 
-  // Fetch existing items once we know we have a session
+  // Fetch existing posts once we know we have a session
   useEffect(() => {
-    const fetchItems = async () => {
-      if (!session) return;
-
+    const fetchPosts = async () => {
       try {
-        const res = await fetch('/api/items');
-        if (!res.ok) throw new Error('Failed to fetch items');
-        const data: RevolvrItem[] = await res.json();
-        setItems(data);
+        const res = await fetch('/api/posts');
+        if (!res.ok) throw new Error('Failed to fetch posts');
+        const data: Post[] = await res.json();
+        setPosts(data);
       } catch (err) {
         console.error(err);
-        setError('Could not load your items.');
+        setError('Could not load posts.');
       }
     };
 
     if (!loading && session) {
-      fetchItems();
+      fetchPosts();
     }
   }, [loading, session]);
 
@@ -57,36 +61,71 @@ export default function DashboardPage() {
     router.replace('/');
   };
 
-  const handleAddItem = async (e: FormEvent) => {
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+  };
+
+  const handleCreatePost = async (e: FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim()) return;
+    if (!session) return;
+
+    if (!file) {
+      setError('Please choose an image.');
+      return;
+    }
+    if (!caption.trim()) {
+      setError('Please enter a caption.');
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
 
     try {
-      const res = await fetch('/api/items', {
+      // 1. Upload image to Supabase Storage (bucket: posts)
+      const ext = file.name.split('.').pop() || 'jpg';
+      const filePath = \`posts/\${session.user.id}-\${Date.now()}.\${ext}\`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('posts')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error(uploadError);
+        throw new Error('Failed to upload image');
+      }
+
+      // 2. Get public URL
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('posts').getPublicUrl(filePath);
+
+      // 3. Create Post via API
+      const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: newTitle.trim(),
-          notes: '',
-          status: 'NEW',
-          value: null,
+          caption: caption.trim(),
+          imageUrl: publicUrl,
+          userEmail: session.user.email,
         }),
       });
 
       if (!res.ok) {
         const body = await res.text();
-        throw new Error(body || 'Failed to create item');
+        throw new Error(body || 'Failed to create post');
       }
 
-      const created: RevolvrItem = await res.json();
-      setItems((prev) => [created, ...prev]);
-      setNewTitle('');
+      const created: Post = await res.json();
+      setPosts((prev) => [created, ...prev]);
+
+      // Reset form
+      setCaption('');
+      setFile(null);
     } catch (err) {
       console.error(err);
-      setError('Could not create item.');
+      setError('Could not create post.');
     } finally {
       setSubmitting(false);
     }
@@ -104,12 +143,17 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8">
-      {/* Header with sign out */}
-      <div className="mb-2 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Revolvr Dashboard</h1>
+      {/* Header */}
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Revolvr Feed</h1>
+          <p className="mt-1 text-sm text-slate-400">
+            A simple place to share images and captions with everyone on Revolvr.
+          </p>
+        </div>
 
         <div className="flex items-center gap-4 text-sm text-slate-400">
-          <span>v0.2 · Backed by Supabase · Prisma</span>
+          <span>v0.1 · Social preview</span>
           <button
             type="button"
             onClick={handleSignOut}
@@ -125,56 +169,76 @@ export default function DashboardPage() {
         <span className="font-mono text-slate-200">{session.user.email}</span>.
       </p>
 
-      {/* First action */}
-      <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/50 p-6">
+      {/* Create post */}
+      <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/60 p-6">
         <h2 className="mb-1 text-sm font-semibold tracking-[0.2em] text-slate-400">
-          FIRST ACTION
+          CREATE POST
         </h2>
         <p className="mb-4 text-sm text-slate-300">
-          Create a “Revolvr item”. This is saved inside your Supabase database via Prisma.
+          Upload one image and add a short caption. It will appear in the feed below.
         </p>
 
-        <form onSubmit={handleAddItem} className="flex flex-col gap-3 sm:flex-row">
-          <input
-            type="text"
-            placeholder="Name your Revolvr item…"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring focus:ring-emerald-500"
-          />
+        <form onSubmit={handleCreatePost} className="space-y-4">
+          <div className="flex flex-col gap-2 text-left">
+            <label className="text-xs text-slate-400">Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="text-sm text-slate-200"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 text-left">
+            <label className="text-xs text-slate-400">Caption</label>
+            <textarea
+              rows={3}
+              placeholder="Write a short caption…"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              className="w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring focus:ring-emerald-500"
+            />
+          </div>
+
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60 sm:w-auto"
+            className="rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400 disabled:opacity-60"
           >
-            {submitting ? 'Adding…' : 'Add item'}
+            {submitting ? 'Posting…' : 'Post to feed'}
           </button>
-        </form>
 
-        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+          {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        </form>
       </section>
 
-      {/* Items list */}
-      <section className="rounded-xl border border-slate-800 bg-slate-900/50 p-6">
+      {/* Feed */}
+      <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-6">
         <h2 className="mb-4 text-sm font-semibold tracking-[0.2em] text-slate-400">
-          YOUR ITEMS
+          FEED · ALL POSTS
         </h2>
 
-        {items.length === 0 ? (
+        {posts.length === 0 ? (
           <p className="text-sm text-slate-400">
-            Nothing here yet. Add your first item on the left.
+            No one has posted yet. Be the first to share something.
           </p>
         ) : (
-          <ul className="space-y-2">
-            {items.map((item) => (
+          <ul className="space-y-4">
+            {posts.map((post) => (
               <li
-                key={item.id}
-                className="flex items-center justify-between rounded-lg bg-slate-950/70 px-4 py-3 text-sm"
+                key={post.id}
+                className="rounded-xl bg-slate-950/80 p-4 text-sm"
               >
-                <span>{item.name}</span>
-                <span className="text-xs text-slate-500">
-                  {new Date(item.createdAt).toLocaleString()}
-                </span>
+                <div className="mb-2 flex justify-between text-xs text-slate-500">
+                  <span>{post.userEmail}</span>
+                  <span>{new Date(post.createdAt).toLocaleString()}</span>
+                </div>
+                <img
+                  src={post.imageUrl}
+                  alt={post.caption}
+                  className="mb-2 w-full rounded-lg object-cover"
+                />
+                <p className="text-slate-200">{post.caption}</p>
               </li>
             ))}
           </ul>
@@ -183,3 +247,4 @@ export default function DashboardPage() {
     </main>
   );
 }
+EOF
