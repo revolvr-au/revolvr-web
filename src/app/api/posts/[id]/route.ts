@@ -1,31 +1,69 @@
-// src/app/api/posts/[id]/route.ts
-// Turn off TS checking for this file to avoid Next 16 type-constraint issues.
-// The runtime behaviour is still correct.
-// @ts-nocheck
-
+// src/app/api/posts/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function DELETE(_req: Request, context: any) {
-  const { id } = context.params;
-
-  if (!id) {
-    return NextResponse.json(
-      { message: "Post id is required" },
-      { status: 400 }
-    );
-  }
-
+// GET /api/posts  -> list all posts with like counts
+export async function GET() {
   try {
-    await prisma.post.delete({
-      where: { id },
+    const posts = await prisma.post.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          // 👈 use "Like" (relation name) not "likes"
+          select: { Like: true },
+        },
+      },
     });
 
-    return NextResponse.json({ message: "Post deleted" }, { status: 200 });
+    const payload = posts.map((p) => ({
+      id: p.id,
+      userEmail: p.userEmail,
+      imageUrl: p.imageUrl,
+      caption: p.caption,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      likesCount: p._count.Like, // number of likes
+    }));
+
+    return NextResponse.json(payload);
   } catch (err) {
-    console.error("DELETE /api/posts/[id] error:", err);
+    console.error("GET /api/posts error:", err);
     return NextResponse.json(
-      { message: "Failed to delete post" },
+      { message: "Failed to load posts" },
+      { status: 500 }
+    );
+  }
+}
+
+// POST /api/posts  -> create a new post
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { caption, imageUrl, userEmail } = body;
+
+    if (!caption || !imageUrl || !userEmail) {
+      return NextResponse.json(
+        { message: "caption, imageUrl and userEmail are required" },
+        { status: 400 }
+      );
+    }
+
+    const post = await prisma.post.create({
+      data: {
+        caption,
+        imageUrl,
+        userEmail,
+      },
+    });
+
+    // new post starts with 0 likes
+    const withCount = { ...post, likesCount: 0 };
+
+    return NextResponse.json(withCount, { status: 201 });
+  } catch (err) {
+    console.error("POST /api/posts error:", err);
+    return NextResponse.json(
+      { message: "Failed to create post" },
       { status: 500 }
     );
   }
