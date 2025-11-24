@@ -1,19 +1,30 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
 
 export default function HomePage() {
   const router = useRouter();
   const { session, loading } = useSupabaseAuth();
 
+  // If already logged in, go straight to the dashboard
   useEffect(() => {
     if (!loading && session) {
       router.replace('/dashboard');
     }
   }, [loading, session, router]);
 
+  // Optional loading state while checking the session
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+        <p>Loading Revolvr…</p>
+      </main>
+    );
+  }
+
+  // Not logged in → show marketing hero
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
       <div className="max-w-3xl text-center px-6">
@@ -26,20 +37,29 @@ export default function HomePage() {
         </h1>
 
         <p className="text-slate-300 mb-8">
-          Replace this with a one–sentence description of what Revolvr actually does and who it is for.
+          Revolvr keeps all your experiments, ideas and bets in one simple dashboard so you always
+          know what to do next.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             className="px-6 py-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 font-semibold"
             onClick={() => router.push('/login')}
           >
             Get started
           </button>
-          <button className="px-6 py-3 rounded-lg border border-slate-600 hover:border-slate-400 font-semibold">
+          <button
+            className="px-6 py-3 rounded-lg border border-slate-600 hover:border-slate-400 font-semibold"
+            onClick={() => router.push('/login')}
+          >
             Learn more
           </button>
         </div>
+
+        <p className="mt-6 text-xs text-slate-500">
+          No fluff. No noise. Just a simple place to track the work that actually moves your idea
+          forward.
+        </p>
       </div>
     </main>
   );

@@ -105,7 +105,7 @@ export default function DashboardPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white p-8">
       {/* Header with sign out */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Revolvr Dashboard</h1>
 
         <div className="flex items-center gap-4 text-sm text-slate-400">
@@ -119,6 +119,11 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
+
+      <p className="mb-6 text-sm text-slate-400">
+        You&apos;re signed in as{' '}
+        <span className="font-mono text-slate-200">{session.user.email}</span>.
+      </p>
 
       {/* First action */}
       <section className="mb-8 rounded-xl border border-slate-800 bg-slate-900/50 p-6">
