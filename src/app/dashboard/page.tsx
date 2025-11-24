@@ -65,16 +65,21 @@ export default function DashboardPage() {
     setFile(f);
   };
 
-  const handleCreatePost = async (e: FormEvent) => {
+    const handleCreatePost = async (e: FormEvent) => {
     e.preventDefault();
-    if (!session) return;
 
-    if (!file) {
-      setError('Please choose an image.');
+    if (!session) {
+      setError("You must be signed in to post.");
       return;
     }
+
+    if (!file) {
+      setError("Please choose an image to upload.");
+      return;
+    }
+
     if (!caption.trim()) {
-      setError('Please enter a caption.');
+      setError("Please write a caption.");
       return;
     }
 
@@ -92,13 +97,19 @@ export default function DashboardPage() {
 
       if (uploadError) {
         console.error(uploadError);
-        throw new Error('Failed to upload image');
+        throw new Error(`Failed to upload image: ${uploadError.message}`);
       }
 
       // 2. Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('posts').getPublicUrl(filePath);
+      const { data } = supabase.storage
+        .from('posts')
+        .getPublicUrl(filePath);
+
+      const publicUrl = data.publicUrl;
+
+      if (!publicUrl) {
+        throw new Error("Could not get public URL for image.");
+      }
 
       // 3. Create Post via API
       const res = await fetch('/api/posts', {
@@ -123,12 +134,15 @@ export default function DashboardPage() {
       setCaption('');
       setFile(null);
     } catch (err) {
-      console.error(err);
-      setError('Could not create post.');
+      console.error("Create post error:", err);
+      const message =
+        err instanceof Error ? err.message : "Could not create post.";
+      setError(message);
     } finally {
       setSubmitting(false);
     }
   };
+
 
   if (loading) {
     return (
