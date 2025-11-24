@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -9,15 +7,23 @@ generator client {
   provider = "prisma-client-js"
 }
 
+model Post {
+  id        String   @id @default(uuid())
+  userEmail String
+  imageUrl  String
+  caption   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model RevolvrItem {
-  id        String         @id @default(uuid())
+  id        String        @id @default(uuid())
   name      String
   notes     String?
-  status    RevolvrStatus  @default(NEW)
+  status    RevolvrStatus @default(NEW)
   value     Int?
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @default(now()) @updatedAt
-
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @default(now()) @updatedAt
 }
 
 enum RevolvrStatus {
