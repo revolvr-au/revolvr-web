@@ -17,9 +17,8 @@ type Post = {
   caption: string;
   createdAt: string;
   updatedAt: string;
-  _count: {
-    likes: number;
-  };
+  likesCount: number;
+  likedByMe?: boolean;
 };
 
 export default function DashboardPage() {
@@ -45,8 +44,15 @@ export default function DashboardPage() {
       try {
         const res = await fetch('/api/posts');
         if (!res.ok) throw new Error('Failed to fetch posts');
-        const data: Post[] = await res.json();
-        setPosts(data);
+        const data: any[] = await res.json();
+
+        setPosts(
+          data.map((p) => ({
+            ...p,
+            likesCount: p.likesCount ?? 0,
+            likedByMe: false,
+          }))
+        );
       } catch (err) {
         console.error(err);
         setError('Could not load posts.');
@@ -68,12 +74,10 @@ export default function DashboardPage() {
     setFile(f);
   };
 
+  // Create post: upload image to bucket "posts" then create DB record
   const handleCreatePost = async (e: FormEvent) => {
     e.preventDefault();
-    if (!session) {
-      setError('You must be signed in to post.');
-      return;
-    }
+    if (!session) return;
     if (!file || !caption.trim()) return;
 
     setSubmitting(true);
@@ -94,11 +98,9 @@ export default function DashboardPage() {
       }
 
       // 2. Get public URL
-      const { data } = supabase.storage
-        .from('posts')
-        .getPublicUrl(filePath);
-
-      const publicUrl = data.publicUrl;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('posts').getPublicUrl(filePath);
 
       // 3. Create Post via API
       const res = await fetch('/api/posts', {
@@ -117,27 +119,25 @@ export default function DashboardPage() {
       }
 
       const created: Post = await res.json();
-      setPosts((prev) => [created, ...prev]);
+      setPosts((prev) => [{ ...created, likedByMe: false }, ...prev]);
 
       // Reset form
       setCaption('');
       setFile(null);
     } catch (err: any) {
       console.error(err);
-      const message =
-        err instanceof Error ? err.message : 'Could not create post.';
-      setError(message);
+      setError(err?.message || 'Could not create post.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleLike = async (postId: string) => {
+  const handleToggleLike = async (postId: string, liked: boolean | undefined) => {
     if (!session) return;
 
     try {
       const res = await fetch('/api/likes', {
-        method: 'POST',
+        method: liked ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           postId,
@@ -146,31 +146,46 @@ export default function DashboardPage() {
       });
 
       if (!res.ok) {
-        // If user already liked, backend may still respond 200; if not ok, just ignore
-        console.error('Like request failed');
-        return;
+        const body = await res.text();
+        throw new Error(body || 'Failed to update like');
       }
 
-      const data = await res.json();
+      const { likesCount } = await res.json();
 
       setPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? {
-                ...post,
-                _count: {
-                  likes:
-                    typeof data.likesCount === 'number'
-                      ? data.likesCount
-                      : post._count.likes + 1,
-                },
-              }
-            : post
+        prev.map((p) =>
+          p.id === postId ? { ...p, likesCount, likedByMe: !liked } : p
         )
       );
     } catch (err) {
-      console.error('Error liking post', err);
-      // keep UI silent for now
+      console.error(err);
+      setError('Could not update like.');
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!session) return;
+    if (!window.confirm('Delete this post?')) return;
+
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId,
+          userEmail: session.user.email,
+        }),
+      });
+
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(body || 'Failed to delete post');
+      }
+
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    } catch (err) {
+      console.error(err);
+      setError('Could not delete post.');
     }
   };
 
@@ -276,27 +291,43 @@ export default function DashboardPage() {
                   <span>{post.userEmail}</span>
                   <span>{new Date(post.createdAt).toLocaleString()}</span>
                 </div>
-
                 <img
                   src={post.imageUrl}
                   alt={post.caption}
                   className="mb-2 w-full rounded-lg object-cover"
                 />
+                <p className="text-slate-200">{post.caption}</p>
 
-                <p className="text-slate-200 mb-2">{post.caption}</p>
+                <div className="mt-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-xs text-slate-400">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleToggleLike(post.id, post.likedByMe)
+                      }
+                      className={
+                        post.likedByMe
+                          ? 'font-medium text-emerald-400'
+                          : 'font-medium text-slate-400 hover:text-emerald-300'
+                      }
+                    >
+                      {post.likedByMe ? '♥ Liked' : '♡ Like'}
+                    </button>
+                    <span>
+                      {post.likesCount} like
+                      {post.likesCount === 1 ? '' : 's'}
+                    </span>
+                  </div>
 
-                <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
-                  <button
-                    type="button"
-                    onClick={() => handleLike(post.id)}
-                    className="rounded-md border border-slate-600 px-2 py-1 text-xs hover:border-slate-400"
-                  >
-                    ❤️ Like
-                  </button>
-                  <span>
-                    {post._count.likes}{' '}
-                    {post._count.likes === 1 ? 'like' : 'likes'}
-                  </span>
+                  {post.userEmail === session.user.email && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePost(post.id)}
+                      className="text-xs text-slate-500 hover:text-red-400"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

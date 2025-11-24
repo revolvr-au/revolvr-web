@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma";
 // POST /api/likes  -> like a post
 export async function POST(req: Request) {
   try {
-    const { postId, userEmail } = await req.json();
+    const body = await req.json();
+    const postId = body.postId as string | undefined;
+    const userEmail = body.userEmail as string | undefined;
 
     if (!postId || !userEmail) {
       return NextResponse.json(
@@ -14,6 +16,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // create like (ignore if already exists)
     try {
       await prisma.like.create({
         data: {
@@ -22,28 +25,58 @@ export async function POST(req: Request) {
         },
       });
     } catch (err: any) {
-      // Unique constraint (postId, userEmail) – user already liked this post
-      if (err?.code === "P2002") {
-        // Just ignore – we don't want to error in the UI
+      // unique constraint violation -> already liked, we just ignore
+      if (err.code !== "P2002") {
+        console.error("POST /api/likes error:", err);
         return NextResponse.json(
-          { message: "Already liked" },
-          { status: 200 }
+          { message: "Failed to like post" },
+          { status: 500 }
         );
       }
-      throw err;
     }
 
-    // Return the updated like count
-    const likesCount = await prisma.like.count({ where: { postId } });
+    // return updated like count
+    const count = await prisma.like.count({
+      where: { postId },
+    });
 
-    return NextResponse.json(
-      { postId, likesCount },
-      { status: 201 }
-    );
+    return NextResponse.json({ likesCount: count });
   } catch (err) {
     console.error("POST /api/likes error:", err);
     return NextResponse.json(
       { message: "Failed to like post" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/likes  -> unlike a post
+export async function DELETE(req: Request) {
+  try {
+    const body = await req.json();
+    const postId = body.postId as string | undefined;
+    const userEmail = body.userEmail as string | undefined;
+
+    if (!postId || !userEmail) {
+      return NextResponse.json(
+        { message: "postId and userEmail are required" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.like.deleteMany({
+      where: { postId, userEmail },
+    });
+
+    const count = await prisma.like.count({
+      where: { postId },
+    });
+
+    return NextResponse.json({ likesCount: count });
+  } catch (err) {
+    console.error("DELETE /api/likes error:", err);
+    return NextResponse.json(
+      { message: "Failed to unlike post" },
       { status: 500 }
     );
   }
