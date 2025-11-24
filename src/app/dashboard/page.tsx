@@ -1,4 +1,3 @@
-cat > src/app/dashboard/page.tsx << 'EOF'
 'use client';
 
 import {
@@ -85,7 +84,7 @@ export default function DashboardPage() {
     try {
       // 1. Upload image to Supabase Storage (bucket: posts)
       const ext = file.name.split('.').pop() || 'jpg';
-      const filePath = \`posts/\${session.user.id}-\${Date.now()}.\${ext}\`;
+      const filePath = `posts/${session.user.id}-${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from('posts')
@@ -247,4 +246,3 @@ export default function DashboardPage() {
     </main>
   );
 }
-EOF

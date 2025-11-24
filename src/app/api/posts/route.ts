@@ -1,5 +1,4 @@
-mkdir -p src/app/api/posts
-cat > src/app/api/posts/route.ts << 'EOF'
+// src/app/api/posts/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -66,4 +65,3 @@ export async function POST(req: Request) {
     );
   }
 }
-EOF
