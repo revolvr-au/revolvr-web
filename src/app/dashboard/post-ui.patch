@@ -1,0 +1,44 @@
+--- a/src/app/dashboard/page.tsx
++++ b/src/app/dashboard/page.tsx
+@@ -200,7 +200,57 @@
+               <li
+                 key={post.id}
+                 className="rounded-xl bg-slate-950/80 p-4 text-sm"
+               >
+-                <div className="mb-2 flex justify-between text-xs text-slate-500">
++                <div className="mb-2 flex justify-between text-xs text-slate-500">
+                   <span>{post.userEmail}</span>
+                   <span>{new Date(post.createdAt).toLocaleString()}</span>
+                 </div>
+                 <img
+@@ -212,6 +262,56 @@
+                 />
+                 <p className="text-slate-200">{post.caption}</p>
+
++                {/* LIKE BUTTON + COUNTER */}
++                <div className="flex items-center gap-3 mt-3">
++                  <button
++                    onClick={() => toggleLike(post)}
++                    className="text-emerald-400 hover:text-emerald-300 text-xs"
++                  >
++                    {post.Like.some(l => l.userEmail === session.user.email)
++                      ? "♥ Unlike"
++                      : "♡ Like"}
++                  </button>
++
++                  <span className="text-xs text-slate-500">
++                    {post.Like.length} likes
++                  </span>
++                </div>
++
++                {/* DELETE BUTTON (ONLY OWNER) */}
++                {post.userEmail === session.user.email && (
++                  <button
++                    onClick={() => deletePost(post.id)}
++                    className="text-xs text-red-400 hover:text-red-300 mt-2"
++                  >
++                    Delete post
++                  </button>
++                )}
++
+               </li>

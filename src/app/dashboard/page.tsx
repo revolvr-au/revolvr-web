@@ -17,6 +17,9 @@ type Post = {
   caption: string;
   createdAt: string;
   updatedAt: string;
+  _count: {
+    likes: number;
+  };
 };
 
 export default function DashboardPage() {
@@ -65,23 +68,13 @@ export default function DashboardPage() {
     setFile(f);
   };
 
-    const handleCreatePost = async (e: FormEvent) => {
+  const handleCreatePost = async (e: FormEvent) => {
     e.preventDefault();
-
     if (!session) {
-      setError("You must be signed in to post.");
+      setError('You must be signed in to post.');
       return;
     }
-
-    if (!file) {
-      setError("Please choose an image to upload.");
-      return;
-    }
-
-    if (!caption.trim()) {
-      setError("Please write a caption.");
-      return;
-    }
+    if (!file || !caption.trim()) return;
 
     setSubmitting(true);
     setError(null);
@@ -97,7 +90,7 @@ export default function DashboardPage() {
 
       if (uploadError) {
         console.error(uploadError);
-        throw new Error(`Failed to upload image: ${uploadError.message}`);
+        throw new Error('Failed to upload image');
       }
 
       // 2. Get public URL
@@ -106,10 +99,6 @@ export default function DashboardPage() {
         .getPublicUrl(filePath);
 
       const publicUrl = data.publicUrl;
-
-      if (!publicUrl) {
-        throw new Error("Could not get public URL for image.");
-      }
 
       // 3. Create Post via API
       const res = await fetch('/api/posts', {
@@ -133,16 +122,57 @@ export default function DashboardPage() {
       // Reset form
       setCaption('');
       setFile(null);
-    } catch (err) {
-      console.error("Create post error:", err);
+    } catch (err: any) {
+      console.error(err);
       const message =
-        err instanceof Error ? err.message : "Could not create post.";
+        err instanceof Error ? err.message : 'Could not create post.';
       setError(message);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleLike = async (postId: string) => {
+    if (!session) return;
+
+    try {
+      const res = await fetch('/api/likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postId,
+          userEmail: session.user.email,
+        }),
+      });
+
+      if (!res.ok) {
+        // If user already liked, backend may still respond 200; if not ok, just ignore
+        console.error('Like request failed');
+        return;
+      }
+
+      const data = await res.json();
+
+      setPosts((prev) =>
+        prev.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                _count: {
+                  likes:
+                    typeof data.likesCount === 'number'
+                      ? data.likesCount
+                      : post._count.likes + 1,
+                },
+              }
+            : post
+        )
+      );
+    } catch (err) {
+      console.error('Error liking post', err);
+      // keep UI silent for now
+    }
+  };
 
   if (loading) {
     return (
@@ -246,12 +276,28 @@ export default function DashboardPage() {
                   <span>{post.userEmail}</span>
                   <span>{new Date(post.createdAt).toLocaleString()}</span>
                 </div>
+
                 <img
                   src={post.imageUrl}
                   alt={post.caption}
                   className="mb-2 w-full rounded-lg object-cover"
                 />
-                <p className="text-slate-200">{post.caption}</p>
+
+                <p className="text-slate-200 mb-2">{post.caption}</p>
+
+                <div className="mt-1 flex items-center justify-between text-xs text-slate-500">
+                  <button
+                    type="button"
+                    onClick={() => handleLike(post.id)}
+                    className="rounded-md border border-slate-600 px-2 py-1 text-xs hover:border-slate-400"
+                  >
+                    ❤️ Like
+                  </button>
+                  <span>
+                    {post._count.likes}{' '}
+                    {post._count.likes === 1 ? 'like' : 'likes'}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>

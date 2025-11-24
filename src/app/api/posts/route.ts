@@ -2,12 +2,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/posts - return all posts, newest first
+// GET /api/posts  -> all posts with like counts
 export async function GET() {
   try {
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: { likes: true },
+        },
+      },
     });
+
     return NextResponse.json(posts);
   } catch (err) {
     console.error("GET /api/posts error:", err);
@@ -18,45 +24,37 @@ export async function GET() {
   }
 }
 
-// POST /api/posts - create a new post
+// POST /api/posts  -> create a post
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
     const caption = (body.caption ?? "").trim();
     const imageUrl = (body.imageUrl ?? "").trim();
     const userEmail = (body.userEmail ?? "").trim();
 
-    if (!userEmail) {
+    if (!caption || !imageUrl || !userEmail) {
       return NextResponse.json(
-        { message: "User email is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!imageUrl) {
-      return NextResponse.json(
-        { message: "Image URL is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!caption) {
-      return NextResponse.json(
-        { message: "Caption is required" },
+        { message: "caption, imageUrl and userEmail are required" },
         { status: 400 }
       );
     }
 
     const post = await prisma.post.create({
       data: {
-        userEmail,
-        imageUrl,
         caption,
+        imageUrl,
+        userEmail,
       },
     });
 
-    return NextResponse.json(post, { status: 201 });
+    // match GET shape by including _count
+    return NextResponse.json(
+      {
+        ...post,
+        _count: { likes: 0 },
+      },
+      { status: 201 }
+    );
   } catch (err) {
     console.error("POST /api/posts error:", err);
     return NextResponse.json(

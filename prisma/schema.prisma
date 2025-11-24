@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -14,6 +16,22 @@ model Post {
   caption   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relation: One post has many Likes
+  Like Like[]
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String
+  createdAt DateTime @default(now())
+
+  // Relation: Many Likes belong to One Post
+  post Post @relation(fields: [postId], references: [id])
+
+  // Prevent a user from liking the same post twice
+  @@unique([postId, userEmail])
 }
 
 model RevolvrItem {
@@ -23,7 +41,7 @@ model RevolvrItem {
   status    RevolvrStatus @default(NEW)
   value     Int?
   createdAt DateTime      @default(now())
-  updatedAt DateTime      @default(now()) @updatedAt
+  updatedAt DateTime      @updatedAt
 }
 
 enum RevolvrStatus {
