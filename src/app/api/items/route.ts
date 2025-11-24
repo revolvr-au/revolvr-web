@@ -8,10 +8,15 @@ export async function GET() {
     const items = await prisma.revolvrItem.findMany({
       orderBy: { createdAt: "desc" },
     });
+
+    // items already have `name`, `notes`, `status`, `value`, etc.
     return NextResponse.json(items);
   } catch (err) {
     console.error("GET /api/items error:", err);
-    return NextResponse.json({ message: "Failed to load items" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Failed to load items" },
+      { status: 500 }
+    );
   }
 }
 
@@ -39,7 +44,8 @@ export async function POST(req: Request) {
 
     const item = await prisma.revolvrItem.create({
       data: {
-        title,
+        // Prisma model has `name`, so map the request `title` to it
+        name: title,
         notes: notes || null,
         status,
         value: Number.isNaN(value) ? null : value,
