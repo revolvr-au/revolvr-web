@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
+  // Get logged-in user email
   useEffect(() => {
     const getUser = async () => {
       try {
@@ -41,6 +42,7 @@ export default function DashboardPage() {
     getUser();
   }, []);
 
+  // Load posts from Supabase
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -48,7 +50,7 @@ export default function DashboardPage() {
 
         const { data, error } = await supabase
           .from("posts")
-          .select("id, user_email, image_url, caption, created_at, reactions")
+          .select("id, user_email, image_url, caption, created_at")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -60,7 +62,7 @@ export default function DashboardPage() {
             image_url: row.image_url,
             caption: row.caption,
             created_at: row.created_at,
-            reactions: row.reactions ?? {},
+            reactions: {}, // start empty on load
           }))
         );
       } catch (e) {
@@ -79,6 +81,7 @@ export default function DashboardPage() {
     setFile(selected);
   };
 
+  // Create a new post
   const handleCreatePost = async () => {
     if (!file) {
       setError("Add a photo before posting 🤪");
@@ -98,6 +101,7 @@ export default function DashboardPage() {
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${userEmail}/${fileName}`;
 
+      // BUCKET NAME: "post-images"
       const { data: storageData, error: storageError } = await supabase.storage
         .from("post-images")
         .upload(filePath, file);
@@ -126,13 +130,13 @@ export default function DashboardPage() {
         image_url: data.image_url,
         caption: data.caption,
         created_at: data.created_at,
-        reactions: data.reactions ?? {},
+        reactions: {},
       };
 
       setPosts((prev) => [newPost, ...prev]);
       setCaption("");
       setFile(null);
-      setShowComposer(false);
+      setShowComposer(false);  // ✅ close modal on success
     } catch (e) {
       console.error(e);
       setError("Revolvr glitched out while posting 😵‍💫 Try again.");
@@ -173,7 +177,7 @@ export default function DashboardPage() {
     );
 
     try {
-      // TODO: persist reactions to your backend if needed
+      // TODO: persist reactions later
     } catch (e) {
       console.error(e);
     }
