@@ -30,12 +30,12 @@ export default function DashboardPage() {
       try {
         const { data, error } = await supabase.auth.getUser();
         if (error) {
-          console.error(error);
+          console.error("Error getting user", error);
           return;
         }
         setUserEmail(data.user?.email ?? null);
       } catch (e) {
-        console.error(e);
+        console.error("Unexpected getUser error", e);
       }
     };
 
@@ -62,12 +62,15 @@ export default function DashboardPage() {
             image_url: row.image_url,
             caption: row.caption,
             created_at: row.created_at,
-            reactions: {}, // start empty on load
+            reactions: {},
           }))
         );
-      } catch (e) {
-        console.error(e);
-        setError("Revolvr glitched out while loading the feed 😵‍💫");
+      } catch (e: any) {
+        console.error("Error loading posts", e);
+        setError(
+          "Load error: " +
+            (e?.message ?? e?.toString() ?? "Unknown Supabase error")
+        );
       } finally {
         setIsLoading(false);
       }
@@ -101,7 +104,7 @@ export default function DashboardPage() {
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${userEmail}/${fileName}`;
 
-      // BUCKET NAME: "posts"
+      // IMPORTANT: bucket name is "posts" (matches your Supabase storage)
       const { data: storageData, error: storageError } = await supabase.storage
         .from("posts")
         .upload(filePath, file);
@@ -136,10 +139,13 @@ export default function DashboardPage() {
       setPosts((prev) => [newPost, ...prev]);
       setCaption("");
       setFile(null);
-      setShowComposer(false);  // ✅ close modal on success
-    } catch (e) {
-      console.error(e);
-      setError("Revolvr glitched out while posting 😵‍💫 Try again.");
+      setShowComposer(false); // close modal on success
+    } catch (e: any) {
+      console.error("Error creating post", e);
+      setError(
+        "Post error: " +
+          (e?.message ?? e?.toString() ?? "Unknown Supabase error")
+      );
     } finally {
       setIsPosting(false);
     }
@@ -155,9 +161,12 @@ export default function DashboardPage() {
       if (deleteError) throw deleteError;
 
       setPosts((prev) => prev.filter((p) => p.id !== id));
-    } catch (e) {
-      console.error(e);
-      setError("Revolvr glitched out deleting that post 😵‍💫");
+    } catch (e: any) {
+      console.error("Error deleting post", e);
+      setError(
+        "Delete error: " +
+          (e?.message ?? e?.toString() ?? "Unknown Supabase error")
+      );
     }
   };
 
@@ -179,7 +188,7 @@ export default function DashboardPage() {
     try {
       // TODO: persist reactions later
     } catch (e) {
-      console.error(e);
+      console.error("Error reacting to post", e);
     }
   };
 
