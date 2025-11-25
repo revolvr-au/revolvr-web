@@ -101,16 +101,16 @@ export default function DashboardPage() {
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${userEmail}/${fileName}`;
 
-      // BUCKET NAME: "post-images"
+      // BUCKET NAME: "posts"
       const { data: storageData, error: storageError } = await supabase.storage
-        .from("post-images")
+        .from("posts")
         .upload(filePath, file);
 
       if (storageError) throw storageError;
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("post-images").getPublicUrl(storageData.path);
+      } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
       const { data, error: insertError } = await supabase
         .from("posts")
