@@ -2,76 +2,134 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark theme baseline */
-:root {
-  color-scheme: dark;
-}
-
+/* Base background */
+html,
 body {
-  background:
-    radial-gradient(circle at top, rgba(16, 185, 129, 0.15), transparent 55%),
-    radial-gradient(circle at bottom, rgba(59, 130, 246, 0.12), transparent 60%),
-    #020617;
-  color: #f9fafb;
-  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+  background-color: #050814;
 }
 
-/* Reaction button (NO @apply) */
+/* --- Post animations --- */
+
+.rv-spin-in {
+  animation: rv-spin-in 0.4s ease-out;
+}
+
+.rv-bounce-in {
+  animation: rv-bounce-in 0.35s ease-out;
+}
+
+.rv-jolt-in {
+  animation: rv-jolt-in 0.35s ease-out;
+}
+
+.rv-glitch-in {
+  animation: rv-glitch-in 0.4s ease-out;
+}
+
+.rv-slide-in {
+  animation: rv-slide-in 0.35s ease-out;
+}
+
+@keyframes rv-spin-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) rotate(-4deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes rv-bounce-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rv-jolt-in {
+  0% {
+    opacity: 0;
+    transform: translateX(18px) skewX(-6deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translateX(-2px) skewX(2deg);
+  }
+  100% {
+    transform: translateX(0) skewX(0);
+  }
+}
+
+@keyframes rv-glitch-in {
+  0% {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+  40% {
+    opacity: 1;
+    clip-path: inset(0 20% 0 0);
+    transform: translateX(-2px);
+  }
+  70% {
+    clip-path: inset(0 0 0 10%);
+    transform: translateX(1px);
+  }
+  100% {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: translateX(0);
+  }
+}
+
+@keyframes rv-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- Emoji reaction pill --- */
+
 .rv-emoji-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 0.15rem 0.4rem;
   border-radius: 9999px;
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  background-color: rgba(15, 23, 42, 1);
-  padding: 4px 8px;
-  font-size: 0.875rem;
-  transition: all 0.15s ease;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.9);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 0.08s ease-out,
+    box-shadow 0.08s ease-out,
+    border-color 0.12s ease-out,
+    background-color 0.12s ease-out;
 }
+
 .rv-emoji-button:hover {
-  background-color: rgba(30, 41, 59, 1);
-  border-color: rgba(52, 211, 153, 1);
+  border-color: rgba(52, 211, 153, 0.8);
+  background: rgba(22, 163, 74, 0.18);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
 }
+
 .rv-emoji-button:active {
-  transform: translateY(1px) scale(0.96);
+  transform: translateY(0) scale(0.96);
+  box-shadow: none;
 }
-
-/* Smooth card hover */
-.rv-post-card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.rv-post-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.7);
-}
-
-/* Fun entry animations */
-@keyframes rv-spin-in {
-  from { transform: rotate(-6deg) scale(0.92); opacity: 0; }
-  to   { transform: rotate(0deg) scale(1); opacity: 1; }
-}
-@keyframes rv-bounce-in {
-  0%   { transform: translateY(16px); opacity: 0; }
-  60%  { transform: translateY(-4px); opacity: 1; }
-  100% { transform: translateY(0px); }
-}
-@keyframes rv-jolt-in {
-  0%   { transform: translateX(-14px) skewX(-4deg); opacity: 0; }
-  100% { transform: translateX(0) skewX(0); opacity: 1; }
-}
-@keyframes rv-glitch-in {
-  0%   { transform: translate(-3px, 2px); opacity: 0; }
-  30%  { transform: translate(3px, -2px); }
-  60%  { transform: translate(-1px, 1px); }
-  100% { transform: translate(0, 0); opacity: 1; }
-}
-@keyframes rv-slide-in {
-  0%   { transform: translateY(22px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-.rv-spin-in { animation: rv-spin-in 420ms cubic-bezier(0.16, 1, 0.3, 1); }
-.rv-bounce-in { animation: rv-bounce-in 420ms cubic-bezier(0.16, 1, 0.3, 1); }
-.rv-jolt-in { animation: rv-jolt-in 420ms cubic-bezier(0.16, 1, 0.3, 1); }
-.rv-glitch-in { animation: rv-glitch-in 380ms cubic-bezier(0.16, 1, 0.3, 1); }
-.rv-slide-in { animation: rv-slide-in 380ms cubic-bezier(0.16, 1, 0.3, 1); }
