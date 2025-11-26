@@ -2,113 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base look */
+/* Dark theme baseline */
 :root {
   color-scheme: dark;
 }
 
 body {
-  @apply antialiased;
   background:
     radial-gradient(circle at top, rgba(16, 185, 129, 0.15), transparent 55%),
     radial-gradient(circle at bottom, rgba(59, 130, 246, 0.12), transparent 60%),
     #020617;
   color: #f9fafb;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Emoji reaction button */
+/* Reaction button (NO @apply) */
 .rv-emoji-button {
-  @apply inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-900 px-2 py-1 text-sm transition;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background-color: rgba(15, 23, 42, 1);
+  padding: 4px 8px;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
 }
 .rv-emoji-button:hover {
-  @apply bg-slate-800 border-emerald-400;
+  background-color: rgba(30, 41, 59, 1);
+  border-color: rgba(52, 211, 153, 1);
 }
 .rv-emoji-button:active {
-  transform: translateY(1px) scale(0.97);
+  transform: translateY(1px) scale(0.96);
 }
 
-/* Post card hover */
+/* Smooth card hover */
 .rv-post-card {
-  @apply transition-transform duration-200;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 .rv-post-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.7);
 }
 
-/* Fun entry animations for posts */
+/* Fun entry animations */
 @keyframes rv-spin-in {
-  from {
-    transform: rotate(-6deg) scale(0.92);
-    opacity: 0;
-  }
-  to {
-    transform: rotate(0deg) scale(1);
-    opacity: 1;
-  }
+  from { transform: rotate(-6deg) scale(0.92); opacity: 0; }
+  to   { transform: rotate(0deg) scale(1); opacity: 1; }
 }
 @keyframes rv-bounce-in {
-  0% {
-    transform: translateY(16px);
-    opacity: 0;
-  }
-  60% {
-    transform: translateY(-4px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0);
-  }
+  0%   { transform: translateY(16px); opacity: 0; }
+  60%  { transform: translateY(-4px); opacity: 1; }
+  100% { transform: translateY(0px); }
 }
 @keyframes rv-jolt-in {
-  0% {
-    transform: translateX(-14px) skewX(-4deg);
-    opacity: 0;
-  }
-  100% {
-    transform: translateX(0) skewX(0deg);
-    opacity: 1;
-  }
+  0%   { transform: translateX(-14px) skewX(-4deg); opacity: 0; }
+  100% { transform: translateX(0) skewX(0); opacity: 1; }
 }
 @keyframes rv-glitch-in {
-  0% {
-    transform: translate(-3px, 2px);
-    opacity: 0;
-  }
-  30% {
-    transform: translate(3px, -2px);
-  }
-  60% {
-    transform: translate(-1px, 1px);
-  }
-  100% {
-    transform: translate(0, 0);
-    opacity: 1;
-  }
+  0%   { transform: translate(-3px, 2px); opacity: 0; }
+  30%  { transform: translate(3px, -2px); }
+  60%  { transform: translate(-1px, 1px); }
+  100% { transform: translate(0, 0); opacity: 1; }
 }
 @keyframes rv-slide-in {
-  0% {
-    transform: translateY(22px);
-    opacity: 0;
-  }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
-  }
+  0%   { transform: translateY(22px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
-.rv-spin-in {
-  animation: rv-spin-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.rv-bounce-in {
-  animation: rv-bounce-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.rv-jolt-in {
-  animation: rv-jolt-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.rv-glitch-in {
-  animation: rv-glitch-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.rv-slide-in {
-  animation: rv-slide-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
-}
+.rv-spin-in { animation: rv-spin-in 420ms cubic-bezier(0.16, 1, 0.3, 1); }
+.rv-bounce-in { animation: rv-bounce-in 420ms cubic-bezier(0.16, 1, 0.3, 1); }
+.rv-jolt-in { animation: rv-jolt-in 420ms cubic-bezier(0.16, 1, 0.3, 1); }
+.rv-glitch-in { animation: rv-glitch-in 380ms cubic-bezier(0.16, 1, 0.3, 1); }
+.rv-slide-in { animation: rv-slide-in 380ms cubic-bezier(0.16, 1, 0.3, 1); }
