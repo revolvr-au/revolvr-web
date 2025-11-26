@@ -4,6 +4,8 @@ import { supabase } from "@/app/lib/supabaseClients";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const SITE_URL = "https://revolvr-web.vercel.app";
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -34,15 +36,11 @@ export default function LoginPage() {
     setMessage(null);
 
     try {
-      const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/dashboard`
-          : undefined;
-
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: redirectTo,
+          // Always send user back to the main production URL
+          emailRedirectTo: `${SITE_URL}/dashboard`,
         },
       });
 
