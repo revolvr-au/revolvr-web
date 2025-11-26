@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClients";
+import React, { useEffect, useMemo, useState } from "react";
 
 type Post = {
   id: string;
@@ -19,7 +19,6 @@ export default function PublicFeedPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load posts from Supabase (no auth required to view)
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -71,27 +70,34 @@ export default function PublicFeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight">Revolvr</span>
+          <span className="text-xl font-semibold tracking-tight">
+            Revolvr
+          </span>
           <span className="text-lg">🔥</span>
         </div>
-        <a
-          href="/login"
-          className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition"
-        >
-          Sign in
-        </a>
+        <div className="flex items-center gap-3 text-xs sm:text-sm text-slate-200/80">
+          <span className="hidden sm:inline text-slate-400">
+            Viewer mode · anyone can see this
+          </span>
+          <a
+            href="/login"
+            className="px-3 py-1 rounded-full border border-slate-600 bg-slate-900 hover:bg-slate-800 transition text-xs"
+          >
+            Sign in
+          </a>
+        </div>
       </header>
 
       {/* Main content */}
       <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-4">
+        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-3">
           {/* Error banner */}
           {error && (
-            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
+            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center border border-red-500/40">
               <span>{error}</span>
               <button
                 className="text-xs underline"
@@ -103,29 +109,28 @@ export default function PublicFeedPage() {
           )}
 
           {/* Header */}
-          <div className="mt-1">
-            <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between mt-1 mb-1">
+            <div>
               <h1 className="text-lg font-semibold text-white/90">
                 Public feed
               </h1>
-              <span className="text-xs text-white/50">
-                v0.1 · social preview
-              </span>
+              <p className="text-xs text-slate-400">
+                Anyone can watch the chaos. Want to post? Sign in and head to
+                your dashboard.
+              </p>
             </div>
-            <p className="text-xs text-white/60">
-              Anyone can watch this. Want to post?{" "}
-              <span className="underline">Sign in</span> and head to your
-              dashboard.
-            </p>
+            <span className="text-[11px] text-slate-500">
+              v0.1 · social preview
+            </span>
           </div>
 
           {/* Feed body */}
           {isLoading ? (
-            <div className="text-center text-sm text-white/60 py-10">
+            <div className="text-center text-sm text-slate-400 py-10">
               Loading the chaos…
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center text-sm text-white/60 py-10">
+            <div className="text-center text-sm text-slate-400 py-10">
               No posts yet. Check back soon ✨
             </div>
           ) : (
@@ -184,7 +189,7 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
   }, [created]);
 
   return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+    <article className="rounded-2xl bg-slate-900 border border-slate-800 p-3 sm:p-4 shadow-md shadow-black/30">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -192,10 +197,10 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
             {post.user_email?.[0] ?? "R"}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px]">
+            <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
               {post.user_email ?? "Someone"}
             </span>
-            <span className="text-[11px] text-white/40">{timeLabel}</span>
+            <span className="text-[11px] text-slate-400">{timeLabel}</span>
           </div>
         </div>
       </div>
@@ -216,7 +221,9 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
 
       {/* Caption */}
       {post.caption && (
-        <p className="mt-2 text-sm text-white/90 break-words">{post.caption}</p>
+        <p className="mt-2 text-sm text-slate-100 break-words">
+          {post.caption}
+        </p>
       )}
 
       {/* Reactions (local only) */}
@@ -232,7 +239,7 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
               >
                 <span>{emoji}</span>
                 {count > 0 && (
-                  <span className="ml-1 text-[11px] text-white/60">
+                  <span className="ml-1 text-[11px] text-slate-300">
                     {count}
                   </span>
                 )}
