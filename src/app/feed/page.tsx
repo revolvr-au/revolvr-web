@@ -19,6 +19,7 @@ export default function PublicFeedPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Load posts from Supabase (no auth required to view)
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -53,6 +54,7 @@ export default function PublicFeedPage() {
   }, []);
 
   const handleReact = (postId: string, emoji: string) => {
+    // Local-only reactions for now (no persistence)
     setPosts((prev) =>
       prev.map((p) =>
         p.id === postId
@@ -69,7 +71,7 @@ export default function PublicFeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#050814]/95 text-white flex flex-col">
+    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
@@ -103,20 +105,20 @@ export default function PublicFeedPage() {
           )}
 
           {/* Header */}
-          <div className="mt-1 mb-2">
-            <div className="flex items-center justify-between">
-              <h1 className="text-base font-semibold text-white/90">
-                Public feed
-              </h1>
-              <span className="text-xs text-white/50">v0.1 · social preview</span>
-            </div>
-            <p className="mt-1 text-[11px] text-white/50">
-              Anyone can watch this. Want to post?{" "}
-              <span className="font-medium text-emerald-300">
-                Sign in and head to /dashboard.
-              </span>
-            </p>
+          <div className="flex items-center justify-between mt-1 mb-1">
+            <h1 className="text-base font-semibold text-white/90">
+              Public feed
+            </h1>
+            <span className="text-xs text-white/50">
+              v0.1 · social preview
+            </span>
           </div>
+
+          {/* Tiny explainer under title */}
+          <p className="text-[11px] text-white/40 mb-2">
+            Anyone can watch this. Want to post? Sign in and head to your
+            dashboard.
+          </p>
 
           {/* Feed body */}
           {isLoading ? (
@@ -169,6 +171,7 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
   }, []);
 
   const created = new Date(post.created_at);
+
   const timeLabel = useMemo(() => {
     const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
     if (seconds < 60) return "Just now";
