@@ -1,7 +1,7 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClients";
-import React, { useEffect, useMemo, useState } from "react";
 
 type Post = {
   id: string;
@@ -71,9 +71,9 @@ export default function PublicFeedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
+    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-slate-950/90 backdrop-blur flex items-center justify-between px-4 py-3">
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xl font-semibold tracking-tight">
             Revolvr
@@ -107,19 +107,21 @@ export default function PublicFeedPage() {
           )}
 
           {/* Header */}
-          <div className="flex items-center justify-between mt-1 mb-1">
-            <h1 className="text-base font-semibold text-white/90">
-              Public feed
-            </h1>
-            <span className="text-xs text-white/50">
+          <div className="flex items-start justify-between mt-1 mb-2">
+            <div>
+              <h1 className="text-lg font-semibold text-white/90">
+                Public feed
+              </h1>
+              <p className="text-xs text-white/60 mt-1">
+                Anyone can watch this. Want to post?{" "}
+                <span className="underline">Sign in</span> and head to your
+                dashboard.
+              </p>
+            </div>
+            <span className="text-xs text-white/40 self-center">
               v0.1 · social preview
             </span>
           </div>
-
-          <p className="text-xs text-white/50">
-            Anyone can watch this. Want to post? Sign in and head to your
-            dashboard.
-          </p>
 
           {/* Feed body */}
           {isLoading ? (
@@ -152,7 +154,7 @@ type PublicPostCardProps = {
   onReact: (postId: string, emoji: string) => void;
 };
 
-const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
+function PublicPostCard({ post, onReact }: PublicPostCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
 
   const animationClass = useMemo(() => {
@@ -186,7 +188,7 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
   }, [created]);
 
   return (
-    <article className="rounded-2xl bg-slate-950/40 border border-white/10 p-3 sm:p-4 shadow-md shadow-black/40">
+    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -247,4 +249,4 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
       </div>
     </article>
   );
-};
+}
