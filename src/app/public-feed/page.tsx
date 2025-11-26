@@ -1,8 +1,7 @@
-// src/app/public-feed/page.tsx
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/app/lib/supabaseClients";
-import React, { useEffect, useMemo, useState } from "react";
 
 type Post = {
   id: string;
@@ -24,7 +23,6 @@ export default function PublicFeedPage() {
     const fetchPosts = async () => {
       try {
         setIsLoading(true);
-
         const { data, error } = await supabase
           .from("posts")
           .select("id, user_email, image_url, caption, created_at")
@@ -54,8 +52,8 @@ export default function PublicFeedPage() {
   }, []);
 
   const handleReact = (postId: string, emoji: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
+    setPosts(prev =>
+      prev.map(p =>
         p.id === postId
           ? {
               ...p,
@@ -71,7 +69,6 @@ export default function PublicFeedPage() {
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-xl font-semibold tracking-tight">
@@ -89,10 +86,8 @@ export default function PublicFeedPage() {
         </div>
       </header>
 
-      {/* Main content */}
       <main className="flex-1 flex justify-center">
         <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-3">
-          {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
               <span>{error}</span>
@@ -105,22 +100,22 @@ export default function PublicFeedPage() {
             </div>
           )}
 
-          {/* Header */}
-          <div className="flex items-center justify-between mt-1 mb-1">
-            <h1 className="text-base font-semibold text-white/90">
-              Public feed
-            </h1>
-            <span className="text-xs text-white/50">
+          <div className="flex items-start justify-between mt-1 mb-2">
+            <div>
+              <h1 className="text-lg font-semibold text-white/90">
+                Public feed
+              </h1>
+              <p className="text-xs text-white/60 mt-1">
+                Anyone can watch this. Want to post?{" "}
+                <span className="underline">Sign in</span> and head to your
+                dashboard.
+              </p>
+            </div>
+            <span className="text-xs text-white/40 self-center">
               v0.1 · social preview
             </span>
           </div>
 
-          <p className="text-xs text-white/50">
-            Anyone can watch this. Want to post? Sign in and head to your
-            dashboard.
-          </p>
-
-          {/* Feed body */}
           {isLoading ? (
             <div className="text-center text-sm text-white/60 py-10">
               Loading the chaos…
@@ -131,7 +126,7 @@ export default function PublicFeedPage() {
             </div>
           ) : (
             <div className="space-y-4 pb-20">
-              {posts.map((post) => (
+              {posts.map(post => (
                 <PublicPostCard
                   key={post.id}
                   post={post}
@@ -151,7 +146,7 @@ type PublicPostCardProps = {
   onReact: (postId: string, emoji: string) => void;
 };
 
-const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
+function PublicPostCard({ post, onReact }: PublicPostCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
 
   const animationClass = useMemo(() => {
@@ -186,7 +181,6 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
 
   return (
     <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
-      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -201,13 +195,11 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
         </div>
       </div>
 
-      {/* Image */}
       <div
         className={`overflow-hidden rounded-xl bg-black/40 ${
           hasMounted ? animationClass : ""
         }`}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={post.image_url}
           alt={post.caption}
@@ -215,17 +207,13 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
         />
       </div>
 
-      {/* Caption */}
       {post.caption && (
-        <p className="mt-2 text-sm text-white/90 break-words">
-          {post.caption}
-        </p>
+        <p className="mt-2 text-sm text-white/90 break-words">{post.caption}</p>
       )}
 
-      {/* Reactions (local only) */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex gap-2">
-          {REACTION_EMOJIS.map((emoji) => {
+          {REACTION_EMOJIS.map(emoji => {
             const count = post.reactions?.[emoji] ?? 0;
             return (
               <button
@@ -246,4 +234,4 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
       </div>
     </article>
   );
-};
+}
