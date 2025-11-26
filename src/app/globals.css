@@ -2,21 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Minimal global styling – let Tailwind classes in components do the work */
-
-html,
-body {
-  height: 100%;
+/* Revolvr custom bits */
+.rv-emoji-button {
+  @apply inline-flex items-center justify-center rounded-full px-2 py-1 bg-white/5 border border-white/10 hover:bg-white/10 text-base transition;
 }
 
-body {
-  margin: 0;
-  background-color: #020617; /* slate-950 style */
-  color: #f9fafb;            /* near-white text */
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    sans-serif;
+/* Fun entrance animations for posts */
+.rv-spin-in {
+  animation: rv-spin-in 0.5s ease-out;
+}
+.rv-bounce-in {
+  animation: rv-bounce-in 0.45s ease-out;
+}
+.rv-jolt-in {
+  animation: rv-jolt-in 0.45s ease-out;
+}
+.rv-glitch-in {
+  animation: rv-glitch-in 0.4s ease-out;
+}
+.rv-slide-in {
+  animation: rv-slide-in 0.45s ease-out;
 }
 
-a {
-  color: #22c55e; /* emerald */
+@keyframes rv-spin-in {
+  from {
+    transform: scale(0.9) rotate(-2deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes rv-bounce-in {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes rv-jolt-in {
+  0% {
+    transform: translateX(-6px);
+    opacity: 0;
+  }
+  40% {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes rv-glitch-in {
+  0% {
+    transform: translateX(-4px);
+    opacity: 0;
+  }
+  40% {
+    transform: translateX(4px);
+    opacity: 1;
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes rv-slide-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
