@@ -1,20 +1,44 @@
-'use client';
+"use client";
 
-import { FormEvent, useState } from 'react';
-import { supabase } from '../../../lib/supabaseClient';
+import { supabase } from "@/app/lib/supabaseClients";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
+  // If already logged in, skip login and go to dashboard
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data.user) {
+          router.replace("/dashboard");
+        }
+      } catch (e) {
+        console.error("Error checking session", e);
+      }
+    };
+
+    checkSession();
+  }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus('sending');
+    setIsSending(true);
     setError(null);
+    setMessage(null);
 
     try {
-      const redirectTo = `${process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin}/`;
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/dashboard`
+          : undefined;
+
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
@@ -23,50 +47,69 @@ export default function LoginPage() {
       });
 
       if (error) throw error;
-      setStatus('sent');
-    } catch (err: any) {
-      setStatus('error');
-      setError(err.message ?? 'Something went wrong sending the magic link.');
+
+      setMessage(
+        "Magic link sent. Check your email and open the link to finish signing in."
+      );
+    } catch (err) {
+      console.error(err);
+      setError("Revolvr couldn’t send the magic link. Try again.");
+    } finally {
+      setIsSending(false);
     }
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-      <div className="w-full max-w-md px-6">
-        <h1 className="text-2xl font-bold mb-4">Sign in to Revolvr</h1>
-        <p className="text-slate-300 mb-6">
-          Enter your email and we&apos;ll send you a one-click magic link.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            required
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 rounded-md bg-slate-900 border border-slate-700 focus:outline-none focus:ring focus:ring-emerald-500"
-          />
-
-          <button
-            type="submit"
-            disabled={status === 'sending'}
-            className="w-full px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 font-semibold disabled:opacity-60"
-          >
-            {status === 'sending' ? 'Sending link…' : 'Send magic link'}
-          </button>
-        </form>
-
-        {status === 'sent' && (
-          <p className="mt-4 text-emerald-400">
-            Magic link sent! Check your email to finish signing in.
+    <main className="min-h-screen flex items-center justify-center bg-[#050814] text-white">
+      <div className="w-full max-w-md px-6 py-8 rounded-2xl bg-[#070b1b] border border-white/10 shadow-xl shadow-black/40">
+        <div className="mb-6 text-center">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="text-xl font-semibold tracking-tight">
+              Revolvr
+            </span>
+            <span className="text-lg">🔥</span>
+          </div>
+          <p className="text-xs uppercase tracking-[0.25em] text-emerald-400">
+            v0.1 · social preview
           </p>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-500/10 text-red-200 text-sm px-3 py-2">
+            {error}
+          </div>
         )}
 
-        {status === 'error' && error && (
-          <p className="mt-4 text-red-400">
-            {error}
-          </p>
+        {message ? (
+          <p className="text-sm text-white/80 text-center">{message}</p>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-white/70">
+                Sign in with a magic link
+              </label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSending}
+              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] transition text-sm font-semibold py-2.5 disabled:opacity-60 disabled:hover:bg-emerald-500"
+            >
+              {isSending ? "Sending magic link…" : "Send magic link"}
+            </button>
+
+            <p className="text-[11px] text-white/40 text-center">
+              We’ll email you a one-tap link. No passwords, no drama.
+            </p>
+          </form>
         )}
       </div>
     </main>
