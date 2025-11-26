@@ -12,7 +12,7 @@ type Post = {
   reactions?: Record<string, number>;
 };
 
-const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
+const REACTION_EMOJIS = ["🔥", "💀", "��", "🤪", "🥴"];
 
 export default function DashboardPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -65,12 +65,9 @@ export default function DashboardPage() {
             reactions: {},
           }))
         );
-      } catch (e: any) {
+      } catch (e) {
         console.error("Error loading posts", e);
-        setError(
-          "Load error: " +
-            (e?.message ?? e?.toString() ?? "Unknown Supabase error")
-        );
+        setError("Revolvr glitched out while loading the feed 😵‍💫");
       } finally {
         setIsLoading(false);
       }
@@ -92,7 +89,7 @@ export default function DashboardPage() {
     }
 
     if (!userEmail) {
-      setError("Revolvr doesn’t know who you are yet. Try reloading 😵‍💫");
+      setError("Revolvr doesn’t know who you are yet. Try reloading ��‍💫");
       return;
     }
 
@@ -104,7 +101,7 @@ export default function DashboardPage() {
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${userEmail}/${fileName}`;
 
-      // IMPORTANT: bucket name is "posts" (matches your Supabase storage)
+      // Storage bucket: "posts"
       const { data: storageData, error: storageError } = await supabase.storage
         .from("posts")
         .upload(filePath, file);
@@ -140,12 +137,9 @@ export default function DashboardPage() {
       setCaption("");
       setFile(null);
       setShowComposer(false); // close modal on success
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error creating post", e);
-      setError(
-        "Post error: " +
-          (e?.message ?? e?.toString() ?? "Unknown Supabase error")
-      );
+      setError("Revolvr glitched out while posting 😵‍💫 Try again.");
     } finally {
       setIsPosting(false);
     }
@@ -161,12 +155,9 @@ export default function DashboardPage() {
       if (deleteError) throw deleteError;
 
       setPosts((prev) => prev.filter((p) => p.id !== id));
-    } catch (e: any) {
+    } catch (e) {
       console.error("Error deleting post", e);
-      setError(
-        "Delete error: " +
-          (e?.message ?? e?.toString() ?? "Unknown Supabase error")
-      );
+      setError("Revolvr glitched out deleting that post 😵‍💫");
     }
   };
 
@@ -194,21 +185,28 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+      {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight">Revolvr</span>
+          <span className="text-xl font-semibold tracking-tight">
+            Revolvr
+          </span>
           <span className="text-lg">🔥</span>
         </div>
         <div className="flex items-center gap-2 text-xs sm:text-sm text-white/70">
           <span className="hidden sm:inline">Signed in as</span>
-          <span className="font-medium">{userEmail ?? "mystery user"}</span>
+          <span className="font-medium truncate max-w-[160px] sm:max-w-xs">
+            {userEmail ?? "mystery user"}
+          </span>
         </div>
       </header>
 
+      {/* Main content */}
       <main className="flex-1 flex justify-center">
         <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-3">
+          {/* Error banner */}
           {error && (
-            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
+            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
               <span>{error}</span>
               <button
                 className="text-xs underline"
@@ -219,11 +217,13 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Feed title */}
           <div className="flex items-center justify-between mt-1 mb-1">
             <h1 className="text-base font-semibold text-white/90">Live feed</h1>
             <span className="text-xs text-white/50">v0.1 · social preview</span>
           </div>
 
+          {/* Feed body */}
           {isLoading ? (
             <div className="text-center text-sm text-white/60 py-10">
               Loading the chaos…
@@ -238,6 +238,7 @@ export default function DashboardPage() {
                 <PostCard
                   key={post.id}
                   post={post}
+                  currentUserEmail={userEmail}
                   onDelete={() => handleDeletePost(post.id)}
                   onReact={handleReact}
                 />
@@ -247,6 +248,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
+      {/* Floating create button */}
       <button
         onClick={() => setShowComposer(true)}
         className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 shadow-lg shadow-emerald-500/40 transition flex items-center justify-center text-3xl"
@@ -255,9 +257,10 @@ export default function DashboardPage() {
         +
       </button>
 
+      {/* Composer modal */}
       {showComposer && (
         <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm flex items-center justify-center px-3">
-          <div className="w-full max-w-md rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-4">
+          <div className="w-full max-w-md rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-4 shadow-xl shadow-black/40">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">New post</h2>
               <button
@@ -309,12 +312,19 @@ export default function DashboardPage() {
 
 type PostCardProps = {
   post: Post;
+  currentUserEmail: string | null;
   onDelete: () => void;
   onReact: (postId: string, emoji: string) => void;
 };
 
-const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onReact }) => {
+const PostCard: React.FC<PostCardProps> = ({
+  post,
+  currentUserEmail,
+  onDelete,
+  onReact,
+}) => {
   const [hasMounted, setHasMounted] = useState(false);
+
   const animationClass = useMemo(() => {
     const classes = [
       "rv-spin-in",
@@ -332,38 +342,54 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onReact }) => {
   }, []);
 
   const created = new Date(post.created_at);
-  const timeLabel = created.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+
+  const timeLabel = useMemo(() => {
+    const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
+    if (seconds < 60) return "Just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return created.toLocaleDateString();
+  }, [created]);
+
+  const canDelete =
+    currentUserEmail && post.user_email === currentUserEmail;
 
   return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4">
+    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
             {post.user_email?.[0] ?? "R"}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
               {post.user_email ?? "Someone"}
             </span>
             <span className="text-[11px] text-white/40">{timeLabel}</span>
           </div>
         </div>
-        <button
-          onClick={onDelete}
-          className="text-[11px] text-white/50 hover:text-red-400"
-        >
-          •••
-        </button>
+        {canDelete && (
+          <button
+            onClick={onDelete}
+            className="text-[11px] text-white/50 hover:text-red-400"
+          >
+            •••
+          </button>
+        )}
       </div>
 
+      {/* Image */}
       <div
         className={`overflow-hidden rounded-xl bg-black/40 ${
           hasMounted ? animationClass : ""
         }`}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={post.image_url}
           alt={post.caption}
@@ -371,12 +397,14 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onReact }) => {
         />
       </div>
 
+      {/* Caption */}
       {post.caption && (
         <p className="mt-2 text-sm text-white/90 break-words">
           {post.caption}
         </p>
       )}
 
+      {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex gap-2">
           {REACTION_EMOJIS.map((emoji) => {
