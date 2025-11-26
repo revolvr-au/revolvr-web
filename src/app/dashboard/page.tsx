@@ -197,9 +197,13 @@ export default function DashboardPage() {
 
         <div className="rv-topbar-right">
           <span className="rv-topbar-creator">{creatorLabel}</span>
-          <a href="/feed" className="rv-pill-link">
-            Go to public feed
-          </a>
+          <a
+  href="/public-feed"
+  className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition"
+>
+  Go to public feed
+</a>
+
           <button
             type="button"
             className="rv-pill-button rv-pill-secondary"
