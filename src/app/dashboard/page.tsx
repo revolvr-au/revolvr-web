@@ -1,4 +1,4 @@
-"use client";
+"use client"; // (for app router)
 
 import { supabase } from "@/app/lib/supabaseClients";
 import React, { useEffect, useMemo, useState } from "react";
@@ -12,7 +12,7 @@ type Post = {
   reactions?: Record<string, number>;
 };
 
-const REACTION_EMOJIS = ["🔥", "💀", "��", "🤪", "🥴"];
+const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
 
 export default function DashboardPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -24,25 +24,25 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Get logged-in user email
+  // Load user
   useEffect(() => {
     const getUser = async () => {
       try {
         const { data, error } = await supabase.auth.getUser();
         if (error) {
-          console.error("Error getting user", error);
+          console.error(error);
           return;
         }
         setUserEmail(data.user?.email ?? null);
       } catch (e) {
-        console.error("Unexpected getUser error", e);
+        console.error(e);
       }
     };
 
     getUser();
   }, []);
 
-  // Load posts from Supabase
+  // Load posts
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -50,7 +50,7 @@ export default function DashboardPage() {
 
         const { data, error } = await supabase
           .from("posts")
-          .select("id, user_email, image_url, caption, created_at")
+          .select("id, user_email, image_url, caption, created_at, reactions")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -62,11 +62,11 @@ export default function DashboardPage() {
             image_url: row.image_url,
             caption: row.caption,
             created_at: row.created_at,
-            reactions: {},
+            reactions: row.reactions ?? {},
           }))
         );
       } catch (e) {
-        console.error("Error loading posts", e);
+        console.error(e);
         setError("Revolvr glitched out while loading the feed 😵‍💫");
       } finally {
         setIsLoading(false);
@@ -81,7 +81,6 @@ export default function DashboardPage() {
     setFile(selected);
   };
 
-  // Create a new post
   const handleCreatePost = async () => {
     if (!file) {
       setError("Add a photo before posting 🤪");
@@ -89,7 +88,7 @@ export default function DashboardPage() {
     }
 
     if (!userEmail) {
-      setError("Revolvr doesn’t know who you are yet. Try reloading ��‍💫");
+      setError("Revolvr doesn’t know who you are yet. Try reloading 😵‍💫");
       return;
     }
 
@@ -97,11 +96,11 @@ export default function DashboardPage() {
       setIsPosting(true);
       setError(null);
 
+      // Upload image to Supabase Storage
       const fileExt = file.name.split(".").pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `${userEmail}/${fileName}`;
 
-      // Storage bucket: "posts"
       const { data: storageData, error: storageError } = await supabase.storage
         .from("posts")
         .upload(filePath, file);
@@ -112,6 +111,7 @@ export default function DashboardPage() {
         data: { publicUrl },
       } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
+      // Insert row into posts table
       const { data, error: insertError } = await supabase
         .from("posts")
         .insert({
@@ -130,15 +130,15 @@ export default function DashboardPage() {
         image_url: data.image_url,
         caption: data.caption,
         created_at: data.created_at,
-        reactions: {},
+        reactions: data.reactions ?? {},
       };
 
       setPosts((prev) => [newPost, ...prev]);
       setCaption("");
       setFile(null);
-      setShowComposer(false); // close modal on success
+      setShowComposer(false);
     } catch (e) {
-      console.error("Error creating post", e);
+      console.error(e);
       setError("Revolvr glitched out while posting 😵‍💫 Try again.");
     } finally {
       setIsPosting(false);
@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
       setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
-      console.error("Error deleting post", e);
+      console.error(e);
       setError("Revolvr glitched out deleting that post 😵‍💫");
     }
   };
@@ -177,31 +177,29 @@ export default function DashboardPage() {
     );
 
     try {
-      // TODO: persist reactions later
+      // TODO: persist reactions to your backend if needed
     } catch (e) {
-      console.error("Error reacting to post", e);
+      console.error(e);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+    <div className="min-h-screen bg-[#050814]/95 text-white flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight">
-            Revolvr
-          </span>
+          <span className="text-xl font-semibold tracking-tight">Revolvr</span>
           <span className="text-lg">🔥</span>
         </div>
         <div className="flex items-center gap-2 text-xs sm:text-sm text-white/70">
           <span className="hidden sm:inline">Signed in as</span>
-          <span className="font-medium truncate max-w-[160px] sm:max-w-xs">
-            {userEmail ?? "mystery user"}
+          <span className="font-medium truncate max-w-[180px] sm:max-w-xs">
+            {userEmail ?? "…"}
           </span>
         </div>
       </header>
 
-      {/* Main content */}
+      {/* Content */}
       <main className="flex-1 flex justify-center">
         <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-3">
           {/* Error banner */}
@@ -218,12 +216,22 @@ export default function DashboardPage() {
           )}
 
           {/* Feed title */}
-          <div className="flex items-center justify-between mt-1 mb-1">
-            <h1 className="text-base font-semibold text-white/90">Live feed</h1>
-            <span className="text-xs text-white/50">v0.1 · social preview</span>
+          <div className="mt-1 mb-2">
+            <div className="flex items-center justify-between">
+              <h1 className="text-base font-semibold text-white/90">
+                Live feed
+              </h1>
+              <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-emerald-200">
+                Creator view
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-white/50">
+              Post from here. Everyone else can watch the chaos at{" "}
+              <span className="font-medium text-emerald-300">/feed</span>.
+            </p>
           </div>
 
-          {/* Feed body */}
+          {/* Posts */}
           {isLoading ? (
             <div className="text-center text-sm text-white/60 py-10">
               Loading the chaos…
@@ -238,7 +246,6 @@ export default function DashboardPage() {
                 <PostCard
                   key={post.id}
                   post={post}
-                  currentUserEmail={userEmail}
                   onDelete={() => handleDeletePost(post.id)}
                   onReact={handleReact}
                 />
@@ -260,7 +267,7 @@ export default function DashboardPage() {
       {/* Composer modal */}
       {showComposer && (
         <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm flex items-center justify-center px-3">
-          <div className="w-full max-w-md rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-4 shadow-xl shadow-black/40">
+          <div className="w-full max-w-md rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">New post</h2>
               <button
@@ -312,19 +319,12 @@ export default function DashboardPage() {
 
 type PostCardProps = {
   post: Post;
-  currentUserEmail: string | null;
   onDelete: () => void;
   onReact: (postId: string, emoji: string) => void;
 };
 
-const PostCard: React.FC<PostCardProps> = ({
-  post,
-  currentUserEmail,
-  onDelete,
-  onReact,
-}) => {
+const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onReact }) => {
   const [hasMounted, setHasMounted] = useState(false);
-
   const animationClass = useMemo(() => {
     const classes = [
       "rv-spin-in",
@@ -342,24 +342,13 @@ const PostCard: React.FC<PostCardProps> = ({
   }, []);
 
   const created = new Date(post.created_at);
-
-  const timeLabel = useMemo(() => {
-    const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
-    if (seconds < 60) return "Just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return created.toLocaleDateString();
-  }, [created]);
-
-  const canDelete =
-    currentUserEmail && post.user_email === currentUserEmail;
+  const timeLabel = created.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+    <article className="rv-post-card rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -367,20 +356,18 @@ const PostCard: React.FC<PostCardProps> = ({
             {post.user_email?.[0] ?? "R"}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
+            <span className="text-sm font-medium">
               {post.user_email ?? "Someone"}
             </span>
             <span className="text-[11px] text-white/40">{timeLabel}</span>
           </div>
         </div>
-        {canDelete && (
-          <button
-            onClick={onDelete}
-            className="text-[11px] text-white/50 hover:text-red-400"
-          >
-            •••
-          </button>
-        )}
+        <button
+          onClick={onDelete}
+          className="text-[11px] text-white/50 hover:text-red-400"
+        >
+          •••
+        </button>
       </div>
 
       {/* Image */}

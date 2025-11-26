@@ -1,268 +1,114 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* Base look */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  @apply antialiased;
+  background:
+    radial-gradient(circle at top, rgba(16, 185, 129, 0.15), transparent 55%),
+    radial-gradient(circle at bottom, rgba(59, 130, 246, 0.12), transparent 60%),
+    #020617;
+  color: #f9fafb;
 }
-/* Revolvr post entry animations */
 
+/* Emoji reaction button */
+.rv-emoji-button {
+  @apply inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-sm transition;
+}
+.rv-emoji-button:hover {
+  @apply bg-white/10 border-emerald-400/50;
+}
+.rv-emoji-button:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* Post card hover */
+.rv-post-card {
+  @apply transition-transform duration-200;
+}
+.rv-post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.8);
+}
+
+/* Fun entry animations for posts */
 @keyframes rv-spin-in {
   from {
+    transform: rotate(-6deg) scale(0.92);
     opacity: 0;
-    transform: scale(0.9) rotate(-8deg);
   }
   to {
+    transform: rotate(0deg) scale(1);
     opacity: 1;
-    transform: scale(1) rotate(0deg);
   }
 }
-
 @keyframes rv-bounce-in {
   0% {
+    transform: translateY(16px);
     opacity: 0;
-    transform: translateY(20px) scale(0.96);
   }
   60% {
+    transform: translateY(-4px);
     opacity: 1;
-    transform: translateY(-6px) scale(1.02);
   }
   100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes rv-jolt-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-  40% {
-    opacity: 1;
-    transform: translateX(6px);
-  }
-  70% {
-    transform: translateX(-3px);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-@keyframes rv-slide-in {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
-
+@keyframes rv-jolt-in {
+  0% {
+    transform: translateX(-14px) skewX(-4deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0) skewX(0deg);
+    opacity: 1;
+  }
+}
 @keyframes rv-glitch-in {
   0% {
+    transform: translate(-3px, 2px);
     opacity: 0;
-    transform: translate(-4px, 0);
-    filter: hue-rotate(10deg);
   }
-  40% {
-    opacity: 1;
-    transform: translate(4px, -2px);
-    filter: hue-rotate(-10deg);
+  30% {
+    transform: translate(3px, -2px);
   }
-  70% {
-    transform: translate(-2px, 1px);
-    filter: none;
+  60% {
+    transform: translate(-1px, 1px);
   }
   100% {
     transform: translate(0, 0);
-    filter: none;
-  }
-}
-
-.rv-spin-in {
-  animation: rv-spin-in 0.35s ease-out;
-}
-
-.rv-bounce-in {
-  animation: rv-bounce-in 0.4s ease-out;
-}
-
-.rv-jolt-in {
-  animation: rv-jolt-in 0.3s ease-out;
-}
-
-.rv-slide-in {
-  animation: rv-slide-in 0.3s ease-out;
-}
-
-.rv-glitch-in {
-  animation: rv-glitch-in 0.33s ease-out;
-}
-
-/* Emoji pop interaction */
-@keyframes rv-emoji-pop {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.3);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.rv-emoji-button {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.1s ease-out, transform 0.1s ease-out;
-}
-
-.rv-emoji-button:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.rv-emoji-button:active {
-  animation: rv-emoji-pop 0.18s ease-out;
-}
-
-/* Revolvr card entry animations */
-.rv-spin-in {
-  animation: rv-spin-in 0.32s ease-out;
-}
-
-.rv-bounce-in {
-  animation: rv-bounce-in 0.35s ease-out;
-}
-
-.rv-jolt-in {
-  animation: rv-jolt-in 0.28s ease-out;
-}
-
-.rv-glitch-in {
-  animation: rv-glitch-in 0.3s ease-out;
-}
-
-.rv-slide-in {
-  animation: rv-slide-in 0.28s ease-out;
-}
-
-@keyframes rv-spin-in {
-  from {
-    opacity: 0;
-    transform: scale(0.9) rotate(-4deg);
-  }
-  to {
     opacity: 1;
-    transform: scale(1) rotate(0deg);
   }
 }
-
-@keyframes rv-bounce-in {
-  0% {
-    opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(-3px) scale(1.02);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes rv-jolt-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-12px) skewX(-4deg);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0) skewX(0deg);
-  }
-}
-
-@keyframes rv-glitch-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-4px);
-  }
-  40% {
-    opacity: 1;
-    transform: translateX(4px);
-  }
-  70% {
-    transform: translateX(-2px);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
 @keyframes rv-slide-in {
-  from {
+  0% {
+    transform: translateY(22px);
     opacity: 0;
-    transform: translateY(16px);
   }
-  to {
-    opacity: 1;
+  100% {
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
-/* Emoji reaction pill buttons */
-.rv-emoji-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 8px;
-  border-radius: 9999px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid transparent;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-  transition:
-    transform 150ms ease-out,
-    box-shadow 150ms ease-out,
-    background-color 150ms ease-out,
-    border-color 150ms ease-out;
+.rv-spin-in {
+  animation: rv-spin-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-.rv-emoji-button:hover {
-  transform: translateY(-1px) scale(1.03);
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.5);
-  box-shadow: 0 0 12px 0 rgba(16, 185, 129, 0.25);
+.rv-bounce-in {
+  animation: rv-bounce-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-.rv-emoji-button:active {
-  transform: translateY(0px) scale(0.97);
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+.rv-jolt-in {
+  animation: rv-jolt-in 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rv-glitch-in {
+  animation: rv-glitch-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rv-slide-in {
+  animation: rv-slide-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
 }
