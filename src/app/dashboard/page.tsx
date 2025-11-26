@@ -1,7 +1,14 @@
-"use client"; // (for app router)
+"use client";
 
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  FormEvent,
+} from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClients";
-import React, { useEffect, useMemo, useState } from "react";
 
 type Post = {
   id: string;
@@ -9,86 +16,93 @@ type Post = {
   image_url: string;
   caption: string;
   created_at: string;
-  reactions?: Record<string, number>;
 };
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+
   const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isPosting, setIsPosting] = useState(false);
-  const [showComposer, setShowComposer] = useState(false);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isPosting, setIsPosting] = useState(false);
 
-  // Load user
+  // Load current user (redirect to /login if none)
   useEffect(() => {
-    const getUser = async () => {
+    const loadUser = async () => {
       try {
-        const { data, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error(error);
-          return;
-        }
-        setUserEmail(data.user?.email ?? null);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-
-    getUser();
-  }, []);
-
-  // Load posts
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setIsLoading(true);
-
-        const { data, error } = await supabase
-          .from("posts")
-          .select("id, user_email, image_url, caption, created_at, reactions")
-          .order("created_at", { ascending: false });
-
+        setLoadingUser(true);
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
         if (error) throw error;
 
-        setPosts(
-          (data ?? []).map((row: any) => ({
-            id: row.id,
-            user_email: row.user_email,
-            image_url: row.image_url,
-            caption: row.caption,
-            created_at: row.created_at,
-            reactions: row.reactions ?? {},
-          }))
-        );
+        if (!user || !user.email) {
+          router.replace("/login");
+          return;
+        }
+
+        setUserEmail(user.email);
       } catch (e) {
-        console.error(e);
-        setError("Revolvr glitched out while loading the feed 😵‍💫");
+        console.error("Error loading user", e);
+        setError("Revolvr glitched out checking your session 😵‍💫");
       } finally {
-        setIsLoading(false);
+        setLoadingUser(false);
       }
     };
 
-    fetchPosts();
+    loadUser();
+  }, [router]);
+
+  // Load posts (all posts for now – RLS protects insert per-user)
+  const loadPosts = useCallback(async () => {
+    try {
+      setIsLoadingPosts(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .from("posts")
+        .select("id, user_email, image_url, caption, created_at")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setPosts(data ?? []);
+    } catch (e) {
+      console.error("Error loading posts", e);
+      setError("Revolvr glitched out while loading the feed 😵‍💫");
+    } finally {
+      setIsLoadingPosts(false);
+    }
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files?.[0] ?? null;
-    setFile(selected);
+  useEffect(() => {
+    if (userEmail) {
+      loadPosts();
+    }
+  }, [userEmail, loadPosts]);
+
+  // Sign out
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace("/feed");
   };
 
-  const handleCreatePost = async () => {
+  // Create a post
+  const handleCreatePost = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!userEmail) return;
     if (!file) {
-      setError("Add a photo before posting 🤪");
-      return;
-    }
-
-    if (!userEmail) {
-      setError("Revolvr doesn’t know who you are yet. Try reloading 😵‍💫");
+      setError("Please add a photo before posting.");
       return;
     }
 
@@ -96,118 +110,115 @@ export default function DashboardPage() {
       setIsPosting(true);
       setError(null);
 
-      // Upload image to Supabase Storage
       const fileExt = file.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-      const filePath = `${userEmail}/${fileName}`;
+      const filePath = `${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${fileExt}`;
 
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from("posts")
-        .upload(filePath, file);
+      const { data: storageData, error: storageError } =
+        await supabase.storage.from("posts").upload(filePath, file);
 
-      if (storageError) throw storageError;
+      if (storageError || !storageData) {
+        throw storageError ?? new Error("Upload failed");
+      }
 
       const {
         data: { publicUrl },
-      } = supabase.storage.from("posts").getPublicUrl(storageData.path);
+      } = supabase.storage
+        .from("posts")
+        .getPublicUrl(storageData.path);
 
-      // Insert row into posts table
-      const { data, error: insertError } = await supabase
+      const { data: inserted, error: insertError } = await supabase
         .from("posts")
         .insert({
           user_email: userEmail,
           image_url: publicUrl,
-          caption,
+          caption: caption.trim(),
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      const newPost: Post = {
-        id: data.id,
-        user_email: data.user_email,
-        image_url: data.image_url,
-        caption: data.caption,
-        created_at: data.created_at,
-        reactions: data.reactions ?? {},
-      };
-
-      setPosts((prev) => [newPost, ...prev]);
+      setPosts((prev) => (inserted ? [inserted as Post, ...prev] : prev));
       setCaption("");
       setFile(null);
-      setShowComposer(false);
+      setIsComposerOpen(false);
     } catch (e) {
-      console.error(e);
+      console.error("Error creating post", e);
       setError("Revolvr glitched out while posting 😵‍💫 Try again.");
     } finally {
       setIsPosting(false);
     }
   };
 
+  // Delete a post
   const handleDeletePost = async (id: string) => {
     try {
-      const { error: deleteError } = await supabase
-        .from("posts")
-        .delete()
-        .eq("id", id);
-
-      if (deleteError) throw deleteError;
-
+      const { error } = await supabase.from("posts").delete().eq("id", id);
+      if (error) throw error;
       setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
-      console.error(e);
-      setError("Revolvr glitched out deleting that post 😵‍💫");
+      console.error("Error deleting post", e);
+      setError("Revolvr glitched out while deleting that post 😵‍💫");
     }
   };
 
-  const handleReact = async (postId: string, emoji: string) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId
-          ? {
-              ...p,
-              reactions: {
-                ...(p.reactions ?? {}),
-                [emoji]: (p.reactions?.[emoji] ?? 0) + 1,
-              },
-            }
-          : p
-      )
+  const creatorLabel = useMemo(() => {
+    if (!userEmail) return "Creator view";
+    return `${userEmail}`;
+  }, [userEmail]);
+
+  if (loadingUser) {
+    return (
+      <main className="rv-page rv-page-center">
+        <p className="rv-feed-empty">Loading Revolvr…</p>
+      </main>
     );
+  }
 
-    try {
-      // TODO: persist reactions to your backend if needed
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  if (!userEmail) {
+    // Redirect is already in motion, just render nothing pretty
+    return (
+      <main className="rv-page rv-page-center">
+        <p className="rv-feed-empty">Redirecting to login…</p>
+      </main>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#050814]/95 text-white flex flex-col">
+    <div className="rv-page">
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight">Revolvr</span>
-          <span className="text-lg">🔥</span>
+      <header className="rv-topbar">
+        <div className="rv-topbar-left">
+          <span className="rv-logo-text">Revolvr</span>
+          <span className="rv-logo-emoji">🔥</span>
         </div>
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-white/70">
-          <span className="hidden sm:inline">Signed in as</span>
-          <span className="font-medium truncate max-w-[180px] sm:max-w-xs">
-            {userEmail ?? "…"}
-          </span>
+
+        <div className="rv-topbar-right">
+          <span className="rv-topbar-creator">{creatorLabel}</span>
+          <a href="/feed" className="rv-pill-link">
+            Go to public feed
+          </a>
+          <button
+            type="button"
+            className="rv-pill-button rv-pill-secondary"
+            onClick={handleSignOut}
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-3">
+      {/* Main content */}
+      <main className="rv-main">
+        <div className="rv-feed-shell">
           {/* Error banner */}
           {error && (
-            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
+            <div className="rv-banner-error">
               <span>{error}</span>
               <button
-                className="text-xs underline"
+                className="rv-banner-dismiss"
                 onClick={() => setError(null)}
               >
                 Dismiss
@@ -215,204 +226,154 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Feed title */}
-          <div className="mt-1 mb-2">
-            <div className="flex items-center justify-between">
-              <h1 className="text-base font-semibold text-white/90">
-                Live feed
-              </h1>
-              <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[11px] uppercase tracking-[0.16em] text-emerald-200">
-                Creator view
+          {/* Header row */}
+          <div className="rv-feed-header">
+            <div className="rv-feed-title-row">
+              <h1 className="rv-feed-title">Live feed</h1>
+              <span className="rv-feed-version">
+                v0.1 · social preview · CREATOR VIEW
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-white/50">
+            <p className="rv-feed-subtitle">
               Post from here. Everyone else can watch the chaos at{" "}
-              <span className="font-medium text-emerald-300">/feed</span>.
+              <span className="rv-inline-link">/feed</span>.
             </p>
           </div>
 
+          {/* Composer button */}
+          <div className="rv-composer-row">
+            <button
+              type="button"
+              className="rv-primary-button"
+              onClick={() => setIsComposerOpen(true)}
+            >
+              + New post
+            </button>
+          </div>
+
           {/* Posts */}
-          {isLoading ? (
-            <div className="text-center text-sm text-white/60 py-10">
-              Loading the chaos…
-            </div>
+          {isLoadingPosts ? (
+            <div className="rv-feed-empty">Loading the feed…</div>
           ) : posts.length === 0 ? (
-            <div className="text-center text-sm text-white/60 py-10">
+            <div className="rv-feed-empty">
               No posts yet. Be the first to spin something into existence ✨
             </div>
           ) : (
-            <div className="space-y-4 pb-20">
+            <div className="rv-feed-list">
               {posts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={post}
-                  onDelete={() => handleDeletePost(post.id)}
-                  onReact={handleReact}
-                />
+                <article key={post.id} className="rv-card">
+                  <div className="rv-card-header">
+                    <div className="rv-card-user">
+                      <div className="rv-avatar">
+                        {(post.user_email ?? "R")[0].toUpperCase()}
+                      </div>
+                      <div className="rv-card-meta">
+                        <span className="rv-card-email">
+                          {post.user_email ?? "Someone"}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="rv-delete-link"
+                      onClick={() => handleDeletePost(post.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  <div className="rv-card-image-shell rv-slide-in">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={post.image_url}
+                      alt={post.caption}
+                      className="rv-card-image"
+                    />
+                  </div>
+
+                  {post.caption && (
+                    <p className="rv-card-caption">{post.caption}</p>
+                  )}
+
+                  <div className="rv-card-reactions-row">
+                    <div className="rv-emoji-row">
+                      {REACTION_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          className="rv-emoji-button"
+                          type="button"
+                        >
+                          <span>{emoji}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </article>
               ))}
             </div>
           )}
         </div>
       </main>
 
-      {/* Floating create button */}
-      <button
-        onClick={() => setShowComposer(true)}
-        className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 h-14 w-14 rounded-full bg-emerald-500 hover:bg-emerald-400 active:scale-95 shadow-lg shadow-emerald-500/40 transition flex items-center justify-center text-3xl"
-        aria-label="Create post"
-      >
-        +
-      </button>
-
       {/* Composer modal */}
-      {showComposer && (
-        <div className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm flex items-center justify-center px-3">
-          <div className="w-full max-w-md rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">New post</h2>
+      {isComposerOpen && (
+        <div className="rv-modal-backdrop">
+          <div className="rv-modal">
+            <div className="rv-modal-header">
+              <h2 className="rv-modal-title">New post</h2>
               <button
-                className="text-sm text-white/60 hover:text-white"
-                onClick={() => !isPosting && setShowComposer(false)}
+                type="button"
+                className="rv-modal-close"
+                onClick={() => !isPosting && setIsComposerOpen(false)}
               >
                 Close
               </button>
             </div>
 
-            <label className="block border border-dashed border-white/20 rounded-xl p-4 text-sm text-white/60 cursor-pointer hover:border-emerald-400/70 hover:text-white transition">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileChange}
-              />
-              {file ? (
-                <span className="font-medium text-emerald-300">
-                  {file.name}
-                </span>
-              ) : (
-                <span>Tap to add a photo</span>
-              )}
-            </label>
+            <form className="rv-modal-body" onSubmit={handleCreatePost}>
+              <label className="rv-field-label">
+                Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) =>
+                    setFile(e.target.files ? e.target.files[0] : null)
+                  }
+                  className="rv-input-file"
+                />
+              </label>
 
-            <input
-              type="text"
-              maxLength={140}
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              placeholder="Say something wild…"
-              className="w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-500"
-            />
+              <label className="rv-field-label">
+                Caption
+                <textarea
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  className="rv-input-textarea"
+                  placeholder="Say something wild…"
+                />
+              </label>
 
-            <button
-              onClick={handleCreatePost}
-              disabled={isPosting}
-              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] transition text-sm font-semibold py-2.5 disabled:opacity-60 disabled:hover:bg-emerald-500"
-            >
-              {isPosting ? "Posting…" : "Post to Revolvr"}
-            </button>
+              <div className="rv-modal-footer">
+                <button
+                  type="button"
+                  className="rv-pill-button rv-pill-secondary"
+                  onClick={() => !isPosting && setIsComposerOpen(false)}
+                  disabled={isPosting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rv-primary-button"
+                  disabled={isPosting}
+                >
+                  {isPosting ? "Posting…" : "Post to Revolvr"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
     </div>
   );
 }
-
-type PostCardProps = {
-  post: Post;
-  onDelete: () => void;
-  onReact: (postId: string, emoji: string) => void;
-};
-
-const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onReact }) => {
-  const [hasMounted, setHasMounted] = useState(false);
-  const animationClass = useMemo(() => {
-    const classes = [
-      "rv-spin-in",
-      "rv-bounce-in",
-      "rv-jolt-in",
-      "rv-glitch-in",
-      "rv-slide-in",
-    ];
-    const random = Math.floor(Math.random() * classes.length);
-    return classes[random];
-  }, []);
-
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  const created = new Date(post.created_at);
-  const timeLabel = created.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  return (
-    <article className="rv-post-card rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-            {post.user_email?.[0] ?? "R"}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium">
-              {post.user_email ?? "Someone"}
-            </span>
-            <span className="text-[11px] text-white/40">{timeLabel}</span>
-          </div>
-        </div>
-        <button
-          onClick={onDelete}
-          className="text-[11px] text-white/50 hover:text-red-400"
-        >
-          •••
-        </button>
-      </div>
-
-      {/* Image */}
-      <div
-        className={`overflow-hidden rounded-xl bg-black/40 ${
-          hasMounted ? animationClass : ""
-        }`}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={post.image_url}
-          alt={post.caption}
-          className="w-full h-auto block"
-        />
-      </div>
-
-      {/* Caption */}
-      {post.caption && (
-        <p className="mt-2 text-sm text-white/90 break-words">
-          {post.caption}
-        </p>
-      )}
-
-      {/* Reactions */}
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex gap-2">
-          {REACTION_EMOJIS.map((emoji) => {
-            const count = post.reactions?.[emoji] ?? 0;
-            return (
-              <button
-                key={emoji}
-                onClick={() => onReact(post.id, emoji)}
-                className="rv-emoji-button text-lg leading-none"
-              >
-                <span>{emoji}</span>
-                {count > 0 && (
-                  <span className="ml-1 text-[11px] text-white/60">
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </article>
-  );
-};
