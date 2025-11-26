@@ -18,10 +18,10 @@ body {
 
 /* Emoji reaction button */
 .rv-emoji-button {
-  @apply inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-sm transition;
+  @apply inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-900 px-2 py-1 text-sm transition;
 }
 .rv-emoji-button:hover {
-  @apply bg-white/10 border-emerald-400/50;
+  @apply bg-slate-800 border-emerald-400;
 }
 .rv-emoji-button:active {
   transform: translateY(1px) scale(0.97);
