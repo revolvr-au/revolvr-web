@@ -2,9 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Revolvr custom bits */
+/* Revolvr custom bits – plain CSS */
 .rv-emoji-button {
-  @apply inline-flex items-center justify-center rounded-full px-2 py-1 bg-white/5 border border-white/10 hover:bg-white/10 text-base transition;
+  display: inline-flex;              /* inline-flex */
+  align-items: center;               /* items-center */
+  justify-content: center;           /* justify-center */
+  border-radius: 9999px;             /* rounded-full */
+  padding: 0.25rem 0.5rem;           /* py-1 px-2 */
+  background-color: rgba(255, 255, 255, 0.05); /* bg-white/5 */
+  border: 1px solid rgba(255, 255, 255, 0.10); /* border-white/10 */
+  font-size: 1rem;                   /* text-base */
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;            /* transition */
+}
+
+.rv-emoji-button:hover {
+  background-color: rgba(255, 255, 255, 0.10); /* hover:bg-white/10 */
 }
 
 /* Fun entrance animations for posts */
