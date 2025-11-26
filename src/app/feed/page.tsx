@@ -75,10 +75,16 @@ export default function PublicFeedPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight">Revolvr</span>
+          <span className="text-xl font-semibold tracking-tight">
+            Revolvr
+          </span>
           <span className="text-lg">🔥</span>
         </div>
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
+          <span className="hidden sm:inline">
+            Anyone can watch this. Want to post? Sign in and head to your
+            dashboard.
+          </span>
           <a
             href="/login"
             className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
@@ -109,16 +115,8 @@ export default function PublicFeedPage() {
             <h1 className="text-base font-semibold text-white/90">
               Public feed
             </h1>
-            <span className="text-xs text-white/50">
-              v0.1 · social preview
-            </span>
+            <span className="text-xs text-white/50">v0.1 · social preview</span>
           </div>
-
-          {/* Tiny explainer under title */}
-          <p className="text-[11px] text-white/40 mb-2">
-            Anyone can watch this. Want to post? Sign in and head to your
-            dashboard.
-          </p>
 
           {/* Feed body */}
           {isLoading ? (
@@ -185,7 +183,7 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
   }, [created]);
 
   return (
-    <article className="rv-post-card rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -217,9 +215,7 @@ const PublicPostCard: React.FC<PublicPostCardProps> = ({ post, onReact }) => {
 
       {/* Caption */}
       {post.caption && (
-        <p className="mt-2 text-sm text-white/90 break-words">
-          {post.caption}
-        </p>
+        <p className="mt-2 text-sm text-white/90 break-words">{post.caption}</p>
       )}
 
       {/* Reactions (local only) */}
