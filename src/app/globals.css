@@ -2,30 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Revolvr custom bits – plain CSS, no @apply */
+/* Revolvr custom bits - written as plain CSS, no @apply */
 
 .rv-emoji-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;          /* rounded-full */
-  padding: 0.25rem 0.5rem;        /* py-1 px-2 */
+  border-radius: 9999px; /* rounded-full */
+  padding: 0.25rem 0.5rem; /* py-1 px-2 */
   background-color: rgba(255, 255, 255, 0.05); /* bg-white/5 */
   border: 1px solid rgba(255, 255, 255, 0.1);  /* border-white/10 */
-  font-size: 1rem;                /* text-base */
+  font-size: 1rem;
   line-height: 1;
-  cursor: pointer;
-  transition:
-    background-color 150ms ease,
-    transform 150ms ease,
-    box-shadow 150ms ease,
-    opacity 150ms ease;
+  transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .rv-emoji-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);  /* hover:bg-white/10 */
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  background-color: rgba(255, 255, 255, 0.1); /* hover:bg-white/10 */
 }
 
 /* Fun entrance animations for posts */
@@ -33,19 +26,15 @@
 .rv-spin-in {
   animation: rv-spin-in 0.5s ease-out;
 }
-
 .rv-bounce-in {
   animation: rv-bounce-in 0.45s ease-out;
 }
-
 .rv-jolt-in {
   animation: rv-jolt-in 0.45s ease-out;
 }
-
 .rv-glitch-in {
   animation: rv-glitch-in 0.4s ease-out;
 }
-
 .rv-slide-in {
   animation: rv-slide-in 0.45s ease-out;
 }
