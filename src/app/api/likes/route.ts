@@ -1,6 +1,7 @@
 // src/app/api/likes/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { pickSpinnerOutcome } from "@/lib/spinner"; // for the spinner route
 
 // POST /api/likes  -> like a post
 export async function POST(req: Request) {
