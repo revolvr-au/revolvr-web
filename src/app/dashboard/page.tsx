@@ -187,9 +187,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="rv-page">
+      return (
+    <div className="rv-page min-h-screen bg-[#050816] text-white">
+
       {/* Top bar */}
-      <header className="rv-topbar">
+      <header className="rv-topbar flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
         <div className="rv-topbar-left">
           <span className="rv-logo-text">Revolvr</span>
           <span className="rv-logo-emoji">🔥</span>
@@ -215,8 +217,10 @@ export default function DashboardPage() {
       </header>
 
       {/* Main content */}
-      <main className="rv-main">
-        <div className="rv-feed-shell">
+      <main className="rv-main max-w-5xl mx-auto px-4 py-8">
+
+        <div className="rv-feed-shell space-y-6">
+
           {/* Error banner */}
           {error && (
             <div className="rv-banner-error">
