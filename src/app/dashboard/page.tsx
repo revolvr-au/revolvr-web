@@ -233,7 +233,7 @@ export default function DashboardPage() {
           {/* Header row */}
           <div className="rv-feed-header">
             <div className="rv-feed-title-row">
-              <h1 className="rv-feed-title">Live feed</h1>
+              <h1 className="rv-feed-title">Live feed · DEBUG 1</h1>
               <span className="rv-feed-version">
                 v0.1 · social preview · CREATOR VIEW
               </span>
