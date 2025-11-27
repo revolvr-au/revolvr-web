@@ -1,28 +1,30 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+/* or, if you want the explicit layers:
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+*/
 
-/* Revolvr custom bits - written as plain CSS, no @apply */
+
+/* Revolvr custom bits - no @apply, just plain CSS */
 
 .rv-emoji-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px; /* rounded-full */
-  padding: 0.25rem 0.5rem; /* py-1 px-2 */
-  background-color: rgba(255, 255, 255, 0.05); /* bg-white/5 */
-  border: 1px solid rgba(255, 255, 255, 0.1);  /* border-white/10 */
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem; /* px-2 py-1 equivalent */
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   font-size: 1rem;
-  line-height: 1;
-  transition: background-color 150ms ease, border-color 150ms ease;
+  transition: background-color 150ms ease, transform 150ms ease;
 }
 
 .rv-emoji-button:hover {
-  background-color: rgba(255, 255, 255, 0.1); /* hover:bg-white/10 */
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Fun entrance animations for posts */
-
 .rv-spin-in {
   animation: rv-spin-in 0.5s ease-out;
 }

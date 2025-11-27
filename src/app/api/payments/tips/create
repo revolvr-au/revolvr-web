@@ -1,0 +1,32 @@
+// /src/app/api/payments/tip/create/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+export async function POST(req: NextRequest) {
+  const { creatorId, amountCents, message } = await req.json();
+
+  // TODO: auth, validate creatorId, etc.
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "payment",
+    line_items: [
+      {
+        price_data: {
+          currency: "aud",
+          product_data: {
+            name: "Revolvr tip",
+            metadata: { type: "tip", creatorId, message },
+          },
+          unit_amount: amountCents,
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/thank-you?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancelled`,
+  });
+
+  return NextResponse.json({ url: session.url });
+}
