@@ -1,11 +1,18 @@
-import "@/app/globals.css";
+// src/app/layout.tsx
 
-export const metadata = {
+import "./globals.css"; // make sure all rv-* styles + tailwind are loaded globally
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "Revolvr",
-  description: "Social feed",
+  description: "Revolvr – social preview",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body>{children}</body>
