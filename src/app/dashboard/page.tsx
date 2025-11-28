@@ -1,3 +1,4 @@
+cat <<'EOF' > src/app/dashboard/page.tsx
 "use client";
 
 import React, {
@@ -34,8 +35,54 @@ export default function DashboardPage() {
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isPosting, setIsPosting] = useState(false);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
 
-  // Load current user (redirect to /login if none)
+  // --- Stripe test tip handler ---
+  async function handleTestTip() {
+    if (!userEmail) {
+      setError("You need to be logged in to tip.");
+      return;
+    }
+
+    try {
+      setIsStartingCheckout(true);
+      setError(null);
+
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode: "tip",
+          userEmail,
+          amountCents: 200, // $2 AUD
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Checkout failed:", text);
+        setError("Could not start payment. Try again.");
+        return;
+      }
+
+      const data = (await res.json()) as { url?: string };
+
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError("Stripe did not return a checkout URL.");
+      }
+    } catch (err) {
+      console.error("Error creating checkout:", err);
+      setError("Revolvr glitched out starting Stripe checkout 😵‍💫");
+    } finally {
+      setIsStartingCheckout(false);
+    }
+  }
+
+  // --- Load current user (redirect to /login if none) ---
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -63,7 +110,7 @@ export default function DashboardPage() {
     loadUser();
   }, [router]);
 
-  // Load posts (all posts for now – RLS protects insert per-user)
+  // --- Load posts ---
   const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
@@ -91,13 +138,13 @@ export default function DashboardPage() {
     }
   }, [userEmail, loadPosts]);
 
-  // Sign out
+  // --- Sign out ---
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/feed");
   };
 
-  // Create a post
+  // --- Create a post ---
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!userEmail) return;
@@ -150,7 +197,7 @@ export default function DashboardPage() {
     }
   };
 
-  // Delete a post
+  // --- Delete a post ---
   const handleDeletePost = async (id: string) => {
     try {
       const { error } = await supabase.from("posts").delete().eq("id", id);
@@ -167,6 +214,7 @@ export default function DashboardPage() {
     return `${userEmail}`;
   }, [userEmail]);
 
+  // --- Loading / not logged in states ---
   if (loadingUser) {
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
@@ -178,7 +226,6 @@ export default function DashboardPage() {
   }
 
   if (!userEmail) {
-    // Redirect is already in motion, just render nothing pretty
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
         <p className="rv-feed-empty text-sm text-white/70">
@@ -188,6 +235,7 @@ export default function DashboardPage() {
     );
   }
 
+  // --- Main UI ---
   return (
     <div className="rv-page min-h-screen bg-[#050816] text-white">
       {/* Top bar */}
@@ -240,7 +288,7 @@ export default function DashboardPage() {
           <div className="rv-feed-header space-y-1">
             <div className="rv-feed-title-row flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
               <h1 className="rv-feed-title text-2xl sm:text-3xl font-semibold">
-                Live feed · DEBUG 1
+                Live feed · PAYMENTS DEBUG
               </h1>
               <span className="rv-feed-version text-xs text-white/60">
                 v0.1 · social preview · CREATOR VIEW
@@ -252,14 +300,23 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Composer button */}
-          <div className="rv-composer-row">
+          {/* Composer + Stripe test button */}
+          <div className="rv-composer-row flex flex-col sm:flex-row gap-3">
             <button
               type="button"
               className="rv-primary-button inline-flex items-center justify-center rounded-full px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-sm font-medium shadow-lg shadow-emerald-500/25 transition"
               onClick={() => setIsComposerOpen(true)}
             >
               + New post
+            </button>
+
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs sm:text-sm font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60"
+              disabled={!userEmail || isStartingCheckout}
+              onClick={handleTestTip}
+            >
+              {isStartingCheckout ? "Starting tip…" : "Test $2 tip (Stripe)"}
             </button>
           </div>
 
@@ -351,7 +408,10 @@ export default function DashboardPage() {
               </button>
             </div>
 
-            <form className="rv-modal-body px-4 py-3 space-y-4" onSubmit={handleCreatePost}>
+            <form
+              className="rv-modal-body px-4 py-3 space-y-4"
+              onSubmit={handleCreatePost}
+            >
               <label className="rv-field-label text-sm font-medium space-y-1">
                 <span>Image</span>
                 <input
@@ -398,3 +458,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+EOF
