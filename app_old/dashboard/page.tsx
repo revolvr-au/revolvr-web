@@ -1,42 +1,98 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+import React, { useState } from "react";
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const { session, loading } = useSupabaseAuth();
+  const [status, setStatus] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!loading && !session) {
-      // Not logged in → back to landing
-      router.replace('/');
+  async function handleTestTip() {
+    try {
+      setStatus("Calling /api/payments/checkout…");
+
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode: "tip",
+          userEmail: "revolvr.au@gmail.com",
+          amountCents: 200, // $2 AUD
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Checkout failed:", text);
+        setStatus("Checkout failed: " + text.slice(0, 160));
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Checkout response:", data);
+
+      if (data.url) {
+        setStatus("Redirecting to Stripe Checkout…");
+        window.location.href = data.url;
+      } else {
+        setStatus("Stripe did not return a checkout URL.");
+      }
+    } catch (err: any) {
+      console.error("Error creating checkout:", err);
+      setStatus("Error: " + (err?.message ?? "unknown"));
     }
-  }, [loading, session, router]);
-
-  if (loading) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-        <p>Checking your session…</p>
-      </main>
-    );
-  }
-
-  if (!session) {
-    // Short-circuit render while redirect happens
-    return null;
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-4">Revolvr Dashboard</h1>
-      <p className="text-slate-300 mb-2">
-        You are logged in as <span className="font-mono">{session.user.email}</span>.
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#050816",
+        color: "white",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "16px",
+        fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, sans-serif",
+      }}
+    >
+      <h1 style={{ fontSize: "28px", fontWeight: 700 }}>
+        APP_OLD Dashboard · PAYMENT DEBUG
+      </h1>
+      <p style={{ fontSize: "12px", opacity: 0.7 }}>
+        File: <code>app_old/dashboard/page.tsx</code>
       </p>
-      <p className="text-slate-400">
-        This is where we&apos;ll build the real control panel for your Revolvr idea.
-      </p>
+
+      <button
+        type="button"
+        onClick={handleTestTip}
+        style={{
+          padding: "12px 24px",
+          borderRadius: "999px",
+          border: "none",
+          background: "#6366f1",
+          color: "white",
+          fontSize: "14px",
+          fontWeight: 600,
+          cursor: "pointer",
+        }}
+      >
+        Test $2 tip (Stripe)
+      </button>
+
+      {status && (
+        <p
+          style={{
+            fontSize: "12px",
+            opacity: 0.8,
+            maxWidth: "520px",
+            textAlign: "center",
+          }}
+        >
+          STATUS: {status}
+        </p>
+      )}
     </main>
   );
 }
