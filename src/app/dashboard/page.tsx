@@ -7,6 +7,7 @@ import React, {
   useState,
   FormEvent,
 } from "react";
+
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClients";
 
@@ -34,54 +35,8 @@ export default function DashboardPage() {
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isPosting, setIsPosting] = useState(false);
-  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
 
-  // --- Stripe test tip handler ---
-  async function handleTestTip() {
-    if (!userEmail) {
-      setError("You need to be logged in to tip.");
-      return;
-    }
-
-    try {
-      setIsStartingCheckout(true);
-      setError(null);
-
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mode: "tip",
-          userEmail,
-          amountCents: 200, // $2 AUD
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        console.error("Checkout failed:", text);
-        setError("Could not start payment. Try again.");
-        return;
-      }
-
-      const data = (await res.json()) as { url?: string };
-
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Stripe did not return a checkout URL.");
-      }
-    } catch (err) {
-      console.error("Error creating checkout:", err);
-      setError("Revolvr glitched out starting Stripe checkout 😵‍💫");
-    } finally {
-      setIsStartingCheckout(false);
-    }
-  }
-
-  // --- Load current user (redirect to /login if none) ---
+  // Load current user (redirect to /login if none)
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -109,7 +64,7 @@ export default function DashboardPage() {
     loadUser();
   }, [router]);
 
-  // --- Load posts ---
+  // Load posts (all posts for now – RLS protects insert per-user)
   const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
@@ -137,13 +92,13 @@ export default function DashboardPage() {
     }
   }, [userEmail, loadPosts]);
 
-  // --- Sign out ---
+  // Sign out
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/feed");
   };
 
-  // --- Create a post ---
+  // Create a post
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!userEmail) return;
@@ -196,7 +151,7 @@ export default function DashboardPage() {
     }
   };
 
-  // --- Delete a post ---
+  // Delete a post
   const handleDeletePost = async (id: string) => {
     try {
       const { error } = await supabase.from("posts").delete().eq("id", id);
@@ -208,12 +163,52 @@ export default function DashboardPage() {
     }
   };
 
+  // 🔥 NEW: Boost a post (uses unified checkout endpoint)
+  const handleBoostPost = async (postId: string, boostAmountCents = 500) => {
+    if (!userEmail) {
+      setError("You need to be logged in to boost a post.");
+      return;
+    }
+
+    try {
+      setError(null);
+
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode: "boost",
+          userEmail,
+          amountCents: boostAmountCents, // e.g. 500 = A$5.00
+          postId,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Boost checkout failed", await res.text());
+        setError("Could not start boost payment. Try again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError("Stripe did not return a checkout URL for boost.");
+      }
+    } catch (err) {
+      console.error("Error creating boost checkout:", err);
+      setError("Revolvr glitched out starting a boost 😵‍💫");
+    }
+  };
+
   const creatorLabel = useMemo(() => {
     if (!userEmail) return "Creator view";
     return `${userEmail}`;
   }, [userEmail]);
 
-  // --- Loading / not logged in states ---
   if (loadingUser) {
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
@@ -225,6 +220,7 @@ export default function DashboardPage() {
   }
 
   if (!userEmail) {
+    // Redirect is already in motion, just render nothing pretty
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
         <p className="rv-feed-empty text-sm text-white/70">
@@ -234,7 +230,6 @@ export default function DashboardPage() {
     );
   }
 
-  // --- Main UI ---
   return (
     <div className="rv-page min-h-screen bg-[#050816] text-white">
       {/* Top bar */}
@@ -283,40 +278,74 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Header row */}
-          <div className="rv-feed-header space-y-1">
-            <div className="rv-feed-title-row flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
-              <h1 className="rv-feed-title text-2xl sm:text-3xl font-semibold">
-                Live feed · PAYMENTS DEBUG
-              </h1>
-              <span className="rv-feed-version text-xs text-white/60">
-                v0.1 · social preview · CREATOR VIEW
-              </span>
+          {/* Header row + tip test */}
+          <div className="flex flex-col gap-3">
+            <div className="rv-feed-header space-y-1">
+              <div className="rv-feed-title-row flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                <h1 className="rv-feed-title text-2xl sm:text-3xl font-semibold">
+                  Live feed · PAYMENTS DEBUG
+                </h1>
+                <span className="rv-feed-version text-xs text-white/60">
+                  v0.1 · social preview · CREATOR VIEW
+                </span>
+              </div>
+              <p className="rv-feed-subtitle text-sm text-white/70">
+                Post from here. Everyone else can watch the chaos at{" "}
+                <span className="rv-inline-link text-white">/feed</span>.
+              </p>
             </div>
-            <p className="rv-feed-subtitle text-sm text-white/70">
-              Post from here. Everyone else can watch the chaos at{" "}
-              <span className="rv-inline-link text-white">/feed</span>.
-            </p>
-          </div>
 
-          {/* Composer + Stripe test button */}
-          <div className="rv-composer-row flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              className="rv-primary-button inline-flex items-center justify-center rounded-full px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-sm font-medium shadow-lg shadow-emerald-500/25 transition"
-              onClick={() => setIsComposerOpen(true)}
-            >
-              + New post
-            </button>
+            <div className="rv-composer-row flex gap-3">
+              <button
+                type="button"
+                className="rv-primary-button inline-flex items-center justify-center rounded-full px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-sm font-medium shadow-lg shadow-emerald-500/25 transition"
+                onClick={() => setIsComposerOpen(true)}
+              >
+                + New post
+              </button>
 
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs sm:text-sm font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60"
-              disabled={!userEmail || isStartingCheckout}
-              onClick={handleTestTip}
-            >
-              {isStartingCheckout ? "Starting tip…" : "Test $2 tip (Stripe)"}
-            </button>
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs sm:text-sm font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60"
+                disabled={!userEmail}
+                onClick={async () => {
+                  if (!userEmail) return;
+                  try {
+                    const res = await fetch("/api/payments/checkout", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        mode: "tip",
+                        userEmail,
+                        amountCents: 200, // A$2.00
+                      }),
+                    });
+
+                    if (!res.ok) {
+                      console.error("Checkout failed", await res.text());
+                      setError("Could not start payment. Try again.");
+                      return;
+                    }
+
+                    const data = await res.json();
+                    if (data.url) {
+                      window.location.href = data.url;
+                    } else {
+                      setError("Stripe did not return a checkout URL.");
+                    }
+                  } catch (err) {
+                    console.error("Error creating checkout:", err);
+                    setError(
+                      "Revolvr glitched out starting Stripe checkout 😵‍💫"
+                    );
+                  }
+                }}
+              >
+                Test $2 tip (Stripe)
+              </button>
+            </div>
           </div>
 
           {/* Posts */}
@@ -346,13 +375,23 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="rv-delete-link text-xs text-red-300 hover:text-red-200 underline"
-                      onClick={() => handleDeletePost(post.id)}
-                    >
-                      Delete
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {/* NEW: Boost button on each card */}
+                      <button
+                        type="button"
+                        className="text-xs sm:text-sm px-3 py-1 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-500/30"
+                        onClick={() => handleBoostPost(post.id, 500)} // A$5.00
+                      >
+                        Boost this post (A$5)
+                      </button>
+                      <button
+                        type="button"
+                        className="rv-delete-link text-xs text-red-300 hover:text-red-200 underline"
+                        onClick={() => handleDeletePost(post.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
 
                   <div className="rv-card-image-shell rv-slide-in">
