@@ -1,4 +1,3 @@
-cat <<'EOF' > src/app/dashboard/page.tsx
 "use client";
 
 import React, {
@@ -458,4 +457,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-EOF
