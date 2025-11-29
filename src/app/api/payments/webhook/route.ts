@@ -1,54 +1,77 @@
 // src/app/api/payments/webhook/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs"; // ensures Node runtime for this route
+export const runtime = "nodejs"; // make sure this is here
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  // Re-use your existing API version setup if you had one.
+  // This cast avoids the weird "2025-11-17.clover" type issue.
+  apiVersion: process.env.STRIPE_API_VERSION as Stripe.LatestApiVersion,
+});
+
+// Admin Supabase client (server-side only)
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+);
 
 export async function POST(req: NextRequest) {
-  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-  if (!stripeSecretKey) {
-    console.error("❌ STRIPE_SECRET_KEY is not set");
-    return NextResponse.json(
-      { error: "Stripe not configured" },
-      { status: 500 }
-    );
+  const sig = req.headers.get("stripe-signature");
+  if (!sig) {
+    return new NextResponse("Missing Stripe signature", { status: 400 });
   }
 
-  const stripe = new Stripe(stripeSecretKey);
-
-  // Stripe sends the raw body + signature header
   const rawBody = await req.text();
-  const sig = req.headers.get("stripe-signature");
 
   let event: Stripe.Event;
-
   try {
-    if (webhookSecret && sig) {
-      // ✅ Properly verify webhook when secret is available
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-    } else {
-      // 🟡 Fallback for local testing without webhook secret:
-      // try to parse JSON directly (useful if you call this manually)
-      event = JSON.parse(rawBody) as Stripe.Event;
-    }
+    event = stripe.webhooks.constructEvent(
+      rawBody,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET!,
+    );
   } catch (err: any) {
-    console.error("❌ Error verifying Stripe webhook:", err.message);
+    console.error("❌ Stripe webhook signature error:", err.message);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  // 🔍 You can inspect event.type here and branch later.
-  // For now, we just log and return 200 so builds + deploys work.
-  console.log("✅ Received Stripe event:", event.type);
+  // We only care about successful checkouts
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
 
-  // TODO: later:
-  // if (event.type === "checkout.session.completed") {
-  //   const session = event.data.object as Stripe.Checkout.Session;
-  //   const metadata = session.metadata || {};
-  //   // handle tip/boost/credits based on metadata.type
-  // }
+    const mode = session.metadata?.mode;        // "tip" | "boost" | whatever we send
+    const postId = session.metadata?.postId;    // we already send this for boosts
+    const userEmail =
+      session.customer_details?.email ?? session.metadata?.userEmail ?? null;
 
+    console.log("✅ checkout.session.completed", {
+      mode,
+      postId,
+      userEmail,
+    });
+
+    // If it's a boost, mark the post as boosted for 24h
+    if (mode === "boost" && postId) {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // +24h
+
+      const { error } = await supabaseAdmin
+        .from("posts")
+        .update({
+          is_boosted: true,
+          boost_expires_at: expiresAt.toISOString(),
+        })
+        .eq("id", postId);
+
+      if (error) {
+        console.error("❌ Failed to mark post as boosted", error);
+      } else {
+        console.log("✨ Post boosted in DB", { postId, expiresAt });
+      }
+    }
+  }
+
+  // Always return 200 so Stripe doesn't keep retrying (unless we had a signature error above)
   return new NextResponse("ok", { status: 200 });
 }

@@ -17,7 +17,10 @@ type Post = {
   image_url: string;
   caption: string;
   created_at: string;
+  is_boosted: boolean | null;       // new
+  boost_expires_at?: string | null; // optional, if you want it
 };
+
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
 
@@ -71,9 +74,15 @@ export default function DashboardPage() {
       setError(null);
 
       const { data, error } = await supabase
-        .from("posts")
-        .select("id, user_email, image_url, caption, created_at")
-        .order("created_at", { ascending: false });
+  .from("posts")
+  .select(
+    "id, user_email, image_url, caption, created_at, is_boosted, boost_expires_at",
+  )
+  // Boosted posts first…
+  .order("is_boosted", { ascending: false })
+  // …then newest posts
+  .order("created_at", { ascending: false });
+
 
       if (error) throw error;
 
