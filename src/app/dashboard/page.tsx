@@ -8,9 +8,9 @@ import React, {
   FormEvent,
 } from "react";
 
-import SpinButton from "./_spinButton";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClients";
+import SpinButton from "./_spinButton";
 
 type Post = {
   id: string;
@@ -67,7 +67,7 @@ export default function DashboardPage() {
     loadUser();
   }, [router]);
 
-  // Load posts: boosted first, then by newest
+  // Load posts: boosted first, then newest
   const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
@@ -78,9 +78,7 @@ export default function DashboardPage() {
         .select(
           "id, user_email, image_url, caption, created_at, is_boosted, boost_expires_at"
         )
-        // boosted posts first
         .order("is_boosted", { ascending: false })
-        // then newest posts
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -220,7 +218,9 @@ export default function DashboardPage() {
   if (loadingUser) {
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
-        <p className="rv-feed-empty text-sm text-white/70">Loading Revolvr…</p>
+        <p className="rv-feed-empty text-sm text-white/70">
+          Loading Revolvr…
+        </p>
       </main>
     );
   }
@@ -284,7 +284,7 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Header row + tip test */}
+          {/* Header row + payment test buttons */}
           <div className="flex flex-col gap-3">
             <div className="rv-feed-header space-y-1">
               <div className="rv-feed-title-row flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
@@ -301,7 +301,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div className="rv-composer-row flex gap-3">
+            <div className="rv-composer-row flex flex-wrap gap-3">
               <button
                 type="button"
                 className="rv-primary-button inline-flex items-center justify-center rounded-full px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-sm font-medium shadow-lg shadow-emerald-500/25 transition"
@@ -310,6 +310,7 @@ export default function DashboardPage() {
                 + New post
               </button>
 
+              {/* Test tip button */}
               <button
                 type="button"
                 className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs sm:text-sm font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60"
@@ -350,9 +351,10 @@ export default function DashboardPage() {
                 }}
               >
                 Test $2 tip (Stripe)
-              <SpinButton userEmail={userEmail} />
-              <SpinButton userEmail={userEmail} />
               </button>
+
+              {/* Single spinner button */}
+              <SpinButton userEmail={userEmail} />
             </div>
           </div>
 
@@ -377,12 +379,12 @@ export default function DashboardPage() {
                       <div className="rv-avatar h-9 w-9 rounded-full bg-emerald-500/80 flex items-center justify-center text-sm font-semibold">
                         {(post.user_email ?? "R")[0].toUpperCase()}
                       </div>
-                      <div className="rv-card-meta">
+                      <div className="rv-card-meta flex items-center gap-2">
                         <span className="rv-card-email text-sm font-medium">
                           {post.user_email ?? "Someone"}
                         </span>
                         {post.is_boosted && (
-                          <span className="ml-2 inline-flex items-center rounded-full bg-amber-400/20 border border-amber-300/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
+                          <span className="inline-flex items-center rounded-full bg-amber-400/20 border border-amber-300/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
                             Boosted
                           </span>
                         )}
