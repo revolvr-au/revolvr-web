@@ -1,122 +1,70 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+export const runtime = "nodejs";
 
-type CheckoutMode = "tip" | "boost";
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20" as any,
+});
 
-export async function POST(req: Request) {
+type CheckoutMode = "tip" | "boost" | "spin";
+
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const {
-      mode,
-      userEmail,
-      amountCents,
-      priceId,
-      quantity = 1,
-      postId,
-    }: {
-      mode: CheckoutMode;
-      userEmail?: string;
-      amountCents?: number;
-      priceId?: string;
-      quantity?: number;
-      postId?: string;
-    } = body;
+    const mode: CheckoutMode | undefined = body.mode;
+    const userEmail: string | undefined = body.userEmail;
+    const amountCents: number | undefined = body.amountCents;
+    const postId: string | undefined = body.postId; // used for boosts, optional for spins
 
-    if (!mode) {
+    if (!mode || !userEmail || !amountCents) {
       return NextResponse.json(
-        { error: "Missing mode (tip | boost)." },
+        { error: "Missing mode, userEmail, or amountCents" },
         { status: 400 }
       );
     }
 
-    if (!userEmail) {
-      return NextResponse.json(
-        { error: "Missing userEmail." },
-        { status: 400 }
-      );
-    }
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ??
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      "http://localhost:3000";
-
-    const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-
-    if (mode === "tip") {
-      // TIP MODE – used by "Test $2 tip (Stripe)" button
-      if (!amountCents && !priceId) {
-        return NextResponse.json(
-          { error: "For tips, provide amountCents or priceId." },
-          { status: 400 }
-        );
-      }
-
-      if (priceId) {
-        lineItems.push({
-          price: priceId,
-          quantity,
-        });
-      } else {
-        lineItems.push({
-          price_data: {
-            currency: "aud",
-            product_data: {
-              name: "Revolvr Tip",
-              description: "Support your favourite creator on Revolvr.",
-            },
-            unit_amount: amountCents,
-          },
-          quantity,
-        });
-      }
-    } else if (mode === "boost") {
-      // BOOST MODE – boost a specific post
-      if (!postId) {
-        return NextResponse.json(
-          { error: "Boost payments require a postId." },
-          { status: 400 }
-        );
-      }
-
-      const boostAmount = amountCents ?? 500; // default A$5.00
-
-      lineItems.push({
-        price_data: {
-          currency: "aud",
-          product_data: {
-            name: "Revolvr Post Boost",
-            description:
-              "Boost your post for extra visibility on the Revolvr feed.",
-          },
-          unit_amount: boostAmount,
-        },
-        quantity: 1,
-      });
-    }
+    const productName =
+      mode === "tip"
+        ? "Revolvr tip"
+        : mode === "boost"
+        ? "Revolvr feed boost"
+        : "Revolvr spinner spin";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
-      line_items: lineItems,
-      success_url: `${baseUrl}/dashboard?payment=success`,
-      cancel_url: `${baseUrl}/dashboard?payment=cancelled`,
-      customer_email: userEmail,
+      line_items: [
+        {
+          price_data: {
+            currency: "AUD",
+            product_data: {
+              name: productName,
+            },
+            unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${siteUrl}/dashboard?status=success`,
+      cancel_url: `${siteUrl}/dashboard?status=cancelled`,
       metadata: {
         mode,
         userEmail,
-        postId: postId ?? "",
+        amountCents: String(amountCents),
+        ...(postId ? { postId } : {}),
       },
     });
 
     return NextResponse.json({ url: session.url }, { status: 200 });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Error creating checkout session:", err);
     return NextResponse.json(
-      { error: "Failed to create checkout session." },
+      { error: "Failed to create checkout session" },
       { status: 500 }
     );
   }

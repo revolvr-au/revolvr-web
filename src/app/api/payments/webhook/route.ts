@@ -1,9 +1,8 @@
-// src/app/api/payments/webhook/route.ts
 import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs"; // we need Buffer for Stripe
+export const runtime = "nodejs";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20" as any,
@@ -14,7 +13,6 @@ function getSupabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    // If this ever throws in prod, env vars are missing
     throw new Error("Missing Supabase admin env vars");
   }
 
@@ -46,20 +44,19 @@ export async function POST(req: NextRequest) {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  // We only care about finished checkouts
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    const metadata = session.metadata ?? {};
 
-    const mode = session.metadata?.mode;
-    const postId = session.metadata?.postId;
-    const userEmail = session.metadata?.userEmail;
+    const mode = metadata.mode;
+    const userEmail = metadata.userEmail;
+    const postId = metadata.postId;
+    const amountCents = session.amount_total ?? 0;
 
-    // Only log boosts (ignore $2 tip etc)
-    if (mode === "boost" && postId && userEmail) {
-      const supabase = getSupabaseAdmin();
+    const supabase = getSupabaseAdmin();
 
-      const amountCents = session.amount_total ?? 0;
-
+    // 1) BOOST: write to boosts table
+    if (mode === "boost" && userEmail && postId) {
       const { error } = await supabase.from("boosts").insert({
         post_id: postId,
         user_email: userEmail,
@@ -74,8 +71,27 @@ export async function POST(req: NextRequest) {
         console.log("Boost recorded for post", postId, "by", userEmail);
       }
     }
+
+    // 2) SPIN: write to spinner_spins table
+    if (mode === "spin" && userEmail) {
+      const { error } = await supabase.from("spinner_spins").insert({
+        user_email: userEmail,
+        post_id: postId ?? null,
+        status: "paid",
+        checkout_session_id: session.id,
+        amount_cents: amountCents,
+      });
+
+      if (error) {
+        console.error("Failed to insert spinner spin row:", error);
+      } else {
+        console.log("Spin recorded for", userEmail, "session", session.id);
+      }
+    }
+
+    // TIP mode: we don't need to persist anything right now
   }
 
-  // Stripe expects a 2xx, even if we ignore some events
+  // Always respond 2xx so Stripe is happy
   return new Response("ok", { status: 200 });
 }
