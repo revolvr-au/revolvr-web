@@ -8,6 +8,8 @@ import React, {
   FormEvent,
 } from "react";
 
+import SpinButton from "./_spinButton";
+import SpinButton from "./_spinButton";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/app/lib/supabaseClients";
 
@@ -17,10 +19,9 @@ type Post = {
   image_url: string;
   caption: string;
   created_at: string;
-  is_boosted: boolean | null;       // new
-  boost_expires_at?: string | null; // optional, if you want it
+  is_boosted?: boolean | null;
+  boost_expires_at?: string | null;
 };
-
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
 
@@ -67,22 +68,21 @@ export default function DashboardPage() {
     loadUser();
   }, [router]);
 
-  // Load posts (all posts for now – RLS protects insert per-user)
+  // Load posts: boosted first, then by newest
   const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
       setError(null);
 
       const { data, error } = await supabase
-  .from("posts")
-  .select(
-    "id, user_email, image_url, caption, created_at, is_boosted, boost_expires_at",
-  )
-  // Boosted posts first…
-  .order("is_boosted", { ascending: false })
-  // …then newest posts
-  .order("created_at", { ascending: false });
-
+        .from("posts")
+        .select(
+          "id, user_email, image_url, caption, created_at, is_boosted, boost_expires_at"
+        )
+        // boosted posts first
+        .order("is_boosted", { ascending: false })
+        // then newest posts
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
@@ -172,7 +172,7 @@ export default function DashboardPage() {
     }
   };
 
-  // 🔥 NEW: Boost a post (uses unified checkout endpoint)
+  // Boost a post (uses unified checkout endpoint)
   const handleBoostPost = async (postId: string, boostAmountCents = 500) => {
     if (!userEmail) {
       setError("You need to be logged in to boost a post.");
@@ -221,9 +221,7 @@ export default function DashboardPage() {
   if (loadingUser) {
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
-        <p className="rv-feed-empty text-sm text-white/70">
-          Loading Revolvr…
-        </p>
+        <p className="rv-feed-empty text-sm text-white/70">Loading Revolvr…</p>
       </main>
     );
   }
@@ -353,6 +351,8 @@ export default function DashboardPage() {
                 }}
               >
                 Test $2 tip (Stripe)
+              <SpinButton userEmail={userEmail} />
+              <SpinButton userEmail={userEmail} />
               </button>
             </div>
           </div>
@@ -382,10 +382,15 @@ export default function DashboardPage() {
                         <span className="rv-card-email text-sm font-medium">
                           {post.user_email ?? "Someone"}
                         </span>
+                        {post.is_boosted && (
+                          <span className="ml-2 inline-flex items-center rounded-full bg-amber-400/20 border border-amber-300/60 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-200">
+                            Boosted
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {/* NEW: Boost button on each card */}
+                      {/* Boost button */}
                       <button
                         type="button"
                         className="text-xs sm:text-sm px-3 py-1 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-500/30"
