@@ -1,77 +1,81 @@
 // src/app/api/payments/webhook/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-export const runtime = "nodejs"; // make sure this is here
+export const runtime = "nodejs"; // we need Buffer for Stripe
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // Re-use your existing API version setup if you had one.
-  // This cast avoids the weird "2025-11-17.clover" type issue.
-  apiVersion: process.env.STRIPE_API_VERSION as Stripe.LatestApiVersion,
+  apiVersion: "2024-06-20" as any,
 });
 
-// Admin Supabase client (server-side only)
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+function getSupabaseAdmin() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    // If this ever throws in prod, env vars are missing
+    throw new Error("Missing Supabase admin env vars");
+  }
+
+  return createClient(url, key, {
+    auth: { persistSession: false },
+  });
+}
 
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
-  if (!sig) {
-    return new NextResponse("Missing Stripe signature", { status: 400 });
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  if (!sig || !webhookSecret) {
+    console.error("Missing Stripe signature or webhook secret");
+    return new Response("Bad request", { status: 400 });
   }
 
-  const rawBody = await req.text();
-
+  const body = await req.arrayBuffer();
   let event: Stripe.Event;
+
   try {
     event = stripe.webhooks.constructEvent(
-      rawBody,
+      Buffer.from(body),
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!,
+      webhookSecret
     );
   } catch (err: any) {
-    console.error("❌ Stripe webhook signature error:", err.message);
-    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
+    console.error("Webhook signature verification failed:", err?.message);
+    return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  // We only care about successful checkouts
+  // We only care about finished checkouts
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const mode = session.metadata?.mode;        // "tip" | "boost" | whatever we send
-    const postId = session.metadata?.postId;    // we already send this for boosts
-    const userEmail =
-      session.customer_details?.email ?? session.metadata?.userEmail ?? null;
+    const mode = session.metadata?.mode;
+    const postId = session.metadata?.postId;
+    const userEmail = session.metadata?.userEmail;
 
-    console.log("✅ checkout.session.completed", {
-      mode,
-      postId,
-      userEmail,
-    });
+    // Only log boosts (ignore $2 tip etc)
+    if (mode === "boost" && postId && userEmail) {
+      const supabase = getSupabaseAdmin();
 
-    // If it's a boost, mark the post as boosted for 24h
-    if (mode === "boost" && postId) {
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // +24h
+      const amountCents = session.amount_total ?? 0;
 
-      const { error } = await supabaseAdmin
-        .from("posts")
-        .update({
-          is_boosted: true,
-          boost_expires_at: expiresAt.toISOString(),
-        })
-        .eq("id", postId);
+      const { error } = await supabase.from("boosts").insert({
+        post_id: postId,
+        user_email: userEmail,
+        status: "paid",
+        checkout_session_id: session.id,
+        amount_cents: amountCents,
+      });
 
       if (error) {
-        console.error("❌ Failed to mark post as boosted", error);
+        console.error("Failed to insert boost row:", error);
       } else {
-        console.log("✨ Post boosted in DB", { postId, expiresAt });
+        console.log("Boost recorded for post", postId, "by", userEmail);
       }
     }
   }
 
-  // Always return 200 so Stripe doesn't keep retrying (unless we had a signature error above)
-  return new NextResponse("ok", { status: 200 });
+  // Stripe expects a 2xx, even if we ignore some events
+  return new Response("ok", { status: 200 });
 }
