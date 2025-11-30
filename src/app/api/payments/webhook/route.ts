@@ -3,108 +3,132 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  // Type hack because Stripe's TS types expect a literal:
   apiVersion: "2024-06-20" as any,
 });
 
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+// Admin Supabase client (service role)
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !serviceRoleKey) {
-    throw new Error("Supabase admin env vars are missing");
+  if (!url || !key) {
+    throw new Error(
+      "Missing Supabase admin env vars (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)."
+    );
   }
 
-  return createClient(url, serviceRoleKey);
+  return createClient(url, key);
 }
 
 export async function POST(req: NextRequest) {
-  const sig = req.headers.get("stripe-signature");
-  if (!sig) {
-    console.error("Missing stripe-signature header");
-    return new NextResponse("Missing stripe-signature", { status: 400 });
+  if (!webhookSecret) {
+    console.error("Missing STRIPE_WEBHOOK_SECRET env var");
+    return new NextResponse("Webhook secret not configured", { status: 500 });
   }
 
   const body = await req.text();
+  const sig = req.headers.get("stripe-signature");
+
+  if (!sig) {
+    console.error("Stripe webhook called without signature header");
+    return new NextResponse("Missing stripe-signature", { status: 400 });
+  }
 
   let event: Stripe.Event;
+
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
   } catch (err: any) {
-    console.error("❌ Stripe webhook signature verification failed", err);
+    console.error("❌ Stripe webhook signature verification failed:", err.message);
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  // We only care about successful checkout sessions right now
+  // We only care about successful checkout sessions for now
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    if (session.payment_status === "paid") {
-      const supabase = getSupabaseAdmin();
+    // Try to be backwards-compatible with previous metadata keys
+    const paymentKind =
+      session.metadata?.paymentKind ??
+      session.metadata?.mode ??
+      session.metadata?.type ??
+      null;
 
-      const metadata = session.metadata || {};
-      const mode = (metadata.mode as "tip" | "boost" | "spin" | undefined) ?? null;
-      const userEmail =
-        metadata.userEmail ||
-        session.customer_details?.email ||
-        null;
-      const postId = (metadata.postId as string | undefined) ?? null;
-      const amountCents = session.amount_total ?? null;
-      const paymentIntentId =
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id ?? null;
+    const userEmail =
+      session.metadata?.userEmail ||
+      session.customer_email ||
+      null;
 
-      // 1️⃣ Log the payment in our own ledger
-      const { error: insertError } = await supabase.from("payments").insert({
-        stripe_payment_intent_id: paymentIntentId,
-        stripe_checkout_session_id: session.id,
-        mode,
-        amount_cents: amountCents,
-        user_email: userEmail,
-        post_id: postId,
-        status: session.payment_status,
-      });
+    const postId = session.metadata?.postId || null;
 
-      if (insertError) {
-        console.error("❌ Error inserting payment row", insertError);
-      } else {
-        console.log(
-          `✅ Logged payment: mode=${mode} email=${userEmail} amount=${amountCents}`
-        );
-      }
+    console.log("✅ checkout.session.completed", {
+      paymentKind,
+      userEmail,
+      postId,
+      sessionId: session.id,
+    });
 
-      // 2️⃣ If it's a boost, mark the post as boosted
-      if (mode === "boost" && postId) {
-        const boostDurationHours = 24;
-        const boostExpiresAt = new Date();
-        boostExpiresAt.setHours(
-          boostExpiresAt.getHours() + boostDurationHours
-        );
+    const supabase = getSupabaseAdmin();
 
-        const { error: boostError } = await supabase
+    try {
+      if (paymentKind === "spin") {
+        // Record a spin in spinner_spins
+        const { error } = await supabase.from("spinner_spins").insert({
+          user_email: userEmail,
+          post_id: postId || null,
+        });
+
+        if (error) {
+          console.error("Error inserting spinner_spins row:", error);
+        } else {
+          console.log("🎯 Recorded spinner spin in spinner_spins");
+        }
+      } else if (paymentKind === "boost" && postId) {
+        // 24h boost window
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        // Mark the post as boosted
+        const { error: updateErr } = await supabase
           .from("posts")
           .update({
             is_boosted: true,
-            boost_expires_at: boostExpiresAt.toISOString(),
+            boost_expires_at: expiresAt.toISOString(),
           })
           .eq("id", postId);
 
-        if (boostError) {
-          console.error("❌ Error marking post as boosted", boostError);
+        if (updateErr) {
+          console.error("Error updating boosted post:", updateErr);
         } else {
-          console.log(`🚀 Post boosted via webhook: post_id=${postId}`);
+          console.log("⚡ Marked post as boosted:", postId);
         }
-      }
 
-      // 3️⃣ For spins + tips we just log for now.
-      //    Later we can hook spins into credits, badges, etc.
+        // Optional: track in boosts table if it exists
+        const { error: boostErr } = await supabase.from("boosts").insert({
+          user_email: userEmail,
+          post_id: postId,
+          boost_expires_at: expiresAt.toISOString(),
+        });
+
+        if (boostErr) {
+          console.warn(
+            "Could not insert into boosts table (ok if table/cols differ):",
+            boostErr
+          );
+        }
+      } else {
+        console.log("Ignoring checkout.session.completed with kind:", paymentKind);
+      }
+    } catch (err) {
+      console.error("Unhandled error in webhook handler:", err);
+      // We still return 200 so Stripe doesn't retry forever, but logs will show the issue.
     }
+  } else {
+    console.log("Ignoring Stripe event type:", event.type);
   }
 
-  // Always return 200 so Stripe doesn't keep retrying
-  return new NextResponse("OK", { status: 200 });
+  return NextResponse.json({ received: true });
 }
