@@ -26,9 +26,10 @@ export default function PublicFeedPage() {
         setIsLoading(true);
 
         const { data, error } = await supabase
-          .from("posts")
-          .select("id, user_email, image_url, caption, created_at")
-          .order("created_at", { ascending: false });
+  .from("posts")
+  .select("id, user_email, image_url, caption, created_at, boosts ( id )")
+  .order("created_at", { ascending: false });
+
 
         if (error) throw error;
 

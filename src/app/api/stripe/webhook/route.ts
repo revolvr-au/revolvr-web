@@ -10,6 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
+// Supabase client (service role – server only!)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
         metadata.mode) as string | undefined;
 
     console.log("---- checkout.session.completed ----");
-    console.log("Metadata received:", metadata);
+    console.log("Raw metadata:", metadata);
     console.log("Detected payment kind:", kind);
 
     const email =
@@ -63,17 +64,35 @@ export async function POST(req: NextRequest) {
 
     const postId = metadata.postId || null;
 
+    console.log("Email resolution:", {
+      metaUserEmail: metadata.userEmail,
+      customerDetailsEmail: session.customer_details?.email,
+      customerEmail: session.customer_email,
+      finalEmail: email,
+      postId,
+    });
+
     if (kind === "spin") {
-      console.log("INSERTING SPIN:", { email, postId });
-
-      const { error } = await supabase
-        .from("spinner_spins")
-        .insert({ user_email: email, post_id: postId });
-
-      if (error) {
-        console.error("❌ INSERT ERROR:", error);
+      if (!email) {
+        console.error("❌ No email resolved for spin payment – skipping insert");
       } else {
-        console.log("✅ INSERT SUCCESS");
+        console.log("INSERTING SPIN:", { email, postId });
+
+        const { data, error } = await supabase
+          .from("spinner_spins")
+          .insert({ user_email: email, post_id: postId })
+          .select();
+
+        if (error) {
+          console.error("❌ INSERT ERROR:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code,
+          });
+        } else {
+          console.log("✅ INSERT SUCCESS:", data);
+        }
       }
     } else {
       console.log("ℹ️ Webhook ignored — not a spin payment");

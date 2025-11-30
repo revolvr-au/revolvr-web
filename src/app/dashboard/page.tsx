@@ -22,6 +22,13 @@ type Post = {
   boost_expires_at?: string | null;
 };
 
+type Spin = {
+  id: number;
+  user_email: string;
+  post_id: string | null;
+  created_at: string;
+};
+
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
 
 export default function DashboardPage() {
@@ -31,7 +38,11 @@ export default function DashboardPage() {
   const [loadingUser, setLoadingUser] = useState(true);
 
   const [posts, setPosts] = useState<Post[]>([]);
+  const [spins, setSpins] = useState<Spin[]>([]);
+
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [isLoadingSpins, setIsLoadingSpins] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -39,7 +50,7 @@ export default function DashboardPage() {
   const [file, setFile] = useState<File | null>(null);
   const [isPosting, setIsPosting] = useState(false);
 
-  // Load current user (redirect to /login if none)
+  // Load current user
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -67,7 +78,7 @@ export default function DashboardPage() {
     loadUser();
   }, [router]);
 
-  // Load posts: boosted first, then newest
+  // Load posts
   const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
@@ -92,19 +103,40 @@ export default function DashboardPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (userEmail) {
-      loadPosts();
-    }
-  }, [userEmail, loadPosts]);
+  // Load spins
+  const loadSpins = useCallback(async () => {
+    if (!userEmail) return;
 
-  // Sign out
+    try {
+      setIsLoadingSpins(true);
+
+      const { data, error } = await supabase
+        .from("spinner_spins")
+        .select("*")
+        .eq("user_email", userEmail)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setSpins(data ?? []);
+    } catch (e) {
+      console.error("Error loading spins", e);
+    } finally {
+      setIsLoadingSpins(false);
+    }
+  }, [userEmail]);
+
+  useEffect(() => {
+    if (!userEmail) return;
+    loadPosts();
+    loadSpins();
+  }, [userEmail, loadPosts, loadSpins]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/feed");
   };
 
-  // Create a post
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!userEmail) return;
@@ -157,7 +189,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Delete a post
   const handleDeletePost = async (id: string) => {
     try {
       const { error } = await supabase.from("posts").delete().eq("id", id);
@@ -169,7 +200,6 @@ export default function DashboardPage() {
     }
   };
 
-  // Boost a post (uses unified checkout endpoint)
   const handleBoostPost = async (postId: string, boostAmountCents = 500) => {
     if (!userEmail) {
       setError("You need to be logged in to boost a post.");
@@ -181,13 +211,11 @@ export default function DashboardPage() {
 
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: "boost",
           userEmail,
-          amountCents: boostAmountCents, // e.g. 500 = A$5.00
+          amountCents: boostAmountCents,
           postId,
         }),
       });
@@ -226,7 +254,6 @@ export default function DashboardPage() {
   }
 
   if (!userEmail) {
-    // Redirect is already in motion, just render nothing pretty
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
         <p className="rv-feed-empty text-sm text-white/70">
@@ -259,7 +286,6 @@ export default function DashboardPage() {
           </a>
 
           <button
-            type="button"
             className="rv-pill-button rv-pill-secondary px-3 py-1 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
             onClick={handleSignOut}
           >
@@ -271,7 +297,6 @@ export default function DashboardPage() {
       {/* Main content */}
       <main className="rv-main max-w-5xl mx-auto px-4 py-8">
         <div className="rv-feed-shell space-y-6">
-          {/* Error banner */}
           {error && (
             <div className="rv-banner-error bg-red-500/10 border border-red-500/40 text-red-100 px-4 py-2 rounded-lg flex items-center justify-between text-sm">
               <span>{error}</span>
@@ -284,7 +309,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* Header row + payment test buttons */}
           <div className="flex flex-col gap-3">
             <div className="rv-feed-header space-y-1">
               <div className="rv-feed-title-row flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
@@ -303,62 +327,72 @@ export default function DashboardPage() {
 
             <div className="rv-composer-row flex flex-wrap gap-3">
               <button
-                type="button"
                 className="rv-primary-button inline-flex items-center justify-center rounded-full px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-sm font-medium shadow-lg shadow-emerald-500/25 transition"
                 onClick={() => setIsComposerOpen(true)}
               >
                 + New post
               </button>
 
-              {/* Test tip button */}
               <button
-                type="button"
                 className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs sm:text-sm font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60"
                 disabled={!userEmail}
                 onClick={async () => {
-                  if (!userEmail) return;
-                  try {
-                    const res = await fetch("/api/payments/checkout", {
-                      method: "POST",
-                      headers: {
-                        "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify({
-                        mode: "tip",
-                        userEmail,
-                        amountCents: 200, // A$2.00
-                      }),
-                    });
-
-                    if (!res.ok) {
-                      console.error("Checkout failed", await res.text());
-                      setError("Could not start payment. Try again.");
-                      return;
-                    }
-
-                    const data = await res.json();
-                    if (data.url) {
-                      window.location.href = data.url;
-                    } else {
-                      setError("Stripe did not return a checkout URL.");
-                    }
-                  } catch (err) {
-                    console.error("Error creating checkout:", err);
-                    setError(
-                      "Revolvr glitched out starting Stripe checkout 😵‍💫"
-                    );
-                  }
+                  const res = await fetch("/api/payments/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      mode: "tip",
+                      userEmail,
+                      amountCents: 200,
+                    }),
+                  });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
                 }}
               >
                 Test $2 tip (Stripe)
               </button>
 
-              {/* Single spinner button */}
               <SpinButton userEmail={userEmail} />
             </div>
           </div>
 
-          {/* Posts */}
+          {/* SPIN HISTORY SECTION */}
+          <div className="rv-spins-block bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+            <h2 className="text-lg font-semibold">Your Spin History</h2>
+
+            {isLoadingSpins ? (
+              <p className="text-white/60 text-sm">Loading spins…</p>
+            ) : spins.length === 0 ? (
+              <p className="text-white/60 text-sm">
+                No spins yet. Spin the Revolvr above!
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {spins.map((s) => (
+                  <li
+                    key={s.id}
+                    className="border border-white/10 rounded-lg px-3 py-2 flex items-center justify-between"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-white/80 text-sm">
+                        Spin #{s.id}
+                      </span>
+                      <span className="text-white/50 text-xs">
+                        {new Date(s.created_at).toLocaleString()}
+                      </span>
+                    </div>
+
+                    <span className="text-xs text-white/60">
+                      {s.post_id ? `Reward: post ${s.post_id}` : "No reward"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* POSTS SECTION */}
           {isLoadingPosts ? (
             <div className="rv-feed-empty text-sm text-white/70">
               Loading the feed…
@@ -391,16 +425,13 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      {/* Boost button */}
                       <button
-                        type="button"
                         className="text-xs sm:text-sm px-3 py-1 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-500/30"
-                        onClick={() => handleBoostPost(post.id, 500)} // A$5.00
+                        onClick={() => handleBoostPost(post.id, 500)}
                       >
                         Boost this post (A$5)
                       </button>
                       <button
-                        type="button"
                         className="rv-delete-link text-xs text-red-300 hover:text-red-200 underline"
                         onClick={() => handleDeletePost(post.id)}
                       >
@@ -410,7 +441,6 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="rv-card-image-shell rv-slide-in">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={post.image_url}
                       alt={post.caption}
@@ -444,7 +474,6 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Composer modal */}
       {isComposerOpen && (
         <div className="rv-modal-backdrop fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
           <div className="rv-modal w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
@@ -453,7 +482,6 @@ export default function DashboardPage() {
                 New post
               </h2>
               <button
-                type="button"
                 className="rv-modal-close text-sm text-white/60 hover:text-white"
                 onClick={() => !isPosting && setIsComposerOpen(false)}
               >
