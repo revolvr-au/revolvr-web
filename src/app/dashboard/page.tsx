@@ -8,12 +8,9 @@ import React, {
 } from "react";
 
 import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 import SpinButton from "./_spinButton";
 import IdentityLens from "@/components/IdentityLens";
-
-
-
 
 type Post = {
   id: string;
@@ -374,7 +371,7 @@ export default function DashboardPage() {
                   } catch (err) {
                     console.error("Error creating checkout:", err);
                     setError(
-                      "Revolvr glitched out starting Stripe checkout 😵‍💫"
+                      "Revolvr glitched out starting Stripe checkout ��‍💫"
                     );
                   }
                 }}

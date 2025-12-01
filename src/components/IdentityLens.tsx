@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/app/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 type IdentityLensProps = {
   open: boolean;
@@ -9,12 +9,19 @@ type IdentityLensProps = {
   userEmail: string;
 };
 
+type Spin = {
+  id: number;
+  user_email: string;
+  created_at: string;
+  post_id: string | null;
+};
+
 export default function IdentityLens({ open, onClose, userEmail }: IdentityLensProps) {
   const [postsCount, setPostsCount] = useState(0);
   const [boostsCount, setBoostsCount] = useState(0);
   const [spinsCount, setSpinsCount] = useState(0);
   const [impactScore, setImpactScore] = useState(0);
-  const [recentSpins, setRecentSpins] = useState<any[]>([]);
+  const [recentSpins, setRecentSpins] = useState<Spin[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -34,16 +41,20 @@ export default function IdentityLens({ open, onClose, userEmail }: IdentityLensP
         .eq("is_boosted", true);
 
       // Spins
-      const { data: spins } = await supabase
+      const { data: spins, error: spinsError } = await supabase
         .from("spinner_spins")
         .select("*")
         .eq("user_email", userEmail)
         .order("created_at", { ascending: false });
 
+      if (spinsError) {
+        console.error("Error loading spins for IdentityLens:", spinsError);
+      }
+
       setPostsCount(pc ?? 0);
       setBoostsCount(bc ?? 0);
       setSpinsCount(spins?.length ?? 0);
-      setRecentSpins(spins ?? []);
+      setRecentSpins((spins as Spin[]) ?? []);
 
       const impact = (pc ?? 0) + (bc ?? 0) + (spins?.length ?? 0);
       setImpactScore(impact);
@@ -68,7 +79,6 @@ export default function IdentityLens({ open, onClose, userEmail }: IdentityLensP
       </div>
 
       <div className="px-4 py-6 space-y-8 max-w-xl mx-auto">
-
         {/* Header */}
         <div className="space-y-1">
           <p className="text-lg font-medium">{userEmail}</p>
@@ -113,12 +123,22 @@ export default function IdentityLens({ open, onClose, userEmail }: IdentityLensP
             <p className="text-xs text-white/50">No spins yet</p>
           )}
 
-          {recentSpins.map((spin, idx) => (
+          {recentSpins.map((spin) => (
             <div
-              key={idx}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs"
+              key={spin.id}
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs flex items-center justify-between"
             >
-              Spin • A$1 • {new Date(spin.created_at).toLocaleString()}
+              <div className="flex flex-col">
+                <span className="text-white/80 text-sm">
+                  Spin #{spin.id}
+                </span>
+                <span className="text-white/50 text-[11px]">
+                  {new Date(spin.created_at).toLocaleString()}
+                </span>
+              </div>
+              <span className="text-white/60 text-[11px]">
+                {spin.post_id ? `Linked post: ${spin.post_id}` : "No linked post"}
+              </span>
             </div>
           ))}
         </div>
