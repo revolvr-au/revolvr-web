@@ -1,159 +1,134 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClients";
 
 type IdentityLensProps = {
   open: boolean;
   onClose: () => void;
-  userEmail: string;
+  userEmail: string | null;
 };
 
-type Spin = {
-  id: number;
-  user_email: string;
-  created_at: string;
-  post_id: string | null;
+type Stats = {
+  posts: number;
+  spins: number;
 };
 
 export default function IdentityLens({ open, onClose, userEmail }: IdentityLensProps) {
-  const [postsCount, setPostsCount] = useState(0);
-  const [boostsCount, setBoostsCount] = useState(0);
-  const [spinsCount, setSpinsCount] = useState(0);
-  const [impactScore, setImpactScore] = useState(0);
-  const [recentSpins, setRecentSpins] = useState<Spin[]>([]);
+  const [stats, setStats] = useState<Stats>({ posts: 0, spins: 0 });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !userEmail) return;
 
-    async function loadStats() {
-      // Posts
-      const { count: pc } = await supabase
-        .from("posts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_email", userEmail);
+    const load = async () => {
+      try {
+        setLoading(true);
 
-      // Boosts
-      const { count: bc } = await supabase
-        .from("posts")
-        .select("*", { count: "exact", head: true })
-        .eq("user_email", userEmail)
-        .eq("is_boosted", true);
+        const [{ count: postCount }, { count: spinCount }] = await Promise.all([
+          supabase
+            .from("posts")
+            .select("id", { count: "exact", head: true })
+            .eq("user_email", userEmail),
+          supabase
+            .from("spinner_spins")
+            .select("id", { count: "exact", head: true })
+            .eq("user_email", userEmail),
+        ]);
 
-      // Spins
-      const { data: spins, error: spinsError } = await supabase
-        .from("spinner_spins")
-        .select("*")
-        .eq("user_email", userEmail)
-        .order("created_at", { ascending: false });
-
-      if (spinsError) {
-        console.error("Error loading spins for IdentityLens:", spinsError);
+        setStats({
+          posts: postCount ?? 0,
+          spins: spinCount ?? 0,
+        });
+      } catch (err) {
+        console.error("[IdentityLens] load error", err);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setPostsCount(pc ?? 0);
-      setBoostsCount(bc ?? 0);
-      setSpinsCount(spins?.length ?? 0);
-      setRecentSpins((spins as Spin[]) ?? []);
-
-      const impact = (pc ?? 0) + (bc ?? 0) + (spins?.length ?? 0);
-      setImpactScore(impact);
-    }
-
-    loadStats();
+    load();
   }, [open, userEmail]);
 
   if (!open) return null;
 
+  const initial = userEmail?.[0]?.toUpperCase() ?? "R";
+
   return (
-    <div className="fixed inset-0 z-50 bg-[#050816] text-white overflow-auto">
-      {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
-        <h2 className="text-xl font-semibold">Your Profile</h2>
-        <button
-          onClick={onClose}
-          className="text-white/70 hover:text-white text-sm"
-        >
-          Close
-        </button>
-      </div>
+    <div className="fixed inset-0 z-40 flex items-stretch justify-end bg-black/60 backdrop-blur-sm">
+      {/* Click-off zone */}
+      <button
+        type="button"
+        aria-label="Close identity lens"
+        className="flex-1 h-full cursor-pointer"
+        onClick={onClose}
+      />
 
-      <div className="px-4 py-6 space-y-8 max-w-xl mx-auto">
-        {/* Header */}
-        <div className="space-y-1">
-          <p className="text-lg font-medium">{userEmail}</p>
-          <p className="text-xs text-white/60">Member since 2025</p>
-        </div>
-
-        {/* Social Energy Bar */}
-        <div className="space-y-2">
-          <p className="text-sm text-white/70">Social Energy</p>
-          <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-            <div
-              className="h-3 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 transition-all"
-              style={{ width: `${Math.min(impactScore, 100)}%` }}
-            ></div>
-          </div>
-          <p className="text-xs text-white/50">{impactScore}% activity</p>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            { label: "Posts", value: postsCount },
-            { label: "Boosts", value: boostsCount },
-            { label: "Spins", value: spinsCount },
-            { label: "Impact", value: impactScore },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 text-center"
-            >
-              <p className="text-xs text-white/60">{item.label}</p>
-              <p className="text-xl font-semibold mt-1">{item.value}</p>
+      {/* Side panel */}
+      <div className="relative h-full w-full max-w-md bg-[#050816] border-l border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="h-9 w-9 rounded-full bg-emerald-500 flex items-center justify-center text-sm font-semibold text-black">
+              {initial}
             </div>
-          ))}
-        </div>
-
-        {/* Recent Activity */}
-        <div className="space-y-3">
-          <p className="text-sm text-white/70">Recent Spins</p>
-
-          {recentSpins.length === 0 && (
-            <p className="text-xs text-white/50">No spins yet</p>
-          )}
-
-          {recentSpins.map((spin) => (
-            <div
-              key={spin.id}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs flex items-center justify-between"
-            >
-              <div className="flex flex-col">
-                <span className="text-white/80 text-sm">
-                  Spin #{spin.id}
-                </span>
-                <span className="text-white/50 text-[11px]">
-                  {new Date(spin.created_at).toLocaleString()}
-                </span>
-              </div>
-              <span className="text-white/60 text-[11px]">
-                {spin.post_id ? `Linked post: ${spin.post_id}` : "No linked post"}
+            <div className="flex flex-col">
+              <span className="text-xs uppercase tracking-wide text-white/50">
+                Identity Lens
+              </span>
+              <span className="text-sm font-medium text-white">
+                {userEmail ?? "Unknown user"}
               </span>
             </div>
-          ))}
-        </div>
+          </div>
 
-        {/* Footer actions */}
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            onClose();
-            window.location.href = "/feed";
-          }}
-          className="w-full mt-6 py-3 bg-red-600 hover:bg-red-500 rounded-full text-sm font-medium"
-        >
-          Sign Out
-        </button>
+          <button
+            onClick={onClose}
+            className="text-xs text-white/60 hover:text-white px-2 py-1 rounded-full hover:bg-white/10"
+          >
+            Close
+          </button>
+        </header>
+
+        <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+          {/* Quick stats */}
+          <section className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium uppercase tracking-wide text-white/50">
+                Creator snapshot
+              </span>
+              <span className="text-[10px] text-white/40">v0.1 preview</span>
+            </div>
+
+            {loading ? (
+              <p className="text-xs text-white/60">Loading your stats…</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-2">
+                  <div className="text-[11px] text-white/50">Posts</div>
+                  <div className="text-lg font-semibold">
+                    {stats.posts}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-2">
+                  <div className="text-[11px] text-white/50">Paid spins</div>
+                  <div className="text-lg font-semibold">
+                    {stats.spins}
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* Coming soon */}
+          <section className="rounded-2xl border border-dashed border-white/15 bg-white/[0.02] px-4 py-3 space-y-3">
+            <h3 className="text-sm font-medium">Coming next</h3>
+            <ul className="space-y-1 text-xs text-white/65">
+              <li>• Reputation score based on spins & boosts</li>
+              <li>• Simple profile card you can share</li>
+              <li>• Audience breakdown once we go live</li>
+            </ul>
+          </section>
+        </main>
       </div>
     </div>
   );
