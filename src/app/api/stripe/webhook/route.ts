@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-// ---------- Stripe setup ----------
+// --- Stripe setup ---
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
@@ -20,7 +20,7 @@ const stripe = new Stripe(stripeSecretKey ?? "", {
   apiVersion: "2024-06-20" as any,
 });
 
-// ---------- Supabase admin client ----------
+// --- Supabase admin client helper ---
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -41,7 +41,6 @@ function getSupabaseAdmin() {
   });
 }
 
-// ---------- Webhook handler ----------
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
 
@@ -85,63 +84,40 @@ export async function POST(req: NextRequest) {
     console.log("[Webhook] checkout.session.completed metadata:", metadata);
     console.log("[Webhook] Detected kind:", kind);
 
-    // Try very hard to get an email, but never send NULL to DB
-    const rawEmail =
+    const email =
       (metadata.userEmail as string | undefined) ||
       session.customer_details?.email ||
       session.customer_email ||
       "";
 
-    const email = rawEmail || "unknown@spinner"; // <- always non-empty string
-
     const postId = (metadata.postId as string | undefined) ?? null;
-
-    const checkoutSessionId = session.id; // always present
-    const amountCents =
-      (session.amount_total as number | null | undefined) ?? null;
 
     console.log("[Webhook] spin candidate:", {
       email,
       postId,
-      checkoutSessionId,
-      amountCents,
     });
 
     if (kind === "spin") {
       try {
         const supabase = getSupabaseAdmin();
 
-        // Upsert on checkout_session_id to handle Stripe retries safely
-        const { error } = await supabase
-          .from("spinner_spins")
-          .upsert(
-            {
-              user_email: email,
-              post_id: postId,
-              checkout_session_id: checkoutSessionId,
-              amount_cents: amountCents,
-            },
-            { onConflict: "checkout_session_id" }
-          );
+        const { error } = await supabase.from("spinner_spins").insert({
+          user_email: email || null,
+          post_id: postId,
+        });
 
         if (error) {
-          console.error(
-            "[Webhook] ❌ INSERT / UPSERT ERROR for spinner_spins:",
-            {
-              message: error.message,
-              details: (error as any).details,
-              hint: (error as any).hint,
-              code: error.code,
-              full: error, // just in case
-            }
-          );
+          console.error("[Webhook] ❌ INSERT ERROR for spinner_spins:", {
+            message: error.message,
+            details: (error as any).details,
+            hint: (error as any).hint,
+            code: error.code,
+          });
         } else {
-          console.log(
-            "[Webhook] ✅ spin row upserted into spinner_spins (or already existed)"
-          );
+          console.log("[Webhook] ✅ spin row inserted into spinner_spins");
         }
       } catch (err) {
-        console.error("[Webhook] ❌ Fatal error before DB write:", err);
+        console.error("[Webhook] ❌ Fatal error before insert:", err);
       }
     } else {
       console.log("[Webhook] Not a spin payment, skipping DB insert");
@@ -150,6 +126,6 @@ export async function POST(req: NextRequest) {
     console.log("[Webhook] Ignoring non-checkout.session.completed event");
   }
 
-  // Always 200 so Stripe doesn’t keep retrying if Supabase write fails
+  // Always 200 so Stripe doesn’t keep retrying if Supabase insert fails
   return new NextResponse("OK", { status: 200 });
 }
