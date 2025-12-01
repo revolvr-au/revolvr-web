@@ -4,13 +4,14 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
-// ---------- Stripe setup ----------
+// --- Stripe setup ---
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
 if (!stripeSecretKey) {
   console.error("[Webhook] STRIPE_SECRET_KEY is missing");
 }
+
 if (!webhookSecret) {
   console.error("[Webhook] STRIPE_WEBHOOK_SECRET is missing");
 }
@@ -19,7 +20,7 @@ const stripe = new Stripe(stripeSecretKey ?? "", {
   apiVersion: "2024-06-20" as any,
 });
 
-// ---------- Supabase admin client ----------
+// --- Supabase admin client helper ---
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -40,14 +41,19 @@ function getSupabaseAdmin() {
   });
 }
 
-// Small helper so we don’t blow up on bad UUIDs
-function isLikelyUuid(value: string | undefined | null): string | null {
+// quick + dirty UUID check – good enough for our case
+function looksLikeUuid(value: string | null | undefined): string | null {
   if (!value) return null;
   const trimmed = value.trim();
   const uuidRegex =
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-  if (uuidRegex.test(trimmed)) return trimmed;
-  return null;
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(trimmed)) {
+    console.warn("[Webhook] metadata.postId is not a valid UUID, storing NULL:", {
+      rawValue: value,
+    });
+    return null;
+  }
+  return trimmed;
 }
 
 export async function POST(req: NextRequest) {
@@ -58,7 +64,6 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Missing stripe-signature header", { status: 400 });
   }
 
-  // ----- raw body for Stripe -----
   let rawBody: string;
   try {
     rawBody = await req.text();
@@ -68,6 +73,7 @@ export async function POST(req: NextRequest) {
   }
 
   let event: Stripe.Event;
+
   try {
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret!);
   } catch (err: any) {
@@ -78,20 +84,20 @@ export async function POST(req: NextRequest) {
     return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
   }
 
-  console.log("────────────────────────────────────────────");
-  console.log("[Webhook] Event type:", event.type);
+  console.log("[Webhook] ---- Event received ----");
+  console.log("[Webhook] Type:", event.type);
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const metadata = session.metadata ?? {};
 
+    const metadata = session.metadata ?? {};
     const kind =
       (metadata.paymentKind ||
         metadata.type ||
         metadata.mode) as string | undefined;
 
-    console.log("[Webhook] metadata:", metadata);
-    console.log("[Webhook] detected payment kind:", kind);
+    console.log("[Webhook] checkout.session.completed metadata:", metadata);
+    console.log("[Webhook] Detected kind:", kind);
 
     const email =
       (metadata.userEmail as string | undefined) ||
@@ -99,42 +105,29 @@ export async function POST(req: NextRequest) {
       session.customer_email ||
       "";
 
-    const rawPostId = metadata.postId as string | undefined;
-    const safePostId = isLikelyUuid(rawPostId);
+    const postIdRaw = metadata.postId as string | undefined;
+    const postId = looksLikeUuid(postIdRaw);
 
     console.log("[Webhook] spin candidate:", {
       email,
-      rawPostId,
-      safePostId,
+      postIdRaw,
+      postIdAfterValidation: postId,
       amount_total: session.amount_total,
       currency: session.currency,
-      checkout_session_id: session.id,
+      session_id: session.id,
     });
 
-    // Only handle “spin” payments
     if (kind === "spin") {
       try {
         const supabase = getSupabaseAdmin();
 
-        // ultra–simple, constraint-safe payload
-        const payload = {
-          user_email: email || "unknown@revolvr.app",
-          status: "paid",
-          post_id: safePostId, // null if not a valid UUID
+        const { error } = await supabase.from("spinner_spins").insert({
+          user_email: email || null,
+          post_id: postId, // will be NULL if invalid
+          status: "paid", // we know this is a completed payment
           checkout_session_id: session.id,
-          amount_cents:
-            typeof session.amount_total === "number"
-              ? session.amount_total
-              : null,
-        };
-
-        console.log("[Webhook] inserting into spinner_spins:", payload);
-
-        const { data, error } = await supabase
-          .from("spinner_spins")
-          .insert(payload)
-          .select("id")
-          .single();
+          amount_cents: session.amount_total ?? null,
+        });
 
         if (error) {
           console.error(
@@ -143,28 +136,25 @@ export async function POST(req: NextRequest) {
               message: error.message,
               details: (error as any).details,
               hint: (error as any).hint,
-              code: error.code,
+              code: (error as any).code,
             }
           );
         } else {
           console.log(
-            "[Webhook] ✅ spin row inserted into spinner_spins with id:",
-            data?.id
+            "[Webhook] ✅ spin row inserted into spinner_spins for session",
+            session.id
           );
         }
       } catch (err) {
-        console.error("[Webhook] ❌ Fatal error before/around insert:", err);
+        console.error("[Webhook] ❌ Fatal error before insert:", err);
       }
     } else {
       console.log("[Webhook] Not a spin payment, skipping DB insert");
     }
   } else {
-    console.log(
-      "[Webhook] Ignoring non-checkout.session.completed event:", 
-      event.type
-    );
+    console.log("[Webhook] Ignoring non-checkout.session.completed event");
   }
 
-  // Always 200 so Stripe doesn’t spam retries.
+  // Always 200 so Stripe doesn’t keep retrying if Supabase insert fails
   return new NextResponse("OK", { status: 200 });
 }
