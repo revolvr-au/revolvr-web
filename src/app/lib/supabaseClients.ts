@@ -1,22 +1,18 @@
 "use client";
 
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-// 🔊 DEBUG LOGS – these will show up in the browser console
-console.log("[Revolvr] SUPABASE URL:", supabaseUrl);
-console.log(
-  "[Revolvr] HAS ANON KEY?",
-  typeof supabaseAnonKey === "string",
-  supabaseAnonKey ? supabaseAnonKey.slice(0, 20) + "..." : "(missing)"
-);
-
+// Debug without leaking secrets
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error(
-    "[Revolvr] Missing Supabase env vars. Check Vercel env for NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
-  );
+  console.error("[Supabase] Missing env vars", {
+    hasUrl: !!supabaseUrl,
+    hasAnonKey: !!supabaseAnonKey,
+  });
+} else {
+  console.log("[Supabase] Env OK (URL + anon key present)");
 }
 
-export const supabase = createBrowserClient(supabaseUrl!, supabaseAnonKey!);
+export const supabase = createClient(supabaseUrl!, supabaseAnonKey!);
