@@ -20,7 +20,7 @@ const stripe = new Stripe(stripeSecretKey ?? "", {
   apiVersion: "2024-06-20" as any,
 });
 
-// --- Supabase admin client helper ---
+// --- Supabase admin client (service role, no RLS issues) ---
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -49,6 +49,7 @@ export async function POST(req: NextRequest) {
     return new NextResponse("Missing stripe-signature header", { status: 400 });
   }
 
+  // Stripe needs the *raw* body
   let rawBody: string;
   try {
     rawBody = await req.text();
@@ -90,21 +91,30 @@ export async function POST(req: NextRequest) {
       session.customer_email ||
       "";
 
-    const postId = (metadata.postId as string | undefined) ?? null;
+    const rawPostId = metadata.postId as string | undefined;
 
-    console.log("[Webhook] spin candidate:", {
-      email,
-      postId,
-    });
+    // Build the row in the least-risky way possible.
+    // 1) Always set user_email (nullable is fine).
+    // 2) Only send post_id if it *looks* like a UUID.
+    const payload: Record<string, any> = {
+      user_email: email || null,
+    };
+
+    // Basic UUID sanity check — this avoids “invalid input syntax for uuid”.
+    if (rawPostId && /^[0-9a-fA-F-]{10,}$/.test(rawPostId)) {
+      payload.post_id = rawPostId;
+    }
+
+    console.log("[Webhook] spinner_spins payload about to insert:", payload);
 
     if (kind === "spin") {
       try {
         const supabase = getSupabaseAdmin();
 
-        const { error } = await supabase.from("spinner_spins").insert({
-          user_email: email || null,
-          post_id: postId,
-        });
+        const { data, error } = await supabase
+          .from("spinner_spins")
+          .insert(payload)
+          .select("*");
 
         if (error) {
           console.error("[Webhook] ❌ INSERT ERROR for spinner_spins:", {
@@ -114,7 +124,10 @@ export async function POST(req: NextRequest) {
             code: error.code,
           });
         } else {
-          console.log("[Webhook] ✅ spin row inserted into spinner_spins");
+          console.log(
+            "[Webhook] ✅ spin row inserted into spinner_spins:",
+            data
+          );
         }
       } catch (err) {
         console.error("[Webhook] ❌ Fatal error before insert:", err);
