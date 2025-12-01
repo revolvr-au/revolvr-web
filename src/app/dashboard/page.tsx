@@ -3,14 +3,17 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useState,
   FormEvent,
 } from "react";
 
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
+import { supabase } from "@/app/lib/supabaseClient";
 import SpinButton from "./_spinButton";
+import IdentityLens from "@/components/IdentityLens";
+
+
+
 
 type Post = {
   id: string;
@@ -33,6 +36,8 @@ const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
 
 export default function DashboardPage() {
   const router = useRouter();
+
+  const [isLensOpen, setIsLensOpen] = useState(false);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -118,7 +123,7 @@ export default function DashboardPage() {
 
       if (error) throw error;
 
-      setSpins(data ?? []);
+      setSpins((data as Spin[]) ?? []);
     } catch (e) {
       console.error("Error loading spins", e);
     } finally {
@@ -238,11 +243,6 @@ export default function DashboardPage() {
     }
   };
 
-  const creatorLabel = useMemo(() => {
-    if (!userEmail) return "Creator view";
-    return `${userEmail}`;
-  }, [userEmail]);
-
   if (loadingUser) {
     return (
       <main className="rv-page rv-page-center min-h-screen bg-[#050816] text-white flex items-center justify-center">
@@ -275,9 +275,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="rv-topbar-right flex items-center gap-3">
-          <span className="rv-topbar-creator text-xs sm:text-sm text-white/80">
-            {creatorLabel}
-          </span>
+          {/* Profile Avatar Trigger */}
+          <button
+            onClick={() => setIsLensOpen(true)}
+            className="h-8 w-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-black"
+          >
+            {userEmail[0]?.toUpperCase()}
+          </button>
+
           <a
             href="/public-feed"
             className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition"
@@ -309,6 +314,7 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Header row + payment test buttons */}
           <div className="flex flex-col gap-3">
             <div className="rv-feed-header space-y-1">
               <div className="rv-feed-title-row flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
@@ -327,6 +333,7 @@ export default function DashboardPage() {
 
             <div className="rv-composer-row flex flex-wrap gap-3">
               <button
+                type="button"
                 className="rv-primary-button inline-flex items-center justify-center rounded-full px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-sm font-medium shadow-lg shadow-emerald-500/25 transition"
                 onClick={() => setIsComposerOpen(true)}
               >
@@ -334,20 +341,42 @@ export default function DashboardPage() {
               </button>
 
               <button
+                type="button"
                 className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs sm:text-sm font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60"
                 disabled={!userEmail}
                 onClick={async () => {
-                  const res = await fetch("/api/payments/checkout", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      mode: "tip",
-                      userEmail,
-                      amountCents: 200,
-                    }),
-                  });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
+                  if (!userEmail) return;
+                  try {
+                    const res = await fetch("/api/payments/checkout", {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        mode: "tip",
+                        userEmail,
+                        amountCents: 200,
+                      }),
+                    });
+
+                    if (!res.ok) {
+                      console.error("Checkout failed", await res.text());
+                      setError("Could not start payment. Try again.");
+                      return;
+                    }
+
+                    const data = await res.json();
+                    if (data.url) {
+                      window.location.href = data.url;
+                    } else {
+                      setError("Stripe did not return a checkout URL.");
+                    }
+                  } catch (err) {
+                    console.error("Error creating checkout:", err);
+                    setError(
+                      "Revolvr glitched out starting Stripe checkout 😵‍💫"
+                    );
+                  }
                 }}
               >
                 Test $2 tip (Stripe)
@@ -426,12 +455,14 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <button
+                        type="button"
                         className="text-xs sm:text-sm px-3 py-1 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-500/30"
                         onClick={() => handleBoostPost(post.id, 500)}
                       >
                         Boost this post (A$5)
                       </button>
                       <button
+                        type="button"
                         className="rv-delete-link text-xs text-red-300 hover:text-red-200 underline"
                         onClick={() => handleDeletePost(post.id)}
                       >
@@ -474,6 +505,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
+      {/* Composer modal */}
       {isComposerOpen && (
         <div className="rv-modal-backdrop fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
           <div className="rv-modal w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
@@ -482,6 +514,7 @@ export default function DashboardPage() {
                 New post
               </h2>
               <button
+                type="button"
                 className="rv-modal-close text-sm text-white/60 hover:text-white"
                 onClick={() => !isPosting && setIsComposerOpen(false)}
               >
@@ -536,6 +569,13 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Identity Lens Modal */}
+      <IdentityLens
+        open={isLensOpen}
+        onClose={() => setIsLensOpen(false)}
+        userEmail={userEmail}
+      />
     </div>
   );
 }
