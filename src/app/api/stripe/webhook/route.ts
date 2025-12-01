@@ -72,58 +72,94 @@ export async function POST(req: NextRequest) {
   console.log("[Webhook] ---- Event received ----");
   console.log("[Webhook] Type:", event.type);
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
+  try {
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
 
-    const metadata = session.metadata ?? {};
-    const kind =
-      (metadata.paymentKind ||
-        metadata.type ||
-        metadata.mode) as string | undefined;
+      const metadata = session.metadata ?? {};
+      const kind =
+        (metadata.paymentKind as string | undefined) ||
+        (metadata.type as string | undefined) ||
+        (metadata.mode as string | undefined);
 
-    console.log("[Webhook] checkout.session.completed metadata:", metadata);
-    console.log("[Webhook] Detected kind:", kind);
+      console.log("[Webhook] checkout.session.completed metadata:", metadata);
+      console.log("[Webhook] Detected kind:", kind);
 
-    const email =
-      (metadata.userEmail as string | undefined) ||
-      session.customer_details?.email ||
-      session.customer_email ||
-      "";
+      // Only handle spinner payments here
+      if (kind === "spin") {
+        // Be forgiving about where the email/postId come from
+        const userEmail =
+          (metadata.userEmail as string | undefined) ||
+          (metadata.user_email as string | undefined) ||
+          (metadata.email as string | undefined) ||
+          session.customer_details?.email ||
+          session.customer_email ||
+          null;
 
-    const postId = (metadata.postId as string | undefined) ?? null;
+        const postId =
+          (metadata.postId as string | undefined) ||
+          (metadata.post_id as string | undefined) ||
+          null;
 
-    console.log("[Webhook] spin candidate:", {
-      email,
-      postId,
-    });
-
-    if (kind === "spin") {
-      try {
-        const supabase = getSupabaseAdmin();
-
-        const { error } = await supabase.from("spinner_spins").insert({
-          user_email: email || null,
-          post_id: postId,
+        console.log("[Webhook][spin] candidate data:", {
+          userEmail,
+          postId,
+          amount_total: session.amount_total,
+          session_id: session.id,
         });
 
-        if (error) {
-          console.error("[Webhook] ❌ INSERT ERROR for spinner_spins:", {
-            message: error.message,
-            details: (error as any).details,
-            hint: (error as any).hint,
-            code: error.code,
+        if (!userEmail) {
+          console.error(
+            "[Webhook][spin] Missing userEmail; will NOT insert into spinner_spins",
+            {
+              metadata,
+              customer_details: session.customer_details,
+            }
+          );
+          // Still return 200 so Stripe doesn't keep retrying
+          return new NextResponse("OK (missing userEmail for spin)", {
+            status: 200,
           });
-        } else {
-          console.log("[Webhook] ✅ spin row inserted into spinner_spins");
         }
-      } catch (err) {
-        console.error("[Webhook] ❌ Fatal error before insert:", err);
+
+        const supabase = getSupabaseAdmin();
+
+        const { error: insertError } = await supabase
+          .from("spinner_spins")
+          .insert({
+            user_email: userEmail,
+            post_id: postId,
+            status: "paid",
+            checkout_session_id: session.id,
+            amount_cents: session.amount_total ?? null,
+            // outcome & reward_post_id remain null for now
+          });
+
+        if (insertError) {
+          console.error("[Webhook] ❌ INSERT ERROR for spinner_spins:", {
+            message: insertError.message,
+            details: (insertError as any).details,
+            hint: (insertError as any).hint,
+            code: insertError.code,
+          });
+          // Don't throw – just log; Stripe has already succeeded taking payment
+        } else {
+          console.log(
+            "[Webhook] ✅ spin row inserted into spinner_spins for session",
+            session.id
+          );
+        }
+      } else {
+        console.log(
+          "[Webhook] checkout.session.completed is not a spin payment; skipping spinner_spins insert"
+        );
       }
     } else {
-      console.log("[Webhook] Not a spin payment, skipping DB insert");
+      console.log("[Webhook] Ignoring non-checkout.session.completed event");
     }
-  } else {
-    console.log("[Webhook] Ignoring non-checkout.session.completed event");
+  } catch (err) {
+    console.error("[Webhook] ❌ Unexpected error in handler:", err);
+    // We still return 200 so Stripe doesn't endlessly retry
   }
 
   // Always 200 so Stripe doesn’t keep retrying if Supabase insert fails
