@@ -9,7 +9,7 @@ import React, {
 } from "react";
 
 import { useRouter } from "next/navigation";
-import { supabase } from "@/app/lib/supabaseClients";
+import { supabase } from "@/lib/supabaseClients";
 import SpinButton from "./_spinButton";
 
 type Post = {

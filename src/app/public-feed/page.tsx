@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/app/lib/supabaseClients";
+import { supabase } from "@/lib/supabaseClients";
 
 type Post = {
   id: string;
