@@ -77,11 +77,12 @@ export default function PublicFeedPage() {
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <RevolvrIcon name="boost" size={22} alt="Revolvr" />
-          <span className="font-semibold text-sm sm:text-base">Revolvr</span>
-        </div>
+          <div className="flex items-center gap-2">
+    <span className="text-lg">🔥</span>
+    <span className="text-lg font-semibold tracking-tight">Revolvr</span>
+  </div>
+
+
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
           <Link
             href="/login"
