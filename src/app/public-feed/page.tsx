@@ -5,7 +5,6 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabaseClients";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 
-
 type Post = {
   id: string;
   user_email: string;
@@ -15,13 +14,19 @@ type Post = {
   reactions?: Record<string, number>;
 };
 
-const REACTIONS = [
-  { icon: "heart" as const, label: "Love" },
-  { icon: "tip" as const, label: "Tip" },
-  { icon: "boost" as const, label: "Boost" },
-  { icon: "spin" as const, label: "Spin" },
-];
+const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
+type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
+const REACTION_ICON_MAP: Record<
+  ReactionEmoji,
+  { icon: "heart" | "tip" | "boost" | "spin"; label: string }
+> = {
+  "🔥": { icon: "boost", label: "Boost" },
+  "💀": { icon: "spin", label: "Spin" },
+  "😂": { icon: "heart", label: "Love" },
+  "🤪": { icon: "tip", label: "Tip" },
+  "🥴": { icon: "spin", label: "Spin" },
+};
 
 export default function PublicFeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -34,10 +39,11 @@ export default function PublicFeedPage() {
         setIsLoading(true);
 
         const { data, error } = await supabase
-  .from("posts")
-  .select("id, user_email, image_url, caption, created_at, boosts ( id )")
-  .order("created_at", { ascending: false });
-
+          .from("posts")
+          .select(
+            "id, user_email, image_url, caption, created_at, boosts ( id )"
+          )
+          .order("created_at", { ascending: false });
 
         if (error) throw error;
 
@@ -48,7 +54,7 @@ export default function PublicFeedPage() {
             image_url: row.image_url,
             caption: row.caption,
             created_at: row.created_at,
-            reactions: {},
+            reactions: {}, // local-only reactions for now
           }))
         );
       } catch (e) {
@@ -62,7 +68,7 @@ export default function PublicFeedPage() {
     fetchPosts();
   }, []);
 
-  const handleReact = (postId: string, emoji: string) => {
+  const handleReact = (postId: string, emoji: ReactionEmoji) => {
     setPosts((prev) =>
       prev.map((p) =>
         p.id === postId
@@ -82,23 +88,14 @@ export default function PublicFeedPage() {
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex gap-2">
-  {REACTIONS.map((reaction) => (
-    <button
-      key={reaction.label}
-      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 hover:bg-white/10"
-      type="button"
-      aria-label={reaction.label}
-    >
-      <RevolvrIcon name={reaction.icon} size={18} />
-    </button>
-  ))}
-</div>
-
+        <div className="flex items-center gap-2">
+          <RevolvrIcon name="spin" size={22} alt="Revolvr" />
+          <span className="font-semibold text-sm sm:text-base">Revolvr</span>
+        </div>
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
           <Link
             href="/login"
-            className="px-3 py-1 rounded-full border border-white/15 bg:white/5 bg-white/5 hover:bg-white/10 transition text-xs"
+            className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
           >
             Sign in
           </Link>
@@ -124,7 +121,7 @@ export default function PublicFeedPage() {
           {/* Header */}
           <div className="flex items-start justify-between mt-1 mb-2">
             <div>
-              <h1 className="text-lg sm:text-xl font-semibold text:white/90 text-white/90">
+              <h1 className="text-lg sm:text-xl font-semibold text-white/90">
                 Public feed
               </h1>
               <p className="text-xs sm:text-sm text-white/60 mt-1">
@@ -168,7 +165,7 @@ export default function PublicFeedPage() {
 
 type PublicPostCardProps = {
   post: Post;
-  onReact: (postId: string, emoji: string) => void;
+  onReact: (postId: string, emoji: ReactionEmoji) => void;
 };
 
 function PublicPostCard({ post, onReact }: PublicPostCardProps) {
@@ -247,15 +244,19 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
         <div className="flex gap-2">
           {REACTION_EMOJIS.map((emoji) => {
             const count = post.reactions?.[emoji] ?? 0;
+            const meta = REACTION_ICON_MAP[emoji];
+
             return (
               <button
                 key={emoji}
+                type="button"
+                aria-label={meta.label}
                 onClick={() => onReact(post.id, emoji)}
-                className="rv-emoji-button text-lg leading-none"
+                className="inline-flex items-center justify-center h-8 rounded-full bg-white/5 hover:bg-white/10 px-2 gap-1"
               >
-                <span>{emoji}</span>
+                <RevolvrIcon name={meta.icon} size={18} />
                 {count > 0 && (
-                  <span className="ml-1 text-[11px] text-white/60">
+                  <span className="text-[11px] text-white/70 leading-none">
                     {count}
                   </span>
                 )}
