@@ -30,6 +30,9 @@ type Spin = {
   created_at: string;
 };
 
+const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
+
+
 const REACTIONS = [
   { icon: "heart" as const, label: "Love" },
   { icon: "tip" as const, label: "Tip" },
@@ -482,19 +485,20 @@ export default function DashboardPage() {
                   )}
 
                   <div className="px-4 pb-3">
-                    <div className="flex gap-3">
-                      {REACTIONS.map((reaction) => (
-                        <button
-                          key={reaction.label}
-                          type="button"
-                          aria-label={reaction.label}
-                          className="inline-flex items-center justify-center p-0 hover:scale-110 transition-transform"
-                        >
-                          <RevolvrIcon name={reaction.icon} size={20} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+  <div className="flex gap-2">
+    {REACTION_EMOJIS.map((emoji) => (
+      <button
+        key={emoji}
+        type="button"
+        aria-label={`React with ${emoji}`}
+        className="inline-flex items-center justify-center text-lg hover:scale-110 transition-transform"
+      >
+        <span>{emoji}</span>
+      </button>
+    ))}
+  </div>
+</div>
+
                 </article>
               ))}
             </div>

@@ -17,16 +17,6 @@ type Post = {
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
-const REACTION_ICON_MAP: Record<
-  ReactionEmoji,
-  { icon: "heart" | "tip" | "boost"; label: string }
-> = {
-  "🔥": { icon: "boost", label: "Boost" },
-  "💀": { icon: "boost", label: "Boost" },
-  "😂": { icon: "heart", label: "Love" },
-  "🤪": { icon: "tip", label: "Tip" },
-  "🥴": { icon: "heart", label: "Love" },
-};
 
 export default function PublicFeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -241,30 +231,30 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
 
       {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
-        <div className="flex gap-3">
-          {REACTION_EMOJIS.map((emoji) => {
-            const count = post.reactions?.[emoji] ?? 0;
-            const meta = REACTION_ICON_MAP[emoji];
+  <div className="flex gap-2">
+    {REACTION_EMOJIS.map((emoji) => {
+      const count = post.reactions?.[emoji] ?? 0;
 
-            return (
-              <button
-                key={emoji}
-                type="button"
-                aria-label={meta.label}
-                onClick={() => onReact(post.id, emoji)}
-                className="inline-flex items-center justify-center p-0 hover:scale-110 transition-transform"
-              >
-                <RevolvrIcon name={meta.icon} size={20} />
-                {count > 0 && (
-                  <span className="ml-1 text-[11px] text-white/70 leading-none">
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      return (
+        <button
+          key={emoji}
+          type="button"
+          aria-label={`React with ${emoji}`}
+          onClick={() => onReact(post.id, emoji)}
+          className="inline-flex items-center justify-center text-lg hover:scale-110 transition-transform"
+        >
+          <span>{emoji}</span>
+          {count > 0 && (
+            <span className="ml-1 text-[11px] text-white/70 leading-none">
+              {count}
+            </span>
+          )}
+        </button>
+      );
+    })}
+  </div>
+</div>
+
     </article>
   );
 }
