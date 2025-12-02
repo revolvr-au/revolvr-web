@@ -14,7 +14,11 @@ type Stats = {
   spins: number;
 };
 
-export default function IdentityLens({ open, onClose, userEmail }: IdentityLensProps) {
+export default function IdentityLens({
+  open,
+  onClose,
+  userEmail,
+}: IdentityLensProps) {
   const [stats, setStats] = useState<Stats>({ posts: 0, spins: 0 });
   const [loading, setLoading] = useState(false);
 
@@ -105,15 +109,11 @@ export default function IdentityLens({ open, onClose, userEmail }: IdentityLensP
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-2">
                   <div className="text-[11px] text-white/50">Posts</div>
-                  <div className="text-lg font-semibold">
-                    {stats.posts}
-                  </div>
+                  <div className="text-lg font-semibold">{stats.posts}</div>
                 </div>
                 <div className="rounded-xl bg-black/40 border border-white/10 px-3 py-2">
                   <div className="text-[11px] text-white/50">Paid spins</div>
-                  <div className="text-lg font-semibold">
-                    {stats.spins}
-                  </div>
+                  <div className="text-lg font-semibold">{stats.spins}</div>
                 </div>
               </div>
             )}
