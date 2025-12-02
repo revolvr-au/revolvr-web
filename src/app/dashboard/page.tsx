@@ -13,8 +13,6 @@ import SpinButton from "./_spinButton";
 import IdentityLens from "@/components/IdentityLens";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 
-
-
 type Post = {
   id: string;
   user_email: string;
@@ -36,9 +34,7 @@ const REACTIONS = [
   { icon: "heart" as const, label: "Love" },
   { icon: "tip" as const, label: "Tip" },
   { icon: "boost" as const, label: "Boost" },
-  { icon: "spin" as const, label: "Spin" },
 ];
-
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -278,8 +274,13 @@ export default function DashboardPage() {
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
         <div className="flex items-center gap-2">
+          <RevolvrIcon
+            name="boost"
+            size={20}
+            className="hidden sm:block"
+            alt="Revolvr"
+          />
           <span className="text-lg font-semibold tracking-tight">Revolvr</span>
-          <span>🔥</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="hidden sm:inline text-xs text-white/50">
@@ -293,17 +294,17 @@ export default function DashboardPage() {
           </button>
           <a
             href="/public-feed"
-            className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition"
+            className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition inline-flex items-center gap-1"
           >
-            Public feed
+            <RevolvrIcon name="share" size={14} />
+            <span>Public feed</span>
           </a>
           <button
-  className="px-3 py-1 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition inline-flex items-center gap-1"
-  onClick={handleSignOut}
->
-  <span>Sign out</span>
-</button>
-
+            className="px-3 py-1 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
+            onClick={handleSignOut}
+          >
+            Sign out
+          </button>
         </div>
       </header>
 
@@ -312,7 +313,10 @@ export default function DashboardPage() {
         {/* Left rail – creator summary */}
         <aside className="hidden md:flex w-64 flex-col gap-4">
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 space-y-3">
-            <h2 className="text-sm font-semibold">Creator dashboard</h2>
+            <div className="flex items-center gap-2">
+              <RevolvrIcon name="analytics" size={18} />
+              <h2 className="text-sm font-semibold">Creator dashboard</h2>
+            </div>
             <p className="text-xs text-white/60">
               Post from here. Everyone else watches the chaos on the public
               feed.
@@ -320,17 +324,19 @@ export default function DashboardPage() {
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => setIsComposerOpen(true)}
-                className="w-full inline-flex items-center justify-center rounded-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-medium shadow-lg shadow-emerald-500/25 transition"
+                className="w-full inline-flex items-center justify-center rounded-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-medium shadow-lg shadow-emerald-500/25 transition gap-2"
               >
-                + New post
+                <RevolvrIcon name="add" size={14} />
+                <span>New post</span>
               </button>
               <SpinButton userEmail={userEmail} />
             </div>
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 space-y-2 text-xs text-white/60">
-            <div className="font-medium text-white/80 text-sm">
-              Your Spin History
+            <div className="flex items-center gap-2 text-sm font-medium text-white/80">
+              <RevolvrIcon name="analytics" size={16} />
+              <span>Your Spin History</span>
             </div>
             {isLoadingSpins ? (
               <p>Loading spins…</p>
@@ -383,14 +389,15 @@ export default function DashboardPage() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-medium shadow-lg shadow-emerald-500/25 transition"
+                className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-medium shadow-lg shadow-emerald-500/25 transition gap-2"
                 onClick={() => setIsComposerOpen(true)}
               >
-                + New post
+                <RevolvrIcon name="add" size={14} />
+                <span>New post</span>
               </button>
 
               <button
-                className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60 gap-2"
                 disabled={!userEmail}
                 onClick={async () => {
                   const res = await fetch("/api/payments/checkout", {
@@ -406,7 +413,8 @@ export default function DashboardPage() {
                   if (data.url) window.location.href = data.url;
                 }}
               >
-                Test $2 tip
+                <RevolvrIcon name="tip" size={14} />
+                <span>Test $2 tip</span>
               </button>
 
               <SpinButton userEmail={userEmail} />
@@ -443,16 +451,18 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                       <button
-                        className="text-xs sm:text-sm px-3 py-1 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-500/30"
+                        className="text-xs sm:text-sm px-3 py-1 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-500/30 inline-flex items-center gap-1.5"
                         onClick={() => handleBoostPost(post.id, 500)}
                       >
-                        Boost (A$5)
+                        <RevolvrIcon name="boost" size={14} />
+                        <span>Boost (A$5)</span>
                       </button>
                       <button
-                        className="text-xs text-red-300 hover:text-red-200 underline"
+                        className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
                         onClick={() => handleDeletePost(post.id)}
                       >
-                        Delete
+                        <RevolvrIcon name="trash" size={14} />
+                        <span>Delete</span>
                       </button>
                     </div>
                   </div>
@@ -472,20 +482,19 @@ export default function DashboardPage() {
                   )}
 
                   <div className="px-4 pb-3">
-  <div className="flex gap-2">
-    {REACTIONS.map((reaction) => (
-      <button
-        key={reaction.label}
-        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 hover:bg-white/10"
-        type="button"
-        aria-label={reaction.label}
-      >
-        <RevolvrIcon name={reaction.icon} size={18} />
-      </button>
-    ))}
-  </div>
-</div>
-
+                    <div className="flex gap-3">
+                      {REACTIONS.map((reaction) => (
+                        <button
+                          key={reaction.label}
+                          type="button"
+                          aria-label={reaction.label}
+                          className="inline-flex items-center justify-center p-0 hover:scale-110 transition-transform"
+                        >
+                          <RevolvrIcon name={reaction.icon} size={20} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>

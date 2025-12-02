@@ -26,7 +26,6 @@ export type RevolvrIconName =
   | "share"
   | "tip"
   | "boost"
-  | "spin"
   | "heart";
 
 type Props = {
