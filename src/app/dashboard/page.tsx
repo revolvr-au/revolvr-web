@@ -11,6 +11,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import SpinButton from "./_spinButton";
 import IdentityLens from "@/components/IdentityLens";
+import { RevolvrIcon } from "@/components/RevolvrIcon";
+
+
 
 type Post = {
   id: string;
@@ -295,11 +298,12 @@ export default function DashboardPage() {
             Public feed
           </a>
           <button
-            className="px-3 py-1 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
-            onClick={handleSignOut}
-          >
-            Sign out
-          </button>
+  className="px-3 py-1 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition inline-flex items-center gap-1"
+  onClick={handleSignOut}
+>
+  <span>Sign out</span>
+</button>
+
         </div>
       </header>
 

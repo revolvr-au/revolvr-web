@@ -1,43 +1,43 @@
-type RevolvrIconName =
-  | 'home'
-  | 'dashboard'
-  | 'search'
-  | 'notifications'
-  | 'profile'
-  | 'wallet'
-  | 'transactions'
-  | 'send'
-  | 'receive'
-  | 'add'
-  | 'exchange'
-  | 'analytics'
-  | 'chat'
-  | 'activity'
-  | 'contacts'
-  | 'settings'
-  | 'info'
-  | 'trash'
-  | 'upload'
-  | 'download'
-  | 'share'
-  | 'tip'
-  | 'boost'
-  | 'spin';
+"use client";
 
-interface RevolvrIconProps {
+import React from "react";
+
+export type RevolvrIconName =
+  | "home"
+  | "dashboard"
+  | "search"
+  | "notifications"
+  | "profile"
+  | "wallet"
+  | "transactions"
+  | "send"
+  | "receive"
+  | "add"
+  | "exchange"
+  | "analytics"
+  | "chat"
+  | "activity"
+  | "contacts"
+  | "settings"
+  | "info"
+  | "trash"
+  | "upload"
+  | "download"
+  | "share"
+  | "tip"
+  | "boost"
+  | "spin"
+  | "heart";
+
+type Props = {
   name: RevolvrIconName;
-  size?: number;        // px
+  size?: number; // px
   className?: string;
   alt?: string;
-}
+};
 
-export function RevolvrIcon({
-  name,
-  size = 24,
-  className,
-  alt,
-}: RevolvrIconProps) {
-  const src = `/icons/icon-${name}.png`;
+export function RevolvrIcon({ name, size = 24, className, alt }: Props) {
+  const src = `/icons/icon-${name}.png`; // expects public/icons/icon-*.png
 
   return (
     <img
