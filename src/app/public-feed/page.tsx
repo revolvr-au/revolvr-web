@@ -19,13 +19,13 @@ type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
 const REACTION_ICON_MAP: Record<
   ReactionEmoji,
-  { icon: "heart" | "tip" | "boost" | "spin"; label: string }
+  { icon: "heart" | "tip" | "boost"; label: string }
 > = {
   "🔥": { icon: "boost", label: "Boost" },
-  "💀": { icon: "spin", label: "Spin" },
+  "💀": { icon: "boost", label: "Boost" },
   "😂": { icon: "heart", label: "Love" },
   "🤪": { icon: "tip", label: "Tip" },
-  "🥴": { icon: "spin", label: "Spin" },
+  "🥴": { icon: "heart", label: "Love" },
 };
 
 export default function PublicFeedPage() {
@@ -89,7 +89,7 @@ export default function PublicFeedPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <RevolvrIcon name="spin" size={22} alt="Revolvr" />
+          <RevolvrIcon name="boost" size={22} alt="Revolvr" />
           <span className="font-semibold text-sm sm:text-base">Revolvr</span>
         </div>
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
@@ -241,7 +241,7 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
 
       {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {REACTION_EMOJIS.map((emoji) => {
             const count = post.reactions?.[emoji] ?? 0;
             const meta = REACTION_ICON_MAP[emoji];
@@ -252,11 +252,11 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
                 type="button"
                 aria-label={meta.label}
                 onClick={() => onReact(post.id, emoji)}
-                className="inline-flex items-center justify-center h-8 rounded-full bg-white/5 hover:bg-white/10 px-2 gap-1"
+                className="inline-flex items-center justify-center p-0 hover:scale-110 transition-transform"
               >
-                <RevolvrIcon name={meta.icon} size={18} />
+                <RevolvrIcon name={meta.icon} size={20} />
                 {count > 0 && (
-                  <span className="text-[11px] text-white/70 leading-none">
+                  <span className="ml-1 text-[11px] text-white/70 leading-none">
                     {count}
                   </span>
                 )}
