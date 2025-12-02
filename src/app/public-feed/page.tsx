@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClients";
-import { RevolvrIcon } from "@/components/RevolvrIcon";
 
 type Post = {
   id: string;
@@ -16,7 +15,6 @@ type Post = {
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
-
 
 export default function PublicFeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -77,12 +75,11 @@ export default function PublicFeedPage() {
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
-          <div className="flex items-center gap-2">
-    <span className="text-lg">🔥</span>
-    <span className="text-lg font-semibold tracking-tight">Revolvr</span>
-  </div>
-
-
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">🔥</span>
+          <span className="font-semibold text-sm sm:text-base">Revolvr</span>
+        </div>
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
           <Link
             href="/login"
@@ -109,7 +106,7 @@ export default function PublicFeedPage() {
             </div>
           )}
 
-          {/* Header */}
+          {/* Header text */}
           <div className="flex items-start justify-between mt-1 mb-2">
             <div>
               <h1 className="text-lg sm:text-xl font-semibold text-white/90">
@@ -194,7 +191,7 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
 
   return (
     <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
-      {/* Header */}
+      {/* Post header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -232,30 +229,29 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
 
       {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
-  <div className="flex gap-2">
-    {REACTION_EMOJIS.map((emoji) => {
-      const count = post.reactions?.[emoji] ?? 0;
+        <div className="flex gap-2">
+          {REACTION_EMOJIS.map((emoji) => {
+            const count = post.reactions?.[emoji] ?? 0;
 
-      return (
-        <button
-          key={emoji}
-          type="button"
-          aria-label={`React with ${emoji}`}
-          onClick={() => onReact(post.id, emoji)}
-          className="inline-flex items-center justify-center text-lg hover:scale-110 transition-transform"
-        >
-          <span>{emoji}</span>
-          {count > 0 && (
-            <span className="ml-1 text-[11px] text-white/70 leading-none">
-              {count}
-            </span>
-          )}
-        </button>
-      );
-    })}
-  </div>
-</div>
-
+            return (
+              <button
+                key={emoji}
+                type="button"
+                aria-label={`React with ${emoji}`}
+                onClick={() => onReact(post.id, emoji)}
+                className="inline-flex items-center justify-center text-lg hover:scale-110 transition-transform"
+              >
+                <span>{emoji}</span>
+                {count > 0 && (
+                  <span className="ml-1 text-[11px] text-white/70 leading-none">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </article>
   );
 }
