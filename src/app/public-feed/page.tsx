@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClients";
+import { RevolvrIcon } from "@/components/RevolvrIcon";
+
 
 type Post = {
   id: string;
@@ -13,7 +15,13 @@ type Post = {
   reactions?: Record<string, number>;
 };
 
-const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"];
+const REACTIONS = [
+  { icon: "heart" as const, label: "Love" },
+  { icon: "tip" as const, label: "Tip" },
+  { icon: "boost" as const, label: "Boost" },
+  { icon: "spin" as const, label: "Spin" },
+];
+
 
 export default function PublicFeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -74,12 +82,19 @@ export default function PublicFeedPage() {
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-semibold tracking-tight">
-            Revolvr
-          </span>
-          <span className="text-lg">🔥</span>
-        </div>
+        <div className="flex gap-2">
+  {REACTIONS.map((reaction) => (
+    <button
+      key={reaction.label}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/5 hover:bg-white/10"
+      type="button"
+      aria-label={reaction.label}
+    >
+      <RevolvrIcon name={reaction.icon} size={18} />
+    </button>
+  ))}
+</div>
+
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
           <Link
             href="/login"
