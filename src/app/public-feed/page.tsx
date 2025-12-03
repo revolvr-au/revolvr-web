@@ -362,9 +362,7 @@ function PublicPostCard({
         </div>
       </div>
 
-      {/* Image */}
-      <div
-             {/* Media (image or video) */}
+     {/* Media (image or video) */}
 <div
   className={`overflow-hidden rounded-xl bg-black/40 ${
     hasMounted ? animationClass : ""
@@ -378,7 +376,6 @@ function PublicPostCard({
       playsInline
     />
   ) : (
-    // Image fallback
     <img
       src={post.image_url}
       alt={post.caption}
@@ -386,6 +383,7 @@ function PublicPostCard({
     />
   )}
 </div>
+
 
       {/* Caption */}
       {post.caption && (
