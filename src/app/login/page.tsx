@@ -2,7 +2,9 @@
 
 import { supabase } from "@/lib/supabaseClients";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+
 
 const SITE_URL = "https://revolvr-web.vercel.app";
 
@@ -12,6 +14,8 @@ export default function LoginPage() {
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+const searchParams = useSearchParams();
+const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
 
   // If already logged in, skip login and go to dashboard
   useEffect(() => {
@@ -19,7 +23,8 @@ export default function LoginPage() {
       try {
         const { data } = await supabase.auth.getUser();
         if (data.user) {
-          router.replace("/dashboard");
+          router.replace(redirectTo);
+
         }
       } catch (e) {
         console.error("Error checking session", e);

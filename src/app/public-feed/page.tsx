@@ -137,10 +137,13 @@ export default function PublicFeedPage() {
               </h1>
               <p className="text-xs sm:text-sm text-white/60 mt-1">
                 Anyone can watch this. Want to post?{" "}
-                <Link href="/login" className="underline">
-                  Sign in
-                </Link>{" "}
-                and head to your dashboard.
+                <Link
+  href="/login?redirectTo=/public-feed"
+  className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
+>
+  Sign in
+</Link>
+
               </p>
             </div>
             <span className="text-[11px] text-white/40 self-center">
@@ -216,8 +219,9 @@ function PublicPostCard({ post, viewerEmail, onReact }: PublicPostCardProps) {
   }, [created]);
 
   const requireAuth = () => {
-    router.push("/login");
-  };
+  router.push("/login?redirectTo=/public-feed");
+};
+
 
   const handleBoost = async () => {
     if (!viewerEmail) {
