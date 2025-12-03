@@ -2,29 +2,40 @@
 
 import { supabase } from "@/lib/supabaseClients";
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-
-
+import { useRouter } from "next/navigation";
 
 const SITE_URL = "https://revolvr-web.vercel.app";
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-const searchParams = useSearchParams();
-const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
 
-  // If already logged in, skip login and go to dashboard
+  // NEW: local redirectTo state (no useSearchParams)
+  const [redirectTo, setRedirectTo] = useState("/dashboard");
+
+  // Read redirectTo from URL *safely on client*
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const dest = params.get("redirectTo");
+
+    if (dest) {
+      setRedirectTo(dest);
+    }
+  }, []);
+
+  // If already logged in, send them to the intended page
   useEffect(() => {
     const checkSession = async () => {
       try {
         const { data } = await supabase.auth.getUser();
         if (data.user) {
           router.replace(redirectTo);
-
         }
       } catch (e) {
         console.error("Error checking session", e);
@@ -32,7 +43,7 @@ const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
     };
 
     checkSession();
-  }, [router]);
+  }, [router, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +55,7 @@ const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // Always send user back to the main production URL
+          // Magic link ALWAYS returns user to dashboard after email click
           emailRedirectTo: `${SITE_URL}/dashboard`,
         },
       });
