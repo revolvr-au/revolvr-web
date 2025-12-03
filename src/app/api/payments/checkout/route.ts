@@ -1,89 +1,115 @@
-// src/app/api/payments/checkout/route.ts
-import Stripe from "stripe";
 import { NextResponse } from "next/server";
+import Stripe from "stripe";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 if (!stripeSecretKey) {
-  throw new Error("Missing STRIPE_SECRET_KEY env var");
+  throw new Error("Missing STRIPE_SECRET_KEY");
 }
 
-// Match the version that the Stripe SDK types expect
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2025-11-17.clover",
-});
+// No apiVersion argument = use account default, avoids TS mismatch
+const stripe = new Stripe(stripeSecretKey);
 
-// Use your deployed URL here if you change domains
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
-type CheckoutBody = {
-  mode: "tip" | "boost" | "spin";
-  userEmail: string | null;
-  amountCents: number;
+type CheckoutMode =
+  | "tip"
+  | "boost"
+  | "spin"
+  | "tip-pack"
+  | "boost-pack"
+  | "spin-pack";
+
+type Body = {
+  mode: CheckoutMode;
+  userEmail?: string | null;
   postId?: string | null;
-  // Optional override for where to send the user after success
-  successPath?: string;
+  amountCents?: number; // ignored for security – we decide on the server
 };
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as CheckoutBody;
+    const body = (await req.json()) as Body;
+    const { mode, postId, userEmail } = body;
 
-    const { mode, userEmail, amountCents, postId, successPath } = body;
-
-    if (!mode || !amountCents) {
-      return NextResponse.json(
-        { error: "Missing required checkout parameters" },
-        { status: 400 }
-      );
+    if (!mode) {
+      return NextResponse.json({ error: "Missing mode" }, { status: 400 });
     }
 
-    const label =
-      mode === "tip"
-        ? "Revolvr creator tip"
-        : mode === "boost"
-        ? "Revolvr post boost"
-        : "Revolvr spinner spin";
+    let name = "";
+    let amountCents = 0;
 
-    const successUrlPath = successPath ?? "/dashboard";
-    const successUrl = new URL(`${SITE_URL}${successUrlPath}`);
-    successUrl.searchParams.set("payment", "success");
-    successUrl.searchParams.set("mode", mode);
+    switch (mode) {
+      // Single actions under a specific post
+      case "tip":
+        name = "Creator tip";
+        amountCents = 200; // A$2
+        break;
+      case "boost":
+        name = "Post boost";
+        amountCents = 500; // A$5
+        break;
+      case "spin":
+        name = "Revolvr spinner spin";
+        amountCents = 100; // A$1
+        break;
 
-    const cancelUrl = new URL(`${SITE_URL}${successUrlPath}`);
-    cancelUrl.searchParams.set("payment", "cancelled");
-    cancelUrl.searchParams.set("mode", mode);
+      // Bulk packs (no specific post – just credits)
+      case "tip-pack":
+        name = "Tip pack (10× A$2 tips)";
+        amountCents = 2000; // A$20
+        break;
+      case "boost-pack":
+        name = "Boost pack (10× A$5 boosts)";
+        amountCents = 5000; // A$50
+        break;
+      case "spin-pack":
+        name = "Spin pack (20× A$1 spins)";
+        amountCents = 2000; // A$20
+        break;
+
+      default:
+        return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
+    }
+
+    const successParams = new URLSearchParams();
+    successParams.set("success", "1");
+    successParams.set("mode", mode);
+    if (postId) successParams.set("postId", postId);
+
+    const cancelParams = new URLSearchParams();
+    cancelParams.set("canceled", "1");
+    cancelParams.set("mode", mode);
+    if (postId) cancelParams.set("postId", postId);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+      payment_method_types: ["card"],
       customer_email: userEmail ?? undefined,
       line_items: [
         {
           price_data: {
             currency: "aud",
             unit_amount: amountCents,
-            product_data: {
-              name: label,
-            },
+            product_data: { name },
           },
           quantity: 1,
         },
       ],
-      success_url: successUrl.toString(),
-      cancel_url: cancelUrl.toString(),
+      success_url: `${SITE_URL}/public-feed?${successParams.toString()}`,
+      cancel_url: `${SITE_URL}/public-feed?${cancelParams.toString()}`,
       metadata: {
         mode,
         postId: postId ?? "",
-        origin: "revolvr-public-feed",
       },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (err) {
     console.error("[payments/checkout] error", err);
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: "Stripe checkout failed" },
       { status: 500 }
     );
   }

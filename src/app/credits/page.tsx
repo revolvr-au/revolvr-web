@@ -2,76 +2,59 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClients";
 
-type Mode = "tip-pack" | "boost-pack" | "spin-pack";
-
-const TIP_PACK_PRICE_CENTS = 2000;   // A$20 for 10 tips (example)
-const BOOST_PACK_PRICE_CENTS = 2500; // A$25 for 5 boosts (example)
-const SPIN_PACK_PRICE_CENTS = 1000;  // A$10 for 20 spins (example)
+type PackMode = "tip-pack" | "boost-pack" | "spin-pack";
 
 export default function CreditsPage() {
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load current user; if not logged in, send to login then back here
+  // Load current user (if logged in)
   useEffect(() => {
     const loadUser = async () => {
       try {
-        setLoadingUser(true);
         const {
           data: { user },
         } = await supabase.auth.getUser();
-
-        if (!user?.email) {
-          router.replace("/login?redirectTo=/credits");
-          return;
-        }
-
-        setUserEmail(user.email);
+        setUserEmail(user?.email ?? null);
       } catch (e) {
-        console.error("[CreditsPage] error loading user", e);
-        setError("Revolvr glitched out checking your session 😵‍💫");
-      } finally {
-        setLoadingUser(false);
+        console.error("[credits] loadUser error", e);
       }
     };
 
     loadUser();
-  }, [router]);
+  }, []);
 
-  const startPackCheckout = async (mode: Mode) => {
+  const ensureLoggedIn = () => {
     if (!userEmail) {
       router.push("/login?redirectTo=/credits");
-      return;
+      return false;
     }
+    return true;
+  };
 
-    setError(null);
-    setIsSubmitting(true);
+  const startPackCheckout = async (mode: PackMode) => {
+    if (!ensureLoggedIn()) return;
 
     try {
-      let amountCents: number;
-
-      if (mode === "tip-pack") amountCents = TIP_PACK_PRICE_CENTS;
-      else if (mode === "boost-pack") amountCents = BOOST_PACK_PRICE_CENTS;
-      else amountCents = SPIN_PACK_PRICE_CENTS;
+      setIsLoading(true);
+      setError(null);
 
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode,
-          userEmail,
-          amountCents,
-          postId: null,
+          mode,      // "tip-pack" | "boost-pack" | "spin-pack"
+          userEmail, // for Stripe receipt
         }),
       });
 
       if (!res.ok) {
-        console.error("Pack checkout failed", await res.text());
+        console.error("Pack checkout failed:", await res.text());
         setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
         return;
       }
@@ -83,99 +66,111 @@ export default function CreditsPage() {
         setError("Stripe did not return a checkout URL.");
       }
     } catch (e) {
-      console.error("Error starting pack checkout", e);
+      console.error("[credits] startPackCheckout error", e);
       setError("Revolvr glitched out talking to Stripe 😵‍💫");
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
-  if (loadingUser) {
-    return (
-      <main className="min-h-screen bg-[#050814] text-white flex items-center justify-center">
-        <p className="text-sm text-white/70">Checking your session…</p>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen bg-[#050814] text-white flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <header className="mb-6">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-lg">Revolvr credits</span>
-            <span>🔥</span>
-          </div>
-          <p className="text-xs text-white/60">
-            Stock up on tips, boosts and spins. Payments are handled by Stripe.
-          </p>
-        </header>
-
-        {error && (
-          <div className="mb-4 rounded-lg bg-red-500/10 text-red-200 text-sm px-3 py-2">
-            {error}
-          </div>
-        )}
-
-        {/* Packs */}
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={() => startPackCheckout("tip-pack")}
-            disabled={isSubmitting}
-            className="w-full text-left rounded-2xl border border-emerald-400/30 bg-emerald-500/5 hover:bg-emerald-500/10 px-4 py-3 transition disabled:opacity-60"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">Tip pack</div>
-                <div className="text-xs text-white/60">
-                  10 creator tips · pay once, tip as you go
-                </div>
-              </div>
-              <div className="text-sm font-semibold">A$20</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => startPackCheckout("boost-pack")}
-            disabled={isSubmitting}
-            className="w-full text-left rounded-2xl border border-indigo-400/40 bg-indigo-500/5 hover:bg-indigo-500/10 px-4 py-3 transition disabled:opacity-60"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">Boost pack</div>
-                <div className="text-xs text-white/60">
-                  5 post boosts · keep your favourites at the top
-                </div>
-              </div>
-              <div className="text-sm font-semibold">A$25</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => startPackCheckout("spin-pack")}
-            disabled={isSubmitting}
-            className="w-full text-left rounded-2xl border border-pink-400/40 bg-pink-500/5 hover:bg-pink-500/10 px-4 py-3 transition disabled:opacity-60"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold">Spin pack</div>
-                <div className="text-xs text-white/60">
-                  20 Revolvr spins · more chaos, less friction
-                </div>
-              </div>
-              <div className="text-sm font-semibold">A$10</div>
-            </div>
-          </button>
+    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+      {/* Top bar */}
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-sm sm:text-base">Revolvr</span>
+          <span className="text-base">🔥</span>
         </div>
+        <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
+          <Link
+            href="/public-feed"
+            className="px-3 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition text-xs"
+          >
+            Back to public feed
+          </Link>
+        </div>
+      </header>
 
-        <p className="mt-4 text-[11px] text-white/40 text-center">
-          After payment, credits are added to your Revolvr account automatically.
-        </p>
-      </div>
-    </main>
+      <main className="flex-1 flex justify-center">
+        <div className="w-full max-w-xl px-4 py-6 space-y-4">
+          <div>
+            <h1 className="text-lg sm:text-xl font-semibold text-white/90">
+              Buy Revolvr credits
+            </h1>
+            <p className="text-xs sm:text-sm text-white/60 mt-1">
+              Grab packs of tips, boosts or spins so you don’t have to check
+              out every single time.
+            </p>
+          </div>
+
+          {error && (
+            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
+              <span>{error}</span>
+              <button
+                className="text-xs underline"
+                onClick={() => setError(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {/* Tip pack */}
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => startPackCheckout("tip-pack")}
+              className="rounded-2xl border border-emerald-400/50 bg-emerald-500/5 hover:bg-emerald-500/15 px-4 py-3 text-left text-xs sm:text-sm transition disabled:opacity-60"
+            >
+              <div className="text-[11px] uppercase tracking-wide text-emerald-300/80">
+                Tip pack
+              </div>
+              <div className="mt-1 text-lg font-semibold">A$20</div>
+              <div className="mt-1 text-[11px] text-emerald-100/80">
+                10× A$2 creator tips
+              </div>
+            </button>
+
+            {/* Boost pack */}
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => startPackCheckout("boost-pack")}
+              className="rounded-2xl border border-indigo-400/60 bg-indigo-500/5 hover:bg-indigo-500/15 px-4 py-3 text-left text-xs sm:text-sm transition disabled:opacity-60"
+            >
+              <div className="text-[11px] uppercase tracking-wide text-indigo-300/80">
+                Boost pack
+              </div>
+              <div className="mt-1 text-lg font-semibold">A$50</div>
+              <div className="mt-1 text-[11px] text-indigo-100/80">
+                10× A$5 post boosts
+              </div>
+            </button>
+
+            {/* Spin pack */}
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={() => startPackCheckout("spin-pack")}
+              className="rounded-2xl border border-pink-400/60 bg-pink-500/5 hover:bg-pink-500/15 px-4 py-3 text-left text-xs sm:text-sm transition disabled:opacity-60"
+            >
+              <div className="text-[11px] uppercase tracking-wide text-pink-300/80">
+                Spin pack
+              </div>
+              <div className="mt-1 text-lg font-semibold">A$20</div>
+              <div className="mt-1 text-[11px] text-pink-100/80">
+                20× A$1 Revolvr spins
+              </div>
+            </button>
+          </div>
+
+          <p className="text-[11px] text-white/35 mt-2">
+            You’re in test mode right now – use Stripe test cards until we’re
+            ready for launch.
+          </p>
+        </div>
+      </main>
+    </div>
   );
 }
