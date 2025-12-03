@@ -1,79 +1,79 @@
 // src/app/api/payments/webhook/route.ts
-import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
+// --- Environment variables ---
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!stripeSecretKey || !stripeWebhookSecret) {
-  throw new Error("Stripe secrets not set");
+  throw new Error("Missing Stripe environment variables");
 }
 if (!supabaseUrl || !supabaseServiceRoleKey) {
-  throw new Error("Supabase service role env vars not set");
+  throw new Error("Missing Supabase environment variables");
 }
 
+// --- Stripe client ---
 const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2025-11-17.clover",
+  apiVersion: "2024-06-20", // VALID + supported
 });
 
-
-// Service-role client (server-only!)
+// --- Supabase admin client (server-only) ---
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
+// --- Webhook handler ---
 export async function POST(req: Request) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
 
-
-  let event: Stripe.Event;
-
-  try {
-    if (!signature) {
-      throw new Error("Missing Stripe signature");
-    }
-
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature,
-      stripeWebhookSecret
-    );
-  } catch (err: any) {
-    console.error("[stripe webhook] signature error", err?.message ?? err);
+  if (!signature) {
     return NextResponse.json(
-      { error: `Webhook error: ${err?.message ?? "Invalid signature"}` },
+      { error: "Missing Stripe signature" },
       { status: 400 }
     );
   }
 
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      stripeWebhookSecret as string // guaranteed non-null
+    );
+  } catch (err: any) {
+    console.error("[stripe webhook] invalid signature", err?.message ?? err);
+    return NextResponse.json(
+      { error: "Invalid webhook signature" },
+      { status: 400 }
+    );
+  }
+
+  // Handle completed checkout session
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+
     const mode = session.metadata?.mode;
     const email =
       session.customer_email ?? session.metadata?.userEmail ?? undefined;
 
     if (!mode || !email) {
-      console.warn(
-        "[stripe webhook] session completed without mode/email",
-        session.id
-      );
-      return NextResponse.json({ received: true });
+      console.warn("[stripe webhook] missing mode or email", session.id);
+      return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    // Only pack modes affect balances
-    if (
+    // Only pack purchases adjust balances
+    const isPack =
       mode === "tip-pack" ||
       mode === "boost-pack" ||
-      mode === "spin-pack"
-    ) {
+      mode === "spin-pack";
+
+    if (isPack) {
       const tipPackSize = parseInt(session.metadata?.tipPackSize ?? "0", 10);
-      const boostPackSize = parseInt(
-        session.metadata?.boostPackSize ?? "0",
-        10
-      );
+      const boostPackSize = parseInt(session.metadata?.boostPackSize ?? "0", 10);
       const spinPackSize = parseInt(session.metadata?.spinPackSize ?? "0", 10);
 
       try {
@@ -106,12 +106,11 @@ export async function POST(req: Request) {
         if (upsertError) throw upsertError;
 
         console.log(
-          `[stripe webhook] credited ${mode} for ${email} (tips +${deltaTips}, boosts +${deltaBoosts}, spins +${deltaSpins})`
+          `[stripe webhook] credited ${mode} to ${email}: (+${deltaTips} tips, +${deltaBoosts} boosts, +${deltaSpins} spins)`
         );
       } catch (err) {
-        console.error("[stripe webhook] Supabase error", err);
-        // We still return 200 so Stripe doesn't retry forever;
-        // but you can monitor logs and manually fix if needed.
+        console.error("[stripe webhook] database error", err);
+        // Still return 200 so Stripe does not retry forever
       }
     }
   }
