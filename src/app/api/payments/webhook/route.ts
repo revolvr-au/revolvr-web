@@ -16,7 +16,10 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
   throw new Error("Supabase service role env vars not set");
 }
 
-const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" });
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: "2025-11-17.clover",
+});
+
 
 // Service-role client (server-only!)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
