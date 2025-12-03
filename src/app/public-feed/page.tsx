@@ -103,7 +103,9 @@ export default function PublicFeedPage() {
   // Helper to ensure user is logged in before payment
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      router.push("/login?redirectTo=/public-feed");
+      // After login, send them back to the public feed
+      const redirect = encodeURIComponent("/public-feed");
+      router.push(`/login?redirectTo=${redirect}`);
       return false;
     }
     return true;
@@ -170,9 +172,9 @@ export default function PublicFeedPage() {
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
           <Link
             href="/credits"
-            className="px-3 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition text-xs"
+            className="px-3 py-1 rounded-full border border-emerald-400/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200 transition text-xs"
           >
-            Buy credits
+            Buy packs
           </Link>
           <Link
             href="/login?redirectTo=/public-feed"
@@ -199,7 +201,7 @@ export default function PublicFeedPage() {
             </div>
           )}
 
-          {/* Header copy */}
+          {/* Header */}
           <div className="flex items-start justify-between mt-1 mb-2">
             <div>
               <h1 className="text-lg sm:text-xl font-semibold text-white/90">
@@ -332,29 +334,38 @@ function PublicPostCard({
         </p>
       )}
 
-      {/* Tip / Boost / Spin row */}
-      <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => onTip(post.id)}
-          className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200"
+      {/* Tip / Boost / Spin row + packs link */}
+      <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onTip(post.id)}
+            className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200"
+          >
+            Tip A$2
+          </button>
+          <button
+            type="button"
+            onClick={() => onBoost(post.id)}
+            className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200"
+          >
+            Boost A$5
+          </button>
+          <button
+            type="button"
+            onClick={() => onSpin(post.id)}
+            className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200"
+          >
+            Spin A$1
+          </button>
+        </div>
+
+        <Link
+          href="/credits"
+          className="text-[11px] text-white/50 hover:text-emerald-300 underline-offset-2 hover:underline whitespace-nowrap"
         >
-          Tip A$2
-        </button>
-        <button
-          type="button"
-          onClick={() => onBoost(post.id)}
-          className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200"
-        >
-          Boost A$5
-        </button>
-        <button
-          type="button"
-          onClick={() => onSpin(post.id)}
-          className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200"
-        >
-          Spin A$1
-        </button>
+          Buy packs instead
+        </Link>
       </div>
 
       {/* Reactions */}
