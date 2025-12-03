@@ -14,10 +14,10 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // NEW: local redirectTo state (no useSearchParams)
+  // Local redirect target used when user already has a session
   const [redirectTo, setRedirectTo] = useState("/dashboard");
 
-  // Read redirectTo from URL *safely on client*
+  // Read ?redirectTo=... from URL on the client (no useSearchParams)
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -29,7 +29,7 @@ export default function LoginPage() {
     }
   }, []);
 
-  // If already logged in, send them to the intended page
+  // If already logged in, skip login and go to redirectTo
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -55,8 +55,8 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          // Magic link ALWAYS returns user to dashboard after email click
-          emailRedirectTo: `${SITE_URL}/dashboard`,
+          // ✅ When user clicks the magic link in email, send them to PUBLIC FEED
+          emailRedirectTo: `${SITE_URL}/public-feed`,
         },
       });
 
