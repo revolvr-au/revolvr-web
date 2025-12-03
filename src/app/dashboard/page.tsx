@@ -32,7 +32,6 @@ type Spin = {
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 
-
 const REACTIONS = [
   { icon: "heart" as const, label: "Love" },
   { icon: "tip" as const, label: "Tip" },
@@ -114,28 +113,25 @@ export default function DashboardPage() {
   }, []);
 
   // Load spins
-  const loadSpins = useCallback(
-    async (email: string) => {
-      try {
-        setIsLoadingSpins(true);
+  const loadSpins = useCallback(async (email: string) => {
+    try {
+      setIsLoadingSpins(true);
 
-        const { data, error } = await supabase
-          .from("spinner_spins")
-          .select("*")
-          .eq("user_email", email)
-          .order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("spinner_spins")
+        .select("*")
+        .eq("user_email", email)
+        .order("created_at", { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setSpins(data ?? []);
-      } catch (e) {
-        console.error("Error loading spins", e);
-      } finally {
-        setIsLoadingSpins(false);
-      }
-    },
-    []
-  );
+      setSpins(data ?? []);
+    } catch (e) {
+      console.error("Error loading spins", e);
+    } finally {
+      setIsLoadingSpins(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (!userEmail) return;
@@ -152,7 +148,7 @@ export default function DashboardPage() {
     event.preventDefault();
     if (!userEmail) return;
     if (!file) {
-      setError("Please add a photo before posting.");
+      setError("Please add an image or short video before posting.");
       return;
     }
 
@@ -484,22 +480,20 @@ export default function DashboardPage() {
                     </p>
                   )}
 
-                <div className="px-4 pb-3">
-  <div className="flex gap-3">
-    {REACTION_EMOJIS.map((emoji) => (
-      <button
-        key={emoji}
-        type="button"
-        aria-label={`React with ${emoji}`}
-        className="inline-flex items-center justify-center text-base sm:text-lg hover:scale-110 transition-transform"
-      >
-        <span>{emoji}</span>
-      </button>
-    ))}
-  </div>
-</div>
-
-
+                  <div className="px-4 pb-3">
+                    <div className="flex gap-3">
+                      {REACTION_EMOJIS.map((emoji) => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          aria-label={`React with ${emoji}`}
+                          className="inline-flex items-center justify-center text-base sm:text-lg hover:scale-110 transition-transform"
+                        >
+                          <span>{emoji}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </article>
               ))}
             </div>
@@ -522,17 +516,23 @@ export default function DashboardPage() {
             </div>
 
             <form className="px-4 py-3 space-y-4" onSubmit={handleCreatePost}>
-              <label className="text-sm font-medium space-y-1">
-                <span>Image</span>
+              {/* Image or video upload */}
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-white/70">
+                  Image or short video
+                </label>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   onChange={(e) =>
                     setFile(e.target.files ? e.target.files[0] : null)
                   }
                   className="block w-full text-sm text-white/80 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-medium file:bg-emerald-500 file:text-black hover:file:bg-emerald-400"
                 />
-              </label>
+                <p className="text-[11px] text-white/40">
+                  Supported: JPG, PNG, GIF, MP4 (short clips work best).
+                </p>
+              </div>
 
               <label className="text-sm font-medium space-y-1">
                 <span>Caption</span>

@@ -1,3 +1,11 @@
+
+x
+# in your repo
+nano src/app/public-feed/page.tsx  # or open in VS Code and paste
+
+git add src/app/public-feed/page.tsx
+git commit -m "Add single vs pack choice for tips/boosts/spins"
+git push
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -364,31 +372,16 @@ function PublicPostCard({
 
       {/* Image */}
       <div
-              {/* Media (image or video) */}
-      <div
         className={`overflow-hidden rounded-xl bg-black/40 ${
           hasMounted ? animationClass : ""
         }`}
       >
-        {post.image_url?.match(/\.(mp4|webm|ogg)$/i) ? (
-          // Video post
-          <video
-            src={post.image_url}
-            className="w-full h-auto block"
-            controls
-            playsInline
-          />
-        ) : (
-          // Image post (current behaviour)
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={post.image_url}
-              alt={post.caption}
-              className="w-full h-auto block"
-            />
-          </>
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={post.image_url}
+          alt={post.caption}
+          className="w-full h-auto block"
+        />
       </div>
 
       {/* Caption */}

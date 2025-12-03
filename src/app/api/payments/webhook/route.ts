@@ -1,134 +1,116 @@
-import { NextRequest, NextResponse } from "next/server";
+// src/app/api/payments/webhook/route.ts
+import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // Type hack because Stripe's TS types expect a literal:
-  apiVersion: "2024-06-20" as any,
-});
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-// Admin Supabase client (service role)
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!url || !key) {
-    throw new Error(
-      "Missing Supabase admin env vars (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)."
-    );
-  }
-
-  return createClient(url, key);
+if (!stripeSecretKey || !stripeWebhookSecret) {
+  throw new Error("Stripe secrets not set");
+}
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  throw new Error("Supabase service role env vars not set");
 }
 
-export async function POST(req: NextRequest) {
-  if (!webhookSecret) {
-    console.error("Missing STRIPE_WEBHOOK_SECRET env var");
-    return new NextResponse("Webhook secret not configured", { status: 500 });
-  }
+const stripe = new Stripe(stripeSecretKey, { apiVersion: "2024-06-20" });
 
+// Service-role client (server-only!)
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+export async function POST(req: Request) {
   const body = await req.text();
-  const sig = req.headers.get("stripe-signature");
-
-  if (!sig) {
-    console.error("Stripe webhook called without signature header");
-    return new NextResponse("Missing stripe-signature", { status: 400 });
-  }
+  const signature = headers().get("stripe-signature");
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
+    if (!signature) {
+      throw new Error("Missing Stripe signature");
+    }
+
+    event = stripe.webhooks.constructEvent(
+      body,
+      signature,
+      stripeWebhookSecret
+    );
   } catch (err: any) {
-    console.error("❌ Stripe webhook signature verification failed:", err.message);
-    return new NextResponse(`Webhook Error: ${err.message}`, { status: 400 });
+    console.error("[stripe webhook] signature error", err?.message ?? err);
+    return NextResponse.json(
+      { error: `Webhook error: ${err?.message ?? "Invalid signature"}` },
+      { status: 400 }
+    );
   }
 
-  // We only care about successful checkout sessions for now
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    const mode = session.metadata?.mode;
+    const email =
+      session.customer_email ?? session.metadata?.userEmail ?? undefined;
 
-    // Try to be backwards-compatible with previous metadata keys
-    const paymentKind =
-      session.metadata?.paymentKind ??
-      session.metadata?.mode ??
-      session.metadata?.type ??
-      null;
-
-    const userEmail =
-      session.metadata?.userEmail ||
-      session.customer_email ||
-      null;
-
-    const postId = session.metadata?.postId || null;
-
-    console.log("✅ checkout.session.completed", {
-      paymentKind,
-      userEmail,
-      postId,
-      sessionId: session.id,
-    });
-
-    const supabase = getSupabaseAdmin();
-
-    try {
-      if (paymentKind === "spin") {
-        // Record a spin in spinner_spins
-        const { error } = await supabase.from("spinner_spins").insert({
-          user_email: userEmail,
-          post_id: postId || null,
-        });
-
-        if (error) {
-          console.error("Error inserting spinner_spins row:", error);
-        } else {
-          console.log("🎯 Recorded spinner spin in spinner_spins");
-        }
-      } else if (paymentKind === "boost" && postId) {
-        // 24h boost window
-        const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24);
-
-        // Mark the post as boosted
-        const { error: updateErr } = await supabase
-          .from("posts")
-          .update({
-            is_boosted: true,
-            boost_expires_at: expiresAt.toISOString(),
-          })
-          .eq("id", postId);
-
-        if (updateErr) {
-          console.error("Error updating boosted post:", updateErr);
-        } else {
-          console.log("⚡ Marked post as boosted:", postId);
-        }
-
-        // Optional: track in boosts table if it exists
-        const { error: boostErr } = await supabase.from("boosts").insert({
-          user_email: userEmail,
-          post_id: postId,
-          boost_expires_at: expiresAt.toISOString(),
-        });
-
-        if (boostErr) {
-          console.warn(
-            "Could not insert into boosts table (ok if table/cols differ):",
-            boostErr
-          );
-        }
-      } else {
-        console.log("Ignoring checkout.session.completed with kind:", paymentKind);
-      }
-    } catch (err) {
-      console.error("Unhandled error in webhook handler:", err);
-      // We still return 200 so Stripe doesn't retry forever, but logs will show the issue.
+    if (!mode || !email) {
+      console.warn(
+        "[stripe webhook] session completed without mode/email",
+        session.id
+      );
+      return NextResponse.json({ received: true });
     }
-  } else {
-    console.log("Ignoring Stripe event type:", event.type);
+
+    // Only pack modes affect balances
+    if (
+      mode === "tip-pack" ||
+      mode === "boost-pack" ||
+      mode === "spin-pack"
+    ) {
+      const tipPackSize = parseInt(session.metadata?.tipPackSize ?? "0", 10);
+      const boostPackSize = parseInt(
+        session.metadata?.boostPackSize ?? "0",
+        10
+      );
+      const spinPackSize = parseInt(session.metadata?.spinPackSize ?? "0", 10);
+
+      try {
+        const { data: existing, error: selectError } = await supabaseAdmin
+          .from("user_balances")
+          .select("*")
+          .eq("user_email", email)
+          .maybeSingle();
+
+        if (selectError) throw selectError;
+
+        const currentTips = existing?.tip_credits ?? 0;
+        const currentBoosts = existing?.boost_credits ?? 0;
+        const currentSpins = existing?.spin_credits ?? 0;
+
+        const deltaTips = mode === "tip-pack" ? tipPackSize : 0;
+        const deltaBoosts = mode === "boost-pack" ? boostPackSize : 0;
+        const deltaSpins = mode === "spin-pack" ? spinPackSize : 0;
+
+        const { error: upsertError } = await supabaseAdmin
+          .from("user_balances")
+          .upsert({
+            user_email: email,
+            tip_credits: currentTips + deltaTips,
+            boost_credits: currentBoosts + deltaBoosts,
+            spin_credits: currentSpins + deltaSpins,
+            updated_at: new Date().toISOString(),
+          });
+
+        if (upsertError) throw upsertError;
+
+        console.log(
+          `[stripe webhook] credited ${mode} for ${email} (tips +${deltaTips}, boosts +${deltaBoosts}, spins +${deltaSpins})`
+        );
+      } catch (err) {
+        console.error("[stripe webhook] Supabase error", err);
+        // We still return 200 so Stripe doesn't retry forever;
+        // but you can monitor logs and manually fix if needed.
+      }
+    }
   }
 
-  return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true }, { status: 200 });
 }
