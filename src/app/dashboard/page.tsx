@@ -484,20 +484,21 @@ export default function DashboardPage() {
                     </p>
                   )}
 
-                  <div className="px-4 pb-3">
-  <div className="flex gap-2">
+                <div className="px-4 pb-3">
+  <div className="flex gap-3">
     {REACTION_EMOJIS.map((emoji) => (
       <button
         key={emoji}
         type="button"
         aria-label={`React with ${emoji}`}
-        className="inline-flex items-center justify-center text-lg hover:scale-110 transition-transform"
+        className="inline-flex items-center justify-center text-base sm:text-lg hover:scale-110 transition-transform"
       >
         <span>{emoji}</span>
       </button>
     ))}
   </div>
 </div>
+
 
                 </article>
               ))}
