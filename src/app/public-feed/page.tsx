@@ -26,10 +26,6 @@ export default function PublicFeedPage() {
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
-  // Payment status after returning from Stripe
-  const [paymentStatus, setPaymentStatus] = useState<null | "success" | "cancelled">(null);
-  const [paymentMode, setPaymentMode] = useState<"tip" | "boost" | "spin" | null>(null);
-
   // Load current user (if logged in)
   useEffect(() => {
     const fetchUser = async () => {
@@ -49,23 +45,6 @@ export default function PublicFeedPage() {
     };
 
     fetchUser();
-  }, []);
-
-  // Check URL for payment result when we land back from Stripe
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get("payment");
-    const mode = params.get("mode") as "tip" | "boost" | "spin" | null;
-
-    if (status === "success" || status === "cancelled") {
-      setPaymentStatus(status);
-      setPaymentMode(mode);
-
-      // Clean the URL so refresh doesn't keep showing the banner
-      window.history.replaceState({}, "", window.location.pathname);
-    }
   }, []);
 
   // Load posts
@@ -149,8 +128,6 @@ export default function PublicFeedPage() {
           userEmail,
           amountCents,
           postId,
-          // 👇 NEW: always send public viewers back to the public feed
-          successPath: "/public-feed",
         }),
       });
 
@@ -173,9 +150,14 @@ export default function PublicFeedPage() {
   };
 
   // Concrete handlers used by each post
-  const handleTip = (postId: string) => startPayment("tip", postId, 200); // A$2
-  const handleBoost = (postId: string) => startPayment("boost", postId, 500); // A$5
-  const handleSpin = (postId: string) => startPayment("spin", postId, 100); // A$1
+  const handleTip = (postId: string) =>
+    startPayment("tip", postId, 200); // A$2
+
+  const handleBoost = (postId: string) =>
+    startPayment("boost", postId, 500); // A$5
+
+  const handleSpin = (postId: string) =>
+    startPayment("spin", postId, 100); // A$1
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
@@ -186,6 +168,12 @@ export default function PublicFeedPage() {
           <span className="text-base">🔥</span>
         </div>
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
+          <Link
+            href="/credits"
+            className="px-3 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition text-xs"
+          >
+            Buy credits
+          </Link>
           <Link
             href="/login?redirectTo=/public-feed"
             className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
@@ -198,22 +186,6 @@ export default function PublicFeedPage() {
       {/* Main content */}
       <main className="flex-1 flex justify-center">
         <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-3">
-          {/* Payment banners */}
-          {paymentStatus === "success" && (
-            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/40 px-3 py-2 text-xs text-emerald-100 mb-2">
-              {paymentMode === "tip" && "Thanks for your tip – it’s on its way to the creator."}
-              {paymentMode === "boost" &&
-                "Boost purchased – we’ll surface this post more in the feed."}
-              {paymentMode === "spin" && "Spin purchased – enjoy the Revolvr spin!"}
-            </div>
-          )}
-
-          {paymentStatus === "cancelled" && (
-            <div className="rounded-xl bg-yellow-500/10 border border-yellow-500/40 px-3 py-2 text-xs text-yellow-100 mb-2">
-              Payment cancelled. No charges were made.
-            </div>
-          )}
-
           {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
@@ -227,7 +199,7 @@ export default function PublicFeedPage() {
             </div>
           )}
 
-          {/* Header */}
+          {/* Header copy */}
           <div className="flex items-start justify-between mt-1 mb-2">
             <div>
               <h1 className="text-lg sm:text-xl font-semibold text-white/90">
