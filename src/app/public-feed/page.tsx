@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
@@ -11,18 +11,9 @@ type Post = {
   image_url: string;
   caption: string;
   created_at: string;
-  reactions?: Record<string, number>;
 };
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
-type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
-
-type PurchaseMode = "tip" | "boost" | "spin";
-
-type PendingPurchase = {
-  postId: string;
-  mode: PurchaseMode;
-};
 
 export default function PublicFeedPage() {
   const router = useRouter();
@@ -32,25 +23,27 @@ export default function PublicFeedPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [pendingPurchase, setPendingPurchase] =
-    useState<PendingPurchase | null>(null);
 
-  // -------- Load current user -----------------------
+  // Composer UI state
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [isPosting, setIsPosting] = useState(false);
+
+  // Load user session
   useEffect(() => {
-    const fetchUser = async () => {
+    const loadUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
       setUserEmail(user?.email ?? null);
     };
-
-    fetchUser();
+    loadUser();
   }, []);
 
-  // -------- Load posts ------------------------------
+  // Load posts
   useEffect(() => {
-    const load = async () => {
+    const loadPosts = async () => {
       try {
         setIsLoading(true);
         const { data, error } = await supabase
@@ -59,390 +52,241 @@ export default function PublicFeedPage() {
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-        setPosts(
-          (data ?? []).map((p: any) => ({
-            ...p,
-            reactions: {},
-          }))
-        );
+        setPosts(data ?? []);
       } catch (err) {
-        setError("Error loading feed");
+        console.error(err);
+        setError("Revolvr glitched loading posts 😵‍💫");
       } finally {
         setIsLoading(false);
       }
     };
 
-    load();
+    loadPosts();
   }, []);
 
-  // -------- Make sure user is logged in --------------
-  const ensureLoggedIn = () => {
+  // POST CREATION
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!file) {
+      setError("Please upload an image or video.");
+      return;
+    }
     if (!userEmail) {
       router.push("/login?redirectTo=/public-feed");
-      return false;
+      return;
     }
-    return true;
-  };
 
-  // -------- Reaction (local only) --------------------
-  const handleReact = (postId: string, emoji: ReactionEmoji) => {
-    setPosts((prev) =>
-      prev.map((p) =>
-        p.id === postId
-          ? {
-              ...p,
-              reactions: {
-                ...(p.reactions ?? {}),
-                [emoji]: (p.reactions?.[emoji] ?? 0) + 1,
-              },
-            }
-          : p
-      )
-    );
-  };
+    try {
+      setIsPosting(true);
+      setError(null);
 
-  // -------- Start Stripe payment ---------------------
-  const startPayment = async (
-    mode: PurchaseMode,
-    postId: string,
-    amountCents: number
-  ) => {
-    if (!ensureLoggedIn()) return;
+      // Upload file to Supabase Storage
+      const ext = file.name.split(".").pop();
+      const filePath = `${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2)}.${ext}`;
 
-    const res = await fetch("/api/payments/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode,
-        userEmail,
-        amountCents,
-        postId,
-      }),
-    });
+      const { data: upload, error: uploadErr } = await supabase.storage
+        .from("posts")
+        .upload(filePath, file);
 
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setError("Stripe checkout failed.");
+      if (uploadErr) throw uploadErr;
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("posts").getPublicUrl(upload.path);
+
+      // Insert post
+      const { data: inserted, error: insertErr } = await supabase
+        .from("posts")
+        .insert({
+          user_email: userEmail,
+          image_url: publicUrl,
+          caption: caption.trim(),
+        })
+        .select()
+        .single();
+
+      if (insertErr) throw insertErr;
+
+      // Update feed instantly
+      setPosts((prev) => [inserted, ...prev]);
+
+      // Reset composer
+      setCaption("");
+      setFile(null);
+      setComposerOpen(false);
+    } catch (err) {
+      console.error(err);
+      setError("Revolvr glitched posting 😵‍💫 Try again.");
+    } finally {
+      setIsPosting(false);
     }
   };
 
-  // -------- Open popup -------------------------------
-  const openChoice = (postId: string, mode: PurchaseMode) => {
-    if (!ensureLoggedIn()) return;
-    setPendingPurchase({ postId, mode });
-  };
+  // Drag + Drop Upload Component
+  const UploadBlock = (
+    <div className="space-y-2">
+      <label className="text-xs font-medium text-white/70 block mb-1">
+        Image or short video
+      </label>
 
-  const handleSingle = async () => {
-    if (!pendingPurchase) return;
-    const { postId, mode } = pendingPurchase;
-
-    const price =
-      mode === "tip" ? 200 : mode === "boost" ? 500 : 100; // A$2 / A$5 / A$1
-
-    await startPayment(mode, postId, price);
-    setPendingPurchase(null);
-  };
-
-  const handlePack = () => {
-    if (!pendingPurchase) return;
-    router.push(`/credits?mode=${pendingPurchase.mode}`);
-    setPendingPurchase(null);
-  };
-
-  return (
-    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-
-      {/* -------- Top bar -------- */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/80 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold">Revolvr</span>
-          <span>🔥</span>
-        </div>
-
-        <div className="flex items-center gap-3 text-xs">
-          <Link
-            href="/credits"
-            className="px-3 py-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200"
-          >
-            Buy packs
-          </Link>
-
-          <Link
-            href="/login?redirectTo=/public-feed"
-            className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10"
-          >
-            Sign in
-          </Link>
-        </div>
-      </header>
-
-      {/* -------- Main -------- */}
-      <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-xl px-3 py-4 space-y-4">
-          {/* Error */}
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-3 py-2 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
-          <h1 className="text-lg font-semibold">Public feed</h1>
-
-          {/* Loading */}
-          {isLoading ? (
-            <div className="text-center text-white/60 py-10">
-              Loading the chaos…
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="text-center text-white/60 py-10">
-              No posts yet.
-            </div>
-          ) : (
-            <div className="space-y-4 pb-20">
-              {posts.map((post) => (
-                <PublicPostCard
-                  key={post.id}
-                  post={post}
-                  onReact={handleReact}
-                  onTip={(id) => openChoice(id, "tip")}
-                  onBoost={(id) => openChoice(id, "boost")}
-                  onSpin={(id) => openChoice(id, "spin")}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* -------- Popup -------- */}
-      {pendingPurchase && (
-        <PurchaseChoiceSheet
-          pending={pendingPurchase}
-          onClose={() => setPendingPurchase(null)}
-          onSingle={handleSingle}
-          onPack={handlePack}
-        />
-      )}
-    </div>
-  );
-}
-
-//
-// -------------------------------------------------------------
-// POST CARD
-// -------------------------------------------------------------
-//
-
-type PublicPostCardProps = {
-  post: Post;
-  onReact: (postId: string, emoji: ReactionEmoji) => void;
-  onTip: (postId: string) => void;
-  onBoost: (postId: string) => void;
-  onSpin: (postId: string) => void;
-};
-
-function PublicPostCard({
-  post,
-  onReact,
-  onTip,
-  onBoost,
-  onSpin,
-}: PublicPostCardProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
-  // Animation class randomizer
-  const animationClass = useMemo(() => {
-    const arr = ["rv-spin-in", "rv-bounce-in", "rv-jolt-in", "rv-slide-in"];
-    return arr[Math.floor(Math.random() * arr.length)];
-  }, []);
-
-  const created = new Date(post.created_at);
-  const timeLabel = useMemo(() => {
-    const s = Math.floor((Date.now() - created.getTime()) / 1000);
-    if (s < 60) return "Just now";
-    const m = Math.floor(s / 60);
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    const d = Math.floor(h / 24);
-    return `${d}d ago`;
-  }, [created]);
-
-  const isVideo = post.image_url?.match(/\.(mp4|webm|ogg)$/i);
-
-  return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/30">
-      
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="h-9 w-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-          {post.user_email?.[0] ?? "R"}
-        </div>
-        <div>
-          <div className="text-sm truncate max-w-[200px]">{post.user_email}</div>
-          <div className="text-[11px] text-white/40">{timeLabel}</div>
-        </div>
-      </div>
-
-      {/* Media */}
       <div
-        className={`overflow-hidden rounded-xl bg-black/40 ${
-          mounted ? animationClass : ""
-        }`}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          const dropped = e.dataTransfer.files?.[0];
+          if (dropped) setFile(dropped);
+        }}
+        className="w-full h-48 rounded-xl border border-white/15 bg-black/20 
+                   flex flex-col items-center justify-center cursor-pointer 
+                   hover:bg-black/30 transition"
+        onClick={() => document.getElementById("uploadInput")?.click()}
       >
-        {isVideo ? (
-          <video
-            src={post.image_url}
-            controls
-            playsInline
-            className="w-full h-auto"
-          />
+        {!file ? (
+          <div className="flex flex-col items-center gap-2 text-white/60">
+            <div className="w-12 h-12 border border-white/20 rounded-lg flex items-center justify-center">
+              <span className="text-xl">↑</span>
+            </div>
+            <span className="text-xs">Click or drop to upload</span>
+          </div>
         ) : (
-          <img
-            src={post.image_url}
-            alt={post.caption}
-            className="w-full h-auto"
-          />
+          <div className="w-full h-full overflow-hidden rounded-lg">
+            {file.type.startsWith("video") ? (
+              <video
+                src={URL.createObjectURL(file)}
+                className="w-full h-full object-cover"
+                controls
+              />
+            ) : (
+              <img
+                src={URL.createObjectURL(file)}
+                className="w-full h-full object-cover"
+                alt="preview"
+              />
+            )}
+          </div>
         )}
       </div>
 
-      {/* Caption */}
-      {post.caption && (
-        <div className="mt-2 text-sm text-white/90">{post.caption}</div>
-      )}
+      <input
+        id="uploadInput"
+        type="file"
+        accept="image/*,video/*"
+        className="hidden"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+      />
 
-      {/* Payments */}
-      <div className="mt-3 flex gap-2">
-        <button
-          onClick={() => onTip(post.id)}
-          className="px-3 py-1.5 text-[11px] rounded-full bg-emerald-500/10 border border-emerald-400/50 text-emerald-200 hover:bg-emerald-500/20"
-        >
-          Tip A$2
-        </button>
-
-        <button
-          onClick={() => onBoost(post.id)}
-          className="px-3 py-1.5 text-[11px] rounded-full bg-indigo-500/10 border border-indigo-400/60 text-indigo-200 hover:bg-indigo-500/20"
-        >
-          Boost A$5
-        </button>
-
-        <button
-          onClick={() => onSpin(post.id)}
-          className="px-3 py-1.5 text-[11px] rounded-full bg-pink-500/10 border border-pink-400/60 text-pink-200 hover:bg-pink-500/20"
-        >
-          Spin A$1
-        </button>
-      </div>
-
-      {/* Reactions */}
-      <div className="mt-3 flex gap-2">
-        {REACTION_EMOJIS.map((emoji) => {
-          const count = post.reactions?.[emoji] ?? 0;
-          return (
-            <button
-              key={emoji}
-              onClick={() => onReact(post.id, emoji)}
-              className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 text-lg flex items-center justify-center"
-            >
-              <span>{emoji}</span>
-              {count > 0 && (
-                <span className="ml-1 text-[11px] text-white/60">{count}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-    </article>
+      <p className="text-[11px] text-white/40">
+        Supported: JPG, PNG, GIF, MP4 (short clips work best)
+      </p>
+    </div>
   );
-}
-
-//
-// -------------------------------------------------------------
-// PURCHASE POPUP
-// -------------------------------------------------------------
-//
-
-type PurchaseChoiceSheetProps = {
-  pending: PendingPurchase;
-  onClose: () => void;
-  onSingle: () => void;
-  onPack: () => void;
-};
-
-function PurchaseChoiceSheet({
-  pending,
-  onClose,
-  onSingle,
-  onPack,
-}: PurchaseChoiceSheetProps) {
-  const mode = pending.mode;
-  const label = mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
-  const singlePrice =
-    mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
-
-  const packLabel =
-    mode === "tip"
-      ? "Tip pack"
-      : mode === "boost"
-      ? "Boost pack"
-      : "Spin pack";
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end justify-center z-30">
-      <div className="w-full max-w-sm bg-[#070b1b] border border-white/10 rounded-2xl mb-6 p-4 shadow-xl shadow-black/50 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">
-            Support this post with a {label}
-          </h2>
+    <div className="min-h-screen bg-[#050814] text-white">
+      {/* NAV BAR */}
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
+        <span className="font-semibold text-base">Revolvr</span>
+
+        <div className="flex items-center gap-3">
+          {/* Post Button */}
           <button
-            onClick={onClose}
-            className="text-xs text-white/50 hover:text-white"
+            onClick={() => setComposerOpen(true)}
+            className="px-3 py-1 rounded-full bg-emerald-500 text-black text-xs font-semibold hover:bg-emerald-400 transition"
           >
-            Close
+            + Post
           </button>
+
+          {!userEmail ? (
+            <Link
+              href="/login?redirectTo=/public-feed"
+              className="px-3 py-1 rounded-full border border-white/20 text-xs hover:bg-white/10"
+            >
+              Sign in
+            </Link>
+          ) : (
+            <span className="text-xs text-white/70">{userEmail}</span>
+          )}
         </div>
+      </header>
 
-        <p className="text-xs text-white/60">
-          Choose a one-off {label.toLowerCase()} or grab a pack for better
-          value.
-        </p>
+      {/* COMPOSER */}
+      {composerOpen && (
+        <div className="max-w-xl mx-auto mt-4 mb-6 p-4 rounded-xl border border-white/10 bg-white/5 space-y-3">
+          <h2 className="text-sm font-semibold">Create a Post</h2>
 
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={onSingle}
-            className="rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/50 px-3 py-2 text-left text-xs"
-          >
-            <div className="font-semibold">
-              Single {label} ({singlePrice})
-            </div>
-            <div className="text-[11px] text-emerald-200/80">
-              Quick one-off support
-            </div>
-          </button>
+          {UploadBlock}
 
-          <button
-            onClick={onPack}
-            className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 px-3 py-2 text-left text-xs"
-          >
-            <div className="font-semibold">Buy {packLabel}</div>
-            <div className="text-[11px] text-white/70">
-              Better value, more {label.toLowerCase()}s
-            </div>
-          </button>
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Say something wild…"
+            className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none"
+          />
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => setComposerOpen(false)}
+              className="px-3 py-1.5 rounded-full border border-white/20 text-xs hover:bg-white/10"
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleCreatePost}
+              disabled={isPosting}
+              className="px-4 py-1.5 rounded-full bg-emerald-500 text-black text-xs font-semibold hover:bg-emerald-400 disabled:opacity-50"
+            >
+              {isPosting ? "Posting…" : "Post"}
+            </button>
+          </div>
         </div>
+      )}
 
-        <button
-          onClick={onClose}
-          className="w-full text-[11px] text-white/40 hover:text-white/70"
-        >
-          Maybe later
-        </button>
-      </div>
+      {/* FEED */}
+      <main className="max-w-xl mx-auto px-3 pb-10">
+        {isLoading ? (
+          <p className="text-sm text-white/60 text-center py-10">
+            Loading chaos…
+          </p>
+        ) : posts.length === 0 ? (
+          <p className="text-sm text-white/60 text-center py-10">
+            Nothing yet — be the first ✨
+          </p>
+        ) : (
+          posts.map((post) => (
+            <article
+              key={post.id}
+              className="rounded-xl bg-white/5 border border-white/10 p-3 mb-4"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+                  {post.user_email[0]}
+                </div>
+                <div className="text-xs text-white/60">
+                  {post.user_email}
+                </div>
+              </div>
+
+              {/* MEDIA */}
+              {post.image_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                <video src={post.image_url} controls className="w-full rounded-xl" />
+              ) : (
+                <img
+                  src={post.image_url}
+                  alt={post.caption}
+                  className="w-full rounded-xl"
+                />
+              )}
+
+              {post.caption && (
+                <p className="mt-2 text-sm">{post.caption}</p>
+              )}
+            </article>
+          ))
+        )}
+      </main>
     </div>
   );
 }
