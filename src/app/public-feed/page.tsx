@@ -32,68 +32,59 @@ export default function PublicFeedPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(
-    null
-  );
+  const [pendingPurchase, setPendingPurchase] =
+    useState<PendingPurchase | null>(null);
 
-  // Load current user (if logged in)
+  // -------- Load current user -----------------------
   useEffect(() => {
     const fetchUser = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-        if (user?.email) {
-          setUserEmail(user.email);
-        } else {
-          setUserEmail(null);
-        }
-      } catch (e) {
-        console.error("Error loading user in public feed", e);
-      }
+      setUserEmail(user?.email ?? null);
     };
 
     fetchUser();
   }, []);
 
-  // Load posts
+  // -------- Load posts ------------------------------
   useEffect(() => {
-    const fetchPosts = async () => {
+    const load = async () => {
       try {
         setIsLoading(true);
-
         const { data, error } = await supabase
           .from("posts")
-          .select(
-            "id, user_email, image_url, caption, created_at, boosts ( id )"
-          )
+          .select("*")
           .order("created_at", { ascending: false });
 
         if (error) throw error;
-
         setPosts(
-          (data ?? []).map((row: any) => ({
-            id: row.id,
-            user_email: row.user_email,
-            image_url: row.image_url,
-            caption: row.caption,
-            created_at: row.created_at,
-            reactions: {}, // local-only reactions for now
+          (data ?? []).map((p: any) => ({
+            ...p,
+            reactions: {},
           }))
         );
-      } catch (e) {
-        console.error("Error loading public feed", e);
-        setError("Revolvr glitched out loading the public feed 😵‍💫");
+      } catch (err) {
+        setError("Error loading feed");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchPosts();
+    load();
   }, []);
 
-  // Local reactions (no backend yet)
+  // -------- Make sure user is logged in --------------
+  const ensureLoggedIn = () => {
+    if (!userEmail) {
+      router.push("/login?redirectTo=/public-feed");
+      return false;
+    }
+    return true;
+  };
+
+  // -------- Reaction (local only) --------------------
   const handleReact = (postId: string, emoji: ReactionEmoji) => {
     setPosts((prev) =>
       prev.map((p) =>
@@ -110,17 +101,7 @@ export default function PublicFeedPage() {
     );
   };
 
-  // Make sure user is logged in
-  const ensureLoggedIn = () => {
-    if (!userEmail) {
-      const redirect = encodeURIComponent("/public-feed");
-      router.push(`/login?redirectTo=${redirect}`);
-      return false;
-    }
-    return true;
-  };
-
-  // Generic payment starter for single tip / boost / spin
+  // -------- Start Stripe payment ---------------------
   const startPayment = async (
     mode: PurchaseMode,
     postId: string,
@@ -128,145 +109,95 @@ export default function PublicFeedPage() {
   ) => {
     if (!ensureLoggedIn()) return;
 
-    try {
-      setError(null);
+    const res = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode,
+        userEmail,
+        amountCents,
+        postId,
+      }),
+    });
 
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          userEmail,
-          amountCents,
-          postId,
-        }),
-      });
-
-      if (!res.ok) {
-        console.error("Checkout failed:", await res.text());
-        setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
-        return;
-      }
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Stripe did not return a checkout URL.");
-      }
-    } catch (e) {
-      console.error("Error starting payment", e);
-      setError("Revolvr glitched out talking to Stripe 😵‍💫");
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setError("Stripe checkout failed.");
     }
   };
 
-  // Open the "single vs pack" choice
-  const openPurchaseChoice = (postId: string, mode: PurchaseMode) => {
+  // -------- Open popup -------------------------------
+  const openChoice = (postId: string, mode: PurchaseMode) => {
     if (!ensureLoggedIn()) return;
     setPendingPurchase({ postId, mode });
   };
 
-  // Handlers wired into the cards (open choice instead of going straight to Stripe)
-  const handleTipClick = (postId: string) => openPurchaseChoice(postId, "tip");
-  const handleBoostClick = (postId: string) =>
-    openPurchaseChoice(postId, "boost");
-  const handleSpinClick = (postId: string) =>
-    openPurchaseChoice(postId, "spin");
-
-  // When user chooses "single" in the popup
-  const handleSinglePurchase = async () => {
+  const handleSingle = async () => {
     if (!pendingPurchase) return;
     const { postId, mode } = pendingPurchase;
 
-    if (mode === "tip") {
-      await startPayment("tip", postId, 200); // A$2
-    } else if (mode === "boost") {
-      await startPayment("boost", postId, 500); // A$5
-    } else {
-      await startPayment("spin", postId, 100); // A$1
-    }
+    const price =
+      mode === "tip" ? 200 : mode === "boost" ? 500 : 100; // A$2 / A$5 / A$1
 
-    // Close popup after we kick off Stripe redirect
+    await startPayment(mode, postId, price);
     setPendingPurchase(null);
   };
 
-  // When user chooses "pack" in the popup
-  const handlePackPurchase = () => {
+  const handlePack = () => {
     if (!pendingPurchase) return;
-    const { mode } = pendingPurchase;
-
-    // Send them to the credits page, focused on this mode
-    router.push(`/credits?mode=${mode}`);
+    router.push(`/credits?mode=${pendingPurchase.mode}`);
     setPendingPurchase(null);
   };
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
+
+      {/* -------- Top bar -------- */}
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/80 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm sm:text-base">Revolvr</span>
-          <span className="text-base">🔥</span>
+          <span className="font-semibold">Revolvr</span>
+          <span>🔥</span>
         </div>
-        <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
+
+        <div className="flex items-center gap-3 text-xs">
           <Link
             href="/credits"
-            className="px-3 py-1 rounded-full border border-emerald-400/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200 transition text-xs"
+            className="px-3 py-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-200"
           >
             Buy packs
           </Link>
+
           <Link
             href="/login?redirectTo=/public-feed"
-            className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
+            className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10"
           >
             Sign in
           </Link>
         </div>
       </header>
 
-      {/* Main content */}
+      {/* -------- Main -------- */}
       <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-3">
-          {/* Error banner */}
+        <div className="w-full max-w-xl px-3 py-4 space-y-4">
+          {/* Error */}
           {error && (
-            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
-              <span>{error}</span>
-              <button
-                className="text-xs underline"
-                onClick={() => setError(null)}
-              >
-                Dismiss
-              </button>
+            <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-3 py-2 rounded-lg text-sm">
+              {error}
             </div>
           )}
 
-          {/* Header */}
-          <div className="flex items-start justify-between mt-1 mb-2">
-            <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-white/90">
-                Public feed
-              </h1>
-              <p className="text-xs sm:text-sm text-white/60 mt-1">
-                Anyone can watch this. Want to post?{" "}
-                <Link href="/login" className="underline">
-                  Sign in
-                </Link>{" "}
-                and head to your dashboard.
-              </p>
-            </div>
-            <span className="text-[11px] text-white/40 self-center">
-              v0.1 · social preview
-            </span>
-          </div>
+          <h1 className="text-lg font-semibold">Public feed</h1>
 
-          {/* Feed body */}
+          {/* Loading */}
           {isLoading ? (
-            <div className="text-center text-sm text-white/60 py-10">
+            <div className="text-center text-white/60 py-10">
               Loading the chaos…
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center text-sm text-white/60 py-10">
-              No posts yet. Check back soon ✨
+            <div className="text-center text-white/60 py-10">
+              No posts yet.
             </div>
           ) : (
             <div className="space-y-4 pb-20">
@@ -275,9 +206,9 @@ export default function PublicFeedPage() {
                   key={post.id}
                   post={post}
                   onReact={handleReact}
-                  onTip={handleTipClick}
-                  onBoost={handleBoostClick}
-                  onSpin={handleSpinClick}
+                  onTip={(id) => openChoice(id, "tip")}
+                  onBoost={(id) => openChoice(id, "boost")}
+                  onSpin={(id) => openChoice(id, "spin")}
                 />
               ))}
             </div>
@@ -285,18 +216,24 @@ export default function PublicFeedPage() {
         </div>
       </main>
 
-      {/* Single vs pack popup */}
+      {/* -------- Popup -------- */}
       {pendingPurchase && (
         <PurchaseChoiceSheet
           pending={pendingPurchase}
           onClose={() => setPendingPurchase(null)}
-          onSingle={handleSinglePurchase}
-          onPack={handlePackPurchase}
+          onSingle={handleSingle}
+          onPack={handlePack}
         />
       )}
     </div>
   );
 }
+
+//
+// -------------------------------------------------------------
+// POST CARD
+// -------------------------------------------------------------
+//
 
 type PublicPostCardProps = {
   post: Post;
@@ -313,138 +250,122 @@ function PublicPostCard({
   onBoost,
   onSpin,
 }: PublicPostCardProps) {
-  const [hasMounted, setHasMounted] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
+  useEffect(() => setMounted(true), []);
+
+  // Animation class randomizer
   const animationClass = useMemo(() => {
-    const classes = [
-      "rv-spin-in",
-      "rv-bounce-in",
-      "rv-jolt-in",
-      "rv-glitch-in",
-      "rv-slide-in",
-    ];
-    const random = Math.floor(Math.random() * classes.length);
-    return classes[random];
-  }, []);
-
-  useEffect(() => {
-    setHasMounted(true);
+    const arr = ["rv-spin-in", "rv-bounce-in", "rv-jolt-in", "rv-slide-in"];
+    return arr[Math.floor(Math.random() * arr.length)];
   }, []);
 
   const created = new Date(post.created_at);
-
   const timeLabel = useMemo(() => {
-    const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
-    if (seconds < 60) return "Just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return created.toLocaleDateString();
+    const s = Math.floor((Date.now() - created.getTime()) / 1000);
+    if (s < 60) return "Just now";
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    const d = Math.floor(h / 24);
+    return `${d}d ago`;
   }, [created]);
 
+  const isVideo = post.image_url?.match(/\.(mp4|webm|ogg)$/i);
+
   return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/30">
+      
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-            {post.user_email?.[0] ?? "R"}
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
-              {post.user_email ?? "Someone"}
-            </span>
-            <span className="text-[11px] text-white/40">{timeLabel}</span>
-          </div>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="h-9 w-9 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+          {post.user_email?.[0] ?? "R"}
+        </div>
+        <div>
+          <div className="text-sm truncate max-w-[200px]">{post.user_email}</div>
+          <div className="text-[11px] text-white/40">{timeLabel}</div>
         </div>
       </div>
 
-     {/* Media (image or video) */}
-<div
-  className={`overflow-hidden rounded-xl bg-black/40 ${
-    hasMounted ? animationClass : ""
-  }`}
->
-  {post.image_url?.match(/\.(mp4|webm|ogg)$/i) ? (
-    <video
-      src={post.image_url}
-      className="w-full h-auto block"
-      controls
-      playsInline
-    />
-  ) : (
-    <img
-      src={post.image_url}
-      alt={post.caption}
-      className="w-full h-auto block"
-    />
-  )}
-</div>
-
+      {/* Media */}
+      <div
+        className={`overflow-hidden rounded-xl bg-black/40 ${
+          mounted ? animationClass : ""
+        }`}
+      >
+        {isVideo ? (
+          <video
+            src={post.image_url}
+            controls
+            playsInline
+            className="w-full h-auto"
+          />
+        ) : (
+          <img
+            src={post.image_url}
+            alt={post.caption}
+            className="w-full h-auto"
+          />
+        )}
+      </div>
 
       {/* Caption */}
       {post.caption && (
-        <p className="mt-2 text-sm text-white/90 break-words">
-          {post.caption}
-        </p>
+        <div className="mt-2 text-sm text-white/90">{post.caption}</div>
       )}
 
-      {/* Tip / Boost / Spin row */}
-      <div className="mt-3 flex flex-wrap gap-2">
+      {/* Payments */}
+      <div className="mt-3 flex gap-2">
         <button
-          type="button"
           onClick={() => onTip(post.id)}
-          className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200"
+          className="px-3 py-1.5 text-[11px] rounded-full bg-emerald-500/10 border border-emerald-400/50 text-emerald-200 hover:bg-emerald-500/20"
         >
           Tip A$2
         </button>
+
         <button
-          type="button"
           onClick={() => onBoost(post.id)}
-          className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200"
+          className="px-3 py-1.5 text-[11px] rounded-full bg-indigo-500/10 border border-indigo-400/60 text-indigo-200 hover:bg-indigo-500/20"
         >
           Boost A$5
         </button>
+
         <button
-          type="button"
           onClick={() => onSpin(post.id)}
-          className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200"
+          className="px-3 py-1.5 text-[11px] rounded-full bg-pink-500/10 border border-pink-400/60 text-pink-200 hover:bg-pink-500/20"
         >
           Spin A$1
         </button>
       </div>
 
       {/* Reactions */}
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex gap-2">
-          {REACTION_EMOJIS.map((emoji) => {
-            const count = post.reactions?.[emoji] ?? 0;
-
-            return (
-              <button
-                key={emoji}
-                type="button"
-                aria-label={`React ${emoji}`}
-                onClick={() => onReact(post.id, emoji)}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 text-lg"
-              >
-                <span>{emoji}</span>
-                {count > 0 && (
-                  <span className="ml-1 text-[11px] text-white/70 leading-none">
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+      <div className="mt-3 flex gap-2">
+        {REACTION_EMOJIS.map((emoji) => {
+          const count = post.reactions?.[emoji] ?? 0;
+          return (
+            <button
+              key={emoji}
+              onClick={() => onReact(post.id, emoji)}
+              className="h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 text-lg flex items-center justify-center"
+            >
+              <span>{emoji}</span>
+              {count > 0 && (
+                <span className="ml-1 text-[11px] text-white/60">{count}</span>
+              )}
+            </button>
+          );
+        })}
       </div>
     </article>
   );
 }
+
+//
+// -------------------------------------------------------------
+// PURCHASE POPUP
+// -------------------------------------------------------------
+//
 
 type PurchaseChoiceSheetProps = {
   pending: PendingPurchase;
@@ -459,33 +380,24 @@ function PurchaseChoiceSheet({
   onSingle,
   onPack,
 }: PurchaseChoiceSheetProps) {
-  const modeLabel =
-    pending.mode === "tip"
-      ? "Tip"
-      : pending.mode === "boost"
-      ? "Boost"
-      : "Spin";
-
-  const singleAmount =
-    pending.mode === "tip"
-      ? "A$2"
-      : pending.mode === "boost"
-      ? "A$5"
-      : "A$1";
+  const mode = pending.mode;
+  const label = mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
+  const singlePrice =
+    mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
 
   const packLabel =
-    pending.mode === "tip"
-      ? "tip pack"
-      : pending.mode === "boost"
-      ? "boost pack"
-      : "spin pack";
+    mode === "tip"
+      ? "Tip pack"
+      : mode === "boost"
+      ? "Boost pack"
+      : "Spin pack";
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end justify-center z-30">
+      <div className="w-full max-w-sm bg-[#070b1b] border border-white/10 rounded-2xl mb-6 p-4 shadow-xl shadow-black/50 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">
-            Support this post with a {modeLabel}
+            Support this post with a {label}
           </h2>
           <button
             onClick={onClose}
@@ -496,18 +408,17 @@ function PurchaseChoiceSheet({
         </div>
 
         <p className="text-xs text-white/60">
-          Choose a one-off {modeLabel.toLowerCase()} or grab a pack so you
-          don&apos;t have to check out every time.
+          Choose a one-off {label.toLowerCase()} or grab a pack for better
+          value.
         </p>
 
-        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+        <div className="flex flex-col gap-2">
           <button
-            type="button"
             onClick={onSingle}
-            className="flex-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/60 px-3 py-2 text-xs text-left"
+            className="rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/50 px-3 py-2 text-left text-xs"
           >
             <div className="font-semibold">
-              Single {modeLabel} ({singleAmount})
+              Single {label} ({singlePrice})
             </div>
             <div className="text-[11px] text-emerald-200/80">
               Quick one-off support
@@ -515,21 +426,19 @@ function PurchaseChoiceSheet({
           </button>
 
           <button
-            type="button"
             onClick={onPack}
-            className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-xs text-left"
+            className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/15 px-3 py-2 text-left text-xs"
           >
             <div className="font-semibold">Buy {packLabel}</div>
             <div className="text-[11px] text-white/70">
-              Better value, more {modeLabel.toLowerCase()}s
+              Better value, more {label.toLowerCase()}s
             </div>
           </button>
         </div>
 
         <button
-          type="button"
           onClick={onClose}
-          className="w-full text-[11px] text-white/45 hover:text-white/70 mt-1"
+          className="w-full text-[11px] text-white/40 hover:text-white/70"
         >
           Maybe later
         </button>
