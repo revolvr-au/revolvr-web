@@ -17,9 +17,8 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
 }
 
 // --- Stripe client ---
-const stripe = new Stripe(stripeSecretKey, {
-  apiVersion: "2024-06-20", // VALID + supported
-});
+// NOTE: no apiVersion passed -> uses account default, avoids TS literal mismatch
+const stripe = new Stripe(stripeSecretKey);
 
 // --- Supabase admin client (server-only) ---
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
@@ -42,7 +41,7 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      stripeWebhookSecret as string // guaranteed non-null
+      stripeWebhookSecret as string // we validated it's set above
     );
   } catch (err: any) {
     console.error("[stripe webhook] invalid signature", err?.message ?? err);
