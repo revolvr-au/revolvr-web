@@ -32,12 +32,6 @@ type Spin = {
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 
-const REACTIONS = [
-  { icon: "heart" as const, label: "Love" },
-  { icon: "tip" as const, label: "Tip" },
-  { icon: "boost" as const, label: "Boost" },
-];
-
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -245,28 +239,7 @@ export default function DashboardPage() {
     }
   };
 
-  const creatorLabel = useMemo(() => {
-    if (!userEmail) return "Creator view";
-    return userEmail;
-  }, [userEmail]);
-
-  if (loadingUser) {
-    return (
-      <main className="min-h-screen bg-[#050816] text-white flex items-center justify-center">
-        <p className="text-sm text-white/70">Loading Revolvr…</p>
-      </main>
-    );
-  }
-
-  if (!userEmail) {
-    return (
-      <main className="min-h-screen bg-[#050816] text-white flex items-center justify-center">
-        <p className="text-sm text-white/70">Redirecting to login…</p>
-      </main>
-    );
-  }
-
-  const avatarInitial = userEmail[0]?.toUpperCase() ?? "R";
+  const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
@@ -282,9 +255,6 @@ export default function DashboardPage() {
           <span className="text-lg font-semibold tracking-tight">Revolvr</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden sm:inline text-xs text-white/50">
-            {creatorLabel}
-          </span>
           <button
             onClick={() => setIsLensOpen(true)}
             className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-sm font-bold text-black"
@@ -317,8 +287,7 @@ export default function DashboardPage() {
               <h2 className="text-sm font-semibold">Creator dashboard</h2>
             </div>
             <p className="text-xs text-white/60">
-              Post from here. Everyone else watches the chaos on the public
-              feed.
+              Post from here. Everyone else watches the chaos.
             </p>
             <div className="flex flex-col gap-2">
               <button
@@ -331,95 +300,10 @@ export default function DashboardPage() {
               <SpinButton userEmail={userEmail} />
             </div>
           </section>
-
-          <section className="rounded-2xl border border-white/10 bg-white/[0.02] px-4 py-3 space-y-2 text-xs text-white/60">
-            <div className="flex items-center gap-2 text-sm font-medium text-white/80">
-              <RevolvrIcon name="analytics" size={16} />
-              <span>Your Spin History</span>
-            </div>
-            {isLoadingSpins ? (
-              <p>Loading spins…</p>
-            ) : spins.length === 0 ? (
-              <p>No spins yet. Spin the Revolvr above!</p>
-            ) : (
-              <ul className="space-y-2">
-                {spins.slice(0, 5).map((s) => (
-                  <li
-                    key={s.id}
-                    className="border border-white/10 rounded-lg px-3 py-2"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-white/80 text-xs">
-                        Spin #{s.id}
-                      </span>
-                      <span className="text-[10px] text-white/50">
-                        {new Date(s.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-white/55 mt-0.5">
-                      {s.post_id ? `Reward: post ${s.post_id}` : "No reward"}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
         </aside>
 
         {/* Center column – feed */}
         <section className="flex-1 space-y-5">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/40 text-red-100 px-4 py-2 rounded-lg flex items-center justify-between text-sm">
-              <span>{error}</span>
-              <button
-                className="text-xs underline"
-                onClick={() => setError(null)}
-              >
-                Dismiss
-              </button>
-            </div>
-          )}
-
-          {/* Mobile composer row */}
-          <div className="md:hidden flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-semibold">Creator dashboard</h1>
-              <span className="text-[11px] text-white/50">v0.1 • preview</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-medium shadow-lg shadow-emerald-500/25 transition gap-2"
-                onClick={() => setIsComposerOpen(true)}
-              >
-                <RevolvrIcon name="add" size={14} />
-                <span>New post</span>
-              </button>
-
-              <button
-                className="inline-flex items-center justify-center rounded-full px-4 py-2 bg-indigo-500 hover:bg-indigo-400 text-xs font-medium shadow-md shadow-indigo-500/25 transition disabled:opacity-60 gap-2"
-                disabled={!userEmail}
-                onClick={async () => {
-                  const res = await fetch("/api/payments/checkout", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                      mode: "tip",
-                      userEmail,
-                      amountCents: 200,
-                    }),
-                  });
-                  const data = await res.json();
-                  if (data.url) window.location.href = data.url;
-                }}
-              >
-                <RevolvrIcon name="tip" size={14} />
-                <span>Test $2 tip</span>
-              </button>
-
-              <SpinButton userEmail={userEmail} />
-            </div>
-          </div>
-
           {/* Posts */}
           {isLoadingPosts ? (
             <div className="text-sm text-white/70">Loading the feed…</div>
@@ -448,22 +332,13 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        className="text-xs sm:text-sm px-3 py-1 rounded-full bg-indigo-500 hover:bg-indigo-400 text-white shadow-sm shadow-indigo-500/30 inline-flex items-center gap-1.5"
-                        onClick={() => handleBoostPost(post.id, 500)}
-                      >
-                        <RevolvrIcon name="boost" size={14} />
-                        <span>Boost (A$5)</span>
-                      </button>
-                      <button
-                        className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
-                        onClick={() => handleDeletePost(post.id)}
-                      >
-                        <RevolvrIcon name="trash" size={14} />
-                        <span>Delete</span>
-                      </button>
-                    </div>
+                    <button
+                      className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
+                      onClick={() => handleDeletePost(post.id)}
+                    >
+                      <RevolvrIcon name="trash" size={14} />
+                      <span>Delete</span>
+                    </button>
                   </div>
 
                   <div>
@@ -479,21 +354,6 @@ export default function DashboardPage() {
                       {post.caption}
                     </p>
                   )}
-
-                  <div className="px-4 pb-3">
-                    <div className="flex gap-3">
-                      {REACTION_EMOJIS.map((emoji) => (
-                        <button
-                          key={emoji}
-                          type="button"
-                          aria-label={`React with ${emoji}`}
-                          className="inline-flex items-center justify-center text-base sm:text-lg hover:scale-110 transition-transform"
-                        >
-                          <span>{emoji}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </article>
               ))}
             </div>
@@ -501,7 +361,7 @@ export default function DashboardPage() {
         </section>
       </main>
 
-      {/* Composer modal */}
+      {/* Composer Modal */}
       {isComposerOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
           <div className="w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
@@ -516,24 +376,67 @@ export default function DashboardPage() {
             </div>
 
             <form className="px-4 py-3 space-y-4" onSubmit={handleCreatePost}>
-              {/* Image or video upload */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-white/70">
+              {/* Upload Section */}
+              <div>
+                <label className="text-xs font-medium text-white/70 block mb-2">
                   Image or short video
                 </label>
+
+                {/* Drop Zone */}
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const dropped = e.dataTransfer.files?.[0];
+                    if (dropped) setFile(dropped);
+                  }}
+                  className="w-full h-64 rounded-xl border border-white/15 bg-black/20 
+                             flex flex-col items-center justify-center cursor-pointer 
+                             hover:bg-black/30 transition"
+                  onClick={() =>
+                    document.getElementById("revolvrUploadInput")?.click()
+                  }
+                >
+                  {!file ? (
+                    <div className="flex flex-col items-center gap-2 text-white/60">
+                      <div
+                        className="w-12 h-12 border border-white/20 rounded-lg 
+                                   flex items-center justify-center"
+                      >
+                        <span className="text-xl">↑</span>
+                      </div>
+                      <span className="text-xs">Click or drop to upload</span>
+                    </div>
+                  ) : (
+                    <div className="w-full h-full overflow-hidden rounded-lg">
+                      {file.type.startsWith("video") ? (
+                        <video
+                          src={URL.createObjectURL(file)}
+                          controls
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          className="w-full h-full object-cover"
+                          alt="preview"
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Hidden input */}
                 <input
+                  id="revolvrUploadInput"
                   type="file"
                   accept="image/*,video/*"
-                  onChange={(e) =>
-                    setFile(e.target.files ? e.target.files[0] : null)
-                  }
-                  className="block w-full text-sm text-white/80 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-medium file:bg-emerald-500 file:text-black hover:file:bg-emerald-400"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
-                <p className="text-[11px] text-white/40">
-                  Supported: JPG, PNG, GIF, MP4 (short clips work best).
-                </p>
               </div>
 
+              {/* Caption */}
               <label className="text-sm font-medium space-y-1">
                 <span>Caption</span>
                 <textarea
@@ -566,7 +469,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Identity Lens overlay */}
       <IdentityLens
         open={isLensOpen}
         onClose={() => setIsLensOpen(false)}
