@@ -364,32 +364,28 @@ function PublicPostCard({
 
       {/* Image */}
       <div
-              {/* Media (image or video) */}
-      <div
-        className={`overflow-hidden rounded-xl bg-black/40 ${
-          hasMounted ? animationClass : ""
-        }`}
-      >
-        {post.image_url?.match(/\.(mp4|webm|ogg)$/i) ? (
-          // Video post
-          <video
-            src={post.image_url}
-            className="w-full h-auto block"
-            controls
-            playsInline
-          />
-        ) : (
-          // Image post (current behaviour)
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={post.image_url}
-              alt={post.caption}
-              className="w-full h-auto block"
-            />
-          </>
-        )}
-      </div>
+             {/* Media (image or video) */}
+<div
+  className={`overflow-hidden rounded-xl bg-black/40 ${
+    hasMounted ? animationClass : ""
+  }`}
+>
+  {post.image_url?.match(/\.(mp4|webm|ogg)$/i) ? (
+    <video
+      src={post.image_url}
+      className="w-full h-auto block"
+      controls
+      playsInline
+    />
+  ) : (
+    // Image fallback
+    <img
+      src={post.image_url}
+      alt={post.caption}
+      className="w-full h-auto block"
+    />
+  )}
+</div>
 
       {/* Caption */}
       {post.caption && (
