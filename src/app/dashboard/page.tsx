@@ -297,7 +297,7 @@ export default function DashboardPage() {
                 <RevolvrIcon name="add" size={14} />
                 <span>New post</span>
               </button>
-              <SpinButton userEmail={userEmail} />
+              <SpinButton userEmail={userEmail ?? ""} />
             </div>
           </section>
         </aside>
