@@ -17,6 +17,13 @@ type Post = {
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
+type PurchaseMode = "tip" | "boost" | "spin";
+
+type PendingPurchase = {
+  postId: string;
+  mode: PurchaseMode;
+};
+
 export default function PublicFeedPage() {
   const router = useRouter();
 
@@ -25,6 +32,9 @@ export default function PublicFeedPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(
+    null
+  );
 
   // Load current user (if logged in)
   useEffect(() => {
@@ -100,10 +110,9 @@ export default function PublicFeedPage() {
     );
   };
 
-  // Helper to ensure user is logged in before payment
+  // Make sure user is logged in
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      // After login, send them back to the public feed
       const redirect = encodeURIComponent("/public-feed");
       router.push(`/login?redirectTo=${redirect}`);
       return false;
@@ -111,9 +120,9 @@ export default function PublicFeedPage() {
     return true;
   };
 
-  // Generic payment starter for tip / boost / spin
+  // Generic payment starter for single tip / boost / spin
   const startPayment = async (
-    mode: "tip" | "boost" | "spin",
+    mode: PurchaseMode,
     postId: string,
     amountCents: number
   ) => {
@@ -151,15 +160,45 @@ export default function PublicFeedPage() {
     }
   };
 
-  // Concrete handlers used by each post
-  const handleTip = (postId: string) =>
-    startPayment("tip", postId, 200); // A$2
+  // Open the "single vs pack" choice
+  const openPurchaseChoice = (postId: string, mode: PurchaseMode) => {
+    if (!ensureLoggedIn()) return;
+    setPendingPurchase({ postId, mode });
+  };
 
-  const handleBoost = (postId: string) =>
-    startPayment("boost", postId, 500); // A$5
+  // Handlers wired into the cards (open choice instead of going straight to Stripe)
+  const handleTipClick = (postId: string) => openPurchaseChoice(postId, "tip");
+  const handleBoostClick = (postId: string) =>
+    openPurchaseChoice(postId, "boost");
+  const handleSpinClick = (postId: string) =>
+    openPurchaseChoice(postId, "spin");
 
-  const handleSpin = (postId: string) =>
-    startPayment("spin", postId, 100); // A$1
+  // When user chooses "single" in the popup
+  const handleSinglePurchase = async () => {
+    if (!pendingPurchase) return;
+    const { postId, mode } = pendingPurchase;
+
+    if (mode === "tip") {
+      await startPayment("tip", postId, 200); // A$2
+    } else if (mode === "boost") {
+      await startPayment("boost", postId, 500); // A$5
+    } else {
+      await startPayment("spin", postId, 100); // A$1
+    }
+
+    // Close popup after we kick off Stripe redirect
+    setPendingPurchase(null);
+  };
+
+  // When user chooses "pack" in the popup
+  const handlePackPurchase = () => {
+    if (!pendingPurchase) return;
+    const { mode } = pendingPurchase;
+
+    // Send them to the credits page, focused on this mode
+    router.push(`/credits?mode=${mode}`);
+    setPendingPurchase(null);
+  };
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
@@ -236,15 +275,25 @@ export default function PublicFeedPage() {
                   key={post.id}
                   post={post}
                   onReact={handleReact}
-                  onTip={handleTip}
-                  onBoost={handleBoost}
-                  onSpin={handleSpin}
+                  onTip={handleTipClick}
+                  onBoost={handleBoostClick}
+                  onSpin={handleSpinClick}
                 />
               ))}
             </div>
           )}
         </div>
       </main>
+
+      {/* Single vs pack popup */}
+      {pendingPurchase && (
+        <PurchaseChoiceSheet
+          pending={pendingPurchase}
+          onClose={() => setPendingPurchase(null)}
+          onSingle={handleSinglePurchase}
+          onPack={handlePackPurchase}
+        />
+      )}
     </div>
   );
 }
@@ -334,38 +383,29 @@ function PublicPostCard({
         </p>
       )}
 
-      {/* Tip / Boost / Spin row + packs link */}
-      <div className="mt-3 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => onTip(post.id)}
-            className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200"
-          >
-            Tip A$2
-          </button>
-          <button
-            type="button"
-            onClick={() => onBoost(post.id)}
-            className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200"
-          >
-            Boost A$5
-          </button>
-          <button
-            type="button"
-            onClick={() => onSpin(post.id)}
-            className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200"
-          >
-            Spin A$1
-          </button>
-        </div>
-
-        <Link
-          href="/credits"
-          className="text-[11px] text-white/50 hover:text-emerald-300 underline-offset-2 hover:underline whitespace-nowrap"
+      {/* Tip / Boost / Spin row */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onTip(post.id)}
+          className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200"
         >
-          Buy packs instead
-        </Link>
+          Tip A$2
+        </button>
+        <button
+          type="button"
+          onClick={() => onBoost(post.id)}
+          className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200"
+        >
+          Boost A$5
+        </button>
+        <button
+          type="button"
+          onClick={() => onSpin(post.id)}
+          className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200"
+        >
+          Spin A$1
+        </button>
       </div>
 
       {/* Reactions */}
@@ -394,5 +434,97 @@ function PublicPostCard({
         </div>
       </div>
     </article>
+  );
+}
+
+type PurchaseChoiceSheetProps = {
+  pending: PendingPurchase;
+  onClose: () => void;
+  onSingle: () => void;
+  onPack: () => void;
+};
+
+function PurchaseChoiceSheet({
+  pending,
+  onClose,
+  onSingle,
+  onPack,
+}: PurchaseChoiceSheetProps) {
+  const modeLabel =
+    pending.mode === "tip"
+      ? "Tip"
+      : pending.mode === "boost"
+      ? "Boost"
+      : "Spin";
+
+  const singleAmount =
+    pending.mode === "tip"
+      ? "A$2"
+      : pending.mode === "boost"
+      ? "A$5"
+      : "A$1";
+
+  const packLabel =
+    pending.mode === "tip"
+      ? "tip pack"
+      : pending.mode === "boost"
+      ? "boost pack"
+      : "spin pack";
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">
+            Support this post with a {modeLabel}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-xs text-white/50 hover:text-white"
+          >
+            Close
+          </button>
+        </div>
+
+        <p className="text-xs text-white/60">
+          Choose a one-off {modeLabel.toLowerCase()} or grab a pack so you
+          don&apos;t have to check out every time.
+        </p>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+          <button
+            type="button"
+            onClick={onSingle}
+            className="flex-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/60 px-3 py-2 text-xs text-left"
+          >
+            <div className="font-semibold">
+              Single {modeLabel} ({singleAmount})
+            </div>
+            <div className="text-[11px] text-emerald-200/80">
+              Quick one-off support
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onPack}
+            className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-xs text-left"
+          >
+            <div className="font-semibold">Buy {packLabel}</div>
+            <div className="text-[11px] text-white/70">
+              Better value, more {modeLabel.toLowerCase()}s
+            </div>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full text-[11px] text-white/45 hover:text-white/70 mt-1"
+        >
+          Maybe later
+        </button>
+      </div>
+    </div>
   );
 }
