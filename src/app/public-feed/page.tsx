@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 type Post = {
@@ -20,7 +21,9 @@ export default function PublicFeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
 
+  // Load posts
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -54,6 +57,26 @@ export default function PublicFeedPage() {
     };
 
     fetchPosts();
+  }, []);
+
+  // Best-effort: see if viewer is logged in so we can start payments
+  useEffect(() => {
+    const loadViewer = async () => {
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+        if (error) return;
+        if (user?.email) {
+          setViewerEmail(user.email);
+        }
+      } catch (err) {
+        console.error("Error loading viewer", err);
+      }
+    };
+
+    loadViewer();
   }, []);
 
   const handleReact = (postId: string, emoji: ReactionEmoji) => {
@@ -140,6 +163,7 @@ export default function PublicFeedPage() {
                 <PublicPostCard
                   key={post.id}
                   post={post}
+                  viewerEmail={viewerEmail}
                   onReact={handleReact}
                 />
               ))}
@@ -153,11 +177,13 @@ export default function PublicFeedPage() {
 
 type PublicPostCardProps = {
   post: Post;
+  viewerEmail: string | null;
   onReact: (postId: string, emoji: ReactionEmoji) => void;
 };
 
-function PublicPostCard({ post, onReact }: PublicPostCardProps) {
+function PublicPostCard({ post, viewerEmail, onReact }: PublicPostCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
+  const router = useRouter();
 
   const animationClass = useMemo(() => {
     const classes = [
@@ -189,12 +215,90 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
     return created.toLocaleDateString();
   }, [created]);
 
+  const requireAuth = () => {
+    router.push("/login");
+  };
+
+  const handleBoost = async () => {
+    if (!viewerEmail) {
+      requireAuth();
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "boost",
+          userEmail: viewerEmail,
+          amountCents: 500,
+          postId: post.id,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Boost checkout failed", await res.text());
+        return;
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("Error starting boost checkout", err);
+    }
+  };
+
+  const handleTip = async () => {
+    if (!viewerEmail) {
+      requireAuth();
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "tip",
+          userEmail: viewerEmail,
+          amountCents: 200,
+          postId: post.id,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Tip checkout failed", await res.text());
+        return;
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error("Error starting tip checkout", err);
+    }
+  };
+
+  const handleSpin = () => {
+    if (!viewerEmail) {
+      requireAuth();
+      return;
+    }
+
+    // Re-use the existing dashboard spin experience
+    router.push("/dashboard#spin");
+  };
+
   return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-lg shadow-black/40">
       {/* Post header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+          <div className="h-8 w-8 rounded-full bg-emerald-500/15 flex items-center justify-center text-[11px] font-medium text-emerald-300 uppercase">
             {post.user_email?.[0] ?? "R"}
           </div>
           <div className="flex flex-col">
@@ -227,9 +331,34 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
         </p>
       )}
 
+      {/* Monetisation actions */}
+      <div className="mt-3 flex gap-2">
+        <button
+          type="button"
+          onClick={handleTip}
+          className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/40 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/20 transition"
+        >
+          Tip
+        </button>
+        <button
+          type="button"
+          onClick={handleBoost}
+          className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/40 text-[11px] font-medium text-indigo-300 hover:bg-indigo-500/20 transition"
+        >
+          Boost
+        </button>
+        <button
+          type="button"
+          onClick={handleSpin}
+          className="px-3 py-1 rounded-full bg-pink-500/10 border border-pink-400/40 text-[11px] font-medium text-pink-300 hover:bg-pink-500/20 transition"
+        >
+          Spin
+        </button>
+      </div>
+
       {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {REACTION_EMOJIS.map((emoji) => {
             const count = post.reactions?.[emoji] ?? 0;
 
@@ -239,7 +368,7 @@ function PublicPostCard({ post, onReact }: PublicPostCardProps) {
                 type="button"
                 aria-label={`React with ${emoji}`}
                 onClick={() => onReact(post.id, emoji)}
-                className="inline-flex items-center justify-center text-lg hover:scale-110 transition-transform"
+                className="inline-flex items-center justify-center text-base sm:text-lg hover:scale-110 transition-transform"
               >
                 <span>{emoji}</span>
                 {count > 0 && (
