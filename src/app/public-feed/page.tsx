@@ -18,10 +18,34 @@ const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
 export default function PublicFeedPage() {
+  const router = useRouter();
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Load current user (if logged in)
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user?.email) {
+          setUserEmail(user.email);
+        } else {
+          setUserEmail(null);
+        }
+      } catch (e) {
+        console.error("Error loading user in public feed", e);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   // Load posts
   useEffect(() => {
@@ -59,26 +83,7 @@ export default function PublicFeedPage() {
     fetchPosts();
   }, []);
 
-  // Best-effort: see if viewer is logged in so we can start payments
-  useEffect(() => {
-    const loadViewer = async () => {
-      try {
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
-        if (error) return;
-        if (user?.email) {
-          setViewerEmail(user.email);
-        }
-      } catch (err) {
-        console.error("Error loading viewer", err);
-      }
-    };
-
-    loadViewer();
-  }, []);
-
+  // Local reactions (no backend yet)
   const handleReact = (postId: string, emoji: ReactionEmoji) => {
     setPosts((prev) =>
       prev.map((p) =>
@@ -95,17 +100,76 @@ export default function PublicFeedPage() {
     );
   };
 
+  // Helper to ensure user is logged in before payment
+  const ensureLoggedIn = () => {
+    if (!userEmail) {
+      router.push("/login?redirectTo=/public-feed");
+      return false;
+    }
+    return true;
+  };
+
+  // Generic payment starter for tip / boost / spin
+  const startPayment = async (
+    mode: "tip" | "boost" | "spin",
+    postId: string,
+    amountCents: number
+  ) => {
+    if (!ensureLoggedIn()) return;
+
+    try {
+      setError(null);
+
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          userEmail,
+          amountCents,
+          postId,
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("Checkout failed:", await res.text());
+        setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError("Stripe did not return a checkout URL.");
+      }
+    } catch (e) {
+      console.error("Error starting payment", e);
+      setError("Revolvr glitched out talking to Stripe 😵‍💫");
+    }
+  };
+
+  // Concrete handlers used by each post
+  const handleTip = (postId: string) =>
+    startPayment("tip", postId, 200); // A$2
+
+  const handleBoost = (postId: string) =>
+    startPayment("boost", postId, 500); // A$5
+
+  const handleSpin = (postId: string) =>
+    startPayment("spin", postId, 100); // A$1
+
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg">🔥</span>
           <span className="font-semibold text-sm sm:text-base">Revolvr</span>
+          <span className="text-base">🔥</span>
         </div>
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
           <Link
-            href="/login"
+            href="/login?redirectTo=/public-feed"
             className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
           >
             Sign in
@@ -129,7 +193,7 @@ export default function PublicFeedPage() {
             </div>
           )}
 
-          {/* Header text */}
+          {/* Header */}
           <div className="flex items-start justify-between mt-1 mb-2">
             <div>
               <h1 className="text-lg sm:text-xl font-semibold text-white/90">
@@ -137,13 +201,10 @@ export default function PublicFeedPage() {
               </h1>
               <p className="text-xs sm:text-sm text-white/60 mt-1">
                 Anyone can watch this. Want to post?{" "}
-                <Link
-  href="/login?redirectTo=/public-feed"
-  className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
->
-  Sign in
-</Link>
-
+                <Link href="/login" className="underline">
+                  Sign in
+                </Link>{" "}
+                and head to your dashboard.
               </p>
             </div>
             <span className="text-[11px] text-white/40 self-center">
@@ -166,8 +227,10 @@ export default function PublicFeedPage() {
                 <PublicPostCard
                   key={post.id}
                   post={post}
-                  viewerEmail={viewerEmail}
                   onReact={handleReact}
+                  onTip={handleTip}
+                  onBoost={handleBoost}
+                  onSpin={handleSpin}
                 />
               ))}
             </div>
@@ -180,13 +243,20 @@ export default function PublicFeedPage() {
 
 type PublicPostCardProps = {
   post: Post;
-  viewerEmail: string | null;
   onReact: (postId: string, emoji: ReactionEmoji) => void;
+  onTip: (postId: string) => void;
+  onBoost: (postId: string) => void;
+  onSpin: (postId: string) => void;
 };
 
-function PublicPostCard({ post, viewerEmail, onReact }: PublicPostCardProps) {
+function PublicPostCard({
+  post,
+  onReact,
+  onTip,
+  onBoost,
+  onSpin,
+}: PublicPostCardProps) {
   const [hasMounted, setHasMounted] = useState(false);
-  const router = useRouter();
 
   const animationClass = useMemo(() => {
     const classes = [
@@ -218,91 +288,12 @@ function PublicPostCard({ post, viewerEmail, onReact }: PublicPostCardProps) {
     return created.toLocaleDateString();
   }, [created]);
 
-  const requireAuth = () => {
-  router.push("/login?redirectTo=/public-feed");
-};
-
-
-  const handleBoost = async () => {
-    if (!viewerEmail) {
-      requireAuth();
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: "boost",
-          userEmail: viewerEmail,
-          amountCents: 500,
-          postId: post.id,
-        }),
-      });
-
-      if (!res.ok) {
-        console.error("Boost checkout failed", await res.text());
-        return;
-      }
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      console.error("Error starting boost checkout", err);
-    }
-  };
-
-  const handleTip = async () => {
-    if (!viewerEmail) {
-      requireAuth();
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: "tip",
-          userEmail: viewerEmail,
-          amountCents: 200,
-          postId: post.id,
-        }),
-      });
-
-      if (!res.ok) {
-        console.error("Tip checkout failed", await res.text());
-        return;
-      }
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      console.error("Error starting tip checkout", err);
-    }
-  };
-
-  const handleSpin = () => {
-    if (!viewerEmail) {
-      requireAuth();
-      return;
-    }
-
-    // Re-use the existing dashboard spin experience
-    router.push("/dashboard#spin");
-  };
-
   return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-lg shadow-black/40">
-      {/* Post header */}
+    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-emerald-500/15 flex items-center justify-center text-[11px] font-medium text-emerald-300 uppercase">
+          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
             {post.user_email?.[0] ?? "R"}
           </div>
           <div className="flex flex-col">
@@ -335,34 +326,34 @@ function PublicPostCard({ post, viewerEmail, onReact }: PublicPostCardProps) {
         </p>
       )}
 
-      {/* Monetisation actions */}
-      <div className="mt-3 flex gap-2">
+      {/* Tip / Boost / Spin row */}
+      <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={handleTip}
-          className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/40 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/20 transition"
+          onClick={() => onTip(post.id)}
+          className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200"
         >
-          Tip
+          Tip A$2
         </button>
         <button
           type="button"
-          onClick={handleBoost}
-          className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-400/40 text-[11px] font-medium text-indigo-300 hover:bg-indigo-500/20 transition"
+          onClick={() => onBoost(post.id)}
+          className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200"
         >
-          Boost
+          Boost A$5
         </button>
         <button
           type="button"
-          onClick={handleSpin}
-          className="px-3 py-1 rounded-full bg-pink-500/10 border border-pink-400/40 text-[11px] font-medium text-pink-300 hover:bg-pink-500/20 transition"
+          onClick={() => onSpin(post.id)}
+          className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200"
         >
-          Spin
+          Spin A$1
         </button>
       </div>
 
       {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           {REACTION_EMOJIS.map((emoji) => {
             const count = post.reactions?.[emoji] ?? 0;
 
@@ -370,9 +361,9 @@ function PublicPostCard({ post, viewerEmail, onReact }: PublicPostCardProps) {
               <button
                 key={emoji}
                 type="button"
-                aria-label={`React with ${emoji}`}
+                aria-label={`React ${emoji}`}
                 onClick={() => onReact(post.id, emoji)}
-                className="inline-flex items-center justify-center text-base sm:text-lg hover:scale-110 transition-transform"
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/5 hover:bg-white/10 text-lg"
               >
                 <span>{emoji}</span>
                 {count > 0 && (
