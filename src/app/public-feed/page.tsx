@@ -539,13 +539,14 @@ export default function PublicFeedPage() {
             <PeopleRail
               people={people}
               selectedEmail={selectedUserEmail}
-                  onSelectEmail={(email) => {
-      setSelectedUserEmail((current) =>
-        current === email ? null : email
-      );
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }}
-
+              onSelectEmail={(email) => {
+                setSelectedUserEmail((current) =>
+                  current === email ? null : email
+                );
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
+          )}
 
           {/* Feed body */}
           {isLoading ? (
@@ -614,7 +615,7 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
         )}
       </div>
 
-            <div className="relative">
+      <div className="relative">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {/* "All" chip */}
           <button
@@ -676,7 +677,9 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
         <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-[#050814] to-transparent" />
         <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-[#050814] to-transparent" />
       </div>
-
+    </section>
+  );
+}
 
 type PublicPostCardProps = {
   post: Post;
