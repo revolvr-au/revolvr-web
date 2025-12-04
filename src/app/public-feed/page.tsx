@@ -400,7 +400,8 @@ export default function PublicFeedPage() {
 
       {/* Main content */}
       <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-4">
+  <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-4 pb-28">
+
           {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
@@ -557,6 +558,13 @@ export default function PublicFeedPage() {
               }}
             />
           )}
+                  {/* Section label: FEED */}
+          <div className="mt-2 mb-1 flex items-center">
+            <h2 className="text-[11px] sm:text-xs font-semibold tracking-[0.22em] uppercase text-white/50">
+              Feed
+            </h2>
+            <div className="ml-3 flex-1 h-px bg-white/10" />
+          </div>
 
           {/* Feed body */}
           {isLoading ? (
@@ -599,7 +607,7 @@ export default function PublicFeedPage() {
       )}
 
       {/* Bottom app nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur shadow-[0_-10px_30px_rgba(0,0,0,0.75)]">
         <div className="mx-auto max-w-xl px-6 py-2 flex items-center justify-between text-xs sm:text-sm">
           {/* Feed */}
           <button
