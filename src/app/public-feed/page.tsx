@@ -748,15 +748,23 @@ function PublicPostCard({
             {post.user_email?.[0] ?? "R"}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
-              {displayName}
-            </span>
-            <span className="text-[11px] text-white/40 truncate max-w-[220px]">
-              {post.user_email ?? "Unknown"} · {timeLabel}
-            </span>
-          </div>
-        </div>
-      </div>
+  {post.user_email ? (
+    <Link
+      href={`/u/${encodeURIComponent(post.user_email)}`}
+      className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
+    >
+      {displayName}
+    </Link>
+  ) : (
+    <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
+      {displayName}
+    </span>
+  )}
+  <span className="text-[11px] text-white/40 truncate max-w-[220px]">
+    {post.user_email ?? "Unknown"} · {timeLabel}
+  </span>
+</div>
+
 
       {/* Media */}
       <div className="overflow-hidden rounded-xl bg-black/40">
