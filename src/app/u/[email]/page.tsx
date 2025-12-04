@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClients";
 
@@ -81,14 +81,12 @@ export default function UserProfilePage({
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Link
-            href="/public-feed"
-            className="text-xs text-white/60 hover:text-white"
-          >
-            ← Back to feed
-          </Link>
-        </div>
+        <Link
+          href="/public-feed"
+          className="text-xs text-white/60 hover:text-white"
+        >
+          ← Back to feed
+        </Link>
       </header>
 
       <main className="flex-1 flex justify-center">
