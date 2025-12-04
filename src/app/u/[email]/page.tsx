@@ -1,12 +1,13 @@
+// src/app/u/[email]/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 type Post = {
   id: string;
-  user_email: string;
   image_url: string;
   caption: string;
   created_at: string;
@@ -15,33 +16,55 @@ type Post = {
   spin_count?: number;
 };
 
-export default function UserProfilePage({
-  params,
-}: {
+type ProfileProps = {
   params: { email: string };
-}) {
-  const decodedEmail = decodeURIComponent(params.email);
+};
+
+export default function CreatorProfilePage({ params }: ProfileProps) {
+  const router = useRouter();
+  const creatorEmail = decodeURIComponent(params.email);
 
   const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+
+  // Load current user (for bottom nav Profile button)
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
+    const loadUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setCurrentUserEmail(user?.email ?? null);
+      } catch (e) {
+        console.error("Error loading auth user on profile page", e);
+      }
+    };
+    loadUser();
+  }, []);
 
-      const { data, error } = await supabase
-        .from("posts")
-        .select(
-          "id, user_email, image_url, caption, created_at, tip_count, boost_count, spin_count"
-        )
-        .eq("user_email", decodedEmail)
-        .order("created_at", { ascending: false });
+  // Load this creator's posts
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      if (!error && data) {
+        const { data, error } = await supabase
+          .from("posts")
+          .select(
+            "id, image_url, caption, created_at, tip_count, boost_count, spin_count"
+          )
+          .eq("user_email", creatorEmail)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
         setPosts(
-          data.map((row: any) => ({
+          (data ?? []).map((row: any) => ({
             id: row.id,
-            user_email: row.user_email,
             image_url: row.image_url,
             caption: row.caption,
             created_at: row.created_at,
@@ -50,135 +73,211 @@ export default function UserProfilePage({
             spin_count: row.spin_count ?? 0,
           }))
         );
+      } catch (e) {
+        console.error("Error loading creator profile", e);
+        setError("Revolvr glitched out loading this profile 😵‍💫");
+      } finally {
+        setIsLoading(false);
       }
-
-      setLoading(false);
     };
 
-    load();
-  }, [decodedEmail]);
-
-  const totalTips = useMemo(
-    () => posts.reduce((n, p) => n + (p.tip_count ?? 0), 0),
-    [posts]
-  );
-  const totalBoosts = useMemo(
-    () => posts.reduce((n, p) => n + (p.boost_count ?? 0), 0),
-    [posts]
-  );
-  const totalSpins = useMemo(
-    () => posts.reduce((n, p) => n + (p.spin_count ?? 0), 0),
-    [posts]
-  );
+    fetchPosts();
+  }, [creatorEmail]);
 
   const displayName = useMemo(() => {
-    const [localPart] = decodedEmail.split("@");
+    if (!creatorEmail) return "Someone";
+
+    const [localPart] = creatorEmail.split("@");
     const cleaned = localPart.replace(/\W+/g, " ").trim();
-    return cleaned || decodedEmail;
-  }, [decodedEmail]);
+
+    return cleaned || creatorEmail;
+  }, [creatorEmail]);
+
+  const avatarLetter = displayName[0]?.toUpperCase() ?? "R";
+
+  const stats = useMemo(() => {
+    let postsCount = posts.length;
+    let tips = 0;
+    let boosts = 0;
+    let spins = 0;
+
+    for (const p of posts) {
+      tips += p.tip_count ?? 0;
+      boosts += p.boost_count ?? 0;
+      spins += p.spin_count ?? 0;
+    }
+
+    return { postsCount, tips, boosts, spins };
+  }, [posts]);
+
+  const ensureLoggedIn = () => {
+    if (!currentUserEmail) {
+      const redirect = encodeURIComponent(`/u/${encodeURIComponent(creatorEmail)}`);
+      router.push(`/login?redirectTo=${redirect}`);
+      return false;
+    }
+    return true;
+  };
+
+  const handleBottomPost = () => {
+    if (!ensureLoggedIn()) return;
+    // go back to feed and open composer – same pattern as feed page
+    router.push("/public-feed");
+  };
 
   return (
-    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <Link
-          href="/public-feed"
-          className="text-xs text-white/60 hover:text-white"
+    <div className="min-h-screen bg-[#050814] text-white flex flex-col pb-20 sm:pb-24">
+      {/* Top bar / back */}
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur px-4 py-3 flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => router.push("/public-feed")}
+          className="text-xs sm:text-sm text-white/70 hover:text-white flex items-center gap-1"
         >
-          ← Back to feed
-        </Link>
+          <span>←</span>
+          <span>Back to feed</span>
+        </button>
+        <span className="text-xs text-white/40">Profile</span>
       </header>
 
+      {/* Main content */}
       <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-6">
-          {/* Header */}
-          <section className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-xl bg-emerald-500/20 flex items-center justify-center text-2xl font-semibold uppercase">
-              {displayName[0] ?? "U"}
+        <div className="w-full max-w-4xl px-4 py-6 space-y-8">
+          {/* Error banner */}
+          {error && (
+            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
+              <span>{error}</span>
+              <button
+                className="text-xs underline"
+                onClick={() => setError(null)}
+              >
+                Dismiss
+              </button>
             </div>
-            <div>
-              <h1 className="text-xl font-semibold">{displayName}</h1>
-              <p className="text-xs text-white/50">{decodedEmail}</p>
+          )}
+
+          {/* Header card */}
+          <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-2xl bg-emerald-600/25 flex items-center justify-center text-2xl font-semibold text-emerald-200">
+                {avatarLetter}
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-xl sm:text-2xl font-semibold">
+                  {displayName}
+                </h1>
+                <p className="text-xs sm:text-sm text-white/50 truncate max-w-[260px] sm:max-w-none">
+                  {creatorEmail}
+                </p>
+              </div>
             </div>
           </section>
 
-          {/* Stats */}
-          <section className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="bg-white/5 rounded-xl py-3">
-              <div className="text-lg font-semibold">{posts.length}</div>
-              <div className="text-white/50">Posts</div>
+          {/* Stats row */}
+          <section className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="rounded-2xl bg-white/5 border border-white/10 py-4 px-4 text-center">
+              <div className="text-2xl font-semibold">{stats.postsCount}</div>
+              <div className="mt-1 text-xs uppercase tracking-wide text-white/50">
+                Posts
+              </div>
             </div>
-            <div className="bg-white/5 rounded-xl py-3">
-              <div className="text-lg font-semibold">{totalTips}</div>
-              <div className="text-white/50">Tips</div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 py-4 px-4 text-center">
+              <div className="text-2xl font-semibold">{stats.tips}</div>
+              <div className="mt-1 text-xs uppercase tracking-wide text-white/50">
+                Tips
+              </div>
             </div>
-            <div className="bg-white/5 rounded-xl py-3">
-              <div className="text-lg font-semibold">{totalBoosts}</div>
-              <div className="text-white/50">Boosts</div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 py-4 px-4 text-center">
+              <div className="text-2xl font-semibold">{stats.boosts}</div>
+              <div className="mt-1 text-xs uppercase tracking-wide text-white/50">
+                Boosts
+              </div>
+            </div>
+            <div className="rounded-2xl bg-white/5 border border-white/10 py-4 px-4 text-center">
+              <div className="text-2xl font-semibold">{stats.spins}</div>
+              <div className="mt-1 text-xs uppercase tracking-wide text-white/50">
+                Spins
+              </div>
             </div>
           </section>
 
-          {/* Posts */}
-          <section className="space-y-4 pb-20">
-            {loading ? (
-              <div className="text-center text-sm text-white/60">
-                Loading posts…
+          {/* Posts grid */}
+          <section className="space-y-3">
+            <h2 className="text-sm font-semibold tracking-wide text-white/80">
+              POSTS
+            </h2>
+
+            {isLoading ? (
+              <div className="text-sm text-white/60 py-8">
+                Loading this creator&apos;s chaos…
               </div>
             ) : posts.length === 0 ? (
-              <div className="text-center text-sm text-white/60">
+              <div className="text-sm text-white/60 py-8">
                 No posts yet from this creator.
               </div>
             ) : (
-              posts.map((post) => <ProfilePostCard key={post.id} post={post} />)
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {posts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="relative overflow-hidden rounded-xl bg-black/40 border border-white/10"
+                  >
+                    <img
+                      src={post.image_url}
+                      alt={post.caption ?? ""}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </section>
         </div>
       </main>
+
+      {/* Bottom app nav – same structure as feed */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur">
+        <div className="mx-auto max-w-xl px-6 py-2 flex items-center justify-between text-xs sm:text-sm">
+          {/* Feed */}
+          <button
+            type="button"
+            onClick={() => router.push("/public-feed")}
+            className="flex flex-col items-center flex-1 text-white/70 hover:text-white"
+          >
+            <span className="text-lg">🏠</span>
+            <span className="mt-0.5">Feed</span>
+          </button>
+
+          {/* Post */}
+          <button
+            type="button"
+            onClick={handleBottomPost}
+            className="flex flex-col items-center flex-1 text-emerald-300 hover:text-emerald-100"
+          >
+            <span className="text-lg">➕</span>
+            <span className="mt-0.5">Post</span>
+          </button>
+
+          {/* Profile */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!currentUserEmail) {
+                const redirect = encodeURIComponent(
+                  `/u/${encodeURIComponent(creatorEmail)}`
+                );
+                router.push(`/login?redirectTo=${redirect}`);
+                return;
+              }
+              router.push(`/u/${encodeURIComponent(currentUserEmail)}`);
+            }}
+            className="flex flex-col items-center flex-1 text-emerald-300"
+          >
+            <span className="text-lg">👤</span>
+            <span className="mt-0.5">Profile</span>
+          </button>
+        </div>
+      </nav>
     </div>
-  );
-}
-
-function ProfilePostCard({ post }: { post: Post }) {
-  const created = new Date(post.created_at);
-
-  const timeLabel = useMemo(() => {
-    const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
-    if (seconds < 60) return "Just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return created.toLocaleDateString();
-  }, [created]);
-
-  const isVideo = !!post.image_url?.match(/\.(mp4|webm|ogg)$/i);
-
-  return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
-      <div className="text-[11px] text-white/40 mb-1">{timeLabel}</div>
-
-      <div className="overflow-hidden rounded-xl bg-black/40">
-        {isVideo ? (
-          <video
-            src={post.image_url}
-            className="w-full h-auto block"
-            controls
-            playsInline
-          />
-        ) : (
-          <img
-            src={post.image_url}
-            alt={post.caption}
-            className="w-full h-auto block"
-          />
-        )}
-      </div>
-
-      {post.caption && (
-        <p className="mt-2 text-sm text-white/90 break-words">{post.caption}</p>
-      )}
-    </article>
   );
 }
