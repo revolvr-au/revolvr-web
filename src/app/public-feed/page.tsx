@@ -14,6 +14,13 @@ type Post = {
   reactions?: Record<string, number>;
 };
 
+type Person = {
+  email: string;
+  avatarUrl?: string;
+  firstName: string;
+  postCount: number;
+};
+
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
@@ -35,11 +42,15 @@ export default function PublicFeedPage() {
   const [pendingPurchase, setPendingPurchase] =
     useState<PendingPurchase | null>(null);
 
+  const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(
+    null
+  );
+
   // Composer state (top-of-feed)
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [isPosting, setIsPosting] = useState(false);
-  const [showComposer, setShowComposer] = useState<boolean>(false); // 👈 NEW: closed by default
+  const [showComposer, setShowComposer] = useState<boolean>(false);
 
   // Load current user (if logged in)
   useEffect(() => {
@@ -95,6 +106,42 @@ export default function PublicFeedPage() {
 
     fetchPosts();
   }, []);
+
+  // People rail data
+  const people: Person[] = useMemo(() => {
+    const byEmail = new Map<string, Person>();
+
+    for (const post of posts) {
+      if (!post.user_email) continue;
+
+      const existing = byEmail.get(post.user_email);
+      if (existing) {
+        existing.postCount += 1;
+        continue;
+      }
+
+      const firstName =
+        post.user_email.split("@")[0]?.replace(/\W+/g, " ") || "Someone";
+
+      byEmail.set(post.user_email, {
+        email: post.user_email,
+        avatarUrl: post.image_url,
+        firstName,
+        postCount: 1,
+      });
+    }
+
+    return Array.from(byEmail.values());
+  }, [posts]);
+
+  // Posts filtered by selected person
+  const visiblePosts = useMemo(
+    () =>
+      selectedUserEmail
+        ? posts.filter((p) => p.user_email === selectedUserEmail)
+        : posts,
+    [posts, selectedUserEmail]
+  );
 
   // Local reactions (no backend yet)
   const handleReact = (postId: string, emoji: ReactionEmoji) => {
@@ -186,7 +233,7 @@ export default function PublicFeedPage() {
       );
       setCaption("");
       setFile(null);
-      setShowComposer(false); // optional: collapse after posting
+      setShowComposer(false);
     } catch (e) {
       console.error("Error creating post", e);
       setError("Revolvr glitched out while posting 😵‍💫 Try again.");
@@ -247,6 +294,7 @@ export default function PublicFeedPage() {
     openPurchaseChoice(postId, "boost");
   const handleSpinClick = (postId: string) =>
     openPurchaseChoice(postId, "spin");
+
   // Helper: amounts in cents for each mode
   const singleAmountForMode = (mode: PurchaseMode) => {
     switch (mode) {
@@ -284,7 +332,6 @@ export default function PublicFeedPage() {
       amountCents
     );
 
-    // Close the sheet after starting checkout
     setPendingPurchase(null);
   };
 
@@ -299,7 +346,6 @@ export default function PublicFeedPage() {
       amountCents
     );
 
-    // Close the sheet after starting checkout
     setPendingPurchase(null);
   };
 
@@ -320,7 +366,7 @@ export default function PublicFeedPage() {
                 router.push(`/login?redirectTo=${redirect}`);
                 return;
               }
-              setShowComposer(true); // 👈 open composer
+              setShowComposer(true);
               scrollToComposer();
             }}
             className="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs sm:text-sm"
@@ -452,7 +498,7 @@ export default function PublicFeedPage() {
                       if (isPosting) return;
                       setFile(null);
                       setCaption("");
-                      setShowComposer(false); // 👈 collapse composer
+                      setShowComposer(false);
                     }}
                   >
                     Cancel
@@ -488,6 +534,19 @@ export default function PublicFeedPage() {
             </span>
           </div>
 
+          {/* People rail */}
+          {people.length > 0 && (
+            <PeopleRail
+              people={people}
+              selectedEmail={selectedUserEmail}
+              onSelectEmail={(email) =>
+                setSelectedUserEmail((current) =>
+                  current === email ? null : email
+                )
+              }
+            />
+          )}
+
           {/* Feed body */}
           {isLoading ? (
             <div className="text-center text-sm text-white/60 py-10">
@@ -497,9 +556,13 @@ export default function PublicFeedPage() {
             <div className="text-center text-sm text-white/60 py-10">
               No posts yet. Be the first to spin something into existence ✨
             </div>
+          ) : visiblePosts.length === 0 ? (
+            <div className="text-center text-sm text-white/60 py-10">
+              No posts yet from this person.
+            </div>
           ) : (
             <div className="space-y-4 pb-20">
-              {posts.map((post) => (
+              {visiblePosts.map((post) => (
                 <PublicPostCard
                   key={post.id}
                   post={post}
@@ -524,6 +587,90 @@ export default function PublicFeedPage() {
         />
       )}
     </div>
+  );
+}
+
+type PeopleRailProps = {
+  people: Person[];
+  selectedEmail: string | null;
+  onSelectEmail: (email: string | null) => void;
+};
+
+function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
+  return (
+    <section className="mb-3">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-xs sm:text-sm font-semibold tracking-wide text-white/80">
+          PEOPLE
+        </h2>
+        {selectedEmail && (
+          <button
+            type="button"
+            onClick={() => onSelectEmail(null)}
+            className="text-[11px] text-white/50 hover:text-white/80"
+          >
+            Clear filter
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {/* "All" chip */}
+        <button
+          type="button"
+          onClick={() => onSelectEmail(null)}
+          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border ${
+            selectedEmail === null
+              ? "bg-white text-black border-white"
+              : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+          }`}
+        >
+          All
+        </button>
+
+        {people.map((person) => {
+          const isActive = person.email === selectedEmail;
+
+          return (
+            <button
+              key={person.email}
+              type="button"
+              onClick={() => onSelectEmail(person.email)}
+              className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] ${
+                isActive
+                  ? "bg-white text-black border-white"
+                  : "bg-white/5 border-white/15 text-white"
+              }`}
+            >
+              <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 mb-1">
+                {person.avatarUrl ? (
+                  <img
+                    src={person.avatarUrl}
+                    alt={person.firstName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm font-semibold">
+                    {person.firstName[0]?.toUpperCase() ?? "R"}
+                  </div>
+                )}
+              </div>
+              <span className="text-[11px] font-semibold truncate w-full text-center">
+                {person.firstName}
+              </span>
+              <span
+                className={`text-[10px] ${
+                  isActive ? "text-black/70" : "text-white/50"
+                }`}
+              >
+                {person.postCount} post
+                {person.postCount === 1 ? "" : "s"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
