@@ -701,15 +701,6 @@ function PublicPostCard({
   const created = new Date(post.created_at);
 
   const timeLabel = useMemo(() => {
-      const displayName = useMemo(() => {
-    if (!post.user_email) return "Someone";
-
-    const [localPart] = post.user_email.split("@");
-    const cleaned = localPart.replace(/\W+/g, " ").trim();
-
-    return cleaned || post.user_email;
-  }, [post.user_email]);
-
     const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
     if (seconds < 60) return "Just now";
     const minutes = Math.floor(seconds / 60);
@@ -721,12 +712,26 @@ function PublicPostCard({
     return created.toLocaleDateString();
   }, [created]);
 
+  const displayName = useMemo(() => {
+    if (!post.user_email) return "Someone";
+
+    const [localPart] = post.user_email.split("@");
+    const cleaned = localPart.replace(/\W+/g, " ").trim();
+
+    return cleaned || post.user_email;
+  }, [post.user_email]);
+
   const isVideo = !!post.image_url?.match(/\.(mp4|webm|ogg)$/i);
 
   return (
     <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
       {/* Header */}
-                <div className="flex flex-col">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+            {post.user_email?.[0] ?? "R"}
+          </div>
+          <div className="flex flex-col">
             <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
               {displayName}
             </span>
@@ -734,7 +739,8 @@ function PublicPostCard({
               {post.user_email ?? "Unknown"} · {timeLabel}
             </span>
           </div>
-
+        </div>
+      </div>
 
       {/* Media */}
       <div className="overflow-hidden rounded-xl bg-black/40">
@@ -761,7 +767,7 @@ function PublicPostCard({
         </p>
       )}
 
-            {/* Tip / Boost / Spin row */}
+      {/* Tip / Boost / Spin row */}
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
@@ -786,6 +792,7 @@ function PublicPostCard({
         </button>
       </div>
 
+      {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex gap-2">
           {REACTION_EMOJIS.map((emoji) => {
