@@ -247,6 +247,61 @@ export default function PublicFeedPage() {
     openPurchaseChoice(postId, "boost");
   const handleSpinClick = (postId: string) =>
     openPurchaseChoice(postId, "spin");
+  // Helper: amounts in cents for each mode
+  const singleAmountForMode = (mode: PurchaseMode) => {
+    switch (mode) {
+      case "tip":
+        return 200; // A$2
+      case "boost":
+        return 500; // A$5
+      case "spin":
+      default:
+        return 100; // A$1
+    }
+  };
+
+  const packAmountForMode = (mode: PurchaseMode) => {
+    // e.g. 5x the single value – tweak to taste
+    switch (mode) {
+      case "tip":
+        return 1000; // A$10 tip pack
+      case "boost":
+        return 2500; // A$25 boost pack
+      case "spin":
+      default:
+        return 500; // A$5 spin pack
+    }
+  };
+
+  const handleSinglePurchase = async () => {
+    if (!pendingPurchase) return;
+
+    const amountCents = singleAmountForMode(pendingPurchase.mode);
+
+    await startPayment(
+      pendingPurchase.mode,
+      pendingPurchase.postId,
+      amountCents
+    );
+
+    // Close the sheet after starting checkout
+    setPendingPurchase(null);
+  };
+
+  const handlePackPurchase = async () => {
+    if (!pendingPurchase) return;
+
+    const amountCents = packAmountForMode(pendingPurchase.mode);
+
+    await startPayment(
+      pendingPurchase.mode,
+      pendingPurchase.postId,
+      amountCents
+    );
+
+    // Close the sheet after starting checkout
+    setPendingPurchase(null);
+  };
 
   // --- JSX ---
   return (
