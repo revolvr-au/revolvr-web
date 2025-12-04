@@ -92,7 +92,7 @@ export default function PublicFeedPage() {
 
         if (error) throw error;
 
-        setPosts(
+                setPosts(
           (data ?? []).map((row: any) => ({
             id: row.id,
             user_email: row.user_email,
@@ -100,8 +100,12 @@ export default function PublicFeedPage() {
             caption: row.caption,
             created_at: row.created_at,
             reactions: {},
+            tip_count: row.tip_count ?? 0,
+            boost_count: row.boost_count ?? 0,
+            spin_count: row.spin_count ?? 0,
           }))
         );
+
       } catch (e) {
         console.error("Error loading public feed", e);
         setError("Revolvr glitched out loading the public feed 😵‍💫");
@@ -584,7 +588,7 @@ export default function PublicFeedPage() {
         </div>
       </main>
 
-      {/* Single vs pack popup */}
+            {/* Single vs pack popup */}
       {pendingPurchase && (
         <PurchaseChoiceSheet
           pending={pendingPurchase}
@@ -593,9 +597,56 @@ export default function PublicFeedPage() {
           onPack={handlePackPurchase}
         />
       )}
+
+      {/* Bottom app nav */}
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur">
+        <div className="mx-auto max-w-xl px-6 py-2 flex items-center justify-between text-xs sm:text-sm">
+          {/* Feed */}
+          <button
+            type="button"
+            onClick={() => router.push("/public-feed")}
+            className="flex flex-col items-center flex-1 text-white/70 hover:text-white"
+          >
+            <span className="text-lg">🏠</span>
+            <span className="mt-0.5">Feed</span>
+          </button>
+
+          {/* Post */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!ensureLoggedIn()) return;
+              setShowComposer(true);
+              scrollToComposer();
+            }}
+            className="flex flex-col items-center flex-1 text-emerald-300 hover:text-emerald-100"
+          >
+            <span className="text-lg">➕</span>
+            <span className="mt-0.5">Post</span>
+          </button>
+
+          {/* Profile */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!userEmail) {
+                const redirect = encodeURIComponent("/public-feed");
+                router.push(`/login?redirectTo=${redirect}`);
+                return;
+              }
+              router.push(`/u/${encodeURIComponent(userEmail)}`);
+            }}
+            className="flex flex-col items-center flex-1 text-white/70 hover:text-white"
+          >
+            <span className="text-lg">👤</span>
+            <span className="mt-0.5">Profile</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 }
+
 
 type PeopleRailProps = {
   people: Person[];
