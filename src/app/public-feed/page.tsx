@@ -39,6 +39,7 @@ export default function PublicFeedPage() {
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [isPosting, setIsPosting] = useState(false);
+  const [showComposer, setShowComposer] = useState<boolean>(false); // 👈 NEW: closed by default
 
   // Load current user (if logged in)
   useEffect(() => {
@@ -122,6 +123,14 @@ export default function PublicFeedPage() {
     return true;
   };
 
+  // Scroll to composer when +Post clicked
+  const scrollToComposer = () => {
+    const el = document.getElementById("revolvrComposer");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   // Create post from public feed composer
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
@@ -177,6 +186,7 @@ export default function PublicFeedPage() {
       );
       setCaption("");
       setFile(null);
+      setShowComposer(false); // optional: collapse after posting
     } catch (e) {
       console.error("Error creating post", e);
       setError("Revolvr glitched out while posting 😵‍💫 Try again.");
@@ -238,39 +248,7 @@ export default function PublicFeedPage() {
   const handleSpinClick = (postId: string) =>
     openPurchaseChoice(postId, "spin");
 
-  // When user chooses "single" in the popup
-  const handleSinglePurchase = async () => {
-    if (!pendingPurchase) return;
-    const { postId, mode } = pendingPurchase;
-
-    if (mode === "tip") {
-      await startPayment("tip", postId, 200); // A$2
-    } else if (mode === "boost") {
-      await startPayment("boost", postId, 500); // A$5
-    } else {
-      await startPayment("spin", postId, 100); // A$1
-    }
-
-    setPendingPurchase(null);
-  };
-
-  // When user chooses "pack" in the popup
-  const handlePackPurchase = () => {
-    if (!pendingPurchase) return;
-    const { mode } = pendingPurchase;
-
-    router.push(`/credits?mode=${mode}`);
-    setPendingPurchase(null);
-  };
-
-  // Scroll to composer when +Post clicked
-  const scrollToComposer = () => {
-    const el = document.getElementById("revolvrComposer");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
+  // --- JSX ---
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
@@ -281,7 +259,15 @@ export default function PublicFeedPage() {
         </div>
         <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
           <button
-            onClick={scrollToComposer}
+            onClick={() => {
+              if (!userEmail) {
+                const redirect = encodeURIComponent("/public-feed");
+                router.push(`/login?redirectTo=${redirect}`);
+                return;
+              }
+              setShowComposer(true); // 👈 open composer
+              scrollToComposer();
+            }}
             className="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs sm:text-sm"
           >
             + Post
@@ -317,111 +303,116 @@ export default function PublicFeedPage() {
             </div>
           )}
 
-          {/* Composer */}
-          <section
-            id="revolvrComposer"
-            className="rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/30 space-y-4"
-          >
-            <h2 className="text-sm sm:text-base font-semibold">Create a Post</h2>
+          {/* Composer – only when logged in AND explicitly opened */}
+          {userEmail && showComposer && (
+            <section
+              id="revolvrComposer"
+              className="rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/30 space-y-4"
+            >
+              <h2 className="text-sm sm:text-base font-semibold">
+                Create a Post
+              </h2>
 
-            <form className="space-y-4" onSubmit={handleCreatePost}>
-              {/* Upload Section */}
-              <div>
-                <label className="text-xs font-medium text-white/70 block mb-2">
-                  Image or short video
-                </label>
+              <form className="space-y-4" onSubmit={handleCreatePost}>
+                {/* Upload Section */}
+                <div>
+                  <label className="text-xs font-medium text-white/70 block mb-2">
+                    Image or short video
+                  </label>
 
-                {/* Drop Zone */}
-                <div
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const dropped = e.dataTransfer.files?.[0];
-                    if (dropped) setFile(dropped);
-                  }}
-                  className="w-full h-48 rounded-xl border border-white/15 bg-black/20 
-                             flex flex-col items-center justify-center cursor-pointer 
-                             hover:bg-black/30 transition"
-                  onClick={() =>
-                    document.getElementById("revolvrUploadInput")?.click()
-                  }
-                >
-                  {!file ? (
-                    <div className="flex flex-col items-center gap-2 text-white/60">
-                      <div
-                        className="w-12 h-12 border border-white/20 rounded-lg 
-                                   flex items-center justify-center"
-                      >
-                        <span className="text-xl">↑</span>
+                  {/* Drop Zone */}
+                  <div
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const dropped = e.dataTransfer.files?.[0];
+                      if (dropped) setFile(dropped);
+                    }}
+                    className="w-full h-48 rounded-xl border border-white/15 bg-black/20 
+                               flex flex-col items-center justify-center cursor-pointer 
+                               hover:bg-black/30 transition"
+                    onClick={() =>
+                      document.getElementById("revolvrUploadInput")?.click()
+                    }
+                  >
+                    {!file ? (
+                      <div className="flex flex-col items-center gap-2 text-white/60">
+                        <div
+                          className="w-12 h-12 border border-white/20 rounded-lg 
+                                     flex items-center justify-center"
+                        >
+                          <span className="text-xl">↑</span>
+                        </div>
+                        <span className="text-xs">Click or drop to upload</span>
                       </div>
-                      <span className="text-xs">Click or drop to upload</span>
-                    </div>
-                  ) : (
-                    <div className="w-full h-full overflow-hidden rounded-lg">
-                      {file.type.startsWith("video") ? (
-                        <video
-                          src={URL.createObjectURL(file)}
-                          controls
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <img
-                          src={URL.createObjectURL(file)}
-                          className="w-full h-full object-cover"
-                          alt="preview"
-                        />
-                      )}
-                    </div>
-                  )}
+                    ) : (
+                      <div className="w-full h-full overflow-hidden rounded-lg">
+                        {file.type.startsWith("video") ? (
+                          <video
+                            src={URL.createObjectURL(file)}
+                            controls
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={URL.createObjectURL(file)}
+                            className="w-full h-full object-cover"
+                            alt="preview"
+                          />
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Hidden input */}
+                  <input
+                    id="revolvrUploadInput"
+                    type="file"
+                    accept="image/*,video/*"
+                    className="hidden"
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+
+                  <p className="mt-2 text-[11px] text-white/40">
+                    Supported: JPG, PNG, GIF, MP4 (short clips work best).
+                  </p>
                 </div>
 
-                {/* Hidden input */}
-                <input
-                  id="revolvrUploadInput"
-                  type="file"
-                  accept="image/*,video/*"
-                  className="hidden"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                />
+                {/* Caption */}
+                <div>
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                    placeholder="Say something wild…"
+                    rows={3}
+                  />
+                </div>
 
-                <p className="mt-2 text-[11px] text-white/40">
-                  Supported: JPG, PNG, GIF, MP4 (short clips work best).
-                </p>
-              </div>
-
-              {/* Caption */}
-              <div>
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                  placeholder="Say something wild…"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  className="px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
-                  onClick={() => {
-                    if (isPosting) return;
-                    setFile(null);
-                    setCaption("");
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPosting}
-                  className="px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-xs sm:text-sm font-medium text-black shadow-md shadow-emerald-500/25 disabled:opacity-60"
-                >
-                  {isPosting ? "Posting…" : "Post"}
-                </button>
-              </div>
-            </form>
-          </section>
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    className="px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
+                    onClick={() => {
+                      if (isPosting) return;
+                      setFile(null);
+                      setCaption("");
+                      setShowComposer(false); // 👈 collapse composer
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPosting}
+                    className="px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-xs sm:text-sm font-medium text-black shadow-md shadow-emerald-500/25 disabled:opacity-60"
+                  >
+                    {isPosting ? "Posting…" : "Post"}
+                  </button>
+                </div>
+              </form>
+            </section>
+          )}
 
           {/* Header text */}
           <div className="flex items-start justify-between mt-1 mb-2">
@@ -591,7 +582,7 @@ function PublicPostCard({
                 type="button"
                 aria-label={`React ${emoji}`}
                 onClick={() => onReact(post.id, emoji)}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-full bg:white/0 hover:bg-white/10 text-lg"
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/0 hover:bg-white/10 text-lg"
               >
                 <span>{emoji}</span>
                 {count > 0 && (
