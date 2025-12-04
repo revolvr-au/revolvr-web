@@ -621,11 +621,12 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
           <button
             type="button"
             onClick={() => onSelectEmail(null)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border transition ${
-              selectedEmail === null
-                ? "bg-white text-black border-white shadow-sm shadow-black/40"
-                : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10"
-            }`}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border transition-transform duration-150 ${
+  selectedEmail === null
+    ? "bg-white text-black border-white shadow-sm shadow-black/40 hover:-translate-y-0.5 active:scale-95"
+    : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10 hover:-translate-y-0.5 active:scale-95"
+}`}
+
           >
             All
           </button>
@@ -638,11 +639,12 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
                 key={person.email}
                 type="button"
                 onClick={() => onSelectEmail(person.email)}
-                className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] transition ${
-                  isActive
-                    ? "bg-white text-black border-white shadow-sm shadow-black/40"
-                    : "bg-white/5 border-white/15 text-white hover:bg-white/10"
-                }`}
+                className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] transition-transform duration-150 ${
+  isActive
+    ? "bg-white text-black border-white shadow-sm shadow-black/40 hover:-translate-y-1 active:scale-95"
+    : "bg-white/5 border-white/15 text-white hover:bg-white/10 hover:-translate-y-1 active:scale-95"
+}`}
+
               >
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 mb-1">
                   {person.avatarUrl ? (
@@ -699,6 +701,15 @@ function PublicPostCard({
   const created = new Date(post.created_at);
 
   const timeLabel = useMemo(() => {
+      const displayName = useMemo(() => {
+    if (!post.user_email) return "Someone";
+
+    const [localPart] = post.user_email.split("@");
+    const cleaned = localPart.replace(/\W+/g, " ").trim();
+
+    return cleaned || post.user_email;
+  }, [post.user_email]);
+
     const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
     if (seconds < 60) return "Just now";
     const minutes = Math.floor(seconds / 60);
@@ -715,19 +726,15 @@ function PublicPostCard({
   return (
     <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-            {post.user_email?.[0] ?? "R"}
-          </div>
-          <div className="flex flex-col">
+                <div className="flex flex-col">
             <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
-              {post.user_email ?? "Someone"}
+              {displayName}
             </span>
-            <span className="text-[11px] text-white/40">{timeLabel}</span>
+            <span className="text-[11px] text-white/40 truncate max-w-[220px]">
+              {post.user_email ?? "Unknown"} · {timeLabel}
+            </span>
           </div>
-        </div>
-      </div>
+
 
       {/* Media */}
       <div className="overflow-hidden rounded-xl bg-black/40">
@@ -754,32 +761,31 @@ function PublicPostCard({
         </p>
       )}
 
-      {/* Tip / Boost / Spin row */}
+            {/* Tip / Boost / Spin row */}
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => onTip(post.id)}
-          className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200"
+          className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
         >
           Tip A$2
         </button>
         <button
           type="button"
           onClick={() => onBoost(post.id)}
-          className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200"
+          className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
         >
           Boost A$5
         </button>
         <button
           type="button"
           onClick={() => onSpin(post.id)}
-          className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200"
+          className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
         >
           Spin A$1
         </button>
       </div>
 
-      {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
         <div className="flex gap-2">
           {REACTION_EMOJIS.map((emoji) => {
