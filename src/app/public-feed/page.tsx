@@ -627,12 +627,11 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
           <button
             type="button"
             onClick={() => onSelectEmail(null)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border transition-transform duration-150 ${
-  selectedEmail === null
-    ? "bg-white text-black border-white shadow-sm shadow-black/40 hover:-translate-y-0.5 active:scale-95"
-    : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10 hover:-translate-y-0.5 active:scale-95"
-}`}
-
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border transition ${
+              selectedEmail === null
+                ? "bg-white text-black border-white shadow-sm shadow-black/40"
+                : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10"
+            }`}
           >
             All
           </button>
@@ -645,12 +644,11 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
                 key={person.email}
                 type="button"
                 onClick={() => onSelectEmail(person.email)}
-                className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] transition-transform duration-150 ${
-  isActive
-    ? "bg-white text-black border-white shadow-sm shadow-black/40 hover:-translate-y-1 active:scale-95"
-    : "bg-white/5 border-white/15 text-white hover:bg-white/10 hover:-translate-y-1 active:scale-95"
-}`}
-
+                className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] transition ${
+                  isActive
+                    ? "bg-white text-black border-white shadow-sm shadow-black/40"
+                    : "bg-white/5 border-white/15 text-white hover:bg-white/10"
+                }`}
               >
                 <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 mb-1">
                   {person.avatarUrl ? (
@@ -673,8 +671,7 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
                     isActive ? "text-black/70" : "text-white/50"
                   }`}
                 >
-                  {person.postCount} post
-                  {person.postCount === 1 ? "" : "s"}
+                  {person.postCount} post{person.postCount === 1 ? "" : "s"}
                 </span>
               </button>
             );
@@ -748,23 +745,24 @@ function PublicPostCard({
             {post.user_email?.[0] ?? "R"}
           </div>
           <div className="flex flex-col">
-  {post.user_email ? (
-    <Link
-      href={`/u/${encodeURIComponent(post.user_email)}`}
-      className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
-    >
-      {displayName}
-    </Link>
-  ) : (
-    <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
-      {displayName}
-    </span>
-  )}
-  <span className="text-[11px] text-white/40 truncate max-w-[220px]">
-    {post.user_email ?? "Unknown"} · {timeLabel}
-  </span>
-</div>
-
+            {post.user_email ? (
+              <Link
+                href={`/u/${encodeURIComponent(post.user_email)}`}
+                className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
+              >
+                {displayName}
+              </Link>
+            ) : (
+              <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
+                {displayName}
+              </span>
+            )}
+            <span className="text-[11px] text-white/40 truncate max-w-[220px]">
+              {post.user_email ?? "Unknown"} · {timeLabel}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Media */}
       <div className="overflow-hidden rounded-xl bg-black/40">
@@ -789,6 +787,29 @@ function PublicPostCard({
         <p className="mt-2 text-sm text-white/90 break-words">
           {post.caption}
         </p>
+      )}
+
+      {/* Support counts */}
+      {(post.tip_count ?? 0) +
+        (post.boost_count ?? 0) +
+        (post.spin_count ?? 0) > 0 && (
+        <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-white/60">
+          {!!post.tip_count && (
+            <span>
+              💸 {post.tip_count} tip{post.tip_count === 1 ? "" : "s"}
+            </span>
+          )}
+          {!!post.boost_count && (
+            <span>
+              🚀 {post.boost_count} boost{post.boost_count === 1 ? "" : "s"}
+            </span>
+          )}
+          {!!post.spin_count && (
+            <span>
+              🌀 {post.spin_count} spin{post.spin_count === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
       )}
 
       {/* Tip / Boost / Spin row */}
@@ -824,31 +845,6 @@ function PublicPostCard({
           Spin A$1
         </button>
       </div>
-                {/* Support counts */}
-      {(post.tip_count ?? 0) +
-        (post.boost_count ?? 0) +
-        (post.spin_count ?? 0) > 0 && (
-        <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-white/60">
-          {!!post.tip_count && (
-            <span>
-              💸 {post.tip_count} tip
-              {post.tip_count === 1 ? "" : "s"}
-            </span>
-          )}
-          {!!post.boost_count && (
-            <span>
-              🚀 {post.boost_count} boost
-              {post.boost_count === 1 ? "" : "s"}
-            </span>
-          )}
-          {!!post.spin_count && (
-            <span>
-              🌀 {post.spin_count} spin
-              {post.spin_count === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
-      )}
 
       {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
@@ -878,7 +874,6 @@ function PublicPostCard({
     </article>
   );
 }
-
 
 type PurchaseChoiceSheetProps = {
   pending: PendingPurchase;
