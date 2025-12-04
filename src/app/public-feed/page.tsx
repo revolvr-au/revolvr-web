@@ -12,6 +12,9 @@ type Post = {
   caption: string;
   created_at: string;
   reactions?: Record<string, number>;
+  tip_count?: number;
+  boost_count?: number;
+  spin_count?: number;
 };
 
 type Person = {
@@ -81,7 +84,10 @@ export default function PublicFeedPage() {
 
         const { data, error } = await supabase
           .from("posts")
-          .select("id, user_email, image_url, caption, created_at")
+            .select(
+    "id, user_email, image_url, caption, created_at, tip_count, boost_count, spin_count"
+  )
+
           .order("created_at", { ascending: false });
 
         if (error) throw error;
@@ -810,6 +816,31 @@ function PublicPostCard({
           Spin A$1
         </button>
       </div>
+                {/* Support counts */}
+      {(post.tip_count ?? 0) +
+        (post.boost_count ?? 0) +
+        (post.spin_count ?? 0) > 0 && (
+        <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-white/60">
+          {!!post.tip_count && (
+            <span>
+              💸 {post.tip_count} tip
+              {post.tip_count === 1 ? "" : "s"}
+            </span>
+          )}
+          {!!post.boost_count && (
+            <span>
+              🚀 {post.boost_count} boost
+              {post.boost_count === 1 ? "" : "s"}
+            </span>
+          )}
+          {!!post.spin_count && (
+            <span>
+              🌀 {post.spin_count} spin
+              {post.spin_count === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Reactions */}
       <div className="mt-3 flex items-center justify-between">
