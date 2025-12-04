@@ -740,29 +740,28 @@ function PublicPostCard({
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-            {post.user_email?.[0] ?? "R"}
-          </div>
-          <div className="flex flex-col">
-            {post.user_email ? (
-              <Link
-                href={`/u/${encodeURIComponent(post.user_email)}`}
-                className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
-              >
-                {displayName}
-              </Link>
-            ) : (
-              <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
-                {displayName}
-              </span>
-            )}
-            <span className="text-[11px] text-white/40 truncate max-w-[220px]">
-              {post.user_email ?? "Unknown"} · {timeLabel}
-            </span>
-          </div>
-        </div>
-      </div>
+  <div className="flex items-center gap-2">
+    <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+      {post.user_email?.[0] ?? "R"}
+    </div>
+    <div className="flex flex-col">
+      {post.user_email ? (
+        <Link
+          href={`/u/${encodeURIComponent(post.user_email)}`}
+          className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
+        >
+          {displayName}
+        </Link>
+      ) : (
+        <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
+          {displayName}
+        </span>
+      )}
+      <span className="text-[11px] text-white/40">{timeLabel}</span>
+    </div>
+  </div>
+</div>
+
 
       {/* Media */}
       <div className="overflow-hidden rounded-xl bg-black/40">
