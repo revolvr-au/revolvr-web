@@ -699,6 +699,7 @@ function PublicPostCard({
   onSpin,
 }: PublicPostCardProps) {
   const created = new Date(post.created_at);
+  const [pulse, setPulse] = useState(false);
 
   const timeLabel = useMemo(() => {
     const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
@@ -723,8 +724,17 @@ function PublicPostCard({
 
   const isVideo = !!post.image_url?.match(/\.(mp4|webm|ogg)$/i);
 
+  const triggerPulse = () => {
+    setPulse(true);
+    setTimeout(() => setPulse(false), 350);
+  };
+
   return (
-    <article className="rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30">
+    <article
+      className={`rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30 transition-all duration-300 ${
+        pulse ? "ring-2 ring-emerald-400/40 scale-[1.01]" : ""
+      }`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -771,21 +781,30 @@ function PublicPostCard({
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          onClick={() => onTip(post.id)}
+          onClick={() => {
+            triggerPulse();
+            onTip(post.id);
+          }}
           className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
         >
           Tip A$2
         </button>
         <button
           type="button"
-          onClick={() => onBoost(post.id)}
+          onClick={() => {
+            triggerPulse();
+            onBoost(post.id);
+          }}
           className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
         >
           Boost A$5
         </button>
         <button
           type="button"
-          onClick={() => onSpin(post.id)}
+          onClick={() => {
+            triggerPulse();
+            onSpin(post.id);
+          }}
           className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
         >
           Spin A$1
@@ -820,6 +839,7 @@ function PublicPostCard({
     </article>
   );
 }
+
 
 type PurchaseChoiceSheetProps = {
   pending: PendingPurchase;
