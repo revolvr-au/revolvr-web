@@ -526,15 +526,16 @@ export default function PublicFeedPage() {
             </section>
           )}
 
-                    {/* Main title */}
-          <div className="flex items-center justify-center mt-4 mb-4 relative">
-            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
-              Revolvr
-            </h1>
-            <span className="hidden sm:inline text-[11px] text-white/40 absolute right-0">
-              v0.1 · social preview
-            </span>
-          </div>
+             {/* Central brand hero */}
+<section className="mt-6 mb-6 flex flex-col items-center gap-1">
+  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+    Revolvr
+  </h1>
+  <span className="text-[11px] text-white/40">
+    v0.1 · social preview
+  </span>
+</section>
+
 
 
           {/* People rail */}
