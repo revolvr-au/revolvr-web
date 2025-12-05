@@ -356,8 +356,9 @@ const isOwnProfile = true;
                   {effectiveDisplayName || "Someone"}
                 </h1>
                 <span className="text-xs sm:text-sm text-white/50">
-                  {profile?.display_name ? effectiveEmail : "undefined"}
-                </span>
+  {effectiveEmail}
+</span>
+
               </div>
             </div>
 
