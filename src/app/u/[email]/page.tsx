@@ -55,7 +55,9 @@ export default function ProfilePage({ params }: PageProps) {
 
   // If logged in, always use the auth email as the “effective” profile owner.
   const effectiveEmail = authEmail ?? profileEmailParam;
-  const isOwnProfile = !!authEmail;
+  // TEMP: always show edit form; RLS still protects actual data
+const isOwnProfile = true;
+
 
   // Load current auth user
   useEffect(() => {
