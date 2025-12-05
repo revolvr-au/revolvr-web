@@ -681,16 +681,17 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
       </div>
 
       <div className="relative">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-stretch gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {/* "All" chip */}
           <button
             type="button"
             onClick={() => onSelectEmail(null)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border transition ${
-              selectedEmail === null
-                ? "bg-white text-black border-white shadow-sm shadow-black/40"
-                : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10"
-            }`}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border transition
+              ${
+                selectedEmail === null
+                  ? "bg-white text-black border-white shadow-sm shadow-black/40"
+                  : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10"
+              }`}
           >
             All
           </button>
@@ -703,35 +704,44 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
                 key={person.email}
                 type="button"
                 onClick={() => onSelectEmail(person.email)}
-                className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] transition ${
-                  isActive
-                    ? "bg-white text-black border-white shadow-sm shadow-black/40"
-                    : "bg-white/5 border-white/15 text-white hover:bg-white/10"
-                }`}
-              >
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 mb-1">
-                  {person.avatarUrl ? (
-                    <img
-                      src={person.avatarUrl}
-                      alt={person.firstName}
-                      className="w-full h-full object-cover object-center"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-sm font-semibold">
-                      {person.firstName[0]?.toUpperCase() ?? "R"}
-                    </div>
-                  )}
-                </div>
-                <span className="text-[11px] font-semibold truncate w-full text-center">
-                  {person.firstName}
-                </span>
-                <span
-                  className={`text-[10px] ${
-                    isActive ? "text-black/70" : "text-white/50"
+                className={`relative flex-shrink-0 w-24 h-28 sm:w-28 sm:h-32 rounded-2xl overflow-hidden border transition-transform duration-150
+                  ${
+                    isActive
+                      ? "border-white bg-white/5 scale-[1.03] shadow-sm shadow-black/50"
+                      : "border-white/15 bg-white/5 hover:bg-white/10"
                   }`}
-                >
-                  {person.postCount} post{person.postCount === 1 ? "" : "s"}
-                </span>
+              >
+                {/* Main tile image / video frame */}
+                {person.avatarUrl ? (
+                  <img
+                    src={person.avatarUrl}
+                    alt={person.firstName}
+                    className="w-full h-full object-cover object-center"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-black/40 flex items-center justify-center text-sm font-semibold">
+                    {person.firstName[0]?.toUpperCase() ?? "R"}
+                  </div>
+                )}
+
+                {/* Gradient overlay so text is readable */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+
+                {/* Text + tiny avatar chip in bottom-right */}
+                <div className="absolute left-2 right-2 bottom-2 flex items-center justify-between gap-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] font-semibold truncate">
+                      {person.firstName}
+                    </div>
+                    <div className="text-[10px] text-white/70">
+                      {person.postCount} post
+                      {person.postCount === 1 ? "" : "s"}
+                    </div>
+                  </div>
+                  <div className="h-6 w-6 rounded-full border border-white/70 bg-black/70 flex items-center justify-center text-[10px] font-semibold">
+                    {person.firstName[0]?.toUpperCase() ?? "R"}
+                  </div>
+                </div>
               </button>
             );
           })}
@@ -744,6 +754,7 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
     </section>
   );
 }
+
 
 type PublicPostCardProps = {
   post: Post;
