@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useState, FormEvent, ChangeEvent } from "react";
+import {
+  useEffect,
+  useState,
+  FormEvent,
+  ChangeEvent,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
@@ -38,370 +43,455 @@ export default function ProfilePage({ params }: PageProps) {
     spins: 0,
   });
 
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [displayNameInput, setDisplayNameInput] = useState("");
+  const [bioInput, setBioInput] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isOwnProfile =
-    authEmail &&
-    authEmail.toLowerCase() === profileEmail.toLowerCase();
+  const isOwnProfile = authEmail === profileEmail;
 
-  // Load auth user + profile + stats
+  // Load current auth user
   useEffect(() => {
-    const load = async () => {
+    const loadUser = async () => {
       try {
-        setLoading(true);
-        setError(null);
-
-        // Current auth user
-        const { data: userData } = await supabase.auth.getUser();
-        setAuthEmail(userData.user?.email ?? null);
-
-        // Profile row (if any)
-        const { data: profileRows, error: profileError } = await supabase
-          .from("profiles")
-          .select("email, display_name, avatar_url, bio")
-          .eq("email", profileEmail)
-          .limit(1);
-
-        if (profileError) {
-          console.error("Error loading profile", profileError);
-        }
-
-        const profileRow = (profileRows?.[0] ?? null) as Profile | null;
-        setProfile(profileRow);
-
-        setDisplayName(
-          profileRow?.display_name ??
-            profileEmail.split("@")[0]?.replace(/\W+/g, " ") ??
-            ""
-        );
-        setBio(profileRow?.bio ?? "");
-
-        // Basic stats from posts table
-        const { data: postRows, error: postsError } = await supabase
-          .from("posts")
-          .select("id, tip_count, boost_count, spin_count")
-          .eq("user_email", profileEmail);
-
-        if (postsError) {
-          console.error("Error loading stats", postsError);
-        }
-
-        let posts = 0;
-        let tips = 0;
-        let boosts = 0;
-        let spins = 0;
-
-        for (const row of postRows ?? []) {
-          posts += 1;
-          tips += row.tip_count ?? 0;
-          boosts += row.boost_count ?? 0;
-          spins += row.spin_count ?? 0;
-        }
-
-        setStats({ posts, tips, boosts, spins });
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setAuthEmail(user?.email ?? null);
       } catch (e) {
-        console.error("Unexpected error loading profile", e);
-        setError("Revolvr glitched out loading this profile 😵‍💫");
-      } finally {
-        setLoading(false);
+        console.error("Error loading auth user in profile page", e);
       }
     };
 
-    load();
+    loadUser();
+  }, []);
+
+  // Load profile + stats
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Profile row
+        const { data: profileRow, error: profileError } =
+          await supabase
+            .from("profiles")
+            .select("email, display_name, avatar_url, bio")
+            .eq("email", profileEmail)
+            .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        if (profileRow) {
+          const hydrated: Profile = {
+            email: profileRow.email,
+            display_name: profileRow.display_name,
+            avatar_url: profileRow.avatar_url,
+            bio: profileRow.bio,
+          };
+          setProfile(hydrated);
+          setDisplayNameInput(hydrated.display_name ?? "");
+          setBioInput(hydrated.bio ?? "");
+          setAvatarPreview(hydrated.avatar_url ?? null);
+        } else {
+          // No profile row yet – fall back to email-derived name
+          setProfile({
+            email: profileEmail,
+            display_name: null,
+            avatar_url: null,
+            bio: null,
+          });
+          setDisplayNameInput("");
+          setBioInput("");
+          setAvatarPreview(null);
+        }
+
+        // Stats from posts
+        const { data: postsData, error: postsError } = await supabase
+          .from("posts")
+          .select("user_email, tip_count, boost_count, spin_count")
+          .eq("user_email", profileEmail);
+
+        if (postsError) throw postsError;
+
+        const posts = postsData ?? [];
+        const postsCount = posts.length;
+        const tipsCount = posts.reduce(
+          (sum, p: any) => sum + (p.tip_count ?? 0),
+          0
+        );
+        const boostsCount = posts.reduce(
+          (sum, p: any) => sum + (p.boost_count ?? 0),
+          0
+        );
+        const spinsCount = posts.reduce(
+          (sum, p: any) => sum + (p.spin_count ?? 0),
+          0
+        );
+
+        setStats({
+          posts: postsCount,
+          tips: tipsCount,
+          boosts: boostsCount,
+          spins: spinsCount,
+        });
+      } catch (e) {
+        console.error("Error loading profile page data", e);
+        setError("Revolvr glitched out loading this profile 😵‍💫");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [profileEmail]);
 
-  const safeDisplayName =
-    displayName ||
+  const effectiveDisplayName =
     profile?.display_name ||
     profileEmail.split("@")[0]?.replace(/\W+/g, " ") ||
     "Someone";
 
-  const avatarInitial = safeDisplayName[0]?.toUpperCase() ?? "R";
+  const avatarInitial =
+    effectiveDisplayName.trim()[0]?.toUpperCase() ??
+    profileEmail[0]?.toUpperCase() ??
+    "R";
 
-  // Avatar upload handler
-  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !authEmail) return;
-
-    try {
-      setAvatarUploading(true);
-      setError(null);
-
-      const ext = file.name.split(".").pop() || "png";
-      const safeId = authEmail.replace(/[^a-zA-Z0-9]/g, "_");
-      const path = `${safeId}-${Date.now()}.${ext}`;
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      if (uploadError || !uploadData) {
-        throw uploadError ?? new Error("Avatar upload failed");
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("avatars").getPublicUrl(uploadData.path);
-
-      // Upsert profile with new avatar
-      const { data: upserted, error: upsertError } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            email: authEmail,
-            display_name: safeDisplayName,
-            bio: bio || null,
-            avatar_url: publicUrl,
-          },
-          { onConflict: "email" }
-        )
-        .select()
-        .single();
-
-      if (upsertError) throw upsertError;
-
-      setProfile(upserted as Profile);
-    } catch (e) {
-      console.error("Error uploading avatar", e);
-      setError("Revolvr glitched out uploading your avatar 😵‍💫");
-    } finally {
-      setAvatarUploading(false);
-      // reset file input so same file can be re-selected if needed
-      event.target.value = "";
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setAvatarFile(null);
+      return;
     }
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
   };
 
-  // Save profile (name + bio, keep existing avatar_url if any)
-  const handleProfileSave = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!authEmail) return;
+  const handleProfileSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!isOwnProfile) return;
 
     try {
-      setSavingProfile(true);
+      setIsSaving(true);
       setError(null);
+
+      let avatarUrlToSave: string | null = profile?.avatar_url ?? null;
+
+      // If a new file is chosen, upload to Supabase storage (avatars bucket)
+      if (avatarFile) {
+        const ext = avatarFile.name.split(".").pop() || "jpg";
+        const filePath = `avatars/${profileEmail}/${Date.now()}.${ext}`;
+
+        const { data: uploadData, error: uploadError } =
+          await supabase.storage
+            .from("avatars")
+            .upload(filePath, avatarFile);
+
+        if (uploadError || !uploadData) {
+          console.error("Avatar upload error", uploadError);
+          setError(
+            "Revolvr glitched out uploading your avatar. Try again."
+          );
+          setIsSaving(false);
+          return;
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(uploadData.path);
+
+        avatarUrlToSave = publicUrl;
+      }
+
+      const displayNameClean =
+        displayNameInput.trim() === ""
+          ? null
+          : displayNameInput.trim();
+      const bioClean =
+        bioInput.trim() === "" ? null : bioInput.trim();
 
       const { data: upserted, error: upsertError } = await supabase
         .from("profiles")
         .upsert(
           {
-            email: authEmail,
-            display_name: displayName || safeDisplayName,
-            bio: bio || null,
-            avatar_url: profile?.avatar_url ?? null,
+            email: profileEmail,
+            display_name: displayNameClean,
+            bio: bioClean,
+            avatar_url: avatarUrlToSave,
           },
           { onConflict: "email" }
         )
         .select()
-        .single();
+        .maybeSingle();
 
-      if (upsertError) throw upsertError;
+      if (upsertError) {
+        console.error("Profile upsert error", upsertError);
+        setError(
+          "Revolvr glitched out saving your profile. Try again."
+        );
+        setIsSaving(false);
+        return;
+      }
 
-      setProfile(upserted as Profile);
+      const finalProfile: Profile = {
+        email: profileEmail,
+        display_name: displayNameClean,
+        bio: bioClean,
+        avatar_url: avatarUrlToSave,
+      };
+
+      setProfile(finalProfile);
+      if (avatarUrlToSave) {
+        setAvatarPreview(avatarUrlToSave);
+      }
     } catch (e) {
-      console.error("Error saving profile", e);
+      console.error("Unhandled profile save error", e);
       setError("Revolvr glitched out saving your profile 😵‍💫");
     } finally {
-      setSavingProfile(false);
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#050814] text-white">
+    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Top bar */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#050814]/95 backdrop-blur">
         <button
-          className="text-xs sm:text-sm text-white/60 hover:text-white flex items-center gap-1"
+          type="button"
           onClick={() => router.push("/public-feed")}
+          className="text-xs sm:text-sm text-white/70 hover:text-white inline-flex items-center gap-1"
         >
-          <span className="text-lg">&larr;</span>
+          <span>←</span>
           <span>Back to feed</span>
         </button>
-        <span className="text-sm sm:text-base text-white/70">Profile</span>
-        <div className="w-8" />
+        <span className="text-sm sm:text-base font-medium">
+          Profile
+        </span>
+        <div className="w-10" />
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        {error && (
-          <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
-            <span>{error}</span>
-            <button
-              className="text-xs underline"
-              onClick={() => setError(null)}
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
-
-        {/* Header block */}
-        <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-14 w-14 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 flex items-center justify-center overflow-hidden text-xl font-semibold text-emerald-200">
-              {profile?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profile.avatar_url}
-                  alt={safeDisplayName}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span>{avatarInitial}</span>
-              )}
+      {/* Main content */}
+      <main className="flex-1 flex justify-center">
+        <div className="w-full max-w-4xl px-4 sm:px-6 py-6 space-y-6">
+          {error && (
+            <div className="rounded-xl bg-red-500/10 border border-red-500/40 px-3 py-2 text-xs sm:text-sm text-red-100 flex justify-between items-center">
+              <span>{error}</span>
+              <button
+                className="underline text-[11px]"
+                onClick={() => setError(null)}
+              >
+                Dismiss
+              </button>
             </div>
-            <div className="flex flex-col">
-              <h1 className="text-xl sm:text-2xl font-semibold">
-                {safeDisplayName}
-              </h1>
-              <p className="text-xs sm:text-sm text-white/50">
-                {profileEmail}
-              </p>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-2 text-center text-[11px] sm:text-xs">
-            <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">
-              <div className="text-base sm:text-lg font-semibold">
-                {stats.posts}
-              </div>
-              <div className="uppercase tracking-wide text-white/50">Posts</div>
-            </div>
-            <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">
-              <div className="text-base sm:text-lg font-semibold">
-                {stats.tips}
-              </div>
-              <div className="uppercase tracking-wide text-white/50">Tips</div>
-            </div>
-            <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">
-              <div className="text-base sm:text-lg font-semibold">
-                {stats.boosts}
-              </div>
-              <div className="uppercase tracking-wide text-white/50">Boosts</div>
-            </div>
-            <div className="rounded-xl bg-white/5 border border-white/10 px-3 py-2">
-              <div className="text-base sm:text-lg font-semibold">
-                {stats.spins}
-              </div>
-              <div className="uppercase tracking-wide text-white/50">Spins</div>
-            </div>
-          </div>
-        </section>
-
-        {/* Edit profile – only for own profile */}
-        {isOwnProfile && (
-          <section className="rounded-2xl bg-white/[0.03] border border-white/10 p-4 space-y-4 shadow-md shadow-black/40">
-            <h2 className="text-sm font-semibold tracking-wide text-white/80">
-              Edit profile
-            </h2>
-
-            <form className="space-y-4" onSubmit={handleProfileSave}>
-              {/* Avatar uploader */}
-              <div className="flex items-center gap-3">
-                <div className="h-14 w-14 rounded-2xl bg-emerald-500/15 border border-emerald-400/40 flex items-center justify-center overflow-hidden text-xl font-semibold text-emerald-200">
-                  {profile?.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profile.avatar_url}
-                      alt={safeDisplayName}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <span>{avatarInitial}</span>
-                  )}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <button
-                    type="button"
-                    disabled={avatarUploading}
-                    onClick={() =>
-                      document
-                        .getElementById("revolvrAvatarInput")
-                        ?.click()
-                    }
-                    className="inline-flex items-center justify-center px-3 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-xs font-medium text-black shadow-md shadow-emerald-500/25 disabled:opacity-60"
-                  >
-                    {avatarUploading ? "Uploading…" : "Change photo"}
-                  </button>
-                  <span className="text-[11px] text-white/45">
-                    JPG / PNG, square works best.
-                  </span>
-                </div>
-              </div>
-
-              <input
-                id="revolvrAvatarInput"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarChange}
-              />
-
-              {/* Display name */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-white/70">
-                  Display name
-                </label>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                  placeholder="How should Revolvr show your name?"
-                />
-              </div>
-
-              {/* Bio */}
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-white/70">
-                  Bio (optional)
-                </label>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                  placeholder="Say something about what you post…"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={savingProfile}
-                  className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-xs sm:text-sm font-medium text-black shadow-md shadow-emerald-500/25 disabled:opacity-60"
-                >
-                  {savingProfile ? "Saving…" : "Save profile"}
-                </button>
-              </div>
-            </form>
-          </section>
-        )}
-
-        {/* Posts list placeholder (you can wire this later) */}
-        <section className="mt-4">
-          <h2 className="text-xs sm:text-sm font-semibold tracking-wide text-white/80 mb-2">
-            POSTS
-          </h2>
-          {loading ? (
-            <p className="text-sm text-white/60">Loading posts…</p>
-          ) : stats.posts === 0 ? (
-            <p className="text-sm text-white/60">
-              No posts yet from this creator.
-            </p>
-          ) : (
-            <p className="text-sm text-white/60">
-              Posts will appear here (feed wiring can be added later).
-            </p>
           )}
-        </section>
+
+          {/* Top section: avatar + name + stats */}
+          <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-lg font-semibold text-emerald-300 uppercase overflow-hidden">
+                {avatarPreview ? (
+                  <img
+                    src={avatarPreview}
+                    alt={effectiveDisplayName}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>{avatarInitial}</span>
+                )}
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-lg sm:text-xl font-semibold">
+                  {effectiveDisplayName || "Someone"}
+                </h1>
+                <span className="text-xs sm:text-sm text-white/50">
+                  {profile?.display_name ? profileEmail : "undefined"}
+                </span>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+              <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+                <div className="text-base font-semibold">
+                  {stats.posts}
+                </div>
+                <div className="text-[11px] text-white/60">POSTS</div>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+                <div className="text-base font-semibold">
+                  {stats.tips}
+                </div>
+                <div className="text-[11px] text-white/60">TIPS</div>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+                <div className="text-base font-semibold">
+                  {stats.boosts}
+                </div>
+                <div className="text-[11px] text-white/60">
+                  BOOSTS
+                </div>
+              </div>
+              <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
+                <div className="text-base font-semibold">
+                  {stats.spins}
+                </div>
+                <div className="text-[11px] text-white/60">SPINS</div>
+              </div>
+            </div>
+          </section>
+
+          <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)] gap-6 items-start">
+            {/* Left: posts list (for now just empty state) */}
+            <section className="space-y-3">
+              <h2 className="text-xs sm:text-sm font-semibold tracking-wide text-white/80">
+                POSTS
+              </h2>
+              {isLoading ? (
+                <p className="text-sm text-white/60">
+                  Loading this creator&apos;s posts…
+                </p>
+              ) : stats.posts === 0 ? (
+                <p className="text-sm text-white/60">
+                  No posts yet from this creator.
+                </p>
+              ) : (
+                <p className="text-sm text-white/60">
+                  Posts will show here (feed wiring later).
+                </p>
+              )}
+            </section>
+
+            {/* Right: edit profile (only if this is your profile) */}
+            {isOwnProfile && (
+              <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
+                <h2 className="text-sm font-semibold">
+                  Edit profile
+                </h2>
+                <p className="text-[11px] text-white/60">
+                  This is your public identity across Revolvr.
+                </p>
+
+                <form
+                  onSubmit={handleProfileSubmit}
+                  className="space-y-4"
+                >
+                  {/* Avatar upload */}
+                  <div className="flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-sm font-semibold text-emerald-300 overflow-hidden">
+                      {avatarPreview ? (
+                        <img
+                          src={avatarPreview}
+                          alt="Avatar preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{avatarInitial}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-medium text-white/80">
+                        Profile image
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="text-[11px] text-white/70"
+                      />
+                      <span className="text-[10px] text-white/40">
+                        JPG / PNG, square images look best.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Display name */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-white/80">
+                      Display name
+                    </label>
+                    <input
+                      type="text"
+                      value={displayNameInput}
+                      onChange={(e) =>
+                        setDisplayNameInput(e.target.value)
+                      }
+                      placeholder="What should people call you?"
+                      className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                    />
+                    <p className="text-[10px] text-white/40">
+                      If left blank, Revolvr uses the bit before your
+                      email.
+                    </p>
+                  </div>
+
+                  {/* Bio */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-white/80">
+                      Bio
+                    </label>
+                    <textarea
+                      value={bioInput}
+                      onChange={(e) =>
+                        setBioInput(e.target.value)
+                      }
+                      rows={3}
+                      placeholder="One or two lines about what you spin into existence…"
+                      className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 resize-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      className="px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
+                      onClick={() => {
+                        // reset form to last saved profile
+                        setDisplayNameInput(
+                          profile?.display_name ?? ""
+                        );
+                        setBioInput(profile?.bio ?? "");
+                        setAvatarFile(null);
+                        setAvatarPreview(profile?.avatar_url ?? null);
+                      }}
+                      disabled={isSaving}
+                    >
+                      Reset
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-xs sm:text-sm font-medium text-black shadow-md shadow-emerald-500/25 disabled:opacity-60"
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving…" : "Save profile"}
+                    </button>
+                  </div>
+                </form>
+              </section>
+            )}
+
+            {!isOwnProfile && (
+              <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm text-white/70">
+                <p>
+                  You&apos;re viewing{" "}
+                  <span className="font-semibold">
+                    {effectiveDisplayName}
+                  </span>
+                  &apos;s public profile.
+                </p>
+                <p className="text-[11px] text-white/40">
+                  When creators sign in, they&apos;ll be able to edit
+                  their name, image and bio here.
+                </p>
+              </section>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );
