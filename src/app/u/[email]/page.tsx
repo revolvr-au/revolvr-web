@@ -52,7 +52,7 @@ export default function ProfilePage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isOwnProfile = authEmail === profileEmail;
+  const isOwnProfile = !!authEmail;
 
   // Load current auth user
   useEffect(() => {
