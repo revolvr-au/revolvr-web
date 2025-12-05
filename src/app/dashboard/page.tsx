@@ -323,15 +323,15 @@ export default function DashboardPage() {
                       <div className="h-9 w-9 rounded-full bg-emerald-500/80 flex items-center justify-center text-sm font-semibold">
                         {(post.user_email ?? "R")[0].toUpperCase()}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium">
-                          {post.user_email ?? "Someone"}
-                        </span>
-                        <span className="text-[11px] text-white/50">
-                          {new Date(post.created_at).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
+                      const displayName = useMemo(() => {
+  if (!post.user_email) return "Someone";
+
+  const [localPart] = post.user_email.split("@");
+  const cleaned = localPart.replace(/\W+/g, " ").trim();
+
+  return cleaned || post.user_email;
+}, [post.user_email]);
+
                     <button
                       className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
                       onClick={() => handleDeletePost(post.id)}
