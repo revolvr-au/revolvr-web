@@ -359,44 +359,22 @@ export default function PublicFeedPage() {
     setPendingPurchase(null);
   };
 
-  // --- JSX ---
+    // --- JSX ---
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm sm:text-base">Revolvr</span>
-          <span className="text-base">🔥</span>
-        </div>
-        <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
-          <button
-            onClick={() => {
-              if (!userEmail) {
-                const redirect = encodeURIComponent("/public-feed");
-                router.push(`/login?redirectTo=${redirect}`);
-                return;
-              }
-              setShowComposer(true);
-              scrollToComposer();
-            }}
-            className="px-3 py-1 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-xs sm:text-sm"
-          >
-            + Post
-          </button>
-          {userEmail ? (
-            <span className="hidden sm:inline text-white/70">
-              {userEmail}
-            </span>
-          ) : (
-            <Link
-              href="/login?redirectTo=/public-feed"
-              className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 transition text-xs"
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
-      </header>
+      {/* Brand hero */}
+      <section className="mt-8 mb-4 flex flex-col items-center gap-1">
+        <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white">
+          Revolvr
+        </h1>
+        <span className="text-[11px] text-white/40">
+          v0.1 · social preview
+        </span>
+      </section>
+
+      {/* Main content */}
+      <main className="flex-1 flex justify-center">
+
 
       {/* Main content */}
       <main className="flex-1 flex justify-center">
