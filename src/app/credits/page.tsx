@@ -75,21 +75,9 @@ export default function CreditsPage() {
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-[#050814]/90 backdrop-blur flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm sm:text-base">Revolvr</span>
-          <span className="text-base">🔥</span>
-        </div>
-        <div className="flex items-center gap-3 text-xs sm:text-sm text-white/70">
-          <Link
-            href="/public-feed"
-            className="px-3 py-1 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition text-xs"
-          >
-            Back to public feed
-          </Link>
-        </div>
-      </header>
+     {/* Top spacer – no chrome here now, bottom nav carries navigation */}
+<header className="h-4 sm:h-6" />
+
 
       <main className="flex-1 flex justify-center">
         <div className="w-full max-w-xl px-4 py-6 space-y-4">

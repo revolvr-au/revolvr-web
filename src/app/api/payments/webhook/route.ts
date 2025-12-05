@@ -1,36 +1,40 @@
-// src/app/api/payments/webhook/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 
-// --- Environment variables ---
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+// --- Env ---
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!stripeSecretKey || !stripeWebhookSecret) {
-  throw new Error("Missing Stripe environment variables");
+if (!stripeSecretKey) {
+  throw new Error("Missing STRIPE_SECRET_KEY");
+}
+if (!webhookSecret) {
+  throw new Error("Missing STRIPE_WEBHOOK_SECRET");
 }
 if (!supabaseUrl || !supabaseServiceRoleKey) {
-  throw new Error("Missing Supabase environment variables");
+  throw new Error("Missing Supabase service env vars");
 }
 
-// --- Stripe client ---
-// NOTE: no apiVersion passed -> uses account default, avoids TS literal mismatch
+// --- Clients ---
+// No apiVersion -> use account default (avoids TS literal mismatch)
 const stripe = new Stripe(stripeSecretKey);
 
-// --- Supabase admin client (server-only) ---
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 // --- Webhook handler ---
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
 
   if (!signature) {
     return NextResponse.json(
-      { error: "Missing Stripe signature" },
+      { error: "Missing stripe-signature header" },
       { status: 400 }
     );
   }
@@ -41,78 +45,74 @@ export async function POST(req: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      stripeWebhookSecret as string // we validated it's set above
+      webhookSecret as string
     );
   } catch (err: any) {
-    console.error("[stripe webhook] invalid signature", err?.message ?? err);
-    return NextResponse.json(
-      { error: "Invalid webhook signature" },
-      { status: 400 }
-    );
+    console.error("Stripe webhook signature verification failed", err?.message);
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
-  // Handle completed checkout session
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const mode = session.metadata?.mode;
-    const email =
-      session.customer_email ?? session.metadata?.userEmail ?? undefined;
+    const mode = session.metadata?.mode as
+      | "tip"
+      | "boost"
+      | "spin"
+      | undefined;
+    const postId = session.metadata?.postId;
+    const buyerEmail = session.metadata?.userEmail;
 
-    if (!mode || !email) {
-      console.warn("[stripe webhook] missing mode or email", session.id);
-      return NextResponse.json({ received: true }, { status: 200 });
+    if (!mode || !postId) {
+      console.warn("Webhook missing mode or postId in metadata");
+      return NextResponse.json({ received: true });
     }
 
-    // Only pack purchases adjust balances
-    const isPack =
-      mode === "tip-pack" ||
-      mode === "boost-pack" ||
-      mode === "spin-pack";
+    try {
+      // Read current counts
+      const { data: post, error: fetchError } = await supabaseAdmin
+        .from("posts")
+        .select("tip_count, boost_count, spin_count")
+        .eq("id", postId)
+        .single();
 
-    if (isPack) {
-      const tipPackSize = parseInt(session.metadata?.tipPackSize ?? "0", 10);
-      const boostPackSize = parseInt(session.metadata?.boostPackSize ?? "0", 10);
-      const spinPackSize = parseInt(session.metadata?.spinPackSize ?? "0", 10);
-
-      try {
-        const { data: existing, error: selectError } = await supabaseAdmin
-          .from("user_balances")
-          .select("*")
-          .eq("user_email", email)
-          .maybeSingle();
-
-        if (selectError) throw selectError;
-
-        const currentTips = existing?.tip_credits ?? 0;
-        const currentBoosts = existing?.boost_credits ?? 0;
-        const currentSpins = existing?.spin_credits ?? 0;
-
-        const deltaTips = mode === "tip-pack" ? tipPackSize : 0;
-        const deltaBoosts = mode === "boost-pack" ? boostPackSize : 0;
-        const deltaSpins = mode === "spin-pack" ? spinPackSize : 0;
-
-        const { error: upsertError } = await supabaseAdmin
-          .from("user_balances")
-          .upsert({
-            user_email: email,
-            tip_credits: currentTips + deltaTips,
-            boost_credits: currentBoosts + deltaBoosts,
-            spin_credits: currentSpins + deltaSpins,
-            updated_at: new Date().toISOString(),
-          });
-
-        if (upsertError) throw upsertError;
-
-        console.log(
-          `[stripe webhook] credited ${mode} to ${email}: (+${deltaTips} tips, +${deltaBoosts} boosts, +${deltaSpins} spins)`
-        );
-      } catch (err) {
-        console.error("[stripe webhook] database error", err);
-        // Still return 200 so Stripe does not retry forever
+      if (fetchError || !post) {
+        console.error("Error loading post in webhook", fetchError);
+        return NextResponse.json({ received: true });
       }
+
+      const tipCount = post.tip_count ?? 0;
+      const boostCount = post.boost_count ?? 0;
+      const spinCount = post.spin_count ?? 0;
+
+      const updates: Record<string, number> = {
+        tip_count: tipCount,
+        boost_count: boostCount,
+        spin_count: spinCount,
+      };
+
+      if (mode === "tip") updates.tip_count = tipCount + 1;
+      if (mode === "boost") updates.boost_count = boostCount + 1;
+      if (mode === "spin") updates.spin_count = spinCount + 1;
+
+      const { error: updateError } = await supabaseAdmin
+        .from("posts")
+        .update(updates)
+        .eq("id", postId);
+
+      if (updateError) {
+        console.error("Error updating post counts in webhook", updateError);
+      }
+
+      console.log(
+        `Recorded ${mode} on post ${postId} from ${
+          buyerEmail ?? "unknown user"
+        }`
+      );
+    } catch (e) {
+      console.error("Unhandled error in webhook handler", e);
     }
   }
 
-  return NextResponse.json({ received: true }, { status: 200 });
+  return NextResponse.json({ received: true });
 }

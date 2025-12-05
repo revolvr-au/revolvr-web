@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  FormEvent,
-} from "react";
+import { useEffect, useMemo, useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
@@ -103,10 +98,10 @@ export default function PublicFeedPage() {
             image_url: row.image_url,
             caption: row.caption,
             created_at: row.created_at,
+            tip_count: row.tip_count,
+            boost_count: row.boost_count,
+            spin_count: row.spin_count,
             reactions: {},
-            tip_count: row.tip_count ?? 0,
-            boost_count: row.boost_count ?? 0,
-            spin_count: row.spin_count ?? 0,
           }))
         );
       } catch (e) {
@@ -130,11 +125,14 @@ export default function PublicFeedPage() {
       const existing = byEmail.get(post.user_email);
       if (existing) {
         existing.postCount += 1;
+        // keep the first image as avatar source
         continue;
       }
 
-      const firstName =
-        post.user_email.split("@")[0]?.replace(/\W+/g, " ") || "Someone";
+      const fromEmail =
+        post.user_email.split("@")[0]?.replace(/\W+/g, " ").trim() || null;
+
+      const firstName = fromEmail || "Someone";
 
       byEmail.set(post.user_email, {
         email: post.user_email,
@@ -322,7 +320,6 @@ export default function PublicFeedPage() {
   };
 
   const packAmountForMode = (mode: PurchaseMode) => {
-    // e.g. 5x the single value – tweak to taste
     switch (mode) {
       case "tip":
         return 1000; // A$10 tip pack
@@ -365,19 +362,9 @@ export default function PublicFeedPage() {
   // --- JSX ---
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      {/* Brand hero */}
-      <section className="mt-8 mb-4 flex flex-col items-center gap-1">
-        <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-white">
-          Revolvr
-        </h1>
-        <span className="text-[11px] text-white/40">
-          v0.1 · social preview
-        </span>
-      </section>
-
       {/* Main content */}
       <main className="flex-1 flex justify-center">
-        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-4">
+        <div className="w-full max-w-xl px-3 sm:px-0 py-6 space-y-4 pb-24">
           {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
@@ -390,6 +377,16 @@ export default function PublicFeedPage() {
               </button>
             </div>
           )}
+
+          {/* Brand hero */}
+          <header className="text-center mb-2">
+            <h1 className="text-3xl sm:text-4xl font-semibold text-white/95 tracking-tight">
+              Revolvr
+            </h1>
+            <p className="text-[11px] text-white/45 mt-1">
+              v0.1 · social preview
+            </p>
+          </header>
 
           {/* Composer – only when logged in AND explicitly opened */}
           {userEmail && showComposer && (
@@ -460,10 +457,6 @@ export default function PublicFeedPage() {
                     className="hidden"
                     onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                   />
-
-                  <p className="mt-2 text-[11px] text-white/40">
-                    Supported: JPG, PNG, GIF, MP4 (short clips work best).
-                  </p>
                 </div>
 
                 {/* Caption */}
@@ -502,7 +495,7 @@ export default function PublicFeedPage() {
             </section>
           )}
 
-          {/* People rail (no heading, no "All" chip) */}
+          {/* People rail */}
           {people.length > 0 && (
             <PeopleRail
               people={people}
@@ -530,7 +523,7 @@ export default function PublicFeedPage() {
               No posts yet from this person.
             </div>
           ) : (
-            <div className="space-y-4 pb-20">
+            <div className="space-y-4">
               {visiblePosts.map((post) => (
                 <PublicPostCard
                   key={post.id}
@@ -545,16 +538,6 @@ export default function PublicFeedPage() {
           )}
         </div>
       </main>
-
-      {/* Single vs pack popup */}
-      {pendingPurchase && (
-        <PurchaseChoiceSheet
-          pending={pendingPurchase}
-          onClose={() => setPendingPurchase(null)}
-          onSingle={handleSinglePurchase}
-          onPack={handlePackPurchase}
-        />
-      )}
 
       {/* Bottom app nav */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur">
@@ -601,11 +584,19 @@ export default function PublicFeedPage() {
           </button>
         </div>
       </nav>
+
+      {/* Single vs pack popup */}
+      {pendingPurchase && (
+        <PurchaseChoiceSheet
+          pending={pendingPurchase}
+          onClose={() => setPendingPurchase(null)}
+          onSingle={handleSinglePurchase}
+          onPack={handlePackPurchase}
+        />
+      )}
     </div>
   );
 }
-
-/* ---------- People rail ---------- */
 
 type PeopleRailProps = {
   people: Person[];
@@ -615,7 +606,20 @@ type PeopleRailProps = {
 
 function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
   return (
-    <section className="mb-2 mt-2">
+    <section className="mb-3">
+      <div className="flex items-center justify-between mb-2">
+        {/* Left blank on purpose – no "People" label now */}
+        {selectedEmail && (
+          <button
+            type="button"
+            onClick={() => onSelectEmail(null)}
+            className="ml-auto text-[11px] text-white/50 hover:text-white/80"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       <div className="relative">
         <div className="flex items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {people.map((person) => {
@@ -626,15 +630,13 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
                 key={person.email}
                 type="button"
                 onClick={() => onSelectEmail(person.email)}
-                className={`relative flex-shrink-0 rounded-3xl border px-3 py-3 min-w-[120px] max-w-[140px] transition overflow-hidden
-                  ${
-                    isActive
-                      ? "bg-white text-black border-white shadow-sm shadow-black/40"
-                      : "bg-white/5 border-white/15 text-white hover:bg-white/10"
-                  }`}
+                className={`flex-shrink-0 rounded-3xl border px-2.5 py-2 min-w-[110px] max-w-[130px] transition relative overflow-hidden ${
+                  isActive
+                    ? "bg-white text-black border-white shadow-sm shadow-black/40"
+                    : "bg-white/5 border-white/15 text-white hover:bg-white/10"
+                }`}
               >
-                {/* Big thumbnail (first post) */}
-                <div className="w-full h-24 rounded-2xl overflow-hidden bg-black/40 mb-2">
+                <div className="w-full h-20 rounded-2xl overflow-hidden bg-black/40 mb-2 relative">
                   {person.avatarUrl ? (
                     <img
                       src={person.avatarUrl}
@@ -646,29 +648,23 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
                       {person.firstName[0]?.toUpperCase() ?? "R"}
                     </div>
                   )}
-                </div>
 
-                {/* Name + stats */}
-                <div className="flex items-end justify-between gap-2">
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-semibold truncate max-w-[90px]">
-                      {person.firstName}
-                    </span>
-                    <span
-                      className={`text-[10px] ${
-                        isActive ? "text-black/70" : "text-white/60"
-                      }`}
-                    >
-                      {person.postCount} post
-                      {person.postCount === 1 ? "" : "s"}
-                    </span>
-                  </div>
-
-                  {/* Mini avatar circle in bottom-right */}
-                  <div className="h-6 w-6 rounded-full bg-black/70 flex items-center justify-center text-[11px] font-semibold">
+                  {/* tiny circular avatar bottom-right */}
+                  <div className="absolute bottom-1.5 right-1.5 h-7 w-7 rounded-full bg-black/80 flex items-center justify-center text-[11px] font-semibold">
                     {person.firstName[0]?.toUpperCase() ?? "R"}
                   </div>
                 </div>
+
+                <span className="text-[11px] font-semibold truncate w-full text-left block">
+                  {person.firstName}
+                </span>
+                <span
+                  className={`text-[10px] ${
+                    isActive ? "text-black/70" : "text-white/60"
+                  }`}
+                >
+                  {person.postCount} post{person.postCount === 1 ? "" : "s"}
+                </span>
               </button>
             );
           })}
@@ -681,8 +677,6 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
     </section>
   );
 }
-
-/* ---------- Public post card ---------- */
 
 type PublicPostCardProps = {
   post: Post;
@@ -716,8 +710,10 @@ function PublicPostCard({
 
   const displayName = useMemo(() => {
     if (!post.user_email) return "Someone";
+
     const [localPart] = post.user_email.split("@");
     const cleaned = localPart.replace(/\W+/g, " ").trim();
+
     return cleaned || post.user_email;
   }, [post.user_email]);
 
@@ -869,8 +865,6 @@ function PublicPostCard({
   );
 }
 
-/* ---------- Purchase choice sheet ---------- */
-
 type PurchaseChoiceSheetProps = {
   pending: PendingPurchase;
   onClose: () => void;
@@ -906,7 +900,7 @@ function PurchaseChoiceSheet({
       : "spin pack";
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">
