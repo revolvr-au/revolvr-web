@@ -526,24 +526,16 @@ export default function PublicFeedPage() {
             </section>
           )}
 
-          {/* Header text */}
-          <div className="flex items-start justify-between mt-1 mb-2">
-            <div>
-              <h1 className="text-lg sm:text-xl font-semibold text-white/90">
-                Public feed
-              </h1>
-              <p className="text-xs sm:text-sm text-white/60 mt-1">
-                Anyone can watch this. Want to keep posting?{" "}
-                <Link href="/login" className="underline">
-                  Sign in
-                </Link>{" "}
-                to save your spins and tips.
-              </p>
-            </div>
-            <span className="text-[11px] text-white/40 self-center">
+                    {/* Main title */}
+          <div className="flex items-center justify-center mt-4 mb-4 relative">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
+              Revolvr
+            </h1>
+            <span className="hidden sm:inline text-[11px] text-white/40 absolute right-0">
               v0.1 · social preview
             </span>
           </div>
+
 
           {/* People rail */}
           {people.length > 0 && (
@@ -665,11 +657,9 @@ type PeopleRailProps = {
 function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
   return (
     <section className="mb-3">
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-xs sm:text-sm font-semibold tracking-wide text-white/80">
-          PEOPLE
-        </h2>
-        {selectedEmail && (
+      {/* Only show clear filter when something is selected */}
+      {selectedEmail && (
+        <div className="flex items-center justify-end mb-2">
           <button
             type="button"
             onClick={() => onSelectEmail(null)}
@@ -677,25 +667,11 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
           >
             Clear filter
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="relative">
-        <div className="flex items-stretch gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {/* "All" chip */}
-          <button
-            type="button"
-            onClick={() => onSelectEmail(null)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[11px] border transition
-              ${
-                selectedEmail === null
-                  ? "bg-white text-black border-white shadow-sm shadow-black/40"
-                  : "bg-white/5 text-white/70 border-white/15 hover:bg-white/10"
-              }`}
-          >
-            All
-          </button>
-
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {people.map((person) => {
             const isActive = person.email === selectedEmail;
 
@@ -703,45 +679,45 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
               <button
                 key={person.email}
                 type="button"
-                onClick={() => onSelectEmail(person.email)}
-                className={`relative flex-shrink-0 w-24 h-28 sm:w-28 sm:h-32 rounded-2xl overflow-hidden border transition-transform duration-150
-                  ${
-                    isActive
-                      ? "border-white bg-white/5 scale-[1.03] shadow-sm shadow-black/50"
-                      : "border-white/15 bg-white/5 hover:bg-white/10"
-                  }`}
+                onClick={() =>
+                  onSelectEmail(isActive ? null : person.email)
+                }
+                className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] transition ${
+                  isActive
+                    ? "bg-white text-black border-white shadow-sm shadow-black/40"
+                    : "bg-white/5 border-white/15 text-white hover:bg-white/10"
+                }`}
               >
-                {/* Main tile image / video frame */}
-                {person.avatarUrl ? (
-                  <img
-                    src={person.avatarUrl}
-                    alt={person.firstName}
-                    className="w-full h-full object-cover object-center"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-black/40 flex items-center justify-center text-sm font-semibold">
-                    {person.firstName[0]?.toUpperCase() ?? "R"}
-                  </div>
-                )}
-
-                {/* Gradient overlay so text is readable */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-
-                {/* Text + tiny avatar chip in bottom-right */}
-                <div className="absolute left-2 right-2 bottom-2 flex items-center justify-between gap-1">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-semibold truncate">
-                      {person.firstName}
+                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 mb-1 relative">
+                  {/* main tile image (latest post) */}
+                  {person.avatarUrl ? (
+                    <img
+                      src={person.avatarUrl}
+                      alt={person.firstName}
+                      className="w-full h-full object-cover object-center"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-sm font-semibold">
+                      {person.firstName[0]?.toUpperCase() ?? "R"}
                     </div>
-                    <div className="text-[10px] text-white/70">
-                      {person.postCount} post
-                      {person.postCount === 1 ? "" : "s"}
-                    </div>
-                  </div>
-                  <div className="h-6 w-6 rounded-full border border-white/70 bg-black/70 flex items-center justify-center text-[10px] font-semibold">
+                  )}
+
+                  {/* tiny avatar circle bottom-right */}
+                  <div className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-black/80 border border-white/60 flex items-center justify-center text-[10px] font-semibold">
                     {person.firstName[0]?.toUpperCase() ?? "R"}
                   </div>
                 </div>
+
+                <span className="text-[11px] font-semibold truncate w-full text-center">
+                  {person.firstName}
+                </span>
+                <span
+                  className={`text-[10px] ${
+                    isActive ? "text-black/70" : "text-white/50"
+                  }`}
+                >
+                  {person.postCount} post{person.postCount === 1 ? "" : "s"}
+                </span>
               </button>
             );
           })}
@@ -754,6 +730,7 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
     </section>
   );
 }
+
 
 
 type PublicPostCardProps = {
