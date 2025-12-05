@@ -31,7 +31,7 @@ type PageProps = {
 
 export default function ProfilePage({ params }: PageProps) {
   const router = useRouter();
-  const profileEmail = decodeURIComponent(params.email);
+  const profileEmailParam = decodeURIComponent(params.email);
 
   const [authEmail, setAuthEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -53,8 +53,9 @@ export default function ProfilePage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // IMPORTANT: only your own profile is editable
-  const isOwnProfile = authEmail === profileEmail;
+  // If logged in, always use the auth email as the “effective” profile owner.
+  const effectiveEmail = authEmail ?? profileEmailParam;
+  const isOwnProfile = !!authEmail;
 
   // Load current auth user
   useEffect(() => {
@@ -72,8 +73,10 @@ export default function ProfilePage({ params }: PageProps) {
     loadUser();
   }, []);
 
-  // Load profile + stats
+  // Load profile + stats for the effective email
   useEffect(() => {
+    if (!effectiveEmail) return;
+
     const loadData = async () => {
       try {
         setIsLoading(true);
@@ -84,7 +87,7 @@ export default function ProfilePage({ params }: PageProps) {
           await supabase
             .from("profiles")
             .select("email, display_name, avatar_url, bio")
-            .eq("email", profileEmail)
+            .eq("email", effectiveEmail)
             .maybeSingle();
 
         if (profileError) throw profileError;
@@ -104,7 +107,7 @@ export default function ProfilePage({ params }: PageProps) {
         } else {
           // No profile row yet – fall back to email-derived name
           setProfile({
-            email: profileEmail,
+            email: effectiveEmail,
             display_name: null,
             avatar_url: null,
             bio: null,
@@ -119,7 +122,7 @@ export default function ProfilePage({ params }: PageProps) {
         const { data: postsData, error: postsError } = await supabase
           .from("posts")
           .select("user_email, tip_count, boost_count, spin_count")
-          .eq("user_email", profileEmail);
+          .eq("user_email", effectiveEmail);
 
         if (postsError) throw postsError;
 
@@ -153,16 +156,16 @@ export default function ProfilePage({ params }: PageProps) {
     };
 
     loadData();
-  }, [profileEmail]);
+  }, [effectiveEmail]);
 
   const effectiveDisplayName =
     profile?.display_name ||
-    profileEmail.split("@")[0]?.replace(/\W+/g, " ") ||
+    effectiveEmail.split("@")[0]?.replace(/\W+/g, " ") ||
     "Someone";
 
   const avatarInitial =
     effectiveDisplayName.trim()[0]?.toUpperCase() ??
-    profileEmail[0]?.toUpperCase() ??
+    effectiveEmail[0]?.toUpperCase() ??
     "R";
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -180,10 +183,6 @@ export default function ProfilePage({ params }: PageProps) {
 
     if (!authEmail) {
       setError("You need to be signed in to edit your profile.");
-      return;
-    }
-    if (!isOwnProfile) {
-      setError("You can only edit your own profile.");
       return;
     }
 
@@ -355,7 +354,7 @@ export default function ProfilePage({ params }: PageProps) {
                   {effectiveDisplayName || "Someone"}
                 </h1>
                 <span className="text-xs sm:text-sm text-white/50">
-                  {profile?.display_name ? profileEmail : "undefined"}
+                  {profile?.display_name ? effectiveEmail : "undefined"}
                 </span>
               </div>
             </div>
@@ -412,7 +411,7 @@ export default function ProfilePage({ params }: PageProps) {
               )}
             </section>
 
-            {/* Right: edit profile (only if this is your profile) */}
+            {/* Right: edit profile (only if signed in) */}
             {isOwnProfile && (
               <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
                 <h2 className="text-sm font-semibold">
