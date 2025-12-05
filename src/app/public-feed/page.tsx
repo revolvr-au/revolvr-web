@@ -1,6 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  FormEvent,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
@@ -84,15 +89,14 @@ export default function PublicFeedPage() {
 
         const { data, error } = await supabase
           .from("posts")
-            .select(
-    "id, user_email, image_url, caption, created_at, tip_count, boost_count, spin_count"
-  )
-
+          .select(
+            "id, user_email, image_url, caption, created_at, tip_count, boost_count, spin_count"
+          )
           .order("created_at", { ascending: false });
 
         if (error) throw error;
 
-                setPosts(
+        setPosts(
           (data ?? []).map((row: any) => ({
             id: row.id,
             user_email: row.user_email,
@@ -105,7 +109,6 @@ export default function PublicFeedPage() {
             spin_count: row.spin_count ?? 0,
           }))
         );
-
       } catch (e) {
         console.error("Error loading public feed", e);
         setError("Revolvr glitched out loading the public feed 😵‍💫");
@@ -359,7 +362,7 @@ export default function PublicFeedPage() {
     setPendingPurchase(null);
   };
 
-    // --- JSX ---
+  // --- JSX ---
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       {/* Brand hero */}
@@ -374,12 +377,7 @@ export default function PublicFeedPage() {
 
       {/* Main content */}
       <main className="flex-1 flex justify-center">
-
-
-      {/* Main content */}
-      <main className="flex-1 flex justify-center">
-  <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-4 pb-28">
-
+        <div className="w-full max-w-xl px-3 sm:px-0 py-4 space-y-4">
           {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
@@ -504,19 +502,7 @@ export default function PublicFeedPage() {
             </section>
           )}
 
-             {/* Central brand hero */}
-<section className="mt-6 mb-6 flex flex-col items-center gap-1">
-  <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
-    Revolvr
-  </h1>
-  <span className="text-[11px] text-white/40">
-    v0.1 · social preview
-  </span>
-</section>
-
-
-
-          {/* People rail */}
+          {/* People rail (no heading, no "All" chip) */}
           {people.length > 0 && (
             <PeopleRail
               people={people}
@@ -529,13 +515,6 @@ export default function PublicFeedPage() {
               }}
             />
           )}
-                  {/* Section label: FEED */}
-          <div className="mt-2 mb-1 flex items-center">
-            <h2 className="text-[11px] sm:text-xs font-semibold tracking-[0.22em] uppercase text-white/50">
-              Feed
-            </h2>
-            <div className="ml-3 flex-1 h-px bg-white/10" />
-          </div>
 
           {/* Feed body */}
           {isLoading ? (
@@ -567,7 +546,7 @@ export default function PublicFeedPage() {
         </div>
       </main>
 
-            {/* Single vs pack popup */}
+      {/* Single vs pack popup */}
       {pendingPurchase && (
         <PurchaseChoiceSheet
           pending={pendingPurchase}
@@ -578,7 +557,7 @@ export default function PublicFeedPage() {
       )}
 
       {/* Bottom app nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur shadow-[0_-10px_30px_rgba(0,0,0,0.75)]">
+      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur">
         <div className="mx-auto max-w-xl px-6 py-2 flex items-center justify-between text-xs sm:text-sm">
           {/* Feed */}
           <button
@@ -626,6 +605,7 @@ export default function PublicFeedPage() {
   );
 }
 
+/* ---------- People rail ---------- */
 
 type PeopleRailProps = {
   people: Person[];
@@ -635,22 +615,9 @@ type PeopleRailProps = {
 
 function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
   return (
-    <section className="mb-3">
-      {/* Only show clear filter when something is selected */}
-      {selectedEmail && (
-        <div className="flex items-center justify-end mb-2">
-          <button
-            type="button"
-            onClick={() => onSelectEmail(null)}
-            className="text-[11px] text-white/50 hover:text-white/80"
-          >
-            Clear filter
-          </button>
-        </div>
-      )}
-
+    <section className="mb-2 mt-2">
       <div className="relative">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {people.map((person) => {
             const isActive = person.email === selectedEmail;
 
@@ -658,17 +625,16 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
               <button
                 key={person.email}
                 type="button"
-                onClick={() =>
-                  onSelectEmail(isActive ? null : person.email)
-                }
-                className={`flex-shrink-0 flex flex-col items-center justify-between rounded-2xl border px-2.5 py-2 min-w-[70px] max-w-[80px] transition ${
-                  isActive
-                    ? "bg-white text-black border-white shadow-sm shadow-black/40"
-                    : "bg-white/5 border-white/15 text-white hover:bg-white/10"
-                }`}
+                onClick={() => onSelectEmail(person.email)}
+                className={`relative flex-shrink-0 rounded-3xl border px-3 py-3 min-w-[120px] max-w-[140px] transition overflow-hidden
+                  ${
+                    isActive
+                      ? "bg-white text-black border-white shadow-sm shadow-black/40"
+                      : "bg-white/5 border-white/15 text-white hover:bg-white/10"
+                  }`}
               >
-                <div className="w-12 h-12 rounded-xl overflow-hidden bg-black/40 mb-1 relative">
-                  {/* main tile image (latest post) */}
+                {/* Big thumbnail (first post) */}
+                <div className="w-full h-24 rounded-2xl overflow-hidden bg-black/40 mb-2">
                   {person.avatarUrl ? (
                     <img
                       src={person.avatarUrl}
@@ -680,23 +646,29 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
                       {person.firstName[0]?.toUpperCase() ?? "R"}
                     </div>
                   )}
+                </div>
 
-                  {/* tiny avatar circle bottom-right */}
-                  <div className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-black/80 border border-white/60 flex items-center justify-center text-[10px] font-semibold">
+                {/* Name + stats */}
+                <div className="flex items-end justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-semibold truncate max-w-[90px]">
+                      {person.firstName}
+                    </span>
+                    <span
+                      className={`text-[10px] ${
+                        isActive ? "text-black/70" : "text-white/60"
+                      }`}
+                    >
+                      {person.postCount} post
+                      {person.postCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  {/* Mini avatar circle in bottom-right */}
+                  <div className="h-6 w-6 rounded-full bg-black/70 flex items-center justify-center text-[11px] font-semibold">
                     {person.firstName[0]?.toUpperCase() ?? "R"}
                   </div>
                 </div>
-
-                <span className="text-[11px] font-semibold truncate w-full text-center">
-                  {person.firstName}
-                </span>
-                <span
-                  className={`text-[10px] ${
-                    isActive ? "text-black/70" : "text-white/50"
-                  }`}
-                >
-                  {person.postCount} post{person.postCount === 1 ? "" : "s"}
-                </span>
               </button>
             );
           })}
@@ -710,7 +682,7 @@ function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
   );
 }
 
-
+/* ---------- Public post card ---------- */
 
 type PublicPostCardProps = {
   post: Post;
@@ -744,10 +716,8 @@ function PublicPostCard({
 
   const displayName = useMemo(() => {
     if (!post.user_email) return "Someone";
-
     const [localPart] = post.user_email.split("@");
     const cleaned = localPart.replace(/\W+/g, " ").trim();
-
     return cleaned || post.user_email;
   }, [post.user_email]);
 
@@ -766,28 +736,27 @@ function PublicPostCard({
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-  <div className="flex items-center gap-2">
-    <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-      {post.user_email?.[0] ?? "R"}
-    </div>
-    <div className="flex flex-col">
-      {post.user_email ? (
-        <Link
-          href={`/u/${encodeURIComponent(post.user_email)}`}
-          className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
-        >
-          {displayName}
-        </Link>
-      ) : (
-        <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
-          {displayName}
-        </span>
-      )}
-      <span className="text-[11px] text-white/40">{timeLabel}</span>
-    </div>
-  </div>
-</div>
-
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+            {post.user_email?.[0]?.toUpperCase() ?? "R"}
+          </div>
+          <div className="flex flex-col">
+            {post.user_email ? (
+              <Link
+                href={`/u/${encodeURIComponent(post.user_email)}`}
+                className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
+              >
+                {displayName}
+              </Link>
+            ) : (
+              <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
+                {displayName}
+              </span>
+            )}
+            <span className="text-[11px] text-white/40">{timeLabel}</span>
+          </div>
+        </div>
+      </div>
 
       {/* Media */}
       <div className="overflow-hidden rounded-xl bg-black/40">
@@ -900,6 +869,8 @@ function PublicPostCard({
   );
 }
 
+/* ---------- Purchase choice sheet ---------- */
+
 type PurchaseChoiceSheetProps = {
   pending: PendingPurchase;
   onClose: () => void;
@@ -935,7 +906,7 @@ function PurchaseChoiceSheet({
       : "spin pack";
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">
