@@ -6,7 +6,6 @@ import {
   FormEvent,
   ChangeEvent,
 } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
@@ -36,6 +35,8 @@ export default function ProfilePage({ params }: PageProps) {
 
   const [authEmail, setAuthEmail] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [hasProfileRow, setHasProfileRow] = useState(false);
+
   const [stats, setStats] = useState<Stats>({
     posts: 0,
     tips: 0,
@@ -52,7 +53,8 @@ export default function ProfilePage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isOwnProfile = !!authEmail;
+  // IMPORTANT: only your own profile is editable
+  const isOwnProfile = authEmail === profileEmail;
 
   // Load current auth user
   useEffect(() => {
@@ -98,6 +100,7 @@ export default function ProfilePage({ params }: PageProps) {
           setDisplayNameInput(hydrated.display_name ?? "");
           setBioInput(hydrated.bio ?? "");
           setAvatarPreview(hydrated.avatar_url ?? null);
+          setHasProfileRow(true);
         } else {
           // No profile row yet – fall back to email-derived name
           setProfile({
@@ -109,6 +112,7 @@ export default function ProfilePage({ params }: PageProps) {
           setDisplayNameInput("");
           setBioInput("");
           setAvatarPreview(null);
+          setHasProfileRow(false);
         }
 
         // Stats from posts
@@ -173,7 +177,15 @@ export default function ProfilePage({ params }: PageProps) {
 
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!isOwnProfile) return;
+
+    if (!authEmail) {
+      setError("You need to be signed in to edit your profile.");
+      return;
+    }
+    if (!isOwnProfile) {
+      setError("You can only edit your own profile.");
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -184,12 +196,12 @@ export default function ProfilePage({ params }: PageProps) {
       // If a new file is chosen, upload to Supabase storage (avatars bucket)
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop() || "jpg";
-        const filePath = `avatars/${profileEmail}/${Date.now()}.${ext}`;
+        const filePath = `${authEmail}/${Date.now()}.${ext}`;
 
         const { data: uploadData, error: uploadError } =
           await supabase.storage
             .from("avatars")
-            .upload(filePath, avatarFile);
+            .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError || !uploadData) {
           console.error("Avatar upload error", uploadError);
@@ -216,39 +228,72 @@ export default function ProfilePage({ params }: PageProps) {
       const bioClean =
         bioInput.trim() === "" ? null : bioInput.trim();
 
-      const { data: upserted, error: upsertError } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            email: profileEmail,
+      let savedProfile: Profile | null = null;
+
+      if (!hasProfileRow) {
+        // INSERT (first time creating profile)
+        const { data, error } = await supabase
+          .from("profiles")
+          .insert({
+            email: authEmail,
             display_name: displayNameClean,
             bio: bioClean,
             avatar_url: avatarUrlToSave,
-          },
-          { onConflict: "email" }
-        )
-        .select()
-        .maybeSingle();
+          })
+          .select()
+          .single();
 
-      if (upsertError) {
-        console.error("Profile upsert error", upsertError);
-        setError(
-          "Revolvr glitched out saving your profile. Try again."
-        );
-        setIsSaving(false);
-        return;
+        if (error) {
+          console.error("Profile insert error", error);
+          setError(
+            "Revolvr glitched out saving your profile. Try again."
+          );
+          setIsSaving(false);
+          return;
+        }
+
+        savedProfile = {
+          email: authEmail,
+          display_name: data.display_name,
+          bio: data.bio,
+          avatar_url: data.avatar_url,
+        };
+        setHasProfileRow(true);
+      } else {
+        // UPDATE existing profile
+        const { data, error } = await supabase
+          .from("profiles")
+          .update({
+            display_name: displayNameClean,
+            bio: bioClean,
+            avatar_url: avatarUrlToSave,
+          })
+          .eq("email", authEmail)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Profile update error", error);
+          setError(
+            "Revolvr glitched out saving your profile. Try again."
+          );
+          setIsSaving(false);
+          return;
+        }
+
+        savedProfile = {
+          email: authEmail,
+          display_name: data.display_name,
+          bio: data.bio,
+          avatar_url: data.avatar_url,
+        };
       }
 
-      const finalProfile: Profile = {
-        email: profileEmail,
-        display_name: displayNameClean,
-        bio: bioClean,
-        avatar_url: avatarUrlToSave,
-      };
-
-      setProfile(finalProfile);
-      if (avatarUrlToSave) {
-        setAvatarPreview(avatarUrlToSave);
+      if (savedProfile) {
+        setProfile(savedProfile);
+        if (savedProfile.avatar_url) {
+          setAvatarPreview(savedProfile.avatar_url);
+        }
       }
     } catch (e) {
       console.error("Unhandled profile save error", e);
