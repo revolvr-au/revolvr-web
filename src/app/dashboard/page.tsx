@@ -3,7 +3,6 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useState,
   FormEvent,
 } from "react";
@@ -29,8 +28,6 @@ type Spin = {
   post_id: string | null;
   created_at: string;
 };
-
-const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -304,6 +301,19 @@ export default function DashboardPage() {
 
         {/* Center column – feed */}
         <section className="flex-1 space-y-5">
+          {/* Error banner */}
+          {error && (
+            <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
+              <span>{error}</span>
+              <button
+                className="text-xs underline"
+                onClick={() => setError(null)}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {/* Posts */}
           {isLoadingPosts ? (
             <div className="text-sm text-white/70">Loading the feed…</div>
@@ -313,49 +323,62 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="space-y-6 pb-12">
-              {posts.map((post) => (
-                <article
-                  key={post.id}
-                  className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
-                >
-                  <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-emerald-500/80 flex items-center justify-center text-sm font-semibold">
-                        {(post.user_email ?? "R")[0].toUpperCase()}
+              {posts.map((post) => {
+                const displayName = (() => {
+                  if (!post.user_email) return "Someone";
+                  const [localPart] = post.user_email.split("@");
+                  const cleaned = localPart.replace(/\W+/g, " ").trim();
+                  return cleaned || post.user_email;
+                })();
+
+                return (
+                  <article
+                    key={post.id}
+                    className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+                          {(post.user_email ?? "R")[0].toUpperCase()}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
+                            {displayName}
+                          </span>
+                          <span className="text-[11px] text-white/40">
+                            {new Date(post.created_at).toLocaleString()}
+                          </span>
+                        </div>
                       </div>
-                      const displayName = useMemo(() => {
-  if (!post.user_email) return "Someone";
 
-  const [localPart] = post.user_email.split("@");
-  const cleaned = localPart.replace(/\W+/g, " ").trim();
+                      <button
+                        className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
+                        onClick={() => handleDeletePost(post.id)}
+                      >
+                        <RevolvrIcon name="trash" size={14} />
+                        <span>Delete</span>
+                      </button>
+                    </div>
 
-  return cleaned || post.user_email;
-}, [post.user_email]);
+                    {/* Media */}
+                    <div>
+                      <img
+                        src={post.image_url}
+                        alt={post.caption}
+                        className="w-full max-h-[480px] object-cover"
+                      />
+                    </div>
 
-                    <button
-                      className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
-                      onClick={() => handleDeletePost(post.id)}
-                    >
-                      <RevolvrIcon name="trash" size={14} />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-
-                  <div>
-                    <img
-                      src={post.image_url}
-                      alt={post.caption}
-                      className="w-full max-h-[480px] object-cover"
-                    />
-                  </div>
-
-                  {post.caption && (
-                    <p className="px-4 py-3 text-sm text-white/90">
-                      {post.caption}
-                    </p>
-                  )}
-                </article>
-              ))}
+                    {/* Caption */}
+                    {post.caption && (
+                      <p className="px-4 py-3 text-sm text-white/90">
+                        {post.caption}
+                      </p>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </section>
