@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 type Profile = {
-  id: string; // auth.users.id
   email: string;
   display_name: string | null;
   avatar_url: string | null;
@@ -35,8 +34,6 @@ export default function ProfilePage({ params }: PageProps) {
   const profileEmailParam = decodeURIComponent(params.email);
 
   const [authEmail, setAuthEmail] = useState<string | null>(null);
-  const [authId, setAuthId] = useState<string | null>(null);
-
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hasProfileRow, setHasProfileRow] = useState(false);
 
@@ -56,10 +53,9 @@ export default function ProfilePage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If logged in, always use the auth email as the “owner” of this profile.
+  // If logged in, always treat the authed user’s email as the “real” profile owner.
   const effectiveEmail = authEmail ?? profileEmailParam;
-  const isOwnProfile =
-    !!authEmail && authEmail.toLowerCase() === profileEmailParam.toLowerCase();
+  const isOwnProfile = !!authEmail;
 
   // Load current auth user
   useEffect(() => {
@@ -69,7 +65,6 @@ export default function ProfilePage({ params }: PageProps) {
           data: { user },
         } = await supabase.auth.getUser();
         setAuthEmail(user?.email ?? null);
-        setAuthId(user?.id ?? null);
       } catch (e) {
         console.error("Error loading auth user in profile page", e);
       }
@@ -78,7 +73,7 @@ export default function ProfilePage({ params }: PageProps) {
     loadUser();
   }, []);
 
-  // Load profile + stats
+  // Load profile + stats for the effective email
   useEffect(() => {
     if (!effectiveEmail) return;
 
@@ -87,18 +82,18 @@ export default function ProfilePage({ params }: PageProps) {
         setIsLoading(true);
         setError(null);
 
-        // PROFILE
-        const { data: profileRow, error: profileError } = await supabase
-          .from("profiles")
-          .select("id, email, display_name, avatar_url, bio")
-          .eq("email", effectiveEmail)
-          .maybeSingle();
+        // Profile row
+        const { data: profileRow, error: profileError } =
+          await supabase
+            .from("profiles")
+            .select("email, display_name, avatar_url, bio")
+            .eq("email", effectiveEmail)
+            .maybeSingle();
 
         if (profileError) throw profileError;
 
         if (profileRow) {
           const hydrated: Profile = {
-            id: profileRow.id,
             email: profileRow.email,
             display_name: profileRow.display_name,
             avatar_url: profileRow.avatar_url,
@@ -110,9 +105,8 @@ export default function ProfilePage({ params }: PageProps) {
           setAvatarPreview(hydrated.avatar_url ?? null);
           setHasProfileRow(true);
         } else {
-          // No row yet – viewer mode fallback
+          // No profile row yet – fall back to email-derived name
           setProfile({
-            id: authId ?? "",
             email: effectiveEmail,
             display_name: null,
             avatar_url: null,
@@ -124,7 +118,7 @@ export default function ProfilePage({ params }: PageProps) {
           setHasProfileRow(false);
         }
 
-        // STATS
+        // Stats from posts
         const { data: postsData, error: postsError } = await supabase
           .from("posts")
           .select("user_email, tip_count, boost_count, spin_count")
@@ -135,15 +129,15 @@ export default function ProfilePage({ params }: PageProps) {
         const posts = postsData ?? [];
         const postsCount = posts.length;
         const tipsCount = posts.reduce(
-          (sum: number, p: any) => sum + (p.tip_count ?? 0),
+          (sum, p: any) => sum + (p.tip_count ?? 0),
           0
         );
         const boostsCount = posts.reduce(
-          (sum: number, p: any) => sum + (p.boost_count ?? 0),
+          (sum, p: any) => sum + (p.boost_count ?? 0),
           0
         );
         const spinsCount = posts.reduce(
-          (sum: number, p: any) => sum + (p.spin_count ?? 0),
+          (sum, p: any) => sum + (p.spin_count ?? 0),
           0
         );
 
@@ -162,7 +156,7 @@ export default function ProfilePage({ params }: PageProps) {
     };
 
     loadData();
-  }, [effectiveEmail, authId]);
+  }, [effectiveEmail]);
 
   const effectiveDisplayName =
     profile?.display_name ||
@@ -187,7 +181,7 @@ export default function ProfilePage({ params }: PageProps) {
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!authEmail || !authId) {
+    if (!authEmail) {
       setError("You need to be signed in to edit your profile.");
       return;
     }
@@ -198,14 +192,15 @@ export default function ProfilePage({ params }: PageProps) {
 
       let avatarUrlToSave: string | null = profile?.avatar_url ?? null;
 
-      // UPLOAD AVATAR
+      // If a new file is chosen, upload to Supabase storage (avatars bucket)
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop() || "jpg";
         const filePath = `${authEmail}/${Date.now()}.${ext}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("avatars")
-          .upload(filePath, avatarFile, { upsert: true });
+        const { data: uploadData, error: uploadError } =
+          await supabase.storage
+            .from("avatars")
+            .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError || !uploadData) {
           console.error("Avatar upload error", uploadError);
@@ -218,24 +213,28 @@ export default function ProfilePage({ params }: PageProps) {
 
         const {
           data: { publicUrl },
-        } = supabase.storage.from("avatars").getPublicUrl(uploadData.path);
+        } = supabase.storage
+          .from("avatars")
+          .getPublicUrl(uploadData.path);
 
         avatarUrlToSave = publicUrl;
       }
 
       const displayNameClean =
-        displayNameInput.trim() === "" ? null : displayNameInput.trim();
+        displayNameInput.trim() === ""
+          ? null
+          : displayNameInput.trim();
       const bioClean =
         bioInput.trim() === "" ? null : bioInput.trim();
 
       let savedProfile: Profile | null = null;
 
       if (!hasProfileRow) {
-        // INSERT
+        // INSERT (first time creating profile)
         const { data, error } = await supabase
           .from("profiles")
           .insert({
-            id: authId,
+            // id will default to auth.uid() via DB default
             email: authEmail,
             display_name: displayNameClean,
             bio: bioClean,
@@ -254,7 +253,6 @@ export default function ProfilePage({ params }: PageProps) {
         }
 
         savedProfile = {
-          id: data.id,
           email: data.email,
           display_name: data.display_name,
           bio: data.bio,
@@ -262,7 +260,7 @@ export default function ProfilePage({ params }: PageProps) {
         };
         setHasProfileRow(true);
       } else {
-        // UPDATE
+        // UPDATE existing profile – match by email (RLS protects row)
         const { data, error } = await supabase
           .from("profiles")
           .update({
@@ -270,7 +268,7 @@ export default function ProfilePage({ params }: PageProps) {
             bio: bioClean,
             avatar_url: avatarUrlToSave,
           })
-          .eq("id", authId)
+          .eq("email", authEmail)
           .select()
           .single();
 
@@ -284,7 +282,6 @@ export default function ProfilePage({ params }: PageProps) {
         }
 
         savedProfile = {
-          id: data.id,
           email: data.email,
           display_name: data.display_name,
           bio: data.bio,
@@ -395,7 +392,7 @@ export default function ProfilePage({ params }: PageProps) {
           </section>
 
           <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)] gap-6 items-start">
-            {/* Left: posts list (placeholder) */}
+            {/* Left: posts list (for now just empty state) */}
             <section className="space-y-3">
               <h2 className="text-xs sm:text-sm font-semibold tracking-wide text-white/80">
                 POSTS
@@ -415,8 +412,8 @@ export default function ProfilePage({ params }: PageProps) {
               )}
             </section>
 
-            {/* Right: edit profile (only if this is your profile) */}
-            {isOwnProfile && (
+            {/* Right: edit profile (only if signed in) */}
+            {isOwnProfile ? (
               <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
                 <h2 className="text-sm font-semibold">
                   Edit profile
@@ -470,7 +467,7 @@ export default function ProfilePage({ params }: PageProps) {
                         setDisplayNameInput(e.target.value)
                       }
                       placeholder="What should people call you?"
-                      className="w-full rounded-xl bg_WHITE/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                      className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
                     />
                     <p className="text-[10px] text-white/40">
                       If left blank, Revolvr uses the bit before your
@@ -499,6 +496,7 @@ export default function ProfilePage({ params }: PageProps) {
                       type="button"
                       className="px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
                       onClick={() => {
+                        // reset form to last saved profile
                         setDisplayNameInput(
                           profile?.display_name ?? ""
                         );
@@ -520,9 +518,7 @@ export default function ProfilePage({ params }: PageProps) {
                   </div>
                 </form>
               </section>
-            )}
-
-            {!isOwnProfile && (
+            ) : (
               <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm text-white/70">
                 <p>
                   You&apos;re viewing{" "}
