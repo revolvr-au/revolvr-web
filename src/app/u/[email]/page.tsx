@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 type Profile = {
+  id: string; // auth.users.id
   email: string;
   display_name: string | null;
   avatar_url: string | null;
@@ -31,10 +32,13 @@ type PageProps = {
 
 export default function ProfilePage({ params }: PageProps) {
   const router = useRouter();
-  const routeEmail = decodeURIComponent(params.email);
+  const profileEmailParam = decodeURIComponent(params.email);
 
   const [authEmail, setAuthEmail] = useState<string | null>(null);
+  const [authId, setAuthId] = useState<string | null>(null);
+
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [hasProfileRow, setHasProfileRow] = useState(false);
 
   const [stats, setStats] = useState<Stats>({
     posts: 0,
@@ -52,8 +56,10 @@ export default function ProfilePage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // you can only edit if you're logged in *and* the URL email is your email
-  const isOwnProfile = authEmail === routeEmail;
+  // If logged in, always use the auth email as the “owner” of this profile.
+  const effectiveEmail = authEmail ?? profileEmailParam;
+  const isOwnProfile =
+    !!authEmail && authEmail.toLowerCase() === profileEmailParam.toLowerCase();
 
   // Load current auth user
   useEffect(() => {
@@ -63,6 +69,7 @@ export default function ProfilePage({ params }: PageProps) {
           data: { user },
         } = await supabase.auth.getUser();
         setAuthEmail(user?.email ?? null);
+        setAuthId(user?.id ?? null);
       } catch (e) {
         console.error("Error loading auth user in profile page", e);
       }
@@ -71,27 +78,27 @@ export default function ProfilePage({ params }: PageProps) {
     loadUser();
   }, []);
 
-  // Load profile + stats for the email in the URL
+  // Load profile + stats
   useEffect(() => {
-    if (!routeEmail) return;
+    if (!effectiveEmail) return;
 
     const loadData = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
-        // Profile row
-        const { data: profileRow, error: profileError } =
-          await supabase
-            .from("profiles")
-            .select("email, display_name, avatar_url, bio")
-            .eq("email", routeEmail)
-            .maybeSingle();
+        // PROFILE
+        const { data: profileRow, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, email, display_name, avatar_url, bio")
+          .eq("email", effectiveEmail)
+          .maybeSingle();
 
         if (profileError) throw profileError;
 
         if (profileRow) {
           const hydrated: Profile = {
+            id: profileRow.id,
             email: profileRow.email,
             display_name: profileRow.display_name,
             avatar_url: profileRow.avatar_url,
@@ -101,10 +108,12 @@ export default function ProfilePage({ params }: PageProps) {
           setDisplayNameInput(hydrated.display_name ?? "");
           setBioInput(hydrated.bio ?? "");
           setAvatarPreview(hydrated.avatar_url ?? null);
+          setHasProfileRow(true);
         } else {
-          // No profile row yet – fall back to email-derived name
+          // No row yet – viewer mode fallback
           setProfile({
-            email: routeEmail,
+            id: authId ?? "",
+            email: effectiveEmail,
             display_name: null,
             avatar_url: null,
             bio: null,
@@ -112,28 +121,29 @@ export default function ProfilePage({ params }: PageProps) {
           setDisplayNameInput("");
           setBioInput("");
           setAvatarPreview(null);
+          setHasProfileRow(false);
         }
 
-        // Stats from posts
+        // STATS
         const { data: postsData, error: postsError } = await supabase
           .from("posts")
           .select("user_email, tip_count, boost_count, spin_count")
-          .eq("user_email", routeEmail);
+          .eq("user_email", effectiveEmail);
 
         if (postsError) throw postsError;
 
         const posts = postsData ?? [];
         const postsCount = posts.length;
         const tipsCount = posts.reduce(
-          (sum, p: any) => sum + (p.tip_count ?? 0),
+          (sum: number, p: any) => sum + (p.tip_count ?? 0),
           0
         );
         const boostsCount = posts.reduce(
-          (sum, p: any) => sum + (p.boost_count ?? 0),
+          (sum: number, p: any) => sum + (p.boost_count ?? 0),
           0
         );
         const spinsCount = posts.reduce(
-          (sum, p: any) => sum + (p.spin_count ?? 0),
+          (sum: number, p: any) => sum + (p.spin_count ?? 0),
           0
         );
 
@@ -152,16 +162,16 @@ export default function ProfilePage({ params }: PageProps) {
     };
 
     loadData();
-  }, [routeEmail]);
+  }, [effectiveEmail, authId]);
 
   const effectiveDisplayName =
     profile?.display_name ||
-    routeEmail.split("@")[0]?.replace(/\W+/g, " ") ||
+    effectiveEmail.split("@")[0]?.replace(/\W+/g, " ") ||
     "Someone";
 
   const avatarInitial =
     effectiveDisplayName.trim()[0]?.toUpperCase() ??
-    routeEmail[0]?.toUpperCase() ??
+    effectiveEmail[0]?.toUpperCase() ??
     "R";
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -177,13 +187,8 @@ export default function ProfilePage({ params }: PageProps) {
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!authEmail) {
+    if (!authEmail || !authId) {
       setError("You need to be signed in to edit your profile.");
-      return;
-    }
-
-    if (!isOwnProfile) {
-      setError("You can only edit your own profile.");
       return;
     }
 
@@ -193,15 +198,14 @@ export default function ProfilePage({ params }: PageProps) {
 
       let avatarUrlToSave: string | null = profile?.avatar_url ?? null;
 
-      // If a new file is chosen, upload to Supabase storage (avatars bucket)
+      // UPLOAD AVATAR
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop() || "jpg";
         const filePath = `${authEmail}/${Date.now()}.${ext}`;
 
-        const { data: uploadData, error: uploadError } =
-          await supabase.storage
-            .from("avatars")
-            .upload(filePath, avatarFile, { upsert: true });
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError || !uploadData) {
           console.error("Avatar upload error", uploadError);
@@ -214,54 +218,85 @@ export default function ProfilePage({ params }: PageProps) {
 
         const {
           data: { publicUrl },
-        } = supabase.storage
-          .from("avatars")
-          .getPublicUrl(uploadData.path);
+        } = supabase.storage.from("avatars").getPublicUrl(uploadData.path);
 
         avatarUrlToSave = publicUrl;
       }
 
       const displayNameClean =
-        displayNameInput.trim() === ""
-          ? null
-          : displayNameInput.trim();
+        displayNameInput.trim() === "" ? null : displayNameInput.trim();
       const bioClean =
         bioInput.trim() === "" ? null : bioInput.trim();
 
-      // **Single upsert** – insert if missing, update if exists
-      const { data, error: upsertError } = await supabase
-        .from("profiles")
-        .upsert(
-          {
-            email: authEmail, // always key by logged-in user
+      let savedProfile: Profile | null = null;
+
+      if (!hasProfileRow) {
+        // INSERT
+        const { data, error } = await supabase
+          .from("profiles")
+          .insert({
+            id: authId,
+            email: authEmail,
             display_name: displayNameClean,
             bio: bioClean,
             avatar_url: avatarUrlToSave,
-          },
-          { onConflict: "email" }
-        )
-        .select()
-        .single();
+          })
+          .select()
+          .single();
 
-      if (upsertError) {
-        console.error("Profile upsert error", upsertError);
-        setError(
-          "Revolvr glitched out saving your profile. Try again."
-        );
-        setIsSaving(false);
-        return;
+        if (error) {
+          console.error("Profile insert error", error);
+          setError(
+            "Revolvr glitched out saving your profile. Try again."
+          );
+          setIsSaving(false);
+          return;
+        }
+
+        savedProfile = {
+          id: data.id,
+          email: data.email,
+          display_name: data.display_name,
+          bio: data.bio,
+          avatar_url: data.avatar_url,
+        };
+        setHasProfileRow(true);
+      } else {
+        // UPDATE
+        const { data, error } = await supabase
+          .from("profiles")
+          .update({
+            display_name: displayNameClean,
+            bio: bioClean,
+            avatar_url: avatarUrlToSave,
+          })
+          .eq("id", authId)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Profile update error", error);
+          setError(
+            "Revolvr glitched out saving your profile. Try again."
+          );
+          setIsSaving(false);
+          return;
+        }
+
+        savedProfile = {
+          id: data.id,
+          email: data.email,
+          display_name: data.display_name,
+          bio: data.bio,
+          avatar_url: data.avatar_url,
+        };
       }
 
-      const savedProfile: Profile = {
-        email: data.email,
-        display_name: data.display_name,
-        bio: data.bio,
-        avatar_url: data.avatar_url,
-      };
-
-      setProfile(savedProfile);
-      if (savedProfile.avatar_url) {
-        setAvatarPreview(savedProfile.avatar_url);
+      if (savedProfile) {
+        setProfile(savedProfile);
+        if (savedProfile.avatar_url) {
+          setAvatarPreview(savedProfile.avatar_url);
+        }
       }
     } catch (e) {
       console.error("Unhandled profile save error", e);
@@ -323,7 +358,7 @@ export default function ProfilePage({ params }: PageProps) {
                   {effectiveDisplayName || "Someone"}
                 </h1>
                 <span className="text-xs sm:text-sm text-white/50">
-                  {profile?.display_name ? routeEmail : "undefined"}
+                  {profile?.display_name ? effectiveEmail : "undefined"}
                 </span>
               </div>
             </div>
@@ -360,7 +395,7 @@ export default function ProfilePage({ params }: PageProps) {
           </section>
 
           <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)] gap-6 items-start">
-            {/* Left: posts list (for now just empty state) */}
+            {/* Left: posts list (placeholder) */}
             <section className="space-y-3">
               <h2 className="text-xs sm:text-sm font-semibold tracking-wide text-white/80">
                 POSTS
@@ -381,7 +416,7 @@ export default function ProfilePage({ params }: PageProps) {
             </section>
 
             {/* Right: edit profile (only if this is your profile) */}
-            {isOwnProfile ? (
+            {isOwnProfile && (
               <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
                 <h2 className="text-sm font-semibold">
                   Edit profile
@@ -435,7 +470,7 @@ export default function ProfilePage({ params }: PageProps) {
                         setDisplayNameInput(e.target.value)
                       }
                       placeholder="What should people call you?"
-                      className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                      className="w-full rounded-xl bg_WHITE/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
                     />
                     <p className="text-[10px] text-white/40">
                       If left blank, Revolvr uses the bit before your
@@ -464,7 +499,6 @@ export default function ProfilePage({ params }: PageProps) {
                       type="button"
                       className="px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
                       onClick={() => {
-                        // reset form to last saved profile
                         setDisplayNameInput(
                           profile?.display_name ?? ""
                         );
@@ -486,7 +520,9 @@ export default function ProfilePage({ params }: PageProps) {
                   </div>
                 </form>
               </section>
-            ) : (
+            )}
+
+            {!isOwnProfile && (
               <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm text-white/70">
                 <p>
                   You&apos;re viewing{" "}
