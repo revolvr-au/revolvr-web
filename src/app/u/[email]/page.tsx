@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 type Profile = {
-  id?: string;
   email: string;
   display_name: string | null;
   avatar_url: string | null;
@@ -32,13 +31,10 @@ type PageProps = {
 
 export default function ProfilePage({ params }: PageProps) {
   const router = useRouter();
-  const profileEmailParam = decodeURIComponent(params.email);
+  const routeEmail = decodeURIComponent(params.email);
 
-  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [authEmail, setAuthEmail] = useState<string | null>(null);
-
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [hasProfileRow, setHasProfileRow] = useState(false);
 
   const [stats, setStats] = useState<Stats>({
     posts: 0,
@@ -56,9 +52,8 @@ export default function ProfilePage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // if logged in, treat the auth email as the “owner” email
-  const effectiveEmail = authEmail ?? profileEmailParam;
-  const isOwnProfile = !!authEmail;
+  // you can only edit if you're logged in *and* the URL email is your email
+  const isOwnProfile = authEmail === routeEmail;
 
   // Load current auth user
   useEffect(() => {
@@ -68,7 +63,6 @@ export default function ProfilePage({ params }: PageProps) {
           data: { user },
         } = await supabase.auth.getUser();
         setAuthEmail(user?.email ?? null);
-        setAuthUserId(user?.id ?? null);
       } catch (e) {
         console.error("Error loading auth user in profile page", e);
       }
@@ -77,9 +71,9 @@ export default function ProfilePage({ params }: PageProps) {
     loadUser();
   }, []);
 
-  // Load profile + stats for the effective email
+  // Load profile + stats for the email in the URL
   useEffect(() => {
-    if (!effectiveEmail) return;
+    if (!routeEmail) return;
 
     const loadData = async () => {
       try {
@@ -90,15 +84,14 @@ export default function ProfilePage({ params }: PageProps) {
         const { data: profileRow, error: profileError } =
           await supabase
             .from("profiles")
-            .select("id, email, display_name, avatar_url, bio")
-            .eq("email", effectiveEmail)
+            .select("email, display_name, avatar_url, bio")
+            .eq("email", routeEmail)
             .maybeSingle();
 
         if (profileError) throw profileError;
 
         if (profileRow) {
           const hydrated: Profile = {
-            id: profileRow.id,
             email: profileRow.email,
             display_name: profileRow.display_name,
             avatar_url: profileRow.avatar_url,
@@ -108,11 +101,10 @@ export default function ProfilePage({ params }: PageProps) {
           setDisplayNameInput(hydrated.display_name ?? "");
           setBioInput(hydrated.bio ?? "");
           setAvatarPreview(hydrated.avatar_url ?? null);
-          setHasProfileRow(true);
         } else {
           // No profile row yet – fall back to email-derived name
           setProfile({
-            email: effectiveEmail,
+            email: routeEmail,
             display_name: null,
             avatar_url: null,
             bio: null,
@@ -120,14 +112,13 @@ export default function ProfilePage({ params }: PageProps) {
           setDisplayNameInput("");
           setBioInput("");
           setAvatarPreview(null);
-          setHasProfileRow(false);
         }
 
         // Stats from posts
         const { data: postsData, error: postsError } = await supabase
           .from("posts")
           .select("user_email, tip_count, boost_count, spin_count")
-          .eq("user_email", effectiveEmail);
+          .eq("user_email", routeEmail);
 
         if (postsError) throw postsError;
 
@@ -161,16 +152,16 @@ export default function ProfilePage({ params }: PageProps) {
     };
 
     loadData();
-  }, [effectiveEmail]);
+  }, [routeEmail]);
 
   const effectiveDisplayName =
     profile?.display_name ||
-    effectiveEmail.split("@")[0]?.replace(/\W+/g, " ") ||
+    routeEmail.split("@")[0]?.replace(/\W+/g, " ") ||
     "Someone";
 
   const avatarInitial =
     effectiveDisplayName.trim()[0]?.toUpperCase() ??
-    effectiveEmail[0]?.toUpperCase() ??
+    routeEmail[0]?.toUpperCase() ??
     "R";
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -186,8 +177,13 @@ export default function ProfilePage({ params }: PageProps) {
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!authEmail || !authUserId) {
+    if (!authEmail) {
       setError("You need to be signed in to edit your profile.");
+      return;
+    }
+
+    if (!isOwnProfile) {
+      setError("You can only edit your own profile.");
       return;
     }
 
@@ -232,75 +228,40 @@ export default function ProfilePage({ params }: PageProps) {
       const bioClean =
         bioInput.trim() === "" ? null : bioInput.trim();
 
-      let savedProfile: Profile | null = null;
-
-      if (!hasProfileRow) {
-        // INSERT (first time creating profile) – INCLUDE id
-        const { data, error } = await supabase
-          .from("profiles")
-          .insert({
-            id: authUserId,          // 👈 critical: satisfy NOT NULL on id
-            email: authEmail,
+      // **Single upsert** – insert if missing, update if exists
+      const { data, error: upsertError } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            email: authEmail, // always key by logged-in user
             display_name: displayNameClean,
             bio: bioClean,
             avatar_url: avatarUrlToSave,
-          })
-          .select()
-          .single();
+          },
+          { onConflict: "email" }
+        )
+        .select()
+        .single();
 
-        if (error) {
-          console.error("Profile insert error", error);
-          setError(
-            "Revolvr glitched out saving your profile. Try again."
-          );
-          setIsSaving(false);
-          return;
-        }
-
-        savedProfile = {
-          id: data.id,
-          email: data.email,
-          display_name: data.display_name,
-          bio: data.bio,
-          avatar_url: data.avatar_url,
-        };
-        setHasProfileRow(true);
-      } else {
-        // UPDATE existing profile – use id for safety
-        const { data, error } = await supabase
-          .from("profiles")
-          .update({
-            display_name: displayNameClean,
-            bio: bioClean,
-            avatar_url: avatarUrlToSave,
-          })
-          .eq("id", authUserId)
-          .select()
-          .single();
-
-        if (error) {
-          console.error("Profile update error", error);
-          setError(
-            "Revolvr glitched out saving your profile. Try again."
-          );
-          setIsSaving(false);
-          return;
-        }
-
-        savedProfile = {
-          id: data.id,
-          email: data.email,
-          display_name: data.display_name,
-          bio: data.bio,
-          avatar_url: data.avatar_url,
-        };
+      if (upsertError) {
+        console.error("Profile upsert error", upsertError);
+        setError(
+          "Revolvr glitched out saving your profile. Try again."
+        );
+        setIsSaving(false);
+        return;
       }
 
-      if (savedProfile) {
-        setProfile(savedProfile);
-        if (savedProfile.avatar_url) {
-          setAvatarPreview(savedProfile.avatar_url);
-        }
+      const savedProfile: Profile = {
+        email: data.email,
+        display_name: data.display_name,
+        bio: data.bio,
+        avatar_url: data.avatar_url,
+      };
+
+      setProfile(savedProfile);
+      if (savedProfile.avatar_url) {
+        setAvatarPreview(savedProfile.avatar_url);
       }
     } catch (e) {
       console.error("Unhandled profile save error", e);
@@ -362,7 +323,7 @@ export default function ProfilePage({ params }: PageProps) {
                   {effectiveDisplayName || "Someone"}
                 </h1>
                 <span className="text-xs sm:text-sm text-white/50">
-                  {profile?.display_name ? effectiveEmail : "undefined"}
+                  {profile?.display_name ? routeEmail : "undefined"}
                 </span>
               </div>
             </div>
@@ -419,8 +380,8 @@ export default function ProfilePage({ params }: PageProps) {
               )}
             </section>
 
-            {/* Right: edit profile (only if signed in) */}
-            {isOwnProfile && (
+            {/* Right: edit profile (only if this is your profile) */}
+            {isOwnProfile ? (
               <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
                 <h2 className="text-sm font-semibold">
                   Edit profile
@@ -503,6 +464,7 @@ export default function ProfilePage({ params }: PageProps) {
                       type="button"
                       className="px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
                       onClick={() => {
+                        // reset form to last saved profile
                         setDisplayNameInput(
                           profile?.display_name ?? ""
                         );
@@ -523,6 +485,20 @@ export default function ProfilePage({ params }: PageProps) {
                     </button>
                   </div>
                 </form>
+              </section>
+            ) : (
+              <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm text-white/70">
+                <p>
+                  You&apos;re viewing{" "}
+                  <span className="font-semibold">
+                    {effectiveDisplayName}
+                  </span>
+                  &apos;s public profile.
+                </p>
+                <p className="text-[11px] text-white/40">
+                  When creators sign in, they&apos;ll be able to edit
+                  their name, image and bio here.
+                </p>
               </section>
             )}
           </div>
