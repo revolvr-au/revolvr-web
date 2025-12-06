@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 type Profile = {
+  id?: string;
   email: string;
   display_name: string | null;
   avatar_url: string | null;
@@ -33,7 +34,9 @@ export default function ProfilePage({ params }: PageProps) {
   const router = useRouter();
   const profileEmailParam = decodeURIComponent(params.email);
 
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [authEmail, setAuthEmail] = useState<string | null>(null);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hasProfileRow, setHasProfileRow] = useState(false);
 
@@ -53,11 +56,9 @@ export default function ProfilePage({ params }: PageProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If logged in, always use the auth email as the “effective” profile owner.
+  // if logged in, treat the auth email as the “owner” email
   const effectiveEmail = authEmail ?? profileEmailParam;
-  // TEMP: always show edit form; RLS still protects actual data
-const isOwnProfile = true;
-
+  const isOwnProfile = !!authEmail;
 
   // Load current auth user
   useEffect(() => {
@@ -67,6 +68,7 @@ const isOwnProfile = true;
           data: { user },
         } = await supabase.auth.getUser();
         setAuthEmail(user?.email ?? null);
+        setAuthUserId(user?.id ?? null);
       } catch (e) {
         console.error("Error loading auth user in profile page", e);
       }
@@ -88,7 +90,7 @@ const isOwnProfile = true;
         const { data: profileRow, error: profileError } =
           await supabase
             .from("profiles")
-            .select("email, display_name, avatar_url, bio")
+            .select("id, email, display_name, avatar_url, bio")
             .eq("email", effectiveEmail)
             .maybeSingle();
 
@@ -96,6 +98,7 @@ const isOwnProfile = true;
 
         if (profileRow) {
           const hydrated: Profile = {
+            id: profileRow.id,
             email: profileRow.email,
             display_name: profileRow.display_name,
             avatar_url: profileRow.avatar_url,
@@ -183,7 +186,7 @@ const isOwnProfile = true;
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!authEmail) {
+    if (!authEmail || !authUserId) {
       setError("You need to be signed in to edit your profile.");
       return;
     }
@@ -232,10 +235,11 @@ const isOwnProfile = true;
       let savedProfile: Profile | null = null;
 
       if (!hasProfileRow) {
-        // INSERT (first time creating profile)
+        // INSERT (first time creating profile) – INCLUDE id
         const { data, error } = await supabase
           .from("profiles")
           .insert({
+            id: authUserId,          // 👈 critical: satisfy NOT NULL on id
             email: authEmail,
             display_name: displayNameClean,
             bio: bioClean,
@@ -254,14 +258,15 @@ const isOwnProfile = true;
         }
 
         savedProfile = {
-          email: authEmail,
+          id: data.id,
+          email: data.email,
           display_name: data.display_name,
           bio: data.bio,
           avatar_url: data.avatar_url,
         };
         setHasProfileRow(true);
       } else {
-        // UPDATE existing profile
+        // UPDATE existing profile – use id for safety
         const { data, error } = await supabase
           .from("profiles")
           .update({
@@ -269,7 +274,7 @@ const isOwnProfile = true;
             bio: bioClean,
             avatar_url: avatarUrlToSave,
           })
-          .eq("email", authEmail)
+          .eq("id", authUserId)
           .select()
           .single();
 
@@ -283,7 +288,8 @@ const isOwnProfile = true;
         }
 
         savedProfile = {
-          email: authEmail,
+          id: data.id,
+          email: data.email,
           display_name: data.display_name,
           bio: data.bio,
           avatar_url: data.avatar_url,
@@ -356,9 +362,8 @@ const isOwnProfile = true;
                   {effectiveDisplayName || "Someone"}
                 </h1>
                 <span className="text-xs sm:text-sm text-white/50">
-  {effectiveEmail}
-</span>
-
+                  {profile?.display_name ? effectiveEmail : "undefined"}
+                </span>
               </div>
             </div>
 
@@ -498,7 +503,6 @@ const isOwnProfile = true;
                       type="button"
                       className="px-3 py-1.5 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
                       onClick={() => {
-                        // reset form to last saved profile
                         setDisplayNameInput(
                           profile?.display_name ?? ""
                         );
@@ -519,22 +523,6 @@ const isOwnProfile = true;
                     </button>
                   </div>
                 </form>
-              </section>
-            )}
-
-            {!isOwnProfile && (
-              <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-2 text-sm text-white/70">
-                <p>
-                  You&apos;re viewing{" "}
-                  <span className="font-semibold">
-                    {effectiveDisplayName}
-                  </span>
-                  &apos;s public profile.
-                </p>
-                <p className="text-[11px] text-white/40">
-                  When creators sign in, they&apos;ll be able to edit
-                  their name, image and bio here.
-                </p>
               </section>
             )}
           </div>
