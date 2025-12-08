@@ -6,7 +6,7 @@ type HostData = {
   sessionId: string;
   roomName: string;
   hostIdentity: string;
-  hostToken: string; // always a JWT string
+  hostToken: string; // always JWT string after normalisation
   livekitUrl: string;
   title?: string | null;
 };
@@ -39,7 +39,7 @@ export default function HostLivePage() {
       const raw = await res.json();
       console.log("create data RAW", raw);
 
-      // Normalise hostToken so it's ALWAYS a JWT string
+      // Normalise hostToken so it's ALWAYS a string JWT
       const fixed: HostData = {
         ...raw,
         hostToken:
@@ -60,7 +60,7 @@ export default function HostLivePage() {
     }
   }
 
-  // Initial screen: title input + Go Live button
+  // Initial screen: form + Go Live button
   if (!data) {
     return (
       <div style={{ padding: 24 }}>
@@ -91,16 +91,14 @@ export default function HostLivePage() {
   return (
     <LiveKitRoom
       serverUrl={data.livekitUrl}
-      token={data.hostToken}
+      token={data.hostToken} // ✅ JWT string
       connect={true}
       video={true}
       audio={true}
     >
       <div style={{ padding: 16 }}>
         <span style={{ color: "red", fontWeight: "bold" }}>● LIVE</span>
-        <span style={{ marginLeft: 8 }}>
-          {data.title ?? "Untitled stream"}
-        </span>
+        <span style={{ marginLeft: 8 }}>{data.title ?? "Untitled stream"}</span>
       </div>
       <VideoConference />
     </LiveKitRoom>

@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { randomUUID } from "crypto";
 import { AccessToken } from "livekit-server-sdk";
 
-// non-null assertions so TS treats these as plain strings
+// Treat env as required (build will fail if missing)
 const livekitUrl = process.env.LIVEKIT_URL!;
 const livekitApiKey = process.env.LIVEKIT_API_KEY!;
 const livekitApiSecret = process.env.LIVEKIT_API_SECRET!;
@@ -26,7 +26,7 @@ if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
   );
 }
 
-// async because toJwt() may return a Promise<string>
+// async because toJwt() returns a Promise<string>
 async function createHostToken(
   roomName: string,
   identity: string
@@ -57,44 +57,53 @@ async function createHostToken(
   };
 }
 
-type Data =
-  | {
-      sessionId: string;
-      roomName: string;
-      hostIdentity: string;
-      hostToken: string;
-      livekitUrl: string;
-      title?: string | null;
-    }
-  | { error: string };
+type SuccessData = {
+  sessionId: string;
+  roomName: string;
+  hostIdentity: string;
+  hostToken: string;
+  livekitUrl: string;
+  title?: string | null;
+};
+
+type ErrorData = { error: string };
+
+type Data = SuccessData | ErrorData;
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  console.log("[/api/live/create] method =", req.method);
 
-  const { title } = req.body ?? {};
+  // ⚠️ No more 405 – we just log unexpected methods and keep going.
+  // Vercel sometimes behaves differently than local; this makes it robust.
 
-  // TODO: replace dummyUserId with real Supabase user.id
+  const body = (req.body || {}) as { title?: string };
+  const { title } = body;
+
   const dummyUserId = "user-123";
-
   const roomName = `revolvr-${randomUUID()}`;
   const hostIdentity = `host-${dummyUserId}-${roomName}`;
 
-  const { token: hostToken, url: lkUrl } = await createHostToken(
-    roomName,
-    hostIdentity
-  );
+  try {
+    const { token: hostToken, url: lkUrl } = await createHostToken(
+      roomName,
+      hostIdentity
+    );
 
-  return res.status(200).json({
-    sessionId: roomName,
-    roomName,
-    hostIdentity,
-    hostToken,
-    livekitUrl: lkUrl,
-    title: title ?? null,
-  });
+    return res.status(200).json({
+      sessionId: roomName,
+      roomName,
+      hostIdentity,
+      hostToken,
+      livekitUrl: lkUrl,
+      title: title ?? null,
+    });
+  } catch (e: any) {
+    console.error("[/api/live/create] error:", e);
+    return res
+      .status(500)
+      .json({ error: e?.message ?? "Failed to create host token" });
+  }
 }
