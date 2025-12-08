@@ -17,7 +17,7 @@ export function FloatingLiveButton() {
     isLoggedIn: false,
   });
 
-  // 🔒 Only show on the public feed
+  // ✅ Only show on public feed
   if (pathname !== "/public-feed") {
     return null;
   }
@@ -28,6 +28,7 @@ export function FloatingLiveButton() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
+
         setAuth({ checked: true, isLoggedIn: !!user });
       } catch (e) {
         console.error("[FloatingLiveButton] auth check error", e);
@@ -57,7 +58,7 @@ export function FloatingLiveButton() {
         fixed bottom-6 right-6 z-40
         rounded-full px-6 py-3
         bg-[#ff0055] text-white text-sm font-semibold
-        shadow-[0_0_36px_rgba(255,0,85,0.65)]
+        shadow-[0_0_30px_rgba(255,0,85,0.55)]
         flex items-center gap-2
         hover:scale-105 active:scale-95
         transition-transform

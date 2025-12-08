@@ -1,4 +1,3 @@
-// src/pages/live/host.tsx
 import { useState } from "react";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
@@ -6,7 +5,7 @@ type HostData = {
   sessionId: string;
   roomName: string;
   hostIdentity: string;
-  hostToken: string; // always JWT string after normalisation
+  hostToken: string;
   livekitUrl: string;
   title?: string | null;
 };
@@ -39,7 +38,6 @@ export default function HostLivePage() {
       const raw = await res.json();
       console.log("create data RAW", raw);
 
-      // Normalise hostToken so it's ALWAYS a string JWT
       const fixed: HostData = {
         ...raw,
         hostToken:
@@ -60,7 +58,6 @@ export default function HostLivePage() {
     }
   }
 
-  // Initial screen: form + Go Live button
   if (!data) {
     return (
       <div style={{ padding: 24 }}>
@@ -87,18 +84,19 @@ export default function HostLivePage() {
     );
   }
 
-  // LiveKit room once we have the token + URL
   return (
     <LiveKitRoom
       serverUrl={data.livekitUrl}
-      token={data.hostToken} // ✅ JWT string
+      token={data.hostToken}
       connect={true}
       video={true}
       audio={true}
     >
       <div style={{ padding: 16 }}>
         <span style={{ color: "red", fontWeight: "bold" }}>● LIVE</span>
-        <span style={{ marginLeft: 8 }}>{data.title ?? "Untitled stream"}</span>
+        <span style={{ marginLeft: 8 }}>
+          {data.title ?? "Untitled stream"}
+        </span>
       </div>
       <VideoConference />
     </LiveKitRoom>
