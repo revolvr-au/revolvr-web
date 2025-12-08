@@ -4,63 +4,67 @@ import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
+type AuthState = {
+  checked: boolean;
+  isLoggedIn: boolean;
+};
+
 export function FloatingLiveButton() {
   const router = useRouter();
   const pathname = usePathname();
+  const [auth, setAuth] = useState<AuthState>({
+    checked: false,
+    isLoggedIn: false,
+  });
 
-  const [hasUser, setHasUser] = useState<boolean | null>(null);
-  const [ready, setReady] = useState(false);
+  // 🔒 Only show on the public feed
+  if (pathname !== "/public-feed") {
+    return null;
+  }
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadUser() {
+    const checkUser = async () => {
       try {
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (!cancelled) setHasUser(!!user);
-      } catch (err) {
-        console.error("[FloatingLiveButton] error loading user", err);
-        if (!cancelled) setHasUser(false);
-      } finally {
-        if (!cancelled) setReady(true);
+        setAuth({ checked: true, isLoggedIn: !!user });
+      } catch (e) {
+        console.error("[FloatingLiveButton] auth check error", e);
+        setAuth({ checked: true, isLoggedIn: false });
       }
-    }
-
-    loadUser();
-
-    return () => {
-      cancelled = true;
     };
+
+    checkUser();
   }, []);
 
-  useEffect(() => {
-    console.log("[FloatingLiveButton] state", { pathname, hasUser, ready });
-  }, [pathname, hasUser, ready]);
-
-  // Only on the public feed
-  if (pathname !== "/public-feed") return null;
-
-  // Avoid SSR mismatch – don’t render until we know user state
-  if (!ready) return null;
-
   const handleClick = () => {
-    if (!hasUser) {
-      const redirect = encodeURIComponent("/live/host");
+    if (!auth.checked) return;
+
+    if (!auth.isLoggedIn) {
+      const redirect = encodeURIComponent("/public-feed");
       router.push(`/login?redirectTo=${redirect}`);
       return;
     }
+
     router.push("/live/host");
   };
 
   return (
     <button
-      type="button"
       onClick={handleClick}
-      className="fixed bottom-24 right-4 z-40 rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold shadow-lg shadow-rose-500/40 hover:bg-rose-500 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
+      className="
+        fixed bottom-6 right-6 z-40
+        rounded-full px-6 py-3
+        bg-[#ff0055] text-white text-sm font-semibold
+        shadow-[0_0_45px_rgba(255,0,85,0.75)]
+        flex items-center gap-2
+        hover:scale-105 active:scale-95
+        transition-transform
+      "
     >
-      🔴 Go Live
+      <span className="inline-block h-2 w-2 rounded-full bg-red-300 animate-pulse" />
+      Go Live
     </button>
   );
 }
