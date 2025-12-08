@@ -3,9 +3,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { randomUUID } from "crypto";
 import { AccessToken } from "livekit-server-sdk";
 
-const livekitUrl = process.env.LIVEKIT_URL;
-const livekitApiKey = process.env.LIVEKIT_API_KEY;
-const livekitApiSecret = process.env.LIVEKIT_API_SECRET;
+// 👇 add `!` so TS treats them as plain strings
+const livekitUrl = process.env.LIVEKIT_URL!;
+const livekitApiKey = process.env.LIVEKIT_API_KEY!;
+const livekitApiSecret = process.env.LIVEKIT_API_SECRET!;
 
 console.log("------ LIVEKIT ENV DEBUG ------");
 console.log("LIVEKIT_URL =", livekitUrl);
@@ -25,7 +26,7 @@ if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
   );
 }
 
-// 🔹 toJwt() is async → this function must be async too
+// 🔹 async because toJwt() returns a Promise<string>
 async function createHostToken(
   roomName: string,
   identity: string
@@ -39,7 +40,7 @@ async function createHostToken(
     canSubscribe: true,
   });
 
-  const jwt = await at.toJwt(); // ✅ await the Promise<string>
+  const jwt = await at.toJwt();
 
   console.log(
     "LIVEKIT host token length:",
@@ -52,7 +53,7 @@ async function createHostToken(
 
   return {
     token: jwt,
-    url: livekitUrl,
+    url: livekitUrl, // ✅ now typed as plain string
   };
 }
 
@@ -67,7 +68,6 @@ type Data =
     }
   | { error: string };
 
-// ✅ Default export required by Next.js API routes
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
@@ -82,7 +82,6 @@ export default async function handler(
   const roomName = `revolvr-${randomUUID()}`;
   const hostIdentity = `host-${dummyUserId}-${roomName}`;
 
-  // 🔹 createHostToken is async now → await it
   const { token: hostToken, url: lkUrl } = await createHostToken(
     roomName,
     hostIdentity
