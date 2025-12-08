@@ -8,7 +8,7 @@ const livekitUrl = process.env.LIVEKIT_URL!;
 const livekitApiKey = process.env.LIVEKIT_API_KEY!;
 const livekitApiSecret = process.env.LIVEKIT_API_SECRET!;
 
-console.log("------ LIVEKIT ENV DEBUG ------");
+console.log("------ LIVEKIT ENV DEBUG (pages/api/live/create) ------");
 console.log("LIVEKIT_URL =", livekitUrl);
 console.log("LIVEKIT_API_KEY =", livekitApiKey?.slice(0, 8));
 console.log(
@@ -17,8 +17,7 @@ console.log(
   "...",
   livekitApiSecret?.slice(-6)
 );
-console.log("--------------------------------");
-console.log("LIVEKIT_API_SECRET RAW =", JSON.stringify(livekitApiSecret));
+console.log("-------------------------------------------------------");
 
 if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
   throw new Error(
@@ -76,8 +75,8 @@ export default async function handler(
 ) {
   console.log("[/api/live/create] method =", req.method);
 
-  // ⚠️ No more 405 – we just log unexpected methods and keep going.
-  // Vercel sometimes behaves differently than local; this makes it robust.
+  // 🚨 IMPORTANT: no 405 here anymore. We just log and proceed.
+  // Even if Vercel does something odd with methods, we’ll keep generating a token.
 
   const body = (req.body || {}) as { title?: string };
   const { title } = body;
