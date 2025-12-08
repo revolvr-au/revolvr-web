@@ -10,10 +10,14 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.17",
+    "@livekit/components-styles": "^1.2.0",
     "@prisma/client": "^5.15.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.84.0",
     "framer-motion": "^12.23.24",
+    "livekit-client": "^2.16.0",
+    "livekit-server-sdk": "^2.14.2",
     "next": "^16.0.7",
     "prisma": "^5.15.0",
     "react": "19.2.0",

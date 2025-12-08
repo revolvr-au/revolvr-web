@@ -1,11 +1,10 @@
-// src/app/layout.tsx
-
-import "./globals.css";
 import type { Metadata } from "next";
+import "./globals.css";
+import { FloatingLiveButton } from "@/components/FloatingLiveButton";
 
 export const metadata: Metadata = {
   title: "Revolvr",
-  description: "Revolvr – social preview",
+  description: "Revolvr",
 };
 
 export default function RootLayout({
@@ -15,7 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+
+        {/* 🔴 Global floating Go Live button */}
+        <FloatingLiveButton />
+      </body>
     </html>
   );
 }

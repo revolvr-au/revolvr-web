@@ -7,7 +7,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/feed");
+    // Send everyone hitting "/" to the login + age gate
+    router.replace("/login");
   }, [router]);
 
   return (
