@@ -25,7 +25,11 @@ if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
   );
 }
 
-function createHostToken(roomName: string, identity: string) {
+// 🔹 toJwt() is async → this function must be async too
+async function createHostToken(
+  roomName: string,
+  identity: string
+): Promise<{ token: string; url: string }> {
   const at = new AccessToken(livekitApiKey, livekitApiSecret, { identity });
 
   at.addGrant({
@@ -35,11 +39,11 @@ function createHostToken(roomName: string, identity: string) {
     canSubscribe: true,
   });
 
-  const jwt = at.toJwt();
+  const jwt = await at.toJwt(); // ✅ await the Promise<string>
 
   console.log(
     "LIVEKIT host token length:",
-    jwt?.length,
+    jwt.length,
     "room:",
     roomName,
     "identity:",
@@ -78,7 +82,8 @@ export default async function handler(
   const roomName = `revolvr-${randomUUID()}`;
   const hostIdentity = `host-${dummyUserId}-${roomName}`;
 
-  const { token: hostToken, url: lkUrl } = createHostToken(
+  // 🔹 createHostToken is async now → await it
+  const { token: hostToken, url: lkUrl } = await createHostToken(
     roomName,
     hostIdentity
   );
