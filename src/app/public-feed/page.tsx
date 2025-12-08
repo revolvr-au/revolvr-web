@@ -50,13 +50,13 @@ export default function PublicFeedPage() {
     null
   );
 
-  // Composer state
+  // Composer state (top-of-feed)
   const [file, setFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
   const [isPosting, setIsPosting] = useState(false);
   const [showComposer, setShowComposer] = useState<boolean>(false);
 
-  // Load current user
+  // Load current user (if logged in)
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -116,7 +116,7 @@ export default function PublicFeedPage() {
     fetchPosts();
   }, []);
 
-  // People rail
+  // People rail data
   const people: Person[] = useMemo(() => {
     const byEmail = new Map<string, Person>();
 
@@ -145,7 +145,7 @@ export default function PublicFeedPage() {
     return Array.from(byEmail.values());
   }, [posts]);
 
-  // Filtered posts
+  // Posts filtered by selected person
   const visiblePosts = useMemo(
     () =>
       selectedUserEmail
@@ -154,7 +154,7 @@ export default function PublicFeedPage() {
     [posts, selectedUserEmail]
   );
 
-  // Local reactions
+  // Local reactions (no backend yet)
   const handleReact = (postId: string, emoji: ReactionEmoji) => {
     setPosts((prev) =>
       prev.map((p) =>
@@ -171,7 +171,7 @@ export default function PublicFeedPage() {
     );
   };
 
-  // Auth guard
+  // Make sure user is logged in (for posting + payments)
   const ensureLoggedIn = () => {
     if (!userEmail) {
       const redirect = encodeURIComponent("/public-feed");
@@ -181,6 +181,7 @@ export default function PublicFeedPage() {
     return true;
   };
 
+  // Scroll to composer when +Post clicked
   const scrollToComposer = () => {
     const el = document.getElementById("revolvrComposer");
     if (el) {
@@ -188,7 +189,7 @@ export default function PublicFeedPage() {
     }
   };
 
-  // Create post
+  // Create post from public feed composer
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!ensureLoggedIn()) return;
@@ -252,7 +253,7 @@ export default function PublicFeedPage() {
     }
   };
 
-  // Payments
+  // Generic payment starter for single tip / boost / spin
   const startPayment = async (
     mode: PurchaseMode,
     postId: string,
@@ -293,6 +294,7 @@ export default function PublicFeedPage() {
     }
   };
 
+  // Open the "single vs pack" choice
   const openPurchaseChoice = (postId: string, mode: PurchaseMode) => {
     if (!ensureLoggedIn()) return;
     setPendingPurchase({ postId, mode });
@@ -304,32 +306,34 @@ export default function PublicFeedPage() {
   const handleSpinClick = (postId: string) =>
     openPurchaseChoice(postId, "spin");
 
+  // Helper: amounts in cents for each mode
   const singleAmountForMode = (mode: PurchaseMode) => {
     switch (mode) {
       case "tip":
-        return 200;
+        return 200; // A$2
       case "boost":
-        return 500;
+        return 500; // A$5
       case "spin":
       default:
-        return 100;
+        return 100; // A$1
     }
   };
 
   const packAmountForMode = (mode: PurchaseMode) => {
     switch (mode) {
       case "tip":
-        return 1000;
+        return 1000; // A$10 tip pack
       case "boost":
-        return 2500;
+        return 2500; // A$25 boost pack
       case "spin":
       default:
-        return 500;
+        return 500; // A$5 spin pack
     }
   };
 
   const handleSinglePurchase = async () => {
     if (!pendingPurchase) return;
+
     const amountCents = singleAmountForMode(pendingPurchase.mode);
 
     await startPayment(
@@ -343,6 +347,7 @@ export default function PublicFeedPage() {
 
   const handlePackPurchase = async () => {
     if (!pendingPurchase) return;
+
     const amountCents = packAmountForMode(pendingPurchase.mode);
 
     await startPayment(
@@ -384,7 +389,7 @@ export default function PublicFeedPage() {
               </p>
             </header>
 
-            {/* Composer */}
+            {/* Composer – only when logged in AND explicitly opened */}
             {userEmail && showComposer && (
               <section
                 id="revolvrComposer"
@@ -395,12 +400,13 @@ export default function PublicFeedPage() {
                 </h2>
 
                 <form className="space-y-4" onSubmit={handleCreatePost}>
-                  {/* Upload */}
+                  {/* Upload Section */}
                   <div>
                     <label className="text-xs font-medium text-white/70 block mb-2">
                       Image or short video
                     </label>
 
+                    {/* Drop Zone */}
                     <div
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
@@ -409,8 +415,8 @@ export default function PublicFeedPage() {
                         if (dropped) setFile(dropped);
                       }}
                       className="w-full h-48 rounded-xl border border-white/15 bg-black/20 
-                                 flex flex-col items-center justify-center cursor-pointer 
-                                 hover:bg-black/30 transition"
+                               flex flex-col items-center justify-center cursor-pointer 
+                               hover:bg-black/30 transition"
                       onClick={() =>
                         document.getElementById("revolvrUploadInput")?.click()
                       }
@@ -419,7 +425,7 @@ export default function PublicFeedPage() {
                         <div className="flex flex-col items-center gap-2 text-white/60">
                           <div
                             className="w-12 h-12 border border-white/20 rounded-lg 
-                                       flex items-center justify-center"
+                                     flex items-center justify-center"
                           >
                             <span className="text-xl">↑</span>
                           </div>
@@ -446,6 +452,7 @@ export default function PublicFeedPage() {
                       )}
                     </div>
 
+                    {/* Hidden input */}
                     <input
                       id="revolvrUploadInput"
                       type="file"
@@ -535,9 +542,10 @@ export default function PublicFeedPage() {
           </div>
         </main>
 
-        {/* Bottom nav */}
+        {/* Bottom app nav */}
         <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 bg-[#050814]/95 backdrop-blur">
           <div className="mx-auto max-w-xl px-6 py-2 flex items-center justify-between text-xs sm:text-sm">
+            {/* Feed */}
             <button
               type="button"
               onClick={() => router.push("/public-feed")}
@@ -547,6 +555,7 @@ export default function PublicFeedPage() {
               <span className="mt-0.5">Feed</span>
             </button>
 
+            {/* Post */}
             <button
               type="button"
               onClick={() => {
@@ -560,6 +569,7 @@ export default function PublicFeedPage() {
               <span className="mt-0.5">Post</span>
             </button>
 
+            {/* Profile */}
             <button
               type="button"
               onClick={() => {
@@ -589,14 +599,376 @@ export default function PublicFeedPage() {
         )}
       </div>
 
-      {/* Floating Go Live button – *on top* of feed */}
+      {/* 🔴 Floating Go Live button – only on public feed */}
       <FloatingLiveButton />
     </>
   );
 }
 
-/* ---------- PeopleRail, PublicPostCard, PurchaseChoiceSheet
-   (exactly as you already had them) – I omitted them here
-   since they’re unchanged from your last version.
-   Keep your existing definitions below this comment.
-*/
+/* ------------------------------------------------------------------ */
+/* People rail                                                        */
+/* ------------------------------------------------------------------ */
+
+type PeopleRailProps = {
+  people: Person[];
+  selectedEmail: string | null;
+  onSelectEmail: (email: string | null) => void;
+};
+
+function PeopleRail({ people, selectedEmail, onSelectEmail }: PeopleRailProps) {
+  return (
+    <section className="mb-3">
+      <div className="flex items-center justify-between mb-2">
+        {selectedEmail && (
+          <button
+            type="button"
+            onClick={() => onSelectEmail(null)}
+            className="ml-auto text-[11px] text-white/50 hover:text-white/80"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
+      <div className="relative">
+        <div className="flex items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {people.map((person) => {
+            const isActive = person.email === selectedEmail;
+
+            return (
+              <button
+                key={person.email}
+                type="button"
+                onClick={() => onSelectEmail(person.email)}
+                className={`flex-shrink-0 rounded-3xl border px-2.5 py-2 min-w-[110px] max-w-[130px] transition relative overflow-hidden ${
+                  isActive
+                    ? "bg-white text-black border-white shadow-sm shadow-black/40"
+                    : "bg-white/5 border-white/15 text-white hover:bg-white/10"
+                }`}
+              >
+                <div className="w-full h-20 rounded-2xl overflow-hidden bg-black/40 mb-2 relative">
+                  {person.avatarUrl ? (
+                    <img
+                      src={person.avatarUrl}
+                      alt={person.firstName}
+                      className="w-full h-full object-cover object-center"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-sm font-semibold">
+                      {person.firstName[0]?.toUpperCase() ?? "R"}
+                    </div>
+                  )}
+
+                  <div className="absolute bottom-1.5 right-1.5 h-7 w-7 rounded-full bg-black/80 flex items-center justify-center text-[11px] font-semibold">
+                    {person.firstName[0]?.toUpperCase() ?? "R"}
+                  </div>
+                </div>
+
+                <span className="text-[11px] font-semibold truncate w-full text-left block">
+                  {person.firstName}
+                </span>
+                <span
+                  className={`text-[10px] ${
+                    isActive ? "text-black/70" : "text-white/60"
+                  }`}
+                >
+                  {person.postCount} post{person.postCount === 1 ? "" : "s"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="pointer-events-none absolute left-0 top-0 h-full w-6 bg-gradient-to-r from-[#050814] to-transparent" />
+        <div className="pointer-events-none absolute right-0 top-0 h-full w-6 bg-gradient-to-l from-[#050814] to-transparent" />
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Public post card                                                   */
+/* ------------------------------------------------------------------ */
+
+type PublicPostCardProps = {
+  post: Post;
+  onReact: (postId: string, emoji: ReactionEmoji) => void;
+  onTip: (postId: string) => void;
+  onBoost: (postId: string) => void;
+  onSpin: (postId: string) => void;
+};
+
+function PublicPostCard({
+  post,
+  onReact,
+  onTip,
+  onBoost,
+  onSpin,
+}: PublicPostCardProps) {
+  const created = new Date(post.created_at);
+  const [pulse, setPulse] = useState(false);
+
+  const timeLabel = useMemo(() => {
+    const seconds = Math.floor((Date.now() - created.getTime()) / 1000);
+    if (seconds < 60) return "Just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return created.toLocaleDateString();
+  }, [created]);
+
+  const displayName = useMemo(() => {
+    if (!post.user_email) return "Someone";
+
+    const [localPart] = post.user_email.split("@");
+    const cleaned = localPart.replace(/\W+/g, " ").trim();
+
+    return cleaned || post.user_email;
+  }, [post.user_email]);
+
+  const isVideo = !!post.image_url?.match(/\.(mp4|webm|ogg)$/i);
+
+  const triggerPulse = () => {
+    setPulse(true);
+    setTimeout(() => setPulse(false), 350);
+  };
+
+  return (
+    <article
+      className={`rounded-2xl bg-[#070b1b] border border-white/10 p-3 sm:p-4 shadow-md shadow-black/30 transition-all duration-300 ${
+        pulse ? "ring-2 ring-emerald-400/40 scale-[1.01]" : ""
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+            {post.user_email?.[0]?.toUpperCase() ?? "R"}
+          </div>
+          <div className="flex flex-col">
+            {post.user_email ? (
+              <Link
+                href={`/u/${encodeURIComponent(post.user_email)}`}
+                className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px] hover:underline"
+              >
+                {displayName}
+              </Link>
+            ) : (
+              <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
+                {displayName}
+              </span>
+            )}
+            <span className="text-[11px] text-white/40">{timeLabel}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Media */}
+      <div className="overflow-hidden rounded-xl bg-black/40">
+        {isVideo ? (
+          <video
+            src={post.image_url}
+            className="w-full h-auto block"
+            controls
+            playsInline
+          />
+        ) : (
+          <img
+            src={post.image_url}
+            alt={post.caption}
+            className="w-full h-auto block"
+          />
+        )}
+      </div>
+
+      {/* Caption */}
+      {post.caption && (
+        <p className="mt-2 text-sm text-white/90 break-words">
+          {post.caption}
+        </p>
+      )}
+
+      {/* Support counts */}
+      {(post.tip_count ?? 0) +
+        (post.boost_count ?? 0) +
+        (post.spin_count ?? 0) > 0 && (
+        <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-white/60">
+          {!!post.tip_count && (
+            <span>
+              💸 {post.tip_count} tip{post.tip_count === 1 ? "" : "s"}
+            </span>
+          )}
+          {!!post.boost_count && (
+            <span>
+              🚀 {post.boost_count} boost{post.boost_count === 1 ? "" : "s"}
+            </span>
+          )}
+          {!!post.spin_count && (
+            <span>
+              🌀 {post.spin_count} spin{post.spin_count === 1 ? "" : "s"}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Tip / Boost / Spin row */}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            triggerPulse();
+            onTip(post.id);
+          }}
+          className="px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/50 text-[11px] font-medium text-emerald-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
+        >
+          Tip A$2
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerPulse();
+            onBoost(post.id);
+          }}
+          className="px-3 py-1.5 rounded-full bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-medium text-indigo-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
+        >
+          Boost A$5
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            triggerPulse();
+            onSpin(post.id);
+          }}
+          className="px-3 py-1.5 rounded-full bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 text-[11px] font-medium text-pink-200 transition-transform duration-150 hover:-translate-y-0.5 active:scale-95"
+        >
+          Spin A$1
+        </button>
+      </div>
+
+      {/* Reactions */}
+      <div className="mt-3 flex items-center justify-between">
+        <div className="flex gap-2">
+          {REACTION_EMOJIS.map((emoji) => {
+            const count = post.reactions?.[emoji] ?? 0;
+
+            return (
+              <button
+                key={emoji}
+                type="button"
+                aria-label={`React ${emoji}`}
+                onClick={() => onReact(post.id, emoji)}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/0 hover:bg-white/10 text-lg"
+              >
+                <span>{emoji}</span>
+                {count > 0 && (
+                  <span className="ml-1 text-[11px] text-white/70 leading-none">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Purchase choice sheet                                              */
+/* ------------------------------------------------------------------ */
+
+type PurchaseChoiceSheetProps = {
+  pending: PendingPurchase;
+  onClose: () => void;
+  onSingle: () => void;
+  onPack: () => void;
+};
+
+function PurchaseChoiceSheet({
+  pending,
+  onClose,
+  onSingle,
+  onPack,
+}: PurchaseChoiceSheetProps) {
+  const modeLabel =
+    pending.mode === "tip"
+      ? "Tip"
+      : pending.mode === "boost"
+      ? "Boost"
+      : "Spin";
+
+  const singleAmount =
+    pending.mode === "tip"
+      ? "A$2"
+      : pending.mode === "boost"
+      ? "A$5"
+      : "A$1";
+
+  const packLabel =
+    pending.mode === "tip"
+      ? "tip pack"
+      : pending.mode === "boost"
+      ? "boost pack"
+      : "spin pack";
+
+  return (
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">
+            Support this post with a {modeLabel}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-xs text-white/50 hover:text-white"
+          >
+            Close
+          </button>
+        </div>
+
+        <p className="text-xs text-white/60">
+          Choose a one-off {modeLabel.toLowerCase()} or grab a pack so you
+          don&apos;t have to check out every time.
+        </p>
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+          <button
+            type="button"
+            onClick={onSingle}
+            className="flex-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/60 px-3 py-2 text-xs text-left"
+          >
+            <div className="font-semibold">
+              Single {modeLabel} ({singleAmount})
+            </div>
+            <div className="text-[11px] text-emerald-200/80">
+              Quick one-off support
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onPack}
+            className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-xs text-left"
+          >
+            <div className="font-semibold">Buy {packLabel}</div>
+            <div className="text-[11px] text-white/70">
+              Better value, more {modeLabel.toLowerCase()}s
+            </div>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full text-[11px] text-white/45 hover:text-white/70 mt-1"
+        >
+          Maybe later
+        </button>
+      </div>
+    </div>
+  );
+}
