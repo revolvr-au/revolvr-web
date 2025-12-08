@@ -6,7 +6,7 @@ type HostData = {
   sessionId: string;
   roomName: string;
   hostIdentity: string;
-  hostToken: string;      // always a JWT string after we normalise
+  hostToken: string; // always a JWT string
   livekitUrl: string;
   title?: string | null;
 };
@@ -18,49 +18,49 @@ export default function HostLivePage() {
   const [error, setError] = useState<string | null>(null);
 
   async function startLive() {
-  setLoading(true);
-  setError(null);
+    setLoading(true);
+    setError(null);
 
-  try {
-    const res = await fetch("/api/live/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
+    try {
+      const res = await fetch("/api/live/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
 
-    console.log("create response status", res.status);
+      console.log("create response status", res.status);
 
-    if (!res.ok) {
-      const text = await res.text();
-      console.error("create error body:", text);
-      throw new Error(`API error ${res.status}`);
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("create error body:", text);
+        throw new Error(`API error ${res.status}`);
+      }
+
+      const raw = await res.json();
+      console.log("create data RAW", raw);
+
+      // Normalise hostToken so it's ALWAYS a JWT string
+      const fixed: HostData = {
+        ...raw,
+        hostToken:
+          typeof raw.hostToken === "string"
+            ? raw.hostToken
+            : raw.hostToken?.token ?? "",
+      };
+
+      console.log("create data (fixed)", fixed);
+      console.log("HOST TOKEN:", fixed.hostToken);
+
+      setData(fixed);
+    } catch (e: any) {
+      console.error("startLive error", e);
+      setError(e?.message ?? "Failed to start live");
+    } finally {
+      setLoading(false);
     }
-
-    const raw = await res.json();
-    console.log("create data RAW", raw);   // 👈 NEW
-
-    // Normalise hostToken so it's ALWAYS a string JWT
-    const fixed: HostData = {
-      ...raw,
-      hostToken:
-        typeof raw.hostToken === "string"
-          ? raw.hostToken
-          : raw.hostToken?.token ?? "",
-    };
-
-    console.log("create data (fixed)", fixed);
-    console.log("HOST TOKEN:", fixed.hostToken);
-
-    setData(fixed);
-  } catch (e: any) {
-    console.error("startLive error", e);
-    setError(e?.message ?? "Failed to start live");
-  } finally {
-    setLoading(false);
   }
-}
 
-  // Initial screen: form + Go Live button
+  // Initial screen: title input + Go Live button
   if (!data) {
     return (
       <div style={{ padding: 24 }}>
@@ -91,7 +91,7 @@ export default function HostLivePage() {
   return (
     <LiveKitRoom
       serverUrl={data.livekitUrl}
-      token={data.hostToken}  // ✅ now a proper JWT string
+      token={data.hostToken}
       connect={true}
       video={true}
       audio={true}

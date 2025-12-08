@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { randomUUID } from "crypto";
 import { AccessToken } from "livekit-server-sdk";
 
-// 👇 add `!` so TS treats them as plain strings
+// non-null assertions so TS treats these as plain strings
 const livekitUrl = process.env.LIVEKIT_URL!;
 const livekitApiKey = process.env.LIVEKIT_API_KEY!;
 const livekitApiSecret = process.env.LIVEKIT_API_SECRET!;
@@ -26,7 +26,7 @@ if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
   );
 }
 
-// 🔹 async because toJwt() returns a Promise<string>
+// async because toJwt() may return a Promise<string>
 async function createHostToken(
   roomName: string,
   identity: string
@@ -53,7 +53,7 @@ async function createHostToken(
 
   return {
     token: jwt,
-    url: livekitUrl, // ✅ now typed as plain string
+    url: livekitUrl,
   };
 }
 
@@ -78,7 +78,9 @@ export default async function handler(
 
   const { title } = req.body ?? {};
 
+  // TODO: replace dummyUserId with real Supabase user.id
   const dummyUserId = "user-123";
+
   const roomName = `revolvr-${randomUUID()}`;
   const hostIdentity = `host-${dummyUserId}-${roomName}`;
 
