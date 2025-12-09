@@ -1,13 +1,13 @@
 // src/pages/live/[sessionId].tsx
-
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
 type ViewerData = {
-  token: string;
+  roomName: string;
+  viewerIdentity: string;
+  viewerToken: string;
   livekitUrl: string;
-  identity: string;
 };
 
 export default function ViewerPage() {
@@ -15,56 +15,68 @@ export default function ViewerPage() {
   const { sessionId } = router.query;
 
   const [data, setData] = useState<ViewerData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!sessionId) return;
+    if (!router.isReady) return;
 
-    const id =
-      typeof sessionId === "string" ? sessionId : sessionId[0] ?? "";
-
-    if (!id) return;
-
-    async function fetchToken() {
-      try {
-        const res = await fetch(`/api/live/${id}/viewer`);
-        if (!res.ok) {
-          const text = await res.text();
-          console.error("viewer token error:", res.status, text);
-          setError(`Failed to load stream (${res.status})`);
-          return;
-        }
-        const json = (await res.json()) as ViewerData;
-        setData(json);
-      } catch (e) {
-        console.error("viewer token fetch error", e);
-        setError("Network error loading stream");
-      }
+    if (typeof sessionId !== "string") {
+      setError("Missing session id");
+      setLoading(false);
+      return;
     }
 
-    fetchToken();
-  }, [sessionId]);
+    const fetchToken = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  if (error) {
-    return <p style={{ padding: 24, color: "red" }}>{error}</p>;
+        const res = await fetch(`/api/live/${sessionId}/viewer`);
+
+        if (!res.ok) {
+          const text = await res.text();
+          console.error("[viewer] error body:", text);
+          throw new Error(`API error ${res.status}`);
+        }
+
+        const json = (await res.json()) as ViewerData;
+        console.log("[viewer] got data", json);
+        setData(json);
+      } catch (e: any) {
+        console.error("[viewer] fetch error", e);
+        setError(e?.message ?? "Failed to load stream");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchToken();
+  }, [router.isReady, sessionId]);
+
+  if (loading) {
+    return <p style={{ padding: 24 }}>Loading stream…</p>;
   }
 
-  if (!data) {
-    return <p style={{ padding: 24 }}>Loading stream…</p>;
+  if (error || !data) {
+    return (
+      <p style={{ padding: 24, color: "red" }}>
+        Error loading stream: {error ?? "Unknown error"}
+      </p>
+    );
   }
 
   return (
     <LiveKitRoom
       serverUrl={data.livekitUrl}
-      token={data.token}
+      token={data.viewerToken}
       connect={true}
-      audio={true}
       video={true}
+      audio={true}
     >
-      {/* Simple viewer UI */}
       <div style={{ padding: 16 }}>
         <span style={{ color: "red", fontWeight: "bold" }}>● LIVE</span>
-        <span style={{ marginLeft: 8 }}>Viewer</span>
+        <span style={{ marginLeft: 8 }}>Watching stream</span>
       </div>
       <VideoConference />
     </LiveKitRoom>

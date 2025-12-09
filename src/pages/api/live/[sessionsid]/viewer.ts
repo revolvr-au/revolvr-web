@@ -1,25 +1,63 @@
-// src/pages/api/live/[sessionsid]/viewer.ts
-// TEMP: stub viewer endpoint so that production build can succeed.
-// The real viewer token logic will be added later once Live is launched.
-
 import type { NextApiRequest, NextApiResponse } from "next";
+import { AccessToken } from "livekit-server-sdk";
 
-type Data = {
-  ok: boolean;
-  message: string;
-  sessionId?: string;
-};
+const livekitUrl = process.env.LIVEKIT_URL!;
+const livekitApiKey = process.env.LIVEKIT_API_KEY!;
+const livekitApiSecret = process.env.LIVEKIT_API_SECRET!;
 
-export default function handler(
+if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
+  throw new Error(
+    "Missing LiveKit env vars (LIVEKIT_URL / LIVEKIT_API_KEY / LIVEKIT_API_SECRET)"
+  );
+}
+
+type Data =
+  | {
+      roomName: string;
+      viewerIdentity: string;
+      viewerToken: string;
+      livekitUrl: string;
+    }
+  | { error: string };
+
+export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  // folder is [sessionsid], so the query key is "sessionsid"
   const { sessionsid } = req.query;
 
-  res.status(200).json({
-    ok: true,
-    message:
-      "Viewer endpoint is stubbed for now. Live viewing will be wired up later.",
-    sessionId: typeof sessionsid === "string" ? sessionsid : undefined,
+  const sessionId =
+    typeof sessionsid === "string" ? sessionsid : sessionsid?.[0];
+
+  if (!sessionId) {
+    return res.status(400).json({ error: "Missing or invalid sessionId" });
+  }
+
+  const roomName = sessionId;
+  const viewerIdentity = `viewer-${Math.random().toString(36).slice(2, 10)}`;
+
+  const at = new AccessToken(livekitApiKey, livekitApiSecret, {
+    identity: viewerIdentity,
+  });
+
+  at.addGrant({
+    room: roomName,
+    roomJoin: true,
+    canPublish: false,
+    canSubscribe: true,
+  });
+
+  const jwt = await at.toJwt();
+
+  return res.status(200).json({
+    roomName,
+    viewerIdentity,
+    viewerToken: jwt,
+    livekitUrl,
   });
 }
