@@ -1,5 +1,5 @@
 // src/pages/live/host.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
@@ -7,7 +7,7 @@ type HostData = {
   sessionId: string;
   roomName: string;
   hostIdentity: string;
-  hostToken: string; // JWT string
+  hostToken: string;
   livekitUrl: string;
   title?: string | null;
 };
@@ -18,8 +18,18 @@ export default function HostLivePage() {
   const [data, setData] = useState<HostData | null>(null);
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+
+  // Build viewer URL once we have sessionId
+  useEffect(() => {
+    if (!data) return;
+    if (typeof window === "undefined") return;
+
+    const origin = window.location.origin;
+    setViewerUrl(`${origin}/live/${data.sessionId}`);
+  }, [data]);
 
   async function startLive() {
     setLoading(true);
@@ -63,73 +73,88 @@ export default function HostLivePage() {
     }
   }
 
-  async function copyViewerLink() {
+  function handleCopyViewerLink() {
     if (!data) return;
 
     const url =
-      typeof window !== "undefined"
+      viewerUrl ??
+      (typeof window !== "undefined"
         ? `${window.location.origin}/live/${data.sessionId}`
-        : "";
+        : "");
 
     if (!url) return;
 
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        console.log("Viewer link copied:", url);
+      })
+      .catch((err) => {
+        console.error("Failed to copy viewer link", err);
+      });
+  }
+
+  async function handleEndStream() {
+    if (!data) return;
+
+    setEnding(true);
+
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      } else {
-        // Fallback – show the URL so they can copy manually
-        alert(`Viewer link: ${url}`);
+      const res = await fetch("/api/live/end", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId: data.sessionId }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("end error body:", text);
       }
-    } catch (err) {
-      console.error("Failed to copy viewer link", err);
-      alert(`Viewer link: ${url}`);
+    } catch (e) {
+      console.error("handleEndStream error", e);
+    } finally {
+      setEnding(false);
+      // Unmounting LiveKitRoom will close the connection.
+      router.push("/public-feed");
     }
   }
 
-  function endStream() {
-    // For now: just leave the room by navigating away.
-    // LiveKit disconnects when this page unmounts.
-    router.push("/public-feed");
-  }
-
-  // Initial screen: form + Go Live button
+  // Pre-stream screen
   if (!data) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-black text-white">
         <div className="w-full max-w-xl px-6">
-          <h1 className="text-2xl font-semibold mb-4">Host Live Stream</h1>
+          <h1 className="text-3xl font-semibold mb-6">Host Live Stream</h1>
 
-          <label className="block text-sm text-gray-300 mb-1">
+          <label className="block text-sm text-gray-300 mb-2">
             Stream title
           </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Friday night hangout"
-            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-sm outline-none focus:border-pink-500"
+            className="w-full rounded-md bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500"
           />
+
+          {error && (
+            <p className="text-red-400 text-sm mt-3">
+              Error: {error} (check console)
+            </p>
+          )}
 
           <button
             onClick={startLive}
             disabled={loading}
-            className="mt-4 inline-flex items-center justify-center rounded-full bg-pink-600 px-5 py-2 text-sm font-semibold shadow-lg hover:bg-pink-500 disabled:opacity-60"
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-pink-500 px-6 py-2 text-sm font-semibold text-white hover:bg-pink-600 disabled:opacity-60"
           >
             {loading ? "Preparing…" : "Go Live"}
           </button>
-
-          {error && (
-            <p className="mt-3 text-sm text-red-400">
-              Error: {error} (check console)
-            </p>
-          )}
         </div>
       </div>
     );
   }
 
-  // LiveKit room once we have the token + URL
+  // Live view with controls + LiveKit room
   return (
     <LiveKitRoom
       serverUrl={data.livekitUrl}
@@ -138,35 +163,42 @@ export default function HostLivePage() {
       video={true}
       audio={true}
     >
-      {/* Top bar: LIVE + title + share + end buttons */}
-      <header className="flex items-center justify-between px-4 py-3 bg-black text-white border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="font-semibold">LIVE</span>
-          <span className="ml-2 text-sm text-gray-300 truncate max-w-xs">
-            {data.title ?? "Untitled stream"}
-          </span>
-        </div>
+      <div className="min-h-screen bg-black text-white flex flex-col">
+        {/* Top control bar */}
+        <header className="flex items-center justify-between px-6 py-3 border-b border-white/10 bg-black/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="font-semibold text-sm">LIVE</span>
+            <span className="text-sm text-gray-300 truncate max-w-xs">
+              {data.title ?? "Untitled stream"}
+            </span>
+          </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={copyViewerLink}
-            className="rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-medium hover:bg-white/10"
-          >
-            {shareCopied ? "Link copied" : "Copy viewer link"}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleCopyViewerLink}
+              className="text-xs px-3 py-1 rounded-full border border-white/30 hover:bg-white/10"
+            >
+              Copy viewer link
+            </button>
 
-          <button
-            onClick={endStream}
-            className="rounded-full bg-red-600 px-3 py-1 text-xs font-semibold hover:bg-red-500"
-          >
-            End Stream
-          </button>
-        </div>
-      </header>
+            <button
+              type="button"
+              onClick={handleEndStream}
+              disabled={ending}
+              className="text-xs px-4 py-1.5 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-60"
+            >
+              {ending ? "Ending…" : "End Stream"}
+            </button>
+          </div>
+        </header>
 
-      {/* Default LiveKit UI for camera/mic/screen controls */}
-      <VideoConference />
+        {/* LiveKit UI */}
+        <main className="flex-1 min-h-0">
+          <VideoConference />
+        </main>
+      </div>
     </LiveKitRoom>
   );
 }
