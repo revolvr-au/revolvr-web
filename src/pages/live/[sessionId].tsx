@@ -6,8 +6,9 @@ import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 type ViewerData = {
   roomName: string;
   viewerIdentity: string;
-  viewerToken: string;
+  viewerToken: string; // JWT string
   livekitUrl: string;
+  title?: string | null;
 };
 
 export default function ViewerPage() {
@@ -15,24 +16,21 @@ export default function ViewerPage() {
   const { sessionId } = router.query;
 
   const [data, setData] = useState<ViewerData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!router.isReady) return;
+    if (!sessionId) return;
+    const id = String(sessionId);
 
-    if (typeof sessionId !== "string") {
-      setError("Missing session id");
-      setLoading(false);
-      return;
-    }
-
-    const fetchToken = async () => {
+    const load = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const res = await fetch(`/api/live/${sessionId}/viewer`);
+        const res = await fetch(`/api/live/${encodeURIComponent(id)}/viewer`);
+
+        console.log("[viewer] response status", res.status);
 
         if (!res.ok) {
           const text = await res.text();
@@ -40,45 +38,78 @@ export default function ViewerPage() {
           throw new Error(`API error ${res.status}`);
         }
 
-        const json = (await res.json()) as ViewerData;
-        console.log("[viewer] got data", json);
-        setData(json);
+        const raw = await res.json();
+        console.log("[viewer] RAW data", raw);
+
+        const fixed: ViewerData = {
+          ...raw,
+          viewerToken:
+            typeof raw.viewerToken === "string"
+              ? raw.viewerToken
+              : raw.viewerToken?.token ?? "",
+        };
+
+        console.log("[viewer] fixed data", fixed);
+        setData(fixed);
       } catch (e: any) {
-        console.error("[viewer] fetch error", e);
-        setError(e?.message ?? "Failed to load stream");
+        console.error("[viewer] load error", e);
+        setError(e?.message ?? "Failed to join stream");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchToken();
-  }, [router.isReady, sessionId]);
+    void load();
+  }, [sessionId]);
 
-  if (loading) {
-    return <p style={{ padding: 24 }}>Loading stream…</p>;
+  const title = data?.title ?? "Watching stream";
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="space-y-2 text-center px-4">
+          <p className="text-red-400 font-semibold">Failed to join stream</p>
+          <p className="text-sm text-gray-400">{error}</p>
+        </div>
+      </div>
+    );
   }
 
-  if (error || !data) {
+  if (!data || loading) {
     return (
-      <p style={{ padding: 24, color: "red" }}>
-        Error loading stream: {error ?? "Unknown error"}
-      </p>
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <p className="text-gray-300">Connecting to stream…</p>
+      </div>
     );
   }
 
   return (
-    <LiveKitRoom
-      serverUrl={data.livekitUrl}
-      token={data.viewerToken}
-      connect={true}
-      video={true}
-      audio={true}
-    >
-      <div style={{ padding: 16 }}>
-        <span style={{ color: "red", fontWeight: "bold" }}>● LIVE</span>
-        <span style={{ marginLeft: 8 }}>Watching stream</span>
-      </div>
-      <VideoConference />
-    </LiveKitRoom>
+    <div className="min-h-screen bg-black text-white flex flex-col">
+      {/* Top LIVE bar */}
+      <header className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="font-semibold">LIVE</span>
+          <span className="ml-2 text-sm text-gray-300 truncate max-w-xs">
+            {title}
+          </span>
+        </div>
+      </header>
+
+      {/* Centered video */}
+      <main className="flex-1 flex items-center justify-center p-2 md:p-4">
+        <div className="w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden border border-white/10">
+          <LiveKitRoom
+            serverUrl={data.livekitUrl}
+            token={data.viewerToken}
+            connect={true}
+            video={true}
+            audio={true}
+          >
+            <VideoConference />
+          </LiveKitRoom>
+        </div>
+      </main>
+    </div>
   );
 }
