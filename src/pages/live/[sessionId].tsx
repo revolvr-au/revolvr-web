@@ -3,113 +3,229 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
-type ViewerData = {
-  roomName: string;
-  viewerIdentity: string;
-  viewerToken: string; // JWT string
-  livekitUrl: string;
-  title?: string | null;
-};
+type ViewerState =
+  | { kind: "loading" }
+  | { kind: "error"; message: string }
+  | { kind: "ended"; title?: string | null }
+  | { kind: "live"; title?: string | null; token: string; livekitUrl: string };
 
 export default function ViewerPage() {
   const router = useRouter();
-  const { sessionId } = router.query;
 
-  const [data, setData] = useState<ViewerData | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<ViewerState>({ kind: "loading" });
 
   useEffect(() => {
-    if (!sessionId) return;
-    const id = String(sessionId);
+    const id = router.query.sessionId;
 
-    const load = async () => {
+    if (!id || typeof id !== "string") return;
+
+    let cancelled = false;
+
+    async function load() {
       try {
-        setLoading(true);
-        setError(null);
+        const res = await fetch(
+          `/api/live/${encodeURIComponent(id)}/viewer`
+        );
 
-        const res = await fetch(`/api/live/${encodeURIComponent(id)}/viewer`);
+        if (cancelled) return;
 
-        console.log("[viewer] response status", res.status);
+        if (res.status === 404 || res.status === 410) {
+          setState({ kind: "ended" });
+          return;
+        }
 
         if (!res.ok) {
           const text = await res.text();
-          console.error("[viewer] error body:", text);
-          throw new Error(`API error ${res.status}`);
+          console.error("viewer error body:", text);
+          setState({
+            kind: "error",
+            message: "Could not load stream.",
+          });
+          return;
         }
 
         const raw = await res.json();
-        console.log("[viewer] RAW data", raw);
+        console.log("viewer data RAW", raw);
 
-        const fixed: ViewerData = {
-          ...raw,
-          viewerToken:
-            typeof raw.viewerToken === "string"
-              ? raw.viewerToken
-              : raw.viewerToken?.token ?? "",
-        };
+        const status = raw.status as string | undefined;
 
-        console.log("[viewer] fixed data", fixed);
-        setData(fixed);
-      } catch (e: any) {
-        console.error("[viewer] load error", e);
-        setError(e?.message ?? "Failed to join stream");
-      } finally {
-        setLoading(false);
+        if (status && status !== "live") {
+          setState({ kind: "ended", title: raw.title ?? null });
+          return;
+        }
+
+        const token: string | undefined =
+          raw.viewerToken ?? raw.token ?? raw.hostToken;
+        const livekitUrl: string | undefined = raw.livekitUrl ?? raw.url;
+
+        if (!token || !livekitUrl) {
+          setState({
+            kind: "error",
+            message: "Stream is not available right now.",
+          });
+          return;
+        }
+
+        setState({
+          kind: "live",
+          title: raw.title ?? null,
+          token,
+          livekitUrl,
+        });
+      } catch (e) {
+        console.error("viewer load error", e);
+        if (!cancelled) {
+          setState({
+            kind: "error",
+            message: "Could not load stream.",
+          });
+        }
       }
+    }
+
+    load();
+
+    return () => {
+      cancelled = true;
     };
+  }, [router.query.sessionId]);
 
-    void load();
-  }, [sessionId]);
+  // --- UI states -----------------------------------------------------------
 
-  const title = data?.title ?? "Watching stream";
-
-  if (error) {
+  if (state.kind === "loading") {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="space-y-2 text-center px-4">
-          <p className="text-red-400 font-semibold">Failed to join stream</p>
-          <p className="text-sm text-gray-400">{error}</p>
+      <div
+        style={{
+          minHeight: "100vh",
+          backgroundColor: "#000",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <p>Loading stream…</p>
+      </div>
+    );
+  }
+
+  if (state.kind === "error") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          backgroundColor: "#000",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          textAlign: "center",
+        }}
+      >
+        <div>
+          <h1 style={{ marginBottom: 12 }}>Stream unavailable</h1>
+          <p style={{ marginBottom: 24, color: "#ccc" }}>{state.message}</p>
+          <button
+            onClick={() => router.push("/public-feed")}
+            style={{
+              padding: "10px 24px",
+              borderRadius: 999,
+              border: "none",
+              background: "#ff0055",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Back to feed
+          </button>
         </div>
       </div>
     );
   }
 
-  if (!data || loading) {
+  if (state.kind === "ended") {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <p className="text-gray-300">Connecting to stream…</p>
+      <div
+        style={{
+          minHeight: "100vh",
+          backgroundColor: "#000",
+          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 24,
+          textAlign: "center",
+        }}
+      >
+        <div>
+          <h1 style={{ marginBottom: 12 }}>This stream has ended</h1>
+          {state.title && (
+            <p style={{ marginBottom: 8, color: "#aaa" }}>{state.title}</p>
+          )}
+          <p style={{ marginBottom: 24, color: "#888", fontSize: 14 }}>
+            Check the feed for other live broadcasts.
+          </p>
+          <button
+            onClick={() => router.push("/public-feed")}
+            style={{
+              padding: "10px 24px",
+              borderRadius: 999,
+              border: "none",
+              background: "#ff0055",
+              color: "#fff",
+              cursor: "pointer",
+              fontWeight: 600,
+            }}
+          >
+            Back to feed
+          </button>
+        </div>
       </div>
     );
   }
 
+  // LIVE state
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Top LIVE bar */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-          <span className="font-semibold">LIVE</span>
-          <span className="ml-2 text-sm text-gray-300 truncate max-w-xs">
-            {title}
+    <div style={{ minHeight: "100vh", backgroundColor: "#000", color: "#fff" }}>
+      <header
+        style={{
+          height: 56,
+          display: "flex",
+          alignItems: "center",
+          padding: "0 24px",
+          borderBottom: "1px solid #222",
+          background: "rgba(0,0,0,0.85)",
+        }}
+      >
+        <span
+          style={{
+            display: "inline-block",
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            backgroundColor: "#ff0055",
+            marginRight: 8,
+          }}
+        />
+        <span style={{ fontWeight: 600 }}>LIVE</span>
+        {state.title && (
+          <span style={{ marginLeft: 12, color: "#aaa", fontSize: 14 }}>
+            {state.title}
           </span>
-        </div>
+        )}
       </header>
 
-      {/* Centered video */}
-      <main className="flex-1 flex items-center justify-center p-2 md:p-4">
-        <div className="w-full max-w-5xl aspect-video bg-black rounded-xl overflow-hidden border border-white/10">
-          <LiveKitRoom
-            serverUrl={data.livekitUrl}
-            token={data.viewerToken}
-            connect={true}
-            video={true}
-            audio={true}
-          >
-            <VideoConference />
-          </LiveKitRoom>
-        </div>
-      </main>
+      <LiveKitRoom
+        serverUrl={state.livekitUrl}
+        token={state.token}
+        connect={true}
+        video={true}
+        audio={true}
+      >
+        <VideoConference />
+      </LiveKitRoom>
     </div>
   );
 }

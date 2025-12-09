@@ -1,0 +1,4 @@
+/* Hide the identity label like "host-user-123-..." */
+.lk-participant-metadata {
+  display: none !important;
+}
