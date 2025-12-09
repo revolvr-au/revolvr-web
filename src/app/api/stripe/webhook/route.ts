@@ -108,7 +108,9 @@ export async function POST(req: NextRequest) {
     const postIdRaw = metadata.postId as string | undefined;
     const postId = looksLikeUuid(postIdRaw);
 
-    console.log("[Webhook] spin candidate:", {
+    const supabase = getSupabaseAdmin();
+
+    console.log("[Webhook] spin/live candidate:", {
       email,
       postIdRaw,
       postIdAfterValidation: postId,
@@ -117,10 +119,54 @@ export async function POST(req: NextRequest) {
       session_id: session.id,
     });
 
-    if (kind === "spin") {
-      try {
-        const supabase = getSupabaseAdmin();
+    // ------------------------------------------------------------
+    // 1) LIVE STREAM SUPPORT (takes priority if sessionId + mode present)
+    // ------------------------------------------------------------
+    const liveSessionId = metadata.sessionId as string | undefined;
+    const liveMode = metadata.mode as string | undefined; // "tip" | "boost" | "spin"
+    const liveAmountCentsMeta = metadata.amountCents as string | undefined;
+    const liveUserIdMeta = (metadata.userId as string | undefined) ?? null;
 
+    if (liveSessionId && liveMode) {
+      try {
+        const amountCents =
+          liveAmountCentsMeta != null
+            ? Number(liveAmountCentsMeta)
+            : session.amount_total ?? null;
+
+        const { error } = await supabase.from("live_support").insert({
+          session_id: liveSessionId,                // e.g. "revolvr-xxxx-uuid"
+          user_id: liveUserIdMeta || email || null, // prefer userId, fall back to email
+          mode: liveMode,                           // "tip" | "boost" | "spin"
+          amount_cents: amountCents,
+          checkout_session_id: session.id,
+        });
+
+        if (error) {
+          console.error("[Webhook] ❌ Error recording live support:", {
+            message: error.message,
+            details: (error as any).details,
+            hint: (error as any).hint,
+            code: (error as any).code,
+          });
+        } else {
+          console.log(
+            "[Webhook] ✅ Recorded live support for session",
+            liveSessionId,
+            "mode",
+            liveMode
+          );
+        }
+      } catch (err) {
+        console.error("[Webhook] ❌ Fatal error recording live support:", err);
+      }
+    }
+
+    // ------------------------------------------------------------
+    // 2) SPINNER SPINS (no sessionId => treat as normal spin)
+    // ------------------------------------------------------------
+    else if (kind === "spin") {
+      try {
         const { error } = await supabase.from("spinner_spins").insert({
           user_email: email || null,
           post_id: postId, // will be NULL if invalid
@@ -148,8 +194,15 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         console.error("[Webhook] ❌ Fatal error before insert:", err);
       }
-    } else {
-      console.log("[Webhook] Not a spin payment, skipping DB insert");
+    }
+
+    // ------------------------------------------------------------
+    // 3) Anything else – ignore, but log
+    // ------------------------------------------------------------
+    else {
+      console.log(
+        "[Webhook] Not a spin or live-support payment, skipping DB insert"
+      );
     }
   } else {
     console.log("[Webhook] Ignoring non-checkout.session.completed event");

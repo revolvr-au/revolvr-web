@@ -21,7 +21,7 @@ type SupportMode = "tip" | "boost" | "spin";
 
 export default function ViewerPage() {
   const router = useRouter();
-  const { sessionId } = router.query;
+  const { sessionId, success } = router.query;
 
   const [data, setData] = useState<ViewerData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,12 +36,28 @@ export default function ViewerPage() {
     null
   );
 
-  // 🔐 Normalise sessionId for TS
+  // 🔐 Normalise sessionId so TypeScript is happy
   const id = useMemo(() => {
     if (typeof sessionId === "string") return sessionId;
     if (Array.isArray(sessionId) && sessionId.length > 0) return sessionId[0];
     return "";
   }, [sessionId]);
+
+  // 👤 Load logged-in viewer email
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUserEmail(user?.email ?? null);
+      } catch (e) {
+        console.error("viewer user load error", e);
+      }
+    };
+
+    loadUser();
+  }, []);
 
   // 🔄 Load viewer token + LiveKit details
   useEffect(() => {
@@ -90,21 +106,18 @@ export default function ViewerPage() {
     };
   }, [id]);
 
-  // 👤 Load logged-in viewer email
+  // 🎉 Show a simple thanks after returning from Stripe
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        setUserEmail(user?.email ?? null);
-      } catch (e) {
-        console.error("viewer user load error", e);
-      }
-    };
-
-    loadUser();
-  }, []);
+    if (
+      success === "1" ||
+      success === "true" ||
+      success === "success" ||
+      success === "ok"
+    ) {
+      // Super simple for now – we can swap to a toast later
+      alert("Thanks for supporting the creator! 💖");
+    }
+  }, [success]);
 
   const shareUrl =
     typeof window !== "undefined" && id
@@ -113,7 +126,8 @@ export default function ViewerPage() {
 
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      const redirect = encodeURIComponent(`/live/${encodeURIComponent(id || "")}`);
+      const redirectTarget = id ? `/live/${encodeURIComponent(id)}` : "/public-feed";
+      const redirect = encodeURIComponent(redirectTarget);
       router.push(`/login?redirectTo=${redirect}`);
       return false;
     }
@@ -133,29 +147,27 @@ export default function ViewerPage() {
     }
   };
 
-  // 🔁 Stripe checkout for tips / boosts / spins
+  // 🔁 Stripe checkout for tips / boosts / spins (LIVE-SPECIFIC)
   const handleSupport = async (mode: SupportMode) => {
     if (!ensureLoggedIn()) return;
-    if (!data) return;
+    if (!data || !id) return;
 
     try {
       setSupportLoading(mode);
       const amountCents = singleAmountForMode(mode);
 
-      const res = await fetch("/api/payments/checkout", {
+      const res = await fetch("/api/live/support/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode,           // "tip" | "boost" | "spin"
-          userEmail,      // viewer’s email
-          amountCents,    // cents
-          postId: data.sessionId, // we reuse postId = live session ID
-          kind: "live",   // extra hint for backend (safe to ignore)
+          sessionId: id,
+          mode, // "tip" | "boost" | "spin"
+          amountCents,
         }),
       });
 
       if (!res.ok) {
-        console.error("checkout failed:", await res.text());
+        console.error("live support checkout failed:", await res.text());
         alert("Revolvr glitched out starting checkout. Try again.");
         return;
       }
@@ -167,7 +179,7 @@ export default function ViewerPage() {
         alert("Stripe did not return a checkout URL.");
       }
     } catch (e) {
-      console.error("support error", e);
+      console.error("live support error", e);
       alert("Something went wrong talking to Stripe 😵‍💫");
     } finally {
       setSupportLoading(null);
@@ -313,7 +325,8 @@ export default function ViewerPage() {
           justifyContent: "space-between",
           padding: "0 16px",
           borderBottom: "1px solid #111",
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)",
+          background:
+            "linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)",
           zIndex: 20,
         }}
       >
@@ -367,7 +380,7 @@ export default function ViewerPage() {
         }}
       >
         {/* Video area */}
-        <div style={{ flex: 1, minHeight: 0 }}>
+        <div style={{ flex: 1, minHeight: 0, paddingTop: 56 }}>
           <LiveKitRoom
             serverUrl={data.livekitUrl}
             token={data.viewerToken}
