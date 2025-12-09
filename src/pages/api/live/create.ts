@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { randomUUID } from "crypto";
 import { AccessToken } from "livekit-server-sdk";
-import { createServerSupabaseClient } from "@supabase/auth-helpers-nextjs";
+import { createServerClient } from "@supabase/auth-helpers-nextjs";
 
 const livekitUrl = process.env.LIVEKIT_URL!;
 const livekitApiKey = process.env.LIVEKIT_API_KEY!;
@@ -25,7 +25,7 @@ if (!livekitUrl || !livekitApiKey || !livekitApiSecret) {
   );
 }
 
-// 🔹 async because toJwt() returns a Promise<string>
+// Generate a host JWT for LiveKit
 async function createHostToken(
   roomName: string,
   identity: string
@@ -42,7 +42,7 @@ async function createHostToken(
   const jwt = await at.toJwt();
 
   console.log(
-    "LIVEKIT host token length:",
+    "[live/create] LIVEKIT host token length:",
     jwt.length,
     "room:",
     roomName,
@@ -75,29 +75,30 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // 🔐 Get the real Supabase user from cookies
-  const supabase = createServerSupabaseClient({ req, res });
+  // Supabase server client based on the incoming request/response
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { req, res }
+  );
+
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError) {
-    console.error("[live/create] supabase.auth.getUser error", userError);
-  }
-
-  if (!user) {
-    console.warn("[live/create] No authenticated user");
+  if (userError || !user) {
+    console.error("[live/create] auth error", userError);
     return res.status(401).json({ error: "Not authenticated" });
   }
 
   const { title } = req.body ?? {};
 
-  const hostId = user.id; // ✅ REAL Supabase user id
+  const hostId = user.id; // real Supabase user id
   const roomName = `revolvr-${randomUUID()}`;
   const hostIdentity = `host-${hostId}-${roomName}`;
 
-  // 📝 Record the live session in Supabase
+  // Log / register this live session in Supabase
   const { error: insertError } = await supabase.from("live_sessions").insert({
     room_name: roomName,
     host_id: hostId,
