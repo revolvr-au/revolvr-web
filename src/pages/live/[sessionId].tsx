@@ -3,181 +3,140 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
-type ViewerState =
-  | { kind: "loading" }
-  | { kind: "error"; message: string }
-  | { kind: "ended"; title?: string | null }
-  | { kind: "live"; title?: string | null; token: string; livekitUrl: string };
+type ViewerStatus = "loading" | "live" | "ended" | "error";
+
+type ViewerData = {
+  roomName: string;
+  viewerIdentity: string;
+  viewerToken: string;
+  livekitUrl: string;
+  status: "live" | "ended";
+  title?: string | null;
+};
 
 export default function ViewerPage() {
   const router = useRouter();
 
-  const [state, setState] = useState<ViewerState>({ kind: "loading" });
+  const [status, setStatus] = useState<ViewerStatus>("loading");
+  const [data, setData] = useState<ViewerData | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const id = router.query.sessionId;
+    if (!router.isReady) return;
 
-    if (!id || typeof id !== "string") return;
+    // 🔹 Normalise the dynamic route param to a plain string
+    const raw = router.query.sessionId;
+    let id: string | null = null;
+
+    if (typeof raw === "string") {
+      id = raw;
+    } else if (Array.isArray(raw) && raw.length > 0) {
+      id = raw[0];
+    }
+
+    if (!id) {
+      setError("Missing stream id in the URL.");
+      setStatus("error");
+      return;
+    }
 
     let cancelled = false;
 
-    async function load() {
+    const loadViewerData = async () => {
       try {
+        setStatus("loading");
+
         const res = await fetch(
           `/api/live/${encodeURIComponent(id)}/viewer`
         );
 
         if (cancelled) return;
 
-        if (res.status === 404 || res.status === 410) {
-          setState({ kind: "ended" });
-          return;
-        }
-
         if (!res.ok) {
+          if (res.status === 404) {
+            // No active session / not found → treat as ended
+            setStatus("ended");
+            return;
+          }
+
           const text = await res.text();
-          console.error("viewer error body:", text);
-          setState({
-            kind: "error",
-            message: "Could not load stream.",
-          });
+          console.error("[viewer] API error", res.status, text);
+          setError("Revolvr glitched out loading this stream.");
+          setStatus("error");
           return;
         }
 
-        const raw = await res.json();
-        console.log("viewer data RAW", raw);
+        const json = await res.json();
 
-        const status = raw.status as string | undefined;
+        const fixed: ViewerData = {
+          ...json,
+          viewerToken:
+            typeof json.viewerToken === "string"
+              ? json.viewerToken
+              : json.viewerToken?.token ?? "",
+        };
 
-        if (status && status !== "live") {
-          setState({ kind: "ended", title: raw.title ?? null });
-          return;
-        }
-
-        const token: string | undefined =
-          raw.viewerToken ?? raw.token ?? raw.hostToken;
-        const livekitUrl: string | undefined = raw.livekitUrl ?? raw.url;
-
-        if (!token || !livekitUrl) {
-          setState({
-            kind: "error",
-            message: "Stream is not available right now.",
-          });
-          return;
-        }
-
-        setState({
-          kind: "live",
-          title: raw.title ?? null,
-          token,
-          livekitUrl,
-        });
+        setData(fixed);
+        setStatus(fixed.status === "ended" ? "ended" : "live");
       } catch (e) {
-        console.error("viewer load error", e);
-        if (!cancelled) {
-          setState({
-            kind: "error",
-            message: "Could not load stream.",
-          });
-        }
+        if (cancelled) return;
+        console.error("[viewer] fetch error", e);
+        setError("Revolvr glitched out loading this stream.");
+        setStatus("error");
       }
-    }
+    };
 
-    load();
+    loadViewerData();
 
     return () => {
       cancelled = true;
     };
-  }, [router.query.sessionId]);
+  }, [router.isReady, router.query.sessionId]);
 
-  // --- UI states -----------------------------------------------------------
-
-  if (state.kind === "loading") {
+  // 🔸 Loading state
+  if (status === "loading") {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#000",
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <p>Loading stream…</p>
+      <div className="min-h-screen bg-black flex items-center justify-center text-white">
+        <p className="text-sm text-white/70">Loading stream…</p>
       </div>
     );
   }
 
-  if (state.kind === "error") {
+  // 🔸 Error state
+  if (status === "error") {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#000",
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 24,
-          textAlign: "center",
-        }}
-      >
-        <div>
-          <h1 style={{ marginBottom: 12 }}>Stream unavailable</h1>
-          <p style={{ marginBottom: 24, color: "#ccc" }}>{state.message}</p>
-          <button
-            onClick={() => router.push("/public-feed")}
-            style={{
-              padding: "10px 24px",
-              borderRadius: 999,
-              border: "none",
-              background: "#ff0055",
-              color: "#fff",
-              cursor: "pointer",
-              fontWeight: 600,
-            }}
-          >
-            Back to feed
-          </button>
-        </div>
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white px-4">
+        <p className="text-sm text-red-300 mb-3">
+          {error ?? "Revolvr glitched out loading this stream."}
+        </p>
+        <button
+          onClick={() => {
+            window.location.href = "/public-feed";
+          }}
+          className="px-4 py-2 rounded-full bg-white text-black text-sm font-medium"
+        >
+          Back to feed
+        </button>
       </div>
     );
   }
 
-  if (state.kind === "ended") {
+  // 🔸 Ended state (nice full-screen ended message)
+  if (status === "ended" || !data) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          backgroundColor: "#000",
-          color: "#fff",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 24,
-          textAlign: "center",
-        }}
-      >
-        <div>
-          <h1 style={{ marginBottom: 12 }}>This stream has ended</h1>
-          {state.title && (
-            <p style={{ marginBottom: 8, color: "#aaa" }}>{state.title}</p>
-          )}
-          <p style={{ marginBottom: 24, color: "#888", fontSize: 14 }}>
-            Check the feed for other live broadcasts.
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white px-4">
+        <div className="text-center space-y-3">
+          <div className="text-4xl mb-2">📺</div>
+          <h1 className="text-xl font-semibold">This stream has ended</h1>
+          <p className="text-sm text-white/60 max-w-sm mx-auto">
+            The host has wrapped up this session. Head back to the Revolvr feed
+            to see what else is spinning.
           </p>
           <button
-            onClick={() => router.push("/public-feed")}
-            style={{
-              padding: "10px 24px",
-              borderRadius: 999,
-              border: "none",
-              background: "#ff0055",
-              color: "#fff",
-              cursor: "pointer",
-              fontWeight: 600,
+            onClick={() => {
+              window.location.href = "/public-feed";
             }}
+            className="mt-4 px-5 py-2 rounded-full bg-white text-black text-sm font-medium"
           >
             Back to feed
           </button>
@@ -186,46 +145,44 @@ export default function ViewerPage() {
     );
   }
 
-  // LIVE state
+  // 🔸 Live viewer
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#000", color: "#fff" }}>
-      <header
-        style={{
-          height: 56,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 24px",
-          borderBottom: "1px solid #222",
-          background: "rgba(0,0,0,0.85)",
-        }}
-      >
-        <span
-          style={{
-            display: "inline-block",
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            backgroundColor: "#ff0055",
-            marginRight: 8,
-          }}
-        />
-        <span style={{ fontWeight: 600 }}>LIVE</span>
-        {state.title && (
-          <span style={{ marginLeft: 12, color: "#aaa", fontSize: 14 }}>
-            {state.title}
-          </span>
-        )}
-      </header>
+    <LiveKitRoom
+      serverUrl={data.livekitUrl}
+      token={data.viewerToken}
+      connect={true}
+      video={false} // viewer doesn't need to send video
+      audio={true}
+    >
+      <div className="min-h-screen bg-black flex flex-col">
+        {/* Header bar */}
+        <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/80 text-white">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-red-400">
+              <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
+              LIVE
+            </span>
+            <span className="text-sm text-white/80 truncate max-w-[240px] sm:max-w-md">
+              {data.title ?? "Live on Revolvr"}
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              window.location.href = "/public-feed";
+            }}
+            className="text-xs text-white/70 hover:text-white"
+          >
+            Back to feed
+          </button>
+        </header>
 
-      <LiveKitRoom
-        serverUrl={state.livekitUrl}
-        token={state.token}
-        connect={true}
-        video={true}
-        audio={true}
-      >
-        <VideoConference />
-      </LiveKitRoom>
-    </div>
+        {/* Video area */}
+        <main className="flex-1 bg-black flex items-center justify-center">
+          <div className="w-full h-full max-w-5xl mx-auto aspect-video bg-black">
+            <VideoConference />
+          </div>
+        </main>
+      </div>
+    </LiveKitRoom>
   );
 }
