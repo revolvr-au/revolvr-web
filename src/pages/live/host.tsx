@@ -1,5 +1,5 @@
 // src/pages/live/host.tsx
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 
@@ -20,12 +20,8 @@ export default function HostLivePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const viewerUrl = useMemo(() => {
-    if (!data || typeof window === "undefined") return "";
-    return `${window.location.origin}/live/${encodeURIComponent(
-      data.sessionId
-    )}`;
-  }, [data]);
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null);
+  const [copyLabel, setCopyLabel] = useState("Copy viewer link");
 
   async function startLive() {
     setLoading(true);
@@ -59,6 +55,16 @@ export default function HostLivePage() {
 
       console.log("create data (fixed)", fixed);
       setData(fixed);
+
+      // Build viewer URL as soon as we know the sessionId
+      if (typeof window !== "undefined") {
+        const origin = window.location.origin;
+        const fullViewerUrl = `${origin}/live/${encodeURIComponent(
+          fixed.sessionId
+        )}`;
+        setViewerUrl(fullViewerUrl);
+        console.log("[Host] Viewer URL:", fullViewerUrl);
+      }
     } catch (e: any) {
       console.error("startLive error", e);
       setError(e?.message ?? "Failed to start live");
@@ -77,17 +83,31 @@ export default function HostLivePage() {
       );
     } catch (e) {
       console.error("end stream error", e);
-      // we still redirect even if this fails, so host isn't stuck
+      // Still navigate away so host isn't stuck
     }
 
     router.push("/public-feed");
   }
 
-  function handleCopyLink() {
+  async function handleCopyLink() {
     if (!viewerUrl) return;
-    navigator.clipboard
-      .writeText(viewerUrl)
-      .catch((err) => console.error("copy failed", err));
+
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(viewerUrl);
+      } else {
+        // Fallback if clipboard API is not available
+        window.prompt("Viewer link (copy manually):", viewerUrl);
+        return;
+      }
+
+      setCopyLabel("Copied!");
+      setTimeout(() => setCopyLabel("Copy viewer link"), 2000);
+    } catch (err) {
+      console.error("Failed to copy viewer link", err);
+      // Last-chance fallback so you can still copy
+      window.prompt("Viewer link (copy manually):", viewerUrl);
+    }
   }
 
   // Pre-live: show simple form
@@ -145,6 +165,7 @@ export default function HostLivePage() {
               color: "#fff",
               fontWeight: 600,
               cursor: "pointer",
+              opacity: loading ? 0.7 : 1,
             }}
           >
             {loading ? "Preparing…" : "Go Live"}
@@ -193,21 +214,25 @@ export default function HostLivePage() {
 
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <button
+            type="button"
             onClick={handleCopyLink}
+            disabled={!viewerUrl}
             style={{
               padding: "6px 14px",
               borderRadius: 999,
               border: "1px solid #444",
               background: "transparent",
               color: "#fff",
-              cursor: "pointer",
+              cursor: viewerUrl ? "pointer" : "not-allowed",
               fontSize: 13,
+              opacity: viewerUrl ? 1 : 0.5,
             }}
           >
-            Copy viewer link
+            {copyLabel}
           </button>
 
           <button
+            type="button"
             onClick={handleEndStream}
             style={{
               padding: "6px 16px",
