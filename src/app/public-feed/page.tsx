@@ -1,4 +1,12 @@
+
 "use client";
+
+type LiveSessionSummary = {
+  id: string;
+  room_name: string;
+  title: string | null;
+  status: string;
+};
 
 import { useEffect, useMemo, useState, FormEvent } from "react";
 import Link from "next/link";
@@ -49,6 +57,46 @@ export default function PublicFeedPage() {
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(
     null
   );
+// 🔴 LIVE NOW – active streams
+const [liveSessions, setLiveSessions] = useState<LiveSessionSummary[]>([]);
+const [liveLoading, setLiveLoading] = useState(false);
+
+// Poll live sessions from Supabase
+useEffect(() => {
+  let cancelled = false;
+
+  async function loadLive() {
+    try {
+      setLiveLoading(true);
+
+      const { data, error } = await supabase
+        .from("live_sessions")
+        .select("id, room_name, title, status")
+        .eq("status", "live")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (!cancelled) {
+        if (error) {
+          console.error("[public-feed] live_sessions error:", error);
+        } else {
+          setLiveSessions(data ?? []);
+        }
+      }
+    } finally {
+      if (!cancelled) setLiveLoading(false);
+    }
+  }
+
+  loadLive();
+  const interval = setInterval(loadLive, 15000);
+
+  return () => {
+    cancelled = true;
+    clearInterval(interval);
+  };
+}, []);
+
 
   // Composer state (top-of-feed)
   const [file, setFile] = useState<File | null>(null);
@@ -497,6 +545,47 @@ export default function PublicFeedPage() {
                 </form>
               </section>
             )}
+          {/* 🔴 LIVE NOW STRIP */}
+{liveSessions.length > 0 && (
+  <section className="mb-6 rounded-2xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 px-4 py-3">
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+        <span className="text-sm font-semibold text-pink-100">
+          Live now on Revolvr
+        </span>
+      </div>
+
+      {liveLoading && (
+        <span className="text-xs text-zinc-400">Refreshing…</span>
+      )}
+    </div>
+
+    <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+      {liveSessions.map((s) => (
+        <Link
+          key={s.id}
+          href={`/live/${encodeURIComponent(s.room_name)}`}
+          className="min-w-[220px] rounded-xl border border-white/5 bg-black/40 px-3 py-2 transition-colors hover:bg-black/60"
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20 text-[10px] font-semibold text-red-300">
+              LIVE
+            </div>
+            <div className="flex flex-col">
+              <span className="truncate text-sm font-medium text-white">
+                {s.title || "Untitled stream"}
+              </span>
+              <span className="text-[11px] text-zinc-400">
+                Tap to join stream
+              </span>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  </section>
+)}
 
             {/* People rail */}
             {people.length > 0 && (
