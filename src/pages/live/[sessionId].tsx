@@ -1,42 +1,50 @@
 // src/pages/live/[sessionId].tsx
+
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { LiveKitRoom, VideoConference } from "@livekit/components-react";
+import { LiveKitRoom, VideoRenderer } from "@livekit/components-react";
 
-type ViewerData = {
-  sessionId: string;
-  roomName: string;
-  viewerIdentity: string;
-  viewerToken: string;
-  livekitUrl: string;
-};
-
-export default function ViewerLivePage() {
+export default function ViewerPage() {
   const router = useRouter();
-  const { sessionId } = router.query;           // ✅ use sessionId
-  const [data, setData] = useState<ViewerData | null>(null);
+  const { sessionId } = router.query;
+
+  const [data, setData] = useState<any>(null);
 
   useEffect(() => {
     if (!sessionId) return;
-    const id = String(sessionId);
 
-    (async () => {
-      const res = await fetch(`/api/live/${id}/viewer`);
-      const d = await res.json();
-      setData(d);
-    })();
+    async function fetchToken() {
+      const res = await fetch(`/api/live/${sessionId}/viewer`);
+      const json = await res.json();
+      setData(json);
+    }
+
+    fetchToken();
   }, [sessionId]);
 
-  if (!sessionId) return <p style={{ padding: 24 }}>Loading…</p>;
-  if (!data) return <p style={{ padding: 24 }}>Loading stream…</p>;
+  if (!data) return <p>Loading stream…</p>;
 
   return (
     <LiveKitRoom
       serverUrl={data.livekitUrl}
-      token={data.viewerToken}
+      token={data.token}
       connect={true}
+      audio={true}
+      video={true}
     >
-      <VideoConference />
+      {/* Basic clean viewer layout */}
+      <div
+        style={{
+          width: "100%",
+          height: "100vh",
+          background: "black",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <VideoRenderer />
+      </div>
     </LiveKitRoom>
   );
 }
