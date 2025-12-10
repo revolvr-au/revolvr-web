@@ -45,24 +45,33 @@ type PendingPurchase = {
 export default function PublicFeedPage() {
   const router = useRouter();
 
+  // Feed + user
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Payments
   const [pendingPurchase, setPendingPurchase] =
     useState<PendingPurchase | null>(null);
 
+  // Filters
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(
     null
   );
 
-  // 🔴 LIVE NOW – active streams
+  // Live strip
   const [liveSessions, setLiveSessions] = useState<LiveSessionSummary[]>([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveDisabled, setLiveDisabled] = useState(false);
 
-  // Poll live sessions from Supabase (but never show the red banner if it fails)
+  // Composer
+  const [file, setFile] = useState<File | null>(null);
+  const [caption, setCaption] = useState("");
+  const [isPosting, setIsPosting] = useState(false);
+  const [showComposer, setShowComposer] = useState<boolean>(false);
+
+  // Poll live sessions
   useEffect(() => {
     if (liveDisabled) return;
 
@@ -83,7 +92,6 @@ export default function PublicFeedPage() {
 
         if (error) {
           console.error("[public-feed] live_sessions error:", error);
-
           const code = (error as any).code;
           const message = (error as any).message as string | undefined;
 
@@ -92,7 +100,7 @@ export default function PublicFeedPage() {
             message?.toLowerCase().includes("could not find the table")
           ) {
             console.warn(
-              "[public-feed] live_sessions table missing in this environment – disabling live strip."
+              "[public-feed] live_sessions table missing – disabling live strip."
             );
             setLiveDisabled(true);
             setLiveSessions([]);
@@ -122,13 +130,7 @@ export default function PublicFeedPage() {
     };
   }, [liveDisabled]);
 
-  // Composer state (top-of-feed)
-  const [file, setFile] = useState<File | null>(null);
-  const [caption, setCaption] = useState("");
-  const [isPosting, setIsPosting] = useState(false);
-  const [showComposer, setShowComposer] = useState<boolean>(false);
-
-  // Load current user (if logged in)
+  // Load current user
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -215,7 +217,7 @@ export default function PublicFeedPage() {
     return Array.from(byEmail.values());
   }, [posts]);
 
-  // Posts filtered by selected person
+  // Filtered posts
   const visiblePosts = useMemo(
     () =>
       selectedUserEmail
@@ -241,7 +243,7 @@ export default function PublicFeedPage() {
     );
   };
 
-  // Make sure user is logged in (for posting + payments)
+  // Make sure user is logged in
   const ensureLoggedIn = () => {
     if (!userEmail) {
       const redirect = encodeURIComponent("/public-feed");
@@ -251,7 +253,7 @@ export default function PublicFeedPage() {
     return true;
   };
 
-  // Scroll to composer when +Post clicked
+  // Scroll to composer
   const scrollToComposer = () => {
     const el = document.getElementById("revolvrComposer");
     if (el) {
@@ -259,7 +261,7 @@ export default function PublicFeedPage() {
     }
   };
 
-  // Create post from public feed composer
+  // Create post
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!ensureLoggedIn()) return;
@@ -278,8 +280,9 @@ export default function PublicFeedPage() {
         .toString(36)
         .slice(2)}.${fileExt}`;
 
-      const { data: storageData, error: storageError } =
-        await supabase.storage.from("posts").upload(filePath, file);
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from("posts")
+        .upload(filePath, file);
 
       if (storageError || !storageData) {
         throw storageError ?? new Error("Upload failed");
@@ -300,53 +303,29 @@ export default function PublicFeedPage() {
         .single();
 
       if (insertError) throw insertError;
-        const startPayment = async (
-  mode: PurchaseMode,
-  postId: string,
-  kind: "single" | "pack"
-) => {
-  if (!ensureLoggedIn()) return;
-  if (!userEmail) return;
 
-  try {
-    setError(null);
+      setPosts((prev) =>
+        inserted
+          ? [
+              {
+                ...(inserted as any),
+                reactions: {},
+              },
+              ...prev,
+            ]
+          : prev
+      );
 
-    const checkoutMode =
-      kind === "pack"
-        ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
-        : mode;
-
-    const res = await fetch("/api/payments/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: checkoutMode,
-        userEmail,
-        postId,
-        // After Stripe, come back to the feed
-        returnPath: "/public-feed",
-      }),
-    });
-
-    if (!res.ok) {
-      console.error("Checkout failed:", await res.text());
-      setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
-      return;
+      setCaption("");
+      setFile(null);
+      setShowComposer(false);
+    } catch (e) {
+      console.error("Error creating post", e);
+      setError("Revolvr glitched out while posting 😵‍💫 Try again.");
+    } finally {
+      setIsPosting(false);
     }
-
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setError("Stripe did not return a checkout URL.");
-    }
-  } catch (e) {
-    console.error("Error starting payment", e);
-    setError("Revolvr glitched out talking to Stripe 😵‍💫");
-  }
-};
-
-
+  };
 
   // --- Payments: tip / boost / spin ------------------------------
 
@@ -394,31 +373,6 @@ export default function PublicFeedPage() {
     }
   };
 
-  // These helpers are only for label text (not Stripe amounts)
-  const singleAmountForMode = (mode: PurchaseMode) => {
-    switch (mode) {
-      case "tip":
-        return 200;
-      case "boost":
-        return 500;
-      case "spin":
-      default:
-        return 100;
-    }
-  };
-
-  const packAmountForMode = (mode: PurchaseMode) => {
-    switch (mode) {
-      case "tip":
-        return 2000; // 10 x A$2 tips
-      case "boost":
-        return 5000; // 10 x A$5 boosts
-      case "spin":
-      default:
-        return 2000; // 20 x A$1 spins
-    }
-  };
-
   const handleSinglePurchase = async () => {
     if (!pendingPurchase) return;
     await startPayment(pendingPurchase.mode, pendingPurchase.postId, "single");
@@ -431,38 +385,11 @@ export default function PublicFeedPage() {
     setPendingPurchase(null);
   };
 
-  const handleTipClick = (postId: string) => {
-    setPendingPurchase({ postId, mode: "tip" });
-  };
+  // --- JSX --------------------------------------------------------
 
-  const handleBoostClick = (postId: string) => {
-    setPendingPurchase({ postId, mode: "boost" });
-  };
-
-  const handleSpinClick = (postId: string) => {
-    setPendingPurchase({ postId, mode: "spin" });
-  };
-
-
-  // user chose the single option
-  const handleSinglePurchase = async () => {
-    if (!pendingPurchase) return;
-    await startPayment(pendingPurchase.mode, pendingPurchase.postId, "single");
-    setPendingPurchase(null);
-  };
-
-  // user chose the pack option
-  const handlePackPurchase = async () => {
-    if (!pendingPurchase) return;
-    await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
-    setPendingPurchase(null);
-  };
-
-  // --- JSX ---
   return (
     <>
       <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-        {/* Main content */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-xl px-3 sm:px-0 py-6 space-y-4 pb-24">
             {/* Error banner */}
@@ -478,7 +405,7 @@ export default function PublicFeedPage() {
               </div>
             )}
 
-            {/* Brand hero */}
+            {/* Brand */}
             <header className="text-center mb-2">
               <h1 className="text-3xl sm:text-4xl font-semibold text-white/95 tracking-tight">
                 Revolvr
@@ -488,7 +415,7 @@ export default function PublicFeedPage() {
               </p>
             </header>
 
-            {/* Composer – only when logged in AND explicitly opened */}
+            {/* Composer */}
             {userEmail && showComposer && (
               <section
                 id="revolvrComposer"
@@ -499,13 +426,12 @@ export default function PublicFeedPage() {
                 </h2>
 
                 <form className="space-y-4" onSubmit={handleCreatePost}>
-                  {/* Upload Section */}
+                  {/* Upload */}
                   <div>
                     <label className="text-xs font-medium text-white/70 block mb-2">
                       Image or short video
                     </label>
 
-                    {/* Drop Zone */}
                     <div
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
@@ -513,9 +439,7 @@ export default function PublicFeedPage() {
                         const files = e.dataTransfer.files;
                         const dropped =
                           files && files.length > 0 ? files[0] : null;
-                        if (dropped) {
-                          setFile(dropped);
-                        }
+                        if (dropped) setFile(dropped);
                       }}
                       className="w-full h-48 rounded-xl border border-white/15 bg-black/20 
                                flex flex-col items-center justify-center cursor-pointer 
@@ -555,7 +479,6 @@ export default function PublicFeedPage() {
                       )}
                     </div>
 
-                    {/* Hidden input */}
                     <input
                       id="revolvrUploadInput"
                       type="file"
@@ -563,9 +486,9 @@ export default function PublicFeedPage() {
                       className="hidden"
                       onChange={(e) => {
                         const files = e.target.files;
-                        const nextFile =
+                        const selected =
                           files && files.length > 0 ? files[0] : null;
-                        setFile(nextFile);
+                        setFile(selected);
                       }}
                     />
                   </div>
@@ -606,7 +529,7 @@ export default function PublicFeedPage() {
               </section>
             )}
 
-            {/* 🔴 LIVE NOW STRIP – only if liveSessions available and live not disabled */}
+            {/* 🔴 LIVE NOW STRIP */}
             {!liveDisabled && liveSessions.length > 0 && (
               <section className="mb-6 rounded-2xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
@@ -682,9 +605,15 @@ export default function PublicFeedPage() {
                     key={post.id}
                     post={post}
                     onReact={handleReact}
-                    onTip={handleTipClick}
-                    onBoost={handleBoostClick}
-                    onSpin={handleSpinClick}
+                    onTip={(postId) =>
+                      setPendingPurchase({ postId, mode: "tip" })
+                    }
+                    onBoost={(postId) =>
+                      setPendingPurchase({ postId, mode: "boost" })
+                    }
+                    onSpin={(postId) =>
+                      setPendingPurchase({ postId, mode: "spin" })
+                    }
                   />
                 ))}
               </div>
@@ -749,7 +678,7 @@ export default function PublicFeedPage() {
         )}
       </div>
 
-      {/* 🔴 Floating Go Live button – only on public feed */}
+      {/* 🔴 Floating Go Live button */}
       <FloatingLiveButton />
     </>
   );
@@ -944,8 +873,7 @@ function PublicPostCard({
       {/* Support counts */}
       {(post.tip_count ?? 0) +
         (post.boost_count ?? 0) +
-        (post.spin_count ?? 0) >
-        0 && (
+        (post.spin_count ?? 0) > 0 && (
         <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-white/60">
           {!!post.tip_count && (
             <span>
@@ -1052,7 +980,6 @@ function PurchaseChoiceSheet({
       ? "Boost"
       : "Spin";
 
-  // UI labels only (Stripe amounts are configured in the API route)
   const singleAmount =
     pending.mode === "tip"
       ? "A$2"
@@ -1060,19 +987,12 @@ function PurchaseChoiceSheet({
       ? "A$5"
       : "A$1";
 
-  const packAmount =
-    pending.mode === "tip"
-      ? "A$20" // 10 × A$2
-      : pending.mode === "boost"
-      ? "A$50" // 10 × A$5
-      : "A$20"; // 20 × A$1
-
   const packLabel =
     pending.mode === "tip"
-      ? `Buy tip pack (${packAmount})`
+      ? "tip pack"
       : pending.mode === "boost"
-      ? `Buy boost pack (${packAmount})`
-      : `Buy spin pack (${packAmount})`;
+      ? "boost pack"
+      : "spin pack";
 
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
@@ -1113,7 +1033,7 @@ function PurchaseChoiceSheet({
             onClick={onPack}
             className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-xs text-left"
           >
-            <div className="font-semibold">{packLabel}</div>
+            <div className="font-semibold">Buy {packLabel}</div>
             <div className="text-[11px] text-white/70">
               Better value, more {modeLabel.toLowerCase()}s
             </div>
@@ -1131,4 +1051,3 @@ function PurchaseChoiceSheet({
     </div>
   );
 }
-
