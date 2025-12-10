@@ -14,10 +14,12 @@ export default function LiveRoomPage() {
   const params = useParams<{ room: string }>();
   const router = useRouter();
 
-  const roomName = useMemo(
-    () => decodeURIComponent(params.room ?? ""),
-    [params]
-  );
+  // Extract safely to satisfy TypeScript
+const safeRoom = params?.room ?? "";
+
+// Decode room name
+const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
+
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
