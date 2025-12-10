@@ -84,9 +84,6 @@ export default function PublicFeedPage() {
         if (error) {
           console.error("[public-feed] live_sessions error:", error);
 
-          // If the table doesn't exist in this Supabase project
-          // (common in prod while live is still being wired),
-          // just disable the live bar instead of treating it as a page error.
           const code = (error as any).code;
           const message = (error as any).message as string | undefined;
 
@@ -102,7 +99,6 @@ export default function PublicFeedPage() {
             return;
           }
 
-          // For any other error, just log and show no live sessions.
           setLiveSessions([]);
         } else {
           setLiveSessions(data ?? []);
@@ -153,8 +149,7 @@ export default function PublicFeedPage() {
     fetchUser();
   }, []);
 
-  // Load posts (this is the ONLY place that sets the red error banner on initial load)
-    // Load posts
+  // Load posts
   useEffect(() => {
     async function fetchPosts() {
       try {
@@ -182,8 +177,6 @@ export default function PublicFeedPage() {
         );
       } catch (e) {
         console.error("Error loading public feed posts", e);
-        // TEMP: don’t block the whole page; just show empty
-        // setError("Revolvr glitched out loading the public feed 😵‍💫");
         setPosts([]);
       } finally {
         setIsLoading(false);
@@ -192,7 +185,6 @@ export default function PublicFeedPage() {
 
     fetchPosts();
   }, []);
-
 
   // People rail data
   const people: Person[] = useMemo(() => {
@@ -332,113 +324,101 @@ export default function PublicFeedPage() {
   };
 
   // Generic payment starter – now sends "tip" vs "tip-pack" etc.
-// Generic payment starter – now sends "tip" vs "tip-pack" etc.
-const startPayment = async (
-  mode: PurchaseMode,
-  postId: string,
-  kind: "single" | "pack"
-) => {
-  if (!ensureLoggedIn()) return;
-  if (!userEmail) return;
+  const startPayment = async (
+    mode: PurchaseMode,
+    postId: string,
+    kind: "single" | "pack"
+  ) => {
+    if (!ensureLoggedIn()) return;
+    if (!userEmail) return;
 
-  try {
-    setError(null);
+    try {
+      setError(null);
 
-    const checkoutMode =
-      kind === "pack"
-        ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
-        : mode;
+      const checkoutMode =
+        kind === "pack"
+          ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
+          : mode;
 
-    const res = await fetch("/api/payments/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: checkoutMode,
-        userEmail,
-        postId,
-      }),
-    });
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: checkoutMode,
+          userEmail,
+          postId,
+        }),
+      });
 
-    if (!res.ok) {
-      console.error("Checkout failed:", await res.text());
-      setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
-      return;
+      if (!res.ok) {
+        console.error("Checkout failed:", await res.text());
+        setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
+        return;
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError("Stripe did not return a checkout URL.");
+      }
+    } catch (e) {
+      console.error("Error starting payment", e);
+      setError("Revolvr glitched out talking to Stripe 😵‍💫");
     }
+  };
 
-    const data = await res.json();
-    if (data.url) {
-      window.location.href = data.url;
-    } else {
-      setError("Stripe did not return a checkout URL.");
+  // These helpers are available if you want to use them in labels
+  const singleAmountForMode = (mode: PurchaseMode) => {
+    switch (mode) {
+      case "tip":
+        return 200;
+      case "boost":
+        return 500;
+      case "spin":
+      default:
+        return 100;
     }
-  } catch (e) {
-    console.error("Error starting payment", e);
-    setError("Revolvr glitched out talking to Stripe 😵‍💫");
-  }
-};
+  };
 
+  const packAmountForMode = (mode: PurchaseMode) => {
+    switch (mode) {
+      case "tip":
+        return 1000;
+      case "boost":
+        return 2500;
+      case "spin":
+      default:
+        return 500;
+    }
+  };
 
-// We keep these helpers for label text if you want, but they’re no longer
-// used to tell the server the amount – server decides off mode.
-const singleAmountForMode = (mode: PurchaseMode) => {
-  switch (mode) {
-    case "tip":
-      return 200;
-    case "boost":
-      return 500;
-    case "spin":
-    default:
-      return 100;
-  }
-};
-
-const packAmountForMode = (mode: PurchaseMode) => {
-  switch (mode) {
-    case "tip":
-      return 1000;
-    case "boost":
-      return 2500;
-    case "spin":
-    default:
-      return 500;
-  }
-};
-
-const handleSinglePurchase = async () => {
-  if (!pendingPurchase) return;
-  await startPayment(pendingPurchase.mode, pendingPurchase.postId, "single");
-  setPendingPurchase(null);
-};
-
-const handlePackPurchase = async () => {
-  if (!pendingPurchase) return;
-  await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
-  setPendingPurchase(null);
-};
-
-
-const handlePackPurchase = async () => {
-  if (!pendingPurchase) return;
-  await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
-  setPendingPurchase(null);
-};
-
-
+  const handleSinglePurchase = async () => {
+    if (!pendingPurchase) return;
+    await startPayment(pendingPurchase.mode, pendingPurchase.postId, "single");
     setPendingPurchase(null);
   };
 
   const handlePackPurchase = async () => {
     if (!pendingPurchase) return;
-
-    const amountCents = packAmountForMode(pendingPurchase.mode);
-
-    await startPayment(
-      pendingPurchase.mode,
-      pendingPurchase.postId,
-      amountCents
-    );
-
+    await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
     setPendingPurchase(null);
+  };
+
+  // Click handlers passed to PublicPostCard
+  const handleTipClick = (postId: string) => {
+    if (!ensureLoggedIn()) return;
+    setPendingPurchase({ postId, mode: "tip" });
+  };
+
+  const handleBoostClick = (postId: string) => {
+    if (!ensureLoggedIn()) return;
+    setPendingPurchase({ postId, mode: "boost" });
+  };
+
+  const handleSpinClick = (postId: string) => {
+    if (!ensureLoggedIn()) return;
+    setPendingPurchase({ postId, mode: "spin" });
   };
 
   // --- JSX ---
@@ -448,7 +428,7 @@ const handlePackPurchase = async () => {
         {/* Main content */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-xl px-3 sm:px-0 py-6 space-y-4 pb-24">
-            {/* Error banner (only set by posts or actions, never by live_sessions) */}
+            {/* Error banner */}
             {error && (
               <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
                 <span>{error}</span>
@@ -493,8 +473,12 @@ const handlePackPurchase = async () => {
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={(e) => {
                         e.preventDefault();
-                        const dropped = e.dataTransfer.files?.[0];
-                        if (dropped) setFile(dropped);
+                        const files = e.dataTransfer.files;
+                        const dropped =
+                          files && files.length > 0 ? files[0] : null;
+                        if (dropped) {
+                          setFile(dropped);
+                        }
                       }}
                       className="w-full h-48 rounded-xl border border-white/15 bg-black/20 
                                flex flex-col items-center justify-center cursor-pointer 
@@ -540,7 +524,12 @@ const handlePackPurchase = async () => {
                       type="file"
                       accept="image/*,video/*"
                       className="hidden"
-                      onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                      onChange={(e) => {
+                        const files = e.target.files;
+                        const nextFile =
+                          files && files.length > 0 ? files[0] : null;
+                        setFile(nextFile);
+                      }}
                     />
                   </div>
 
@@ -918,7 +907,8 @@ function PublicPostCard({
       {/* Support counts */}
       {(post.tip_count ?? 0) +
         (post.boost_count ?? 0) +
-        (post.spin_count ?? 0) > 0 && (
+        (post.spin_count ?? 0) >
+        0 && (
         <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-white/60">
           {!!post.tip_count && (
             <span>
@@ -1040,7 +1030,7 @@ function PurchaseChoiceSheet({
       : "spin pack";
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-30 flex items-end justifycenter bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">
