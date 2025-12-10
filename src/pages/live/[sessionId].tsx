@@ -142,44 +142,45 @@ export default function ViewerPage() {
 
   // Stripe checkout for tips / boosts / spins (LIVE)
   const handleSupport = async (mode: SupportMode) => {
-    if (!ensureLoggedIn()) return;
-    if (!data) return;
+  if (!ensureLoggedIn()) return;
+  if (!data) return;
 
-    try {
-      setSupportLoading(mode);
-      const amountCents = singleAmountForMode(mode);
+  try {
+    setSupportLoading(mode);
+    const amountCents = singleAmountForMode(mode);
 
-      const res = await fetch("/api/live/support/checkout", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    mode,                 // "tip" | "boost" | "spin"
-    userEmail,            // viewer email
-    amountCents,          // cents
-    sessionId: data.sessionId, // live session id
-  }),
-});
+    const res = await fetch("/api/live/support/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode,                    // "tip" | "boost" | "spin"
+        userEmail,               // viewer email
+        amountCents,             // integer, in cents
+        postId: data.sessionId,  // we reuse postId as "live session id"
+        kind: "live_support",    // so webhook can tell this is a live payment
+      }),
+    });
 
-
-      if (!res.ok) {
-        console.error("checkout failed:", await res.text());
-        alert("Revolvr glitched out starting checkout. Try again.");
-        return;
-      }
-
-      const json = await res.json();
-      if (json.url) {
-        window.location.href = json.url;
-      } else {
-        alert("Stripe did not return a checkout URL.");
-      }
-    } catch (e) {
-      console.error("support error", e);
-      alert("Something went wrong talking to Stripe 😵‍💫");
-    } finally {
-      setSupportLoading(null);
+    if (!res.ok) {
+      console.error("checkout failed:", await res.text());
+      alert("Revolvr glitched out starting checkout. Try again.");
+      return;
     }
-  };
+
+    const json = await res.json();
+    if (json.url) {
+      window.location.href = json.url;
+    } else {
+      alert("Stripe did not return a checkout URL.");
+    }
+  } catch (e) {
+    console.error("support error", e);
+    alert("Something went wrong talking to Stripe 😵‍💫");
+  } finally {
+    setSupportLoading(null);
+  }
+};
+
 
   // Simple local like (client-only)
   const handleLike = () => {
