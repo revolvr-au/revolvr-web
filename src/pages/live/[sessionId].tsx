@@ -158,53 +158,52 @@ export default function ViewerPage() {
 
   // 🔁 Stripe checkout for tips / boosts / spins
   const handleSupport = async (
-    mode: SupportMode,
-    kind: "single" | "pack"
-  ) => {
-    if (!ensureLoggedIn()) return;
-    if (!data) return;
+  mode: SupportMode,
+  kind: "single" | "pack"
+) => {
+  if (!ensureLoggedIn()) return;
+  if (!data) return;
 
-    try {
-      setSupportLoading(mode);
+  try {
+    setSupportLoading(mode);
 
-      const amountCents =
-        kind === "single"
-          ? singleAmountForMode(mode)
-          : packAmountForMode(mode);
+    const checkoutMode =
+      kind === "pack"
+        ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
+        : mode;
 
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode, // "tip" | "boost" | "spin"
-          userEmail, // viewer’s email
-          amountCents, // cents
-          postId: data.sessionId, // reuse postId = live session ID
-          kind: "live", // hint for backend
-          bundleType: kind, // "single" | "pack" so we can see it in metadata/logs
-        }),
-      });
+    const res = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: checkoutMode,
+        userEmail,
+        postId: data.sessionId, // we’re reusing this as postId
+      }),
+    });
 
-      if (!res.ok) {
-        console.error("checkout failed:", await res.text());
-        alert("Revolvr glitched out starting checkout. Try again.");
-        return;
-      }
-
-      const json = await res.json();
-      if (json.url) {
-        window.location.href = json.url;
-      } else {
-        alert("Stripe did not return a checkout URL.");
-      }
-    } catch (e) {
-      console.error("support error", e);
-      alert("Something went wrong talking to Stripe 😵‍💫");
-    } finally {
-      setSupportLoading(null);
-      setPendingSupportMode(null);
+    if (!res.ok) {
+      console.error("checkout failed:", await res.text());
+      alert("Revolvr glitched out starting checkout. Try again.");
+      return;
     }
-  };
+
+    const json = await res.json();
+    if (json.url) {
+      window.location.href = json.url;
+    } else {
+      alert("Stripe did not return a checkout URL.");
+    }
+  } catch (e) {
+    console.error("support error", e);
+    alert("Something went wrong talking to Stripe 😵‍💫");
+  } finally {
+    setSupportLoading(null);
+    setPendingSupportMode(null);
+  }
+};
+
+
 
   // ❤️ simple local like (no backend yet)
   const handleLike = () => {

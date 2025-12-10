@@ -180,12 +180,11 @@ export default function PublicFeedPage() {
         }))
       );
     } catch (e) {
-      console.error("Error loading public feed posts", e);
-      setError("Revolvr glitched out loading the public feed 😵‍💫");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  console.error("Error loading public feed posts", e);
+  // setError("Revolvr glitched out loading the public feed 😵‍💫");
+  setPosts([]);
+}
+
 
   fetchPosts();
 }, []);
@@ -328,94 +327,98 @@ export default function PublicFeedPage() {
     }
   };
 
-  // Generic payment starter for single tip / boost / spin
-  const startPayment = async (
-    mode: PurchaseMode,
-    postId: string,
-    amountCents: number
-  ) => {
-    if (!ensureLoggedIn()) return;
-    if (!userEmail) return;
+  // Generic payment starter – now sends "tip" vs "tip-pack" etc.
+// Generic payment starter – now sends "tip" vs "tip-pack" etc.
+const startPayment = async (
+  mode: PurchaseMode,
+  postId: string,
+  kind: "single" | "pack"
+) => {
+  if (!ensureLoggedIn()) return;
+  if (!userEmail) return;
 
-    try {
-      setError(null);
+  try {
+    setError(null);
 
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          userEmail,
-          amountCents,
-          postId,
-        }),
-      });
+    const checkoutMode =
+      kind === "pack"
+        ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
+        : mode;
 
-      if (!res.ok) {
-        console.error("Checkout failed:", await res.text());
-        setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
-        return;
-      }
+    const res = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: checkoutMode,
+        userEmail,
+        postId,
+      }),
+    });
 
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Stripe did not return a checkout URL.");
-      }
-    } catch (e) {
-      console.error("Error starting payment", e);
-      setError("Revolvr glitched out talking to Stripe 😵‍💫");
+    if (!res.ok) {
+      console.error("Checkout failed:", await res.text());
+      setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
+      return;
     }
-  };
 
-  // Open the "single vs pack" choice
-  const openPurchaseChoice = (postId: string, mode: PurchaseMode) => {
-    if (!ensureLoggedIn()) return;
-    setPendingPurchase({ postId, mode });
-  };
-
-  const handleTipClick = (postId: string) => openPurchaseChoice(postId, "tip");
-  const handleBoostClick = (postId: string) =>
-    openPurchaseChoice(postId, "boost");
-  const handleSpinClick = (postId: string) =>
-    openPurchaseChoice(postId, "spin");
-
-  // Helper: amounts in cents for each mode
-  const singleAmountForMode = (mode: PurchaseMode) => {
-    switch (mode) {
-      case "tip":
-        return 200; // A$2
-      case "boost":
-        return 500; // A$5
-      case "spin":
-      default:
-        return 100; // A$1
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setError("Stripe did not return a checkout URL.");
     }
-  };
+  } catch (e) {
+    console.error("Error starting payment", e);
+    setError("Revolvr glitched out talking to Stripe 😵‍💫");
+  }
+};
 
-  const packAmountForMode = (mode: PurchaseMode) => {
-    switch (mode) {
-      case "tip":
-        return 1000; // A$10 tip pack
-      case "boost":
-        return 2500; // A$25 boost pack
-      case "spin":
-      default:
-        return 500; // A$5 spin pack
-    }
-  };
 
-  const handleSinglePurchase = async () => {
-    if (!pendingPurchase) return;
+// We keep these helpers for label text if you want, but they’re no longer
+// used to tell the server the amount – server decides off mode.
+const singleAmountForMode = (mode: PurchaseMode) => {
+  switch (mode) {
+    case "tip":
+      return 200;
+    case "boost":
+      return 500;
+    case "spin":
+    default:
+      return 100;
+  }
+};
 
-    const amountCents = singleAmountForMode(pendingPurchase.mode);
+const packAmountForMode = (mode: PurchaseMode) => {
+  switch (mode) {
+    case "tip":
+      return 1000;
+    case "boost":
+      return 2500;
+    case "spin":
+    default:
+      return 500;
+  }
+};
 
-    await startPayment(
-      pendingPurchase.mode,
-      pendingPurchase.postId,
-      amountCents
-    );
+const handleSinglePurchase = async () => {
+  if (!pendingPurchase) return;
+  await startPayment(pendingPurchase.mode, pendingPurchase.postId, "single");
+  setPendingPurchase(null);
+};
+
+const handlePackPurchase = async () => {
+  if (!pendingPurchase) return;
+  await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
+  setPendingPurchase(null);
+};
+
+
+const handlePackPurchase = async () => {
+  if (!pendingPurchase) return;
+  await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
+  setPendingPurchase(null);
+};
+
 
     setPendingPurchase(null);
   };
