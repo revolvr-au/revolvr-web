@@ -154,40 +154,44 @@ export default function PublicFeedPage() {
   }, []);
 
   // Load posts (this is the ONLY place that sets the red error banner on initial load)
+    // Load posts
   useEffect(() => {
-  const fetchPosts = async () => {
-    try {
-      setIsLoading(true);
+    async function fetchPosts() {
+      try {
+        setIsLoading(true);
 
-      const { data, error } = await supabase
-        .from("posts")
-        .select("*")
-        .order("created_at", { ascending: false });
+        const { data, error } = await supabase
+          .from("posts")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      setPosts(
-        (data ?? []).map((row: any) => ({
-          id: row.id,
-          user_email: row.user_email,
-          image_url: row.image_url,
-          caption: row.caption,
-          created_at: row.created_at,
-          tip_count: row.tip_count,
-          boost_count: row.boost_count,
-          spin_count: row.spin_count,
-          reactions: {},
-        }))
-      );
-    } catch (e) {
-  console.error("Error loading public feed posts", e);
-  // setError("Revolvr glitched out loading the public feed 😵‍💫");
-  setPosts([]);
-}
+        setPosts(
+          (data ?? []).map((row: any) => ({
+            id: row.id,
+            user_email: row.user_email,
+            image_url: row.image_url,
+            caption: row.caption,
+            created_at: row.created_at,
+            tip_count: row.tip_count,
+            boost_count: row.boost_count,
+            spin_count: row.spin_count,
+            reactions: {},
+          }))
+        );
+      } catch (e) {
+        console.error("Error loading public feed posts", e);
+        // TEMP: don’t block the whole page; just show empty
+        // setError("Revolvr glitched out loading the public feed 😵‍💫");
+        setPosts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
 
-
-  fetchPosts();
-}, []);
+    fetchPosts();
+  }, []);
 
 
   // People rail data
