@@ -3,30 +3,6 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import { LiveKitRoom, VideoConference } from "@livekit/components-react";
 import { supabase } from "@/lib/supabaseClients";
-import { usePurchase } from "@/hooks/usePurchase";
-
-export default function LiveSession({ post, user }) {
-  const { boost, tip, spin, loading, lastError } = usePurchase(user.email);
-
-  return (
-    <div>
-      <button disabled={loading} onClick={() => boost(post.id)}>
-        Boost Post (A$5)
-      </button>
-
-      <button disabled={loading} onClick={() => tip(post.id)}>
-        Tip Creator (A$2)
-      </button>
-
-      <button disabled={loading} onClick={() => spin()}>
-        Spin (A$1)
-      </button>
-
-      {lastError && <p style={{ color: "red" }}>{lastError}</p>}
-    </div>
-  );
-}
-
 
 type ViewerData = {
   sessionId: string;
