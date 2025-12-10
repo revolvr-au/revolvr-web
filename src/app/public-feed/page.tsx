@@ -1,5 +1,10 @@
-
 "use client";
+
+import { useEffect, useMemo, useState, FormEvent } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClients";
+import { FloatingLiveButton } from "@/components/FloatingLiveButton";
 
 type LiveSessionSummary = {
   id: string;
@@ -7,12 +12,6 @@ type LiveSessionSummary = {
   title: string | null;
   status: string;
 };
-
-import { useEffect, useMemo, useState, FormEvent } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
-import { FloatingLiveButton } from "@/components/FloatingLiveButton";
 
 type Post = {
   id: string;
@@ -57,46 +56,75 @@ export default function PublicFeedPage() {
   const [selectedUserEmail, setSelectedUserEmail] = useState<string | null>(
     null
   );
-// 🔴 LIVE NOW – active streams
-const [liveSessions, setLiveSessions] = useState<LiveSessionSummary[]>([]);
-const [liveLoading, setLiveLoading] = useState(false);
 
-// Poll live sessions from Supabase
-useEffect(() => {
-  let cancelled = false;
+  // 🔴 LIVE NOW – active streams
+  const [liveSessions, setLiveSessions] = useState<LiveSessionSummary[]>([]);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveDisabled, setLiveDisabled] = useState(false);
 
-  async function loadLive() {
-    try {
-      setLiveLoading(true);
+  // Poll live sessions from Supabase (but never show the red banner if it fails)
+  useEffect(() => {
+    if (liveDisabled) return;
 
-      const { data, error } = await supabase
-        .from("live_sessions")
-        .select("id, room_name, title, status")
-        .eq("status", "live")
-        .order("created_at", { ascending: false })
-        .limit(10);
+    let cancelled = false;
 
-      if (!cancelled) {
+    async function loadLive() {
+      try {
+        setLiveLoading(true);
+
+        const { data, error } = await supabase
+          .from("live_sessions")
+          .select("id, room_name, title, status")
+          .eq("status", "live")
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (cancelled) return;
+
         if (error) {
           console.error("[public-feed] live_sessions error:", error);
+
+          // If the table doesn't exist in this Supabase project
+          // (common in prod while live is still being wired),
+          // just disable the live bar instead of treating it as a page error.
+          const code = (error as any).code;
+          const message = (error as any).message as string | undefined;
+
+          if (
+            code === "PGRST205" ||
+            message?.toLowerCase().includes("could not find the table")
+          ) {
+            console.warn(
+              "[public-feed] live_sessions table missing in this environment – disabling live strip."
+            );
+            setLiveDisabled(true);
+            setLiveSessions([]);
+            return;
+          }
+
+          // For any other error, just log and show no live sessions.
+          setLiveSessions([]);
         } else {
           setLiveSessions(data ?? []);
         }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("[public-feed] live_sessions unexpected error:", err);
+          setLiveSessions([]);
+        }
+      } finally {
+        if (!cancelled) setLiveLoading(false);
       }
-    } finally {
-      if (!cancelled) setLiveLoading(false);
     }
-  }
 
-  loadLive();
-  const interval = setInterval(loadLive, 15000);
+    loadLive();
+    const interval = setInterval(loadLive, 15000);
 
-  return () => {
-    cancelled = true;
-    clearInterval(interval);
-  };
-}, []);
-
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [liveDisabled]);
 
   // Composer state (top-of-feed)
   const [file, setFile] = useState<File | null>(null);
@@ -125,7 +153,7 @@ useEffect(() => {
     fetchUser();
   }, []);
 
-  // Load posts
+  // Load posts (this is the ONLY place that sets the red error banner on initial load)
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -154,7 +182,7 @@ useEffect(() => {
           }))
         );
       } catch (e) {
-        console.error("Error loading public feed", e);
+        console.error("Error loading public feed posts", e);
         setError("Revolvr glitched out loading the public feed 😵‍💫");
       } finally {
         setIsLoading(false);
@@ -414,7 +442,7 @@ useEffect(() => {
         {/* Main content */}
         <main className="flex-1 flex justify-center">
           <div className="w-full max-w-xl px-3 sm:px-0 py-6 space-y-4 pb-24">
-            {/* Error banner */}
+            {/* Error banner (only set by posts or actions, never by live_sessions) */}
             {error && (
               <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
                 <span>{error}</span>
@@ -545,47 +573,48 @@ useEffect(() => {
                 </form>
               </section>
             )}
-          {/* 🔴 LIVE NOW STRIP */}
-{liveSessions.length > 0 && (
-  <section className="mb-6 rounded-2xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 px-4 py-3">
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-        <span className="text-sm font-semibold text-pink-100">
-          Live now on Revolvr
-        </span>
-      </div>
 
-      {liveLoading && (
-        <span className="text-xs text-zinc-400">Refreshing…</span>
-      )}
-    </div>
+            {/* 🔴 LIVE NOW STRIP – only if liveSessions available and live not disabled */}
+            {!liveDisabled && liveSessions.length > 0 && (
+              <section className="mb-6 rounded-2xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                    <span className="text-sm font-semibold text-pink-100">
+                      Live now on Revolvr
+                    </span>
+                  </div>
 
-    <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
-      {liveSessions.map((s) => (
-        <Link
-          key={s.id}
-          href={`/live/${encodeURIComponent(s.room_name)}`}
-          className="min-w-[220px] rounded-xl border border-white/5 bg-black/40 px-3 py-2 transition-colors hover:bg-black/60"
-        >
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20 text-[10px] font-semibold text-red-300">
-              LIVE
-            </div>
-            <div className="flex flex-col">
-              <span className="truncate text-sm font-medium text-white">
-                {s.title || "Untitled stream"}
-              </span>
-              <span className="text-[11px] text-zinc-400">
-                Tap to join stream
-              </span>
-            </div>
-          </div>
-        </Link>
-      ))}
-    </div>
-  </section>
-)}
+                  {liveLoading && (
+                    <span className="text-xs text-zinc-400">Refreshing…</span>
+                  )}
+                </div>
+
+                <div className="mt-3 flex gap-3 overflow-x-auto pb-1">
+                  {liveSessions.map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`/live/${encodeURIComponent(s.room_name)}`}
+                      className="min-w-[220px] rounded-xl border border-white/5 bg-black/40 px-3 py-2 transition-colors hover:bg-black/60"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/20 text-[10px] font-semibold text-red-300">
+                          LIVE
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="truncate text-sm font-medium text-white">
+                            {s.title || "Untitled stream"}
+                          </span>
+                          <span className="text-[11px] text-zinc-400">
+                            Tap to join stream
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* People rail */}
             {people.length > 0 && (
