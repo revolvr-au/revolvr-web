@@ -21,7 +21,7 @@ type SupportMode = "tip" | "boost" | "spin";
 
 export default function ViewerPage() {
   const router = useRouter();
-  const { sessionId, success } = router.query;
+  const { sessionId } = router.query;
 
   const [data, setData] = useState<ViewerData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,30 +36,14 @@ export default function ViewerPage() {
     null
   );
 
-  // 🔐 Normalise sessionId so TypeScript is happy
+  // Normalise sessionId
   const id = useMemo(() => {
     if (typeof sessionId === "string") return sessionId;
     if (Array.isArray(sessionId) && sessionId.length > 0) return sessionId[0];
     return "";
   }, [sessionId]);
 
-  // 👤 Load logged-in viewer email
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        setUserEmail(user?.email ?? null);
-      } catch (e) {
-        console.error("viewer user load error", e);
-      }
-    };
-
-    loadUser();
-  }, []);
-
-  // 🔄 Load viewer token + LiveKit details
+  // Fetch viewer token + LiveKit details
   useEffect(() => {
     let cancelled = false;
     if (!id) return;
@@ -106,18 +90,28 @@ export default function ViewerPage() {
     };
   }, [id]);
 
-  // 🎉 Show a simple thanks after returning from Stripe
+  // Logged-in viewer email
   useEffect(() => {
-    if (
-      success === "1" ||
-      success === "true" ||
-      success === "success" ||
-      success === "ok"
-    ) {
-      // Super simple for now – we can swap to a toast later
-      alert("Thanks for supporting the creator! 💖");
+    const loadUser = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        setUserEmail(user?.email ?? null);
+      } catch (e) {
+        console.error("viewer user load error", e);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  // Thank-you toast after Stripe redirect
+  useEffect(() => {
+    if (router.query.success === "1") {
+      alert("Thanks for supporting the creator!");
     }
-  }, [success]);
+  }, [router.query]);
 
   const shareUrl =
     typeof window !== "undefined" && id
@@ -126,15 +120,14 @@ export default function ViewerPage() {
 
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      const redirectTarget = id ? `/live/${encodeURIComponent(id)}` : "/public-feed";
-      const redirect = encodeURIComponent(redirectTarget);
+      const redirect = encodeURIComponent(`/live/${encodeURIComponent(id || "")}`);
       router.push(`/login?redirectTo=${redirect}`);
       return false;
     }
     return true;
   };
 
-  // 💸 Amounts (in cents) for each support mode
+  // Amounts in cents
   const singleAmountForMode = (mode: SupportMode) => {
     switch (mode) {
       case "tip":
@@ -147,10 +140,10 @@ export default function ViewerPage() {
     }
   };
 
-  // 🔁 Stripe checkout for tips / boosts / spins (LIVE-SPECIFIC)
+  // Stripe checkout for tips / boosts / spins (LIVE)
   const handleSupport = async (mode: SupportMode) => {
     if (!ensureLoggedIn()) return;
-    if (!data || !id) return;
+    if (!data) return;
 
     try {
       setSupportLoading(mode);
@@ -160,14 +153,15 @@ export default function ViewerPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: id,
-          mode, // "tip" | "boost" | "spin"
+          sessionId: data.sessionId,
+          mode,
           amountCents,
+          userEmail,
         }),
       });
 
       if (!res.ok) {
-        console.error("live support checkout failed:", await res.text());
+        console.error("checkout failed:", await res.text());
         alert("Revolvr glitched out starting checkout. Try again.");
         return;
       }
@@ -179,14 +173,14 @@ export default function ViewerPage() {
         alert("Stripe did not return a checkout URL.");
       }
     } catch (e) {
-      console.error("live support error", e);
+      console.error("support error", e);
       alert("Something went wrong talking to Stripe 😵‍💫");
     } finally {
       setSupportLoading(null);
     }
   };
 
-  // ❤️ simple local like (no backend yet)
+  // Simple local like (client-only)
   const handleLike = () => {
     if (hasLiked) {
       setHasLiked(false);
@@ -254,7 +248,7 @@ export default function ViewerPage() {
 
   const ended = data.status === "ended";
 
-  // ⏹ If stream is ended, show nice ended state
+  // Ended state
   if (ended) {
     return (
       <div
@@ -309,7 +303,7 @@ export default function ViewerPage() {
     );
   }
 
-  // 🎥 Live viewer UI
+  // LIVE viewer UI
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#000", color: "#fff" }}>
       {/* Top HUD */}
@@ -380,7 +374,7 @@ export default function ViewerPage() {
         }}
       >
         {/* Video area */}
-        <div style={{ flex: 1, minHeight: 0, paddingTop: 56 }}>
+        <div style={{ flex: 1, minHeight: 0 }}>
           <LiveKitRoom
             serverUrl={data.livekitUrl}
             token={data.viewerToken}

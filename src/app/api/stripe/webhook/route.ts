@@ -1,3 +1,4 @@
+// src/app/api/stripe/webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
@@ -48,9 +49,12 @@ function looksLikeUuid(value: string | null | undefined): string | null {
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!uuidRegex.test(trimmed)) {
-    console.warn("[Webhook] metadata.postId is not a valid UUID, storing NULL:", {
-      rawValue: value,
-    });
+    console.warn(
+      "[Webhook] metadata.postId is not a valid UUID, storing NULL:",
+      {
+        rawValue: value,
+      }
+    );
     return null;
   }
   return trimmed;
@@ -108,8 +112,6 @@ export async function POST(req: NextRequest) {
     const postIdRaw = metadata.postId as string | undefined;
     const postId = looksLikeUuid(postIdRaw);
 
-    const supabase = getSupabaseAdmin();
-
     console.log("[Webhook] spin/live candidate:", {
       email,
       postIdRaw,
@@ -119,65 +121,22 @@ export async function POST(req: NextRequest) {
       session_id: session.id,
     });
 
-    // ------------------------------------------------------------
-    // 1) LIVE STREAM SUPPORT (takes priority if sessionId + mode present)
-    // ------------------------------------------------------------
-    const liveSessionId = metadata.sessionId as string | undefined;
-    const liveMode = metadata.mode as string | undefined; // "tip" | "boost" | "spin"
-    const liveAmountCentsMeta = metadata.amountCents as string | undefined;
-    const liveUserIdMeta = (metadata.userId as string | undefined) ?? null;
+    try {
+      const supabase = getSupabaseAdmin();
 
-    if (liveSessionId && liveMode) {
-      try {
-        const amountCents =
-          liveAmountCentsMeta != null
-            ? Number(liveAmountCentsMeta)
-            : session.amount_total ?? null;
-
-        const { error } = await supabase.from("live_support").insert({
-          session_id: liveSessionId,                // e.g. "revolvr-xxxx-uuid"
-          user_id: liveUserIdMeta || email || null, // prefer userId, fall back to email
-          mode: liveMode,                           // "tip" | "boost" | "spin"
-          amount_cents: amountCents,
-          checkout_session_id: session.id,
-        });
-
-        if (error) {
-          console.error("[Webhook] ❌ Error recording live support:", {
-            message: error.message,
-            details: (error as any).details,
-            hint: (error as any).hint,
-            code: (error as any).code,
-          });
-        } else {
-          console.log(
-            "[Webhook] ✅ Recorded live support for session",
-            liveSessionId,
-            "mode",
-            liveMode
-          );
-        }
-      } catch (err) {
-        console.error("[Webhook] ❌ Fatal error recording live support:", err);
-      }
-    }
-
-    // ------------------------------------------------------------
-    // 2) SPINNER SPINS (no sessionId => treat as normal spin)
-    // ------------------------------------------------------------
-    else if (kind === "spin") {
-      try {
+      // 1️⃣ Existing spinner spins (feed)
+      if (kind === "spin" && !metadata.liveSessionId) {
         const { error } = await supabase.from("spinner_spins").insert({
           user_email: email || null,
           post_id: postId, // will be NULL if invalid
-          status: "paid", // we know this is a completed payment
+          status: "paid",
           checkout_session_id: session.id,
           amount_cents: session.amount_total ?? null,
         });
 
         if (error) {
           console.error(
-            "[Webhook] ❌ INSERT / UPSERT ERROR for spinner_spins:",
+            "[Webhook] ❌ INSERT ERROR for spinner_spins:",
             {
               message: error.message,
               details: (error as any).details,
@@ -191,18 +150,57 @@ export async function POST(req: NextRequest) {
             session.id
           );
         }
-      } catch (err) {
-        console.error("[Webhook] ❌ Fatal error before insert:", err);
       }
-    }
+      // 2️⃣ NEW: live stream tips / boosts / spins
+      else if (
+        kind === "live_tip" ||
+        kind === "live_boost" ||
+        kind === "live_spin"
+      ) {
+        const liveSessionId = metadata.liveSessionId as string | undefined;
+        if (!liveSessionId) {
+          console.warn(
+            "[Webhook] live_* payment without liveSessionId, skipping",
+            { metadata }
+          );
+        } else {
+          const mode =
+            kind === "live_tip"
+              ? "tip"
+              : kind === "live_boost"
+              ? "boost"
+              : "spin";
 
-    // ------------------------------------------------------------
-    // 3) Anything else – ignore, but log
-    // ------------------------------------------------------------
-    else {
-      console.log(
-        "[Webhook] Not a spin or live-support payment, skipping DB insert"
-      );
+          const { error } = await supabase.from("live_support").insert({
+            session_id: liveSessionId,
+            user_email: email || null,
+            mode,
+            amount_cents: session.amount_total ?? null,
+            checkout_session_id: session.id,
+          });
+
+          if (error) {
+            console.error(
+              "[Webhook] ❌ INSERT ERROR for live_support:",
+              {
+                message: error.message,
+                details: (error as any).details,
+                hint: (error as any).hint,
+                code: (error as any).code,
+              }
+            );
+          } else {
+            console.log(
+              "[Webhook] ✅ live_support row inserted for live session",
+              liveSessionId
+            );
+          }
+        }
+      } else {
+        console.log("[Webhook] Not a spin or live_* payment, skipping DB insert");
+      }
+    } catch (err) {
+      console.error("[Webhook] ❌ Fatal error before insert:", err);
     }
   } else {
     console.log("[Webhook] Ignoring non-checkout.session.completed event");
