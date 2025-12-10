@@ -150,15 +150,16 @@ export default function ViewerPage() {
       const amountCents = singleAmountForMode(mode);
 
       const res = await fetch("/api/live/support/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessionId: data.sessionId,
-          mode,
-          amountCents,
-          userEmail,
-        }),
-      });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    mode,                 // "tip" | "boost" | "spin"
+    userEmail,            // viewer email
+    amountCents,          // cents
+    sessionId: data.sessionId, // live session id
+  }),
+});
+
 
       if (!res.ok) {
         console.error("checkout failed:", await res.text());

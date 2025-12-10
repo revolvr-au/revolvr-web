@@ -3,19 +3,16 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
 
 if (!stripeSecretKey) {
-  console.warn("[live-support checkout] STRIPE_SECRET_KEY is missing");
+  console.error(
+    "[live-support checkout] STRIPE_SECRET_KEY is missing in environment"
+  );
 }
 
-if (!siteUrl) {
-  console.warn("[live-support checkout] NEXT_PUBLIC_SITE_URL is missing");
-}
-
+// Use the same version your Stripe SDK expects
 const stripe = new Stripe(stripeSecretKey ?? "", {
-  // Match the style you already use in the webhook file
-  apiVersion: "2024-06-20" as any,
+  apiVersion: "2025-11-17.clover" as any,
 });
 
 type Body = {
@@ -34,68 +31,79 @@ export default async function handler(
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  if (!stripeSecretKey || !siteUrl) {
-    return res
-      .status(500)
-      .json({ error: "Stripe or site URL is not configured" });
-  }
-
   try {
-    const { sessionId, mode, amountCents, userEmail } = req.body as Body;
+    if (!stripeSecretKey) {
+      throw new Error("Missing STRIPE_SECRET_KEY env var");
+    }
+
+    const { sessionId, mode, amountCents, userEmail } =
+      (req.body ?? {}) as Body;
 
     if (!sessionId || !mode || !amountCents) {
+      console.error("[live-support checkout] bad payload", {
+        sessionId,
+        mode,
+        amountCents,
+      });
       return res
         .status(400)
         .json({ error: "Missing sessionId, mode or amountCents" });
     }
 
-    const cleanAmount = Math.max(100, Math.floor(amountCents)); // safety
+    const origin =
+      req.headers.origin ||
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      "http://localhost:3000";
 
-    const label =
-      mode === "tip"
-        ? "Revolvr live tip"
-        : mode === "boost"
-        ? "Revolvr live boost"
-        : "Revolvr live spin";
+    console.log("[live-support checkout] creating session", {
+      sessionId,
+      mode,
+      amountCents,
+      userEmail,
+      origin,
+    });
 
-    const checkout = await stripe.checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items: [
         {
+          quantity: 1,
           price_data: {
             currency: "aud",
-            unit_amount: cleanAmount,
             product_data: {
-              name: label,
+              name: `Live ${mode} for session ${sessionId}`,
             },
+            unit_amount: amountCents,
           },
-          quantity: 1,
         },
       ],
-      success_url: `${siteUrl}/live/${encodeURIComponent(
+      success_url: `${origin}/live/${encodeURIComponent(
         sessionId
       )}?success=1`,
-      cancel_url: `${siteUrl}/live/${encodeURIComponent(
-        sessionId
-      )}?canceled=1`,
+      cancel_url: `${origin}/live/${encodeURIComponent(sessionId)}`,
       metadata: {
-        // 👇 THIS is what the webhook will look at
-        paymentKind:
-          mode === "tip"
-            ? "live_tip"
-            : mode === "boost"
-            ? "live_boost"
-            : "live_spin",
-        liveSessionId: sessionId,
+        kind: "live",
+        mode,
         userEmail: userEmail ?? "",
-        amountCents: String(cleanAmount),
+        sessionId,
+        amountCents: String(amountCents),
       },
     });
 
-    return res.status(200).json({ url: checkout.url });
+    console.log(
+      "[live-support checkout] session created",
+      session.id,
+      "url:",
+      session.url
+    );
+
+    return res.status(200).json({ url: session.url });
   } catch (err: any) {
-    console.error("[live-support checkout] error creating session:", err);
+    console.error(
+      "[live-support checkout] error creating session:",
+      err?.message || err
+    );
     return res
       .status(500)
       .json({ error: "Unable to create live support checkout" });
