@@ -26,12 +26,20 @@ type Body = {
   mode: CheckoutMode;
   userEmail?: string | null;
   postId?: string | null;
+
+  /**
+   * Path the user should return to after checkout, e.g.
+   *   "/public-feed"
+   *   "/live/revolvr-123..."
+   * Must start with "/" or it will be ignored.
+   */
+  returnTo?: string | null;
 };
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body;
-    const { mode, postId, userEmail } = body;
+    const { mode, postId, userEmail, returnTo } = body;
 
     if (!mode) {
       return NextResponse.json({ error: "Missing mode" }, { status: 400 });
@@ -73,15 +81,22 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
     }
 
-    const successParams = new URLSearchParams();
-    successParams.set("success", "1");
-    successParams.set("mode", mode);
-    if (postId) successParams.set("postId", postId);
+    // Decide where to send the user back after checkout.
+    // If returnTo is a safe absolute path, use it; otherwise default to /public-feed.
+    const basePath =
+      typeof returnTo === "string" && returnTo.startsWith("/")
+        ? returnTo
+        : "/public-feed";
 
-    const cancelParams = new URLSearchParams();
-    cancelParams.set("canceled", "1");
-    cancelParams.set("mode", mode);
-    if (postId) cancelParams.set("postId", postId);
+    const successUrl = new URL(basePath, SITE_URL);
+    successUrl.searchParams.set("success", "1");
+    successUrl.searchParams.set("mode", mode);
+    if (postId) successUrl.searchParams.set("postId", postId);
+
+    const cancelUrl = new URL(basePath, SITE_URL);
+    cancelUrl.searchParams.set("canceled", "1");
+    cancelUrl.searchParams.set("mode", mode);
+    if (postId) cancelUrl.searchParams.set("postId", postId);
 
     const bundleType = mode.endsWith("-pack") ? "pack" : "single";
 
@@ -99,8 +114,8 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${SITE_URL}/public-feed?${successParams.toString()}`,
-      cancel_url: `${SITE_URL}/public-feed?${cancelParams.toString()}`,
+      success_url: successUrl.toString(),
+      cancel_url: cancelUrl.toString(),
       metadata: {
         mode,
         bundleType,

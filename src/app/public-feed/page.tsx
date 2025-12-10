@@ -300,6 +300,32 @@ export default function PublicFeedPage() {
         .single();
 
       if (insertError) throw insertError;
+        const startPayment = async (
+  mode: PurchaseMode,
+  postId: string,
+  kind: "single" | "pack"
+) => {
+  if (!userEmail) return;
+
+  const checkoutMode =
+    kind === "pack"
+      ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
+      : mode;
+
+  const res = await fetch("/api/payments/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mode: checkoutMode,
+      userEmail,
+      postId,
+      returnTo: `/live/${encodeURIComponent(roomName)}`, // key line
+    }),
+  });
+
+  const data = await res.json();
+  if (data.url) window.location.href = data.url;
+};
 
       setPosts((prev) =>
         inserted
@@ -324,6 +350,14 @@ export default function PublicFeedPage() {
   };
 
   // Generic payment starter – now sends "tip" vs "tip-pack" etc.
+  
+
+
+  // --- Payments: tip / boost / spin ------------------------------
+
+  const [pendingPurchase, setPendingPurchase] =
+    useState<PendingPurchase | null>(null);
+
   const startPayment = async (
     mode: PurchaseMode,
     postId: string,
@@ -347,6 +381,8 @@ export default function PublicFeedPage() {
           mode: checkoutMode,
           userEmail,
           postId,
+          // 👇 important: send user back to the feed after checkout
+          returnTo: "/public-feed",
         }),
       });
 
@@ -368,57 +404,28 @@ export default function PublicFeedPage() {
     }
   };
 
-  // These helpers are available if you want to use them in labels
-  const singleAmountForMode = (mode: PurchaseMode) => {
-    switch (mode) {
-      case "tip":
-        return 200;
-      case "boost":
-        return 500;
-      case "spin":
-      default:
-        return 100;
-    }
-  };
+  // open the “single vs pack” sheet for each action
+  const handleTipClick = (postId: string) =>
+    setPendingPurchase({ postId, mode: "tip" });
 
-  const packAmountForMode = (mode: PurchaseMode) => {
-    switch (mode) {
-      case "tip":
-        return 1000;
-      case "boost":
-        return 2500;
-      case "spin":
-      default:
-        return 500;
-    }
-  };
+  const handleBoostClick = (postId: string) =>
+    setPendingPurchase({ postId, mode: "boost" });
 
+  const handleSpinClick = (postId: string) =>
+    setPendingPurchase({ postId, mode: "spin" });
+
+  // user chose the single option
   const handleSinglePurchase = async () => {
     if (!pendingPurchase) return;
     await startPayment(pendingPurchase.mode, pendingPurchase.postId, "single");
     setPendingPurchase(null);
   };
 
+  // user chose the pack option
   const handlePackPurchase = async () => {
     if (!pendingPurchase) return;
     await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
     setPendingPurchase(null);
-  };
-
-  // Click handlers passed to PublicPostCard
-  const handleTipClick = (postId: string) => {
-    if (!ensureLoggedIn()) return;
-    setPendingPurchase({ postId, mode: "tip" });
-  };
-
-  const handleBoostClick = (postId: string) => {
-    if (!ensureLoggedIn()) return;
-    setPendingPurchase({ postId, mode: "boost" });
-  };
-
-  const handleSpinClick = (postId: string) => {
-    if (!ensureLoggedIn()) return;
-    setPendingPurchase({ postId, mode: "spin" });
   };
 
   // --- JSX ---
@@ -1015,6 +1022,7 @@ function PurchaseChoiceSheet({
       ? "Boost"
       : "Spin";
 
+  // UI labels only (Stripe amounts are configured in the API route)
   const singleAmount =
     pending.mode === "tip"
       ? "A$2"
@@ -1022,15 +1030,22 @@ function PurchaseChoiceSheet({
       ? "A$5"
       : "A$1";
 
+  const packAmount =
+    pending.mode === "tip"
+      ? "A$20" // 10 × A$2
+      : pending.mode === "boost"
+      ? "A$50" // 10 × A$5
+      : "A$20"; // 20 × A$1
+
   const packLabel =
     pending.mode === "tip"
-      ? "tip pack"
+      ? `Buy tip pack (${packAmount})`
       : pending.mode === "boost"
-      ? "boost pack"
-      : "spin pack";
+      ? `Buy boost pack (${packAmount})`
+      : `Buy spin pack (${packAmount})`;
 
   return (
-    <div className="fixed inset-0 z-30 flex items-end justifycenter bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">
@@ -1068,7 +1083,7 @@ function PurchaseChoiceSheet({
             onClick={onPack}
             className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-xs text-left"
           >
-            <div className="font-semibold">Buy {packLabel}</div>
+            <div className="font-semibold">{packLabel}</div>
             <div className="text-[11px] text-white/70">
               Better value, more {modeLabel.toLowerCase()}s
             </div>
@@ -1086,3 +1101,4 @@ function PurchaseChoiceSheet({
     </div>
   );
 }
+
