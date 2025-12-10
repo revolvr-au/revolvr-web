@@ -155,42 +155,41 @@ export default function PublicFeedPage() {
 
   // Load posts (this is the ONLY place that sets the red error banner on initial load)
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setIsLoading(true);
+  const fetchPosts = async () => {
+    try {
+      setIsLoading(true);
 
-        const { data, error } = await supabase
-          .from("posts")
-          .select(
-            "id, user_email, image_url, caption, created_at, tip_count, boost_count, spin_count"
-          )
-          .order("created_at", { ascending: false });
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        setPosts(
-          (data ?? []).map((row: any) => ({
-            id: row.id,
-            user_email: row.user_email,
-            image_url: row.image_url,
-            caption: row.caption,
-            created_at: row.created_at,
-            tip_count: row.tip_count,
-            boost_count: row.boost_count,
-            spin_count: row.spin_count,
-            reactions: {},
-          }))
-        );
-      } catch (e) {
-        console.error("Error loading public feed posts", e);
-        setError("Revolvr glitched out loading the public feed 😵‍💫");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setPosts(
+        (data ?? []).map((row: any) => ({
+          id: row.id,
+          user_email: row.user_email,
+          image_url: row.image_url,
+          caption: row.caption,
+          created_at: row.created_at,
+          tip_count: row.tip_count,
+          boost_count: row.boost_count,
+          spin_count: row.spin_count,
+          reactions: {},
+        }))
+      );
+    } catch (e) {
+      console.error("Error loading public feed posts", e);
+      setError("Revolvr glitched out loading the public feed 😵‍💫");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchPosts();
-  }, []);
+  fetchPosts();
+}, []);
+
 
   // People rail data
   const people: Person[] = useMemo(() => {
