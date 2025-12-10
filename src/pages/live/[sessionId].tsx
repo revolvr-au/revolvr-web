@@ -35,15 +35,17 @@ export default function ViewerPage() {
   const [supportLoading, setSupportLoading] = useState<SupportMode | null>(
     null
   );
+  const [pendingSupportMode, setPendingSupportMode] =
+    useState<SupportMode | null>(null);
 
-  // Normalise sessionId
+  // 🔐 Normalise sessionId for TS
   const id = useMemo(() => {
     if (typeof sessionId === "string") return sessionId;
     if (Array.isArray(sessionId) && sessionId.length > 0) return sessionId[0];
     return "";
   }, [sessionId]);
 
-  // Fetch viewer token + LiveKit details
+  // 🔄 Load viewer token + LiveKit details
   useEffect(() => {
     let cancelled = false;
     if (!id) return;
@@ -90,7 +92,7 @@ export default function ViewerPage() {
     };
   }, [id]);
 
-  // Logged-in viewer email
+  // 👤 Load logged-in viewer email
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -106,12 +108,12 @@ export default function ViewerPage() {
     loadUser();
   }, []);
 
-  // Thank-you toast after Stripe redirect
+  // 🎉 Success message after Stripe redirect
   useEffect(() => {
     if (router.query.success === "1") {
       alert("Thanks for supporting the creator!");
     }
-  }, [router.query]);
+  }, [router.query.success]);
 
   const shareUrl =
     typeof window !== "undefined" && id
@@ -120,14 +122,16 @@ export default function ViewerPage() {
 
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      const redirect = encodeURIComponent(`/live/${encodeURIComponent(id || "")}`);
+      const redirect = encodeURIComponent(
+        `/live/${encodeURIComponent(id || "")}`
+      );
       router.push(`/login?redirectTo=${redirect}`);
       return false;
     }
     return true;
   };
 
-  // Amounts in cents
+  // 💸 Amounts (in cents) for each support mode
   const singleAmountForMode = (mode: SupportMode) => {
     switch (mode) {
       case "tip":
@@ -140,49 +144,68 @@ export default function ViewerPage() {
     }
   };
 
-  // Stripe checkout for tips / boosts / spins (LIVE)
-  const handleSupport = async (mode: SupportMode) => {
-  if (!ensureLoggedIn()) return;
-  if (!data) return;
-
-  try {
-    setSupportLoading(mode);
-    const amountCents = singleAmountForMode(mode);
-
-    const res = await fetch("/api/live/support/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode,                    // "tip" | "boost" | "spin"
-        userEmail,               // viewer email
-        amountCents,             // integer, in cents
-        postId: data.sessionId,  // we reuse postId as "live session id"
-        kind: "live_support",    // so webhook can tell this is a live payment
-      }),
-    });
-
-    if (!res.ok) {
-      console.error("checkout failed:", await res.text());
-      alert("Revolvr glitched out starting checkout. Try again.");
-      return;
+  const packAmountForMode = (mode: SupportMode) => {
+    switch (mode) {
+      case "tip":
+        return 1000; // A$10 tip pack
+      case "boost":
+        return 2500; // A$25 boost pack
+      case "spin":
+      default:
+        return 500; // A$5 spin pack
     }
+  };
 
-    const json = await res.json();
-    if (json.url) {
-      window.location.href = json.url;
-    } else {
-      alert("Stripe did not return a checkout URL.");
+  // 🔁 Stripe checkout for tips / boosts / spins
+  const handleSupport = async (
+    mode: SupportMode,
+    kind: "single" | "pack"
+  ) => {
+    if (!ensureLoggedIn()) return;
+    if (!data) return;
+
+    try {
+      setSupportLoading(mode);
+
+      const amountCents =
+        kind === "single"
+          ? singleAmountForMode(mode)
+          : packAmountForMode(mode);
+
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode, // "tip" | "boost" | "spin"
+          userEmail, // viewer’s email
+          amountCents, // cents
+          postId: data.sessionId, // reuse postId = live session ID
+          kind: "live", // hint for backend
+        }),
+      });
+
+      if (!res.ok) {
+        console.error("checkout failed:", await res.text());
+        alert("Revolvr glitched out starting checkout. Try again.");
+        return;
+      }
+
+      const json = await res.json();
+      if (json.url) {
+        window.location.href = json.url;
+      } else {
+        alert("Stripe did not return a checkout URL.");
+      }
+    } catch (e) {
+      console.error("support error", e);
+      alert("Something went wrong talking to Stripe 😵‍💫");
+    } finally {
+      setSupportLoading(null);
+      setPendingSupportMode(null);
     }
-  } catch (e) {
-    console.error("support error", e);
-    alert("Something went wrong talking to Stripe 😵‍💫");
-  } finally {
-    setSupportLoading(null);
-  }
-};
+  };
 
-
-  // Simple local like (client-only)
+  // ❤️ simple local like (no backend yet)
   const handleLike = () => {
     if (hasLiked) {
       setHasLiked(false);
@@ -250,7 +273,7 @@ export default function ViewerPage() {
 
   const ended = data.status === "ended";
 
-  // Ended state
+  // ⏹ If stream is ended, show nice ended state
   if (ended) {
     return (
       <div
@@ -305,7 +328,7 @@ export default function ViewerPage() {
     );
   }
 
-  // LIVE viewer UI
+  // 🎥 Live viewer UI
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#000", color: "#fff" }}>
       {/* Top HUD */}
@@ -417,7 +440,10 @@ export default function ViewerPage() {
               }}
             >
               <button
-                onClick={() => handleSupport("tip")}
+                onClick={() => {
+                  if (!ensureLoggedIn()) return;
+                  setPendingSupportMode("tip");
+                }}
                 disabled={supportLoading === "tip"}
                 style={{
                   padding: "6px 14px",
@@ -432,7 +458,10 @@ export default function ViewerPage() {
                 {supportLoading === "tip" ? "Opening…" : "Tip A$2"}
               </button>
               <button
-                onClick={() => handleSupport("boost")}
+                onClick={() => {
+                  if (!ensureLoggedIn()) return;
+                  setPendingSupportMode("boost");
+                }}
                 disabled={supportLoading === "boost"}
                 style={{
                   padding: "6px 14px",
@@ -447,7 +476,10 @@ export default function ViewerPage() {
                 {supportLoading === "boost" ? "Opening…" : "Boost A$5"}
               </button>
               <button
-                onClick={() => handleSupport("spin")}
+                onClick={() => {
+                  if (!ensureLoggedIn()) return;
+                  setPendingSupportMode("spin");
+                }}
                 disabled={supportLoading === "spin"}
                 style={{
                   padding: "6px 14px",
@@ -504,6 +536,193 @@ export default function ViewerPage() {
           </div>
         </div>
       </main>
+
+      {/* Single vs pack choice for live support */}
+      {pendingSupportMode && (
+        <SupportChoiceSheet
+          mode={pendingSupportMode}
+          onClose={() => setPendingSupportMode(null)}
+          onSingle={() => handleSupport(pendingSupportMode, "single")}
+          onPack={() => handleSupport(pendingSupportMode, "pack")}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Support choice sheet (live)                                        */
+/* ------------------------------------------------------------------ */
+
+type SupportChoiceSheetProps = {
+  mode: SupportMode;
+  onClose: () => void;
+  onSingle: () => void;
+  onPack: () => void;
+};
+
+function SupportChoiceSheet({
+  mode,
+  onClose,
+  onSingle,
+  onPack,
+}: SupportChoiceSheetProps) {
+  const modeLabel =
+    mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
+
+  const singleAmount =
+    mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
+
+  const packLabel =
+    mode === "tip"
+      ? "tip pack"
+      : mode === "boost"
+      ? "boost pack"
+      : "spin pack";
+
+  const packAmount =
+    mode === "tip" ? "A$10" : mode === "boost" ? "A$25" : "A$5";
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 40,
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        backgroundColor: "rgba(0,0,0,0.4)",
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 420,
+          margin: "0 16px 24px",
+          borderRadius: 16,
+          backgroundColor: "#050815",
+          border: "1px solid rgba(255,255,255,0.08)",
+          padding: 16,
+          color: "#fff",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 8,
+          }}
+        >
+          <h2 style={{ fontSize: 14, fontWeight: 600 }}>
+            Support this stream with a {modeLabel}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{
+              fontSize: 11,
+              color: "rgba(255,255,255,0.6)",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Close
+          </button>
+        </div>
+
+        <p
+          style={{
+            fontSize: 12,
+            color: "rgba(255,255,255,0.7)",
+            marginBottom: 12,
+          }}
+        >
+          Choose a one-off {modeLabel.toLowerCase()} or grab a pack so you
+          don&apos;t have to check out every time.
+        </p>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 8,
+            marginBottom: 8,
+          }}
+        >
+          <button
+            type="button"
+            onClick={onSingle}
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              border: "1px solid rgba(16,185,129,0.8)",
+              backgroundColor: "rgba(16,185,129,0.18)",
+              padding: "10px 12px",
+              textAlign: "left",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600 }}>
+              Single {modeLabel} ({singleAmount})
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "rgba(209,250,229,0.85)",
+                marginTop: 2,
+              }}
+            >
+              Quick one-off support
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={onPack}
+            style={{
+              flex: 1,
+              borderRadius: 12,
+              border: "1px solid rgba(148,163,184,0.8)",
+              backgroundColor: "rgba(15,23,42,0.9)",
+              padding: "10px 12px",
+              textAlign: "left",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600 }}>
+              Buy {packLabel} ({packAmount})
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "rgba(148,163,184,0.9)",
+                marginTop: 2,
+              }}
+            >
+              Better value, more {modeLabel.toLowerCase()}s
+            </div>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: "100%",
+            marginTop: 2,
+            fontSize: 11,
+            color: "rgba(148,163,184,0.9)",
+            background: "transparent",
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Maybe later
+        </button>
+      </div>
     </div>
   );
 }
