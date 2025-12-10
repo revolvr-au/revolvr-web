@@ -181,6 +181,7 @@ export default function ViewerPage() {
           amountCents, // cents
           postId: data.sessionId, // reuse postId = live session ID
           kind: "live", // hint for backend
+          bundleType: kind, // "single" | "pack" so we can see it in metadata/logs
         }),
       });
 
@@ -539,13 +540,13 @@ export default function ViewerPage() {
 
       {/* Single vs pack choice for live support */}
       {pendingSupportMode && (
-  <SupportChoiceSheet
-    mode={pendingSupportMode}
-    onClose={() => setPendingSupportMode(null)}
-    onSingle={() => handleSupport(pendingSupportMode!, "single")}
-    onPack={() => handleSupport(pendingSupportMode!, "pack")}
-  />
-)}
+        <SupportChoiceSheet
+          mode={pendingSupportMode}
+          onClose={() => setPendingSupportMode(null)}
+          onSingle={() => handleSupport(pendingSupportMode!, "single")}
+          onPack={() => handleSupport(pendingSupportMode!, "pack")}
+        />
+      )}
     </div>
   );
 }
