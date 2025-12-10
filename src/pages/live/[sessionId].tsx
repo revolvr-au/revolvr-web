@@ -539,13 +539,13 @@ export default function ViewerPage() {
 
       {/* Single vs pack choice for live support */}
       {pendingSupportMode && (
-        <SupportChoiceSheet
-          mode={pendingSupportMode}
-          onClose={() => setPendingSupportMode(null)}
-          onSingle={() => handleSupport(pendingSupportMode, "single")}
-          onPack={() => handleSupport(pendingSupportMode, "pack")}
-        />
-      )}
+  <SupportChoiceSheet
+    mode={pendingSupportMode}
+    onClose={() => setPendingSupportMode(null)}
+    onSingle={() => handleSupport(pendingSupportMode!, "single")}
+    onPack={() => handleSupport(pendingSupportMode!, "pack")}
+  />
+)}
     </div>
   );
 }
