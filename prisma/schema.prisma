@@ -1,12 +1,12 @@
-// prisma/schema.prisma
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["public"] // Do NOT include "auth"
 }
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 model Post {
@@ -17,8 +17,9 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relation: One post has many Likes
   Like Like[]
+
+  @@schema("public")
 }
 
 model Like {
@@ -27,11 +28,10 @@ model Like {
   userEmail String
   createdAt DateTime @default(now())
 
-  // Relation: Many Likes belong to One Post
   post Post @relation(fields: [postId], references: [id])
 
-  // Prevent a user from liking the same post twice
   @@unique([postId, userEmail])
+  @@schema("public")
 }
 
 model RevolvrItem {
@@ -42,6 +42,8 @@ model RevolvrItem {
   value     Int?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+
+  @@schema("public")
 }
 
 enum RevolvrStatus {
@@ -49,4 +51,18 @@ enum RevolvrStatus {
   ACTIVE
   WON
   LOST
+
+  @@schema("public")
+}
+
+model UserCredits {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  boosts    Int      @default(0)
+  tips      Int      @default(0)
+  spins     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("public")
 }
