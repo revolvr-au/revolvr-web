@@ -26,20 +26,17 @@ type Body = {
   mode: CheckoutMode;
   userEmail?: string | null;
   postId?: string | null;
-
   /**
-   * Path the user should return to after checkout, e.g.
-   *   "/public-feed"
-   *   "/live/revolvr-123..."
-   * Must start with "/" or it will be ignored.
+   * Optional path we should return the user to after checkout.
+   * Example: "/live/my-room" or "/public-feed"
    */
-  returnTo?: string | null;
+  returnPath?: string | null;
 };
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body;
-    const { mode, postId, userEmail, returnTo } = body;
+    const { mode, postId, userEmail, returnPath } = body;
 
     if (!mode) {
       return NextResponse.json({ error: "Missing mode" }, { status: 400 });
@@ -81,24 +78,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
     }
 
-    // Decide where to send the user back after checkout.
-    // If returnTo is a safe absolute path, use it; otherwise default to /public-feed.
-    const basePath =
-      typeof returnTo === "string" && returnTo.startsWith("/")
-        ? returnTo
-        : "/public-feed";
+    // Where should we send the user back to?
+    // Only allow internal paths that start with "/"
+    const safeReturnPath =
+      returnPath && returnPath.startsWith("/") ? returnPath : "/public-feed";
 
-    const successUrl = new URL(basePath, SITE_URL);
-    successUrl.searchParams.set("success", "1");
-    successUrl.searchParams.set("mode", mode);
-    if (postId) successUrl.searchParams.set("postId", postId);
+    const successParams = new URLSearchParams();
+    successParams.set("success", "1");
+    successParams.set("mode", mode);
+    if (postId) successParams.set("postId", postId);
 
-    const cancelUrl = new URL(basePath, SITE_URL);
-    cancelUrl.searchParams.set("canceled", "1");
-    cancelUrl.searchParams.set("mode", mode);
-    if (postId) cancelUrl.searchParams.set("postId", postId);
+    const cancelParams = new URLSearchParams();
+    cancelParams.set("canceled", "1");
+    cancelParams.set("mode", mode);
+    if (postId) cancelParams.set("postId", postId);
 
     const bundleType = mode.endsWith("-pack") ? "pack" : "single";
+
+    const successUrl = new URL(SITE_URL);
+    successUrl.pathname = safeReturnPath;
+    successUrl.search = successParams.toString();
+
+    const cancelUrl = new URL(SITE_URL);
+    cancelUrl.pathname = safeReturnPath;
+    cancelUrl.search = cancelParams.toString();
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",

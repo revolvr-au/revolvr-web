@@ -305,58 +305,50 @@ export default function PublicFeedPage() {
   postId: string,
   kind: "single" | "pack"
 ) => {
+  if (!ensureLoggedIn()) return;
   if (!userEmail) return;
 
-  const checkoutMode =
-    kind === "pack"
-      ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
-      : mode;
+  try {
+    setError(null);
 
-  const res = await fetch("/api/payments/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      mode: checkoutMode,
-      userEmail,
-      postId,
-      returnTo: `/live/${encodeURIComponent(roomName)}`, // key line
-    }),
-  });
+    const checkoutMode =
+      kind === "pack"
+        ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
+        : mode;
 
-  const data = await res.json();
-  if (data.url) window.location.href = data.url;
+    const res = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: checkoutMode,
+        userEmail,
+        postId,
+        // After Stripe, come back to the feed
+        returnPath: "/public-feed",
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Checkout failed:", await res.text());
+      setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
+      return;
+    }
+
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      setError("Stripe did not return a checkout URL.");
+    }
+  } catch (e) {
+    console.error("Error starting payment", e);
+    setError("Revolvr glitched out talking to Stripe 😵‍💫");
+  }
 };
 
-      setPosts((prev) =>
-        inserted
-          ? [
-              {
-                ...(inserted as Post),
-                reactions: {},
-              },
-              ...prev,
-            ]
-          : prev
-      );
-      setCaption("");
-      setFile(null);
-      setShowComposer(false);
-    } catch (e) {
-      console.error("Error creating post", e);
-      setError("Revolvr glitched out while posting 😵‍💫 Try again.");
-    } finally {
-      setIsPosting(false);
-    }
-  };
-
-  // Generic payment starter – now sends "tip" vs "tip-pack" etc.
-  
 
 
   // --- Payments: tip / boost / spin ------------------------------
-
-  const [pendingPurchase, setPendingPurchase] =
-    useState<PendingPurchase | null>(null);
 
   const startPayment = async (
     mode: PurchaseMode,
@@ -381,8 +373,6 @@ export default function PublicFeedPage() {
           mode: checkoutMode,
           userEmail,
           postId,
-          // 👇 important: send user back to the feed after checkout
-          returnTo: "/public-feed",
         }),
       });
 
@@ -404,15 +394,55 @@ export default function PublicFeedPage() {
     }
   };
 
-  // open the “single vs pack” sheet for each action
-  const handleTipClick = (postId: string) =>
+  // These helpers are only for label text (not Stripe amounts)
+  const singleAmountForMode = (mode: PurchaseMode) => {
+    switch (mode) {
+      case "tip":
+        return 200;
+      case "boost":
+        return 500;
+      case "spin":
+      default:
+        return 100;
+    }
+  };
+
+  const packAmountForMode = (mode: PurchaseMode) => {
+    switch (mode) {
+      case "tip":
+        return 2000; // 10 x A$2 tips
+      case "boost":
+        return 5000; // 10 x A$5 boosts
+      case "spin":
+      default:
+        return 2000; // 20 x A$1 spins
+    }
+  };
+
+  const handleSinglePurchase = async () => {
+    if (!pendingPurchase) return;
+    await startPayment(pendingPurchase.mode, pendingPurchase.postId, "single");
+    setPendingPurchase(null);
+  };
+
+  const handlePackPurchase = async () => {
+    if (!pendingPurchase) return;
+    await startPayment(pendingPurchase.mode, pendingPurchase.postId, "pack");
+    setPendingPurchase(null);
+  };
+
+  const handleTipClick = (postId: string) => {
     setPendingPurchase({ postId, mode: "tip" });
+  };
 
-  const handleBoostClick = (postId: string) =>
+  const handleBoostClick = (postId: string) => {
     setPendingPurchase({ postId, mode: "boost" });
+  };
 
-  const handleSpinClick = (postId: string) =>
+  const handleSpinClick = (postId: string) => {
     setPendingPurchase({ postId, mode: "spin" });
+  };
+
 
   // user chose the single option
   const handleSinglePurchase = async () => {
