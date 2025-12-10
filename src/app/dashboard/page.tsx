@@ -12,6 +12,12 @@ import SpinButton from "./_spinButton";
 import IdentityLens from "@/components/IdentityLens";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 
+type UserCredits = {
+  boosts: number;
+  tips: number;
+  spins: number;
+};
+
 type Post = {
   id: string;
   user_email: string;
@@ -35,9 +41,11 @@ export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  const [credits, setCredits] = useState<UserCredits | null>(null);
+  const [loadingCredits, setLoadingCredits] = useState(false);
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [spins, setSpins] = useState<Spin[]>([]);
-
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [isLoadingSpins, setIsLoadingSpins] = useState(true);
 
@@ -124,11 +132,40 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // Load credits for user
+  const loadCredits = useCallback(
+    async (email: string) => {
+      try {
+        setLoadingCredits(true);
+        const res = await fetch(
+          `/api/credits?email=${encodeURIComponent(email)}`
+        );
+        if (!res.ok) {
+          console.error("Failed to load credits", await res.text());
+          return;
+        }
+        const data = await res.json();
+        setCredits({
+          boosts: data.boosts ?? 0,
+          tips: data.tips ?? 0,
+          spins: data.spins ?? 0,
+        });
+      } catch (err) {
+        console.error("Error fetching credits", err);
+      } finally {
+        setLoadingCredits(false);
+      }
+    },
+    []
+  );
+
+  // When we know the user, load posts, spins, credits
   useEffect(() => {
     if (!userEmail) return;
     loadPosts();
     loadSpins(userEmail);
-  }, [userEmail, loadPosts, loadSpins]);
+    loadCredits(userEmail);
+  }, [userEmail, loadPosts, loadSpins, loadCredits]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -198,6 +235,7 @@ export default function DashboardPage() {
     }
   };
 
+  // Spend boost credit if available, else fallback to Stripe
   const handleBoostPost = async (postId: string, boostAmountCents = 500) => {
     if (!userEmail) {
       setError("You need to be logged in to boost a post.");
@@ -207,13 +245,63 @@ export default function DashboardPage() {
     try {
       setError(null);
 
+      // 1) If user has boost credits, spend one instead of charging via Stripe
+      if (credits && credits.boosts > 0) {
+        const res = await fetch("/api/credits/spend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: userEmail,
+            kind: "boost",
+            postId,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          console.error("Failed to spend boost credit:", data);
+          setError(data.error ?? "Could not spend a boost credit.");
+          return;
+        }
+
+        // Update local credits state
+        if (data.credits) {
+          setCredits({
+            boosts: data.credits.boosts ?? 0,
+            tips: data.credits.tips ?? 0,
+            spins: data.credits.spins ?? 0,
+          });
+        } else {
+          // Fallback if API didn't return credits
+          setCredits((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  boosts: Math.max(0, prev.boosts - 1),
+                }
+              : prev
+          );
+        }
+
+        // Optionally mark the post as boosted locally
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId ? { ...p, is_boosted: true } : p
+          )
+        );
+
+        return; // done, no Stripe
+      }
+
+      // 2) No credits left → fall back to Stripe checkout
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: "boost",
           userEmail,
-          amountCents: boostAmountCents,
+          amountCents: boostAmountCents, // ignored by server but left here
           postId,
         }),
       });
@@ -249,7 +337,9 @@ export default function DashboardPage() {
             className="hidden sm:block"
             alt="Revolvr"
           />
-          <span className="text-lg font-semibold tracking-tight">Revolvr</span>
+          <span className="text-lg font-semibold tracking-tight">
+            Revolvr
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -296,6 +386,40 @@ export default function DashboardPage() {
               </button>
               <SpinButton userEmail={userEmail ?? ""} />
             </div>
+
+            {/* Credits widget */}
+            {credits && (
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-white/80">
+                    Your credits
+                  </span>
+                  {loadingCredits && (
+                    <span className="text-[10px] text-white/50">
+                      Refreshing…
+                    </span>
+                  )}
+                </div>
+                <div className="flex justify-between">
+                  <span>Boosts</span>
+                  <span className="font-mono">
+                    {credits.boosts}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Tips</span>
+                  <span className="font-mono">
+                    {credits.tips}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Spins</span>
+                  <span className="font-mono">
+                    {credits.spins}
+                  </span>
+                </div>
+              </div>
+            )}
           </section>
         </aside>
 
@@ -316,10 +440,13 @@ export default function DashboardPage() {
 
           {/* Posts */}
           {isLoadingPosts ? (
-            <div className="text-sm text-white/70">Loading the feed…</div>
+            <div className="text-sm text-white/70">
+              Loading the feed…
+            </div>
           ) : posts.length === 0 ? (
             <div className="text-sm text-white/70">
-              No posts yet. Be the first to spin something into existence ✨
+              No posts yet. Be the first to spin something into
+              existence ✨
             </div>
           ) : (
             <div className="space-y-6 pb-12">
@@ -327,7 +454,9 @@ export default function DashboardPage() {
                 const displayName = (() => {
                   if (!post.user_email) return "Someone";
                   const [localPart] = post.user_email.split("@");
-                  const cleaned = localPart.replace(/\W+/g, " ").trim();
+                  const cleaned = localPart
+                    .replace(/\W+/g, " ")
+                    .trim();
                   return cleaned || post.user_email;
                 })();
 
@@ -347,18 +476,29 @@ export default function DashboardPage() {
                             {displayName}
                           </span>
                           <span className="text-[11px] text-white/40">
-                            {new Date(post.created_at).toLocaleString()}
+                            {new Date(
+                              post.created_at
+                            ).toLocaleString()}
                           </span>
                         </div>
                       </div>
 
-                      <button
-                        className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
-                        onClick={() => handleDeletePost(post.id)}
-                      >
-                        <RevolvrIcon name="trash" size={14} />
-                        <span>Delete</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className="text-xs text-emerald-300 hover:text-emerald-200 underline inline-flex items-center gap-1.5"
+                          onClick={() => handleBoostPost(post.id)}
+                        >
+                          <RevolvrIcon name="boost" size={14} />
+                          <span>Boost</span>
+                        </button>
+                        <button
+                          className="text-xs text-red-300 hover:text-red-200 underline inline-flex items-center gap-1.5"
+                          onClick={() => handleDeletePost(post.id)}
+                        >
+                          <RevolvrIcon name="trash" size={14} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Media */}
