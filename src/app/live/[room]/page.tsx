@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import {
+  useParams,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import {
   CreditBalances,
   loadCreditsForUser,
   spendOneCredit,
   PurchaseMode,
+  applyPackPurchase,
 } from "@/lib/credits";
 
 type PendingPurchase = {
@@ -17,8 +22,8 @@ type PendingPurchase = {
 export default function LiveRoomPage() {
   const params = useParams<{ room: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Safely derive the room name (handles undefined/array)
   const safeRoom = params?.room ?? "";
   const roomName = useMemo(
     () =>
@@ -38,10 +43,9 @@ export default function LiveRoomPage() {
   const [creditsLoading, setCreditsLoading] = useState(false);
 
   /* ------------------------------------------------------------------ */
-  /* Auth + credits                                                     */
+  /* Auth                                                               */
   /* ------------------------------------------------------------------ */
 
-  // Load current user
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -58,7 +62,21 @@ export default function LiveRoomPage() {
     loadUser();
   }, []);
 
-  // Load credits whenever user changes
+  const ensureLoggedIn = () => {
+    if (!userEmail) {
+      const redirect = encodeURIComponent(
+        `/live/${encodeURIComponent(roomName)}`
+      );
+      router.push(`/login?redirectTo=${redirect}`);
+      return false;
+    }
+    return true;
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Load credits for logged-in user                                    */
+  /* ------------------------------------------------------------------ */
+
   useEffect(() => {
     if (!userEmail) {
       setCredits(null);
@@ -72,7 +90,6 @@ export default function LiveRoomPage() {
         setCredits(balances);
       } catch (e) {
         console.error("[live room] error loading credits", e);
-        // Non-fatal; user can still check out via Stripe.
       } finally {
         setCreditsLoading(false);
       }
@@ -81,16 +98,51 @@ export default function LiveRoomPage() {
     loadCredits();
   }, [userEmail]);
 
-  const ensureLoggedIn = () => {
-    if (!userEmail) {
-      const redirect = encodeURIComponent(
-        `/live/${encodeURIComponent(roomName)}`
-      );
-      router.push(`/login?redirectTo=${redirect}`);
-      return false;
+  /* ------------------------------------------------------------------ */
+  /* Apply pack purchase after Stripe redirect                          */
+  /* ------------------------------------------------------------------ */
+
+  useEffect(() => {
+    if (!userEmail) return;
+    if (!searchParams) return;
+
+    const success = searchParams.get("success");
+    const modeParam = searchParams.get("mode");
+
+    if (success !== "1") return;
+    if (!modeParam) return;
+
+    const isPack =
+      modeParam === "tip-pack" ||
+      modeParam === "boost-pack" ||
+      modeParam === "spin-pack";
+
+    if (!isPack) return;
+
+    // Best-effort: avoid double-applying in this tab using sessionStorage
+    const key = `credits_applied_${modeParam}`;
+    if (typeof window !== "undefined") {
+      const already = sessionStorage.getItem(key);
+      if (already === "1") {
+        return;
+      }
     }
-    return true;
-  };
+
+    (async () => {
+      try {
+        const updated = await applyPackPurchase(
+          userEmail,
+          modeParam as "tip-pack" | "boost-pack" | "spin-pack"
+        );
+        setCredits(updated);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(key, "1");
+        }
+      } catch (e) {
+        console.error("[live] failed to apply pack purchase", e);
+      }
+    })();
+  }, [userEmail, searchParams]);
 
   /* ------------------------------------------------------------------ */
   /* Stripe checkout fallback                                           */
@@ -114,8 +166,7 @@ export default function LiveRoomPage() {
         body: JSON.stringify({
           mode: checkoutMode,
           userEmail,
-          postId: roomName, // treat roomName as the target id for live
-          // send them back to THIS live room after Stripe
+          postId: roomName, // treat room as target id
           returnPath: `/live/${encodeURIComponent(roomName)}`,
           source: "live",
           roomName,
@@ -141,14 +192,13 @@ export default function LiveRoomPage() {
   };
 
   /* ------------------------------------------------------------------ */
-  /* Spend credits first, then fall back to checkout                    */
+  /* Spend credits first, then open choice sheet                        */
   /* ------------------------------------------------------------------ */
 
   const handleSupportClick = async (mode: PurchaseMode) => {
     if (!ensureLoggedIn()) return;
     if (!userEmail) return;
 
-    // 1) Try to spend a credit of this type
     const available =
       mode === "tip"
         ? credits?.tip ?? 0
@@ -156,23 +206,23 @@ export default function LiveRoomPage() {
         ? credits?.boost ?? 0
         : credits?.spin ?? 0;
 
+    // If we have a credit of this type, spend it
     if (available > 0) {
       try {
         const updated = await spendOneCredit(userEmail, mode);
         setCredits(updated);
 
-        // TODO: trigger your live overlay / reaction here.
+        // TODO: trigger your live overlay / animation here
         return;
       } catch (e) {
         console.error(
           "[live] spend credit failed, falling back to checkout",
           e
         );
-        // fall through to checkout sheet
       }
     }
 
-    // 2) No credits (or spend failed): open Stripe choice sheet
+    // Otherwise, open the single vs pack sheet
     setPendingPurchase({ mode });
   };
 
@@ -276,7 +326,6 @@ export default function LiveRoomPage() {
             </p>
           )}
 
-          {/* Buttons: these now spend credits first */}
           <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
             <button
               type="button"
@@ -314,7 +363,6 @@ export default function LiveRoomPage() {
         </section>
       </main>
 
-      {/* Bottom sheet: single vs pack choice */}
       {pendingPurchase && (
         <LivePurchaseChoiceSheet
           mode={pendingPurchase.mode}
