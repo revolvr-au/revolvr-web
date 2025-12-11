@@ -193,7 +193,7 @@ export default function PublicFeedPage() {
         };
 
         const { data, error } = await supabase
-          .from(POSTS_TABLE) // Prisma-backed table
+          .from(POSTS_TABLE)
           .select("id, userEmail, imageUrl, caption, createdAt")
           .order("createdAt", { ascending: false });
 
@@ -295,7 +295,7 @@ export default function PublicFeedPage() {
   };
 
   /* ------------------------------------------------------------------ */
-  /* Auth helpers                                                       */
+  /* Auth helper                                                        */
   /* ------------------------------------------------------------------ */
 
   const ensureLoggedIn = () => {
@@ -308,7 +308,7 @@ export default function PublicFeedPage() {
   };
 
   /* ------------------------------------------------------------------ */
-  /* Scroll helpers                                                     */
+  /* Scroll helper                                                      */
   /* ------------------------------------------------------------------ */
 
   const scrollToComposer = () => {
@@ -352,46 +352,47 @@ export default function PublicFeedPage() {
         data: { publicUrl },
       } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
-      // Generate an id on the client to satisfy Post.id NOT NULL PK
-      const newId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      // Generate IDs / timestamps on the client so DB constraints are satisfied
+      const newId = crypto.randomUUID();
+      const nowIso = new Date().toISOString();
 
-      const {
-        data: inserted,
-        error: insertError,
-      } = await supabase
-        .from(POSTS_TABLE) // Prisma-backed table
+      const { data, error: insertError } = await supabase
+        .from(POSTS_TABLE)
         .insert({
           id: newId,
-          userEmail: userEmail!, // ensured by ensureLoggedIn()
+          userEmail: userEmail,
           imageUrl: publicUrl,
           caption: caption.trim(),
+          createdAt: nowIso,
+          updatedAt: nowIso,
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      // Add new post to top of feed (convert camelCase → snake_case)
-      if (inserted) {
-        const row = inserted as any;
-        setPosts((prev) => [
-          {
-            id: row.id,
-            user_email: row.userEmail,
-            image_url: row.imageUrl,
-            caption: row.caption,
-            created_at: row.createdAt,
-            tip_count: 0,
-            boost_count: 0,
-            spin_count: 0,
-            reactions: {},
-          },
-          ...prev,
-        ]);
-      }
+      const inserted = data as {
+        id: string;
+        userEmail: string;
+        imageUrl: string;
+        caption: string;
+        createdAt: string;
+      };
+
+      setPosts((prev) => [
+        {
+          id: inserted.id,
+          user_email: inserted.userEmail,
+          image_url: inserted.imageUrl,
+          caption: inserted.caption,
+          created_at: inserted.createdAt,
+          tip_count: 0,
+          boost_count: 0,
+          spin_count: 0,
+          reactions: {},
+        },
+        ...prev,
+      ]);
 
       setCaption("");
       setFile(null);
@@ -613,7 +614,7 @@ export default function PublicFeedPage() {
             {/* 🔴 LIVE NOW STRIP */}
             {!liveDisabled && liveSessions.length > 0 && (
               <section className="mb-6 rounded-2xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 px-4 py-3">
-                <div className="flex items-center justify_between gap-3">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
                     <span className="text-sm font-semibold text-pink-100">
@@ -954,7 +955,8 @@ function PublicPostCard({
       {/* Support counts */}
       {(post.tip_count ?? 0) +
         (post.boost_count ?? 0) +
-        (post.spin_count ?? 0) > 0 && (
+        (post.spin_count ?? 0) >
+        0 && (
         <div className="mt-2 flex flex-wrap gap-3 text-[11px] text-white/60">
           {!!post.tip_count && (
             <span>
