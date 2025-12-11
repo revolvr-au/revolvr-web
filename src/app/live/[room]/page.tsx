@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
-
-type PurchaseMode = "tip" | "boost" | "spin";
+import {
+  CreditBalances,
+  loadCreditsForUser,
+  spendOneCredit,
+  PurchaseMode,
+} from "@/lib/credits";
 
 type PendingPurchase = {
   mode: PurchaseMode;
@@ -14,19 +18,26 @@ export default function LiveRoomPage() {
   const params = useParams<{ room: string }>();
   const router = useRouter();
 
-  // Extract safely to satisfy TypeScript
-const safeRoom = params?.room ?? "";
+  // Handle possible string | string[]
+  const rawRoom = params?.room ?? "";
+  const safeRoom =
+    typeof rawRoom === "string" ? rawRoom : rawRoom[0] ?? "";
 
-// Decode room name
-const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
-
+  const roomName = useMemo(
+    () => decodeURIComponent(safeRoom),
+    [safeRoom]
+  );
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [credits, setCredits] = useState<CreditBalances | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(false);
+
   const [pendingPurchase, setPendingPurchase] =
     useState<PendingPurchase | null>(null);
 
-  // Load current user
+  // Load logged-in user
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -34,8 +45,8 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
           data: { user },
         } = await supabase.auth.getUser();
         setUserEmail(user?.email ?? null);
-      } catch (e) {
-        console.error("[live room] error loading user", e);
+      } catch (err) {
+        console.error("[live] error loading user", err);
         setUserEmail(null);
       }
     };
@@ -43,20 +54,44 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
     loadUser();
   }, []);
 
+  // Load credits whenever we have a user
+  useEffect(() => {
+    if (!userEmail) {
+      setCredits(null);
+      return;
+    }
+
+    const loadCredits = async () => {
+      try {
+        setCreditsLoading(true);
+        const balances = await loadCreditsForUser(userEmail);
+        setCredits(balances);
+      } catch (err) {
+        console.error("[live] error loading credits", err);
+        // Non-fatal: user can still pay via Stripe
+      } finally {
+        setCreditsLoading(false);
+      }
+    };
+
+    loadCredits();
+  }, [userEmail]);
+
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      const redirect = encodeURIComponent(
-        `/live/${encodeURIComponent(roomName)}`
-      );
+      const redirect = encodeURIComponent(`/live/${encodeURIComponent(roomName)}`);
       router.push(`/login?redirectTo=${redirect}`);
       return false;
     }
     return true;
   };
 
+  /**
+   * Core checkout starter – only used when user has no credits left
+   * or spending a credit fails.
+   */
   const startPayment = async (mode: PurchaseMode, kind: "single" | "pack") => {
-    if (!ensureLoggedIn()) return;
-    if (!userEmail) return;
+    if (!ensureLoggedIn() || !userEmail) return;
 
     try {
       setError(null);
@@ -73,13 +108,13 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
           mode: checkoutMode,
           userEmail,
           postId: null, // live support is tied to the stream, not a feed post
-          // CRITICAL: send them back to THIS live room after Stripe
+          source: "live",
           returnPath: `/live/${encodeURIComponent(roomName)}`,
         }),
       });
 
       if (!res.ok) {
-        console.error("Live checkout failed:", await res.text());
+        console.error("[live] checkout failed:", await res.text());
         setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
         return;
       }
@@ -90,25 +125,57 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
       } else {
         setError("Stripe did not return a checkout URL.");
       }
-    } catch (e) {
-      console.error("Error starting live payment", e);
+    } catch (err) {
+      console.error("[live] error starting payment", err);
       setError("Revolvr glitched out talking to Stripe 😵‍💫");
     }
   };
 
-  const handleSingle = async (mode: PurchaseMode) => {
-    await startPayment(mode, "single");
-    setPendingPurchase(null);
-  };
+  /**
+   * When user taps Tip/Boost/Spin:
+   *  1) If they have a credit, spend it immediately.
+   *  2) If not, open the single vs pack sheet (Stripe).
+   */
+  const handleSupportClick = async (mode: PurchaseMode) => {
+    if (!ensureLoggedIn() || !userEmail) return;
 
-  const handlePack = async (mode: PurchaseMode) => {
-    await startPayment(mode, "pack");
-    setPendingPurchase(null);
-  };
+    const available =
+      mode === "tip"
+        ? credits?.tip ?? 0
+        : mode === "boost"
+        ? credits?.boost ?? 0
+        : credits?.spin ?? 0;
 
-  const openChoice = (mode: PurchaseMode) => {
-    if (!ensureLoggedIn()) return;
+    if (available > 0) {
+      try {
+        const updated = await spendOneCredit(userEmail, mode);
+        setCredits(updated);
+
+        // TODO: trigger live overlay / animations here.
+        return;
+      } catch (err) {
+        console.error(
+          "[live] spend credit failed, falling back to checkout",
+          err
+        );
+        // fall through to checkout sheet
+      }
+    }
+
+    // No credits, or spending failed: show purchase choice sheet
     setPendingPurchase({ mode });
+  };
+
+  const handleSingleFromSheet = async () => {
+    if (!pendingPurchase) return;
+    await startPayment(pendingPurchase.mode, "single");
+    setPendingPurchase(null);
+  };
+
+  const handlePackFromSheet = async () => {
+    if (!pendingPurchase) return;
+    await startPayment(pendingPurchase.mode, "pack");
+    setPendingPurchase(null);
   };
 
   return (
@@ -137,6 +204,13 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
               Room:{" "}
               <span className="font-mono text-white/80">{roomName}</span>
             </p>
+            {credits && (
+              <p className="mt-1 text-[11px] text-white/55">
+                Credits: {credits.tip} tips · {credits.boost} boosts ·{" "}
+                {credits.spin} spins{" "}
+                {creditsLoading && <span className="opacity-70">(updating…)</span>}
+              </p>
+            )}
           </div>
 
           <button
@@ -150,7 +224,6 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
 
         {/* Live player placeholder – swap this out with your real player */}
         <section className="w-full max-w-xl rounded-2xl bg-black/40 border border-white/10 aspect-video mb-4 flex items-center justify-center text-white/60 text-xs sm:text-sm">
-          {/* TODO: Replace with your actual live video / chat / player */}
           Live broadcast goes here
         </section>
 
@@ -168,14 +241,15 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
           </div>
 
           <p className="text-xs text-white/60">
-            Throw tips, boosts, or spins at the creator. You&apos;ll come right
-            back to this live room after checkout.
+            Throw tips, boosts, or spins at the creator. We’ll use your
+            existing credits first, then you can grab more with a quick
+            checkout.
           </p>
 
           <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
             <button
               type="button"
-              onClick={() => openChoice("tip")}
+              onClick={() => handleSupportClick("tip")}
               className="rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/60 px-3 py-2 text-left transition"
             >
               <div className="font-semibold">Tip</div>
@@ -186,7 +260,7 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
 
             <button
               type="button"
-              onClick={() => openChoice("boost")}
+              onClick={() => handleSupportClick("boost")}
               className="rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 px-3 py-2 text-left transition"
             >
               <div className="font-semibold">Boost</div>
@@ -197,7 +271,7 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
 
             <button
               type="button"
-              onClick={() => openChoice("spin")}
+              onClick={() => handleSupportClick("spin")}
               className="rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 px-3 py-2 text-left transition"
             >
               <div className="font-semibold">Spin</div>
@@ -214,8 +288,8 @@ const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
         <LivePurchaseChoiceSheet
           mode={pendingPurchase.mode}
           onClose={() => setPendingPurchase(null)}
-          onSingle={() => handleSingle(pendingPurchase.mode)}
-          onPack={() => handlePack(pendingPurchase.mode)}
+          onSingle={handleSingleFromSheet}
+          onPack={handlePackFromSheet}
         />
       )}
     </div>
@@ -242,11 +316,9 @@ function LivePurchaseChoiceSheet({
   const modeLabel =
     mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
 
-  // Single amounts — must match /api/payments/checkout
   const singleAmount =
     mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
 
-  // Pack labels — must match /api/payments/checkout
   const packAmount =
     mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
 
