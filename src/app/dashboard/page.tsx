@@ -1,16 +1,13 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useState,
-  FormEvent,
-} from "react";
+import React, { useCallback, useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import SpinButton from "./_spinButton";
 import IdentityLens from "@/components/IdentityLens";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
+
+const POSTS_TABLE = "Post"; // Supabase table created by Prisma
 
 type UserCredits = {
   boosts: number;
@@ -20,10 +17,11 @@ type UserCredits = {
 
 type Post = {
   id: string;
-  user_email: string;
-  image_url: string;
+  userEmail: string;
+  imageUrl: string;
   caption: string;
-  created_at: string;
+  createdAt: string;
+  // keep optional in case we add these later
   is_boosted?: boolean | null;
   boost_expires_at?: string | null;
 };
@@ -86,23 +84,20 @@ export default function DashboardPage() {
     loadUser();
   }, [router]);
 
-  // Load posts
+  // Load posts from Supabase Post table
   const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
       setError(null);
 
       const { data, error } = await supabase
-        .from("posts")
-        .select(
-          "id, user_email, image_url, caption, created_at, is_boosted, boost_expires_at"
-        )
-        .order("is_boosted", { ascending: false })
-        .order("created_at", { ascending: false });
+        .from(POSTS_TABLE)
+        .select("*") // id, userEmail, imageUrl, caption, createdAt, updatedAt, ...
+        .order("createdAt", { ascending: false });
 
       if (error) throw error;
 
-      setPosts(data ?? []);
+      setPosts((data as Post[]) ?? []);
     } catch (e) {
       console.error("Error loading posts", e);
       setError("Revolvr glitched out while loading the feed 😵‍💫");
@@ -132,32 +127,27 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Load credits for user
-  const loadCredits = useCallback(
-    async (email: string) => {
-      try {
-        setLoadingCredits(true);
-        const res = await fetch(
-          `/api/credits?email=${encodeURIComponent(email)}`
-        );
-        if (!res.ok) {
-          console.error("Failed to load credits", await res.text());
-          return;
-        }
-        const data = await res.json();
-        setCredits({
-          boosts: data.boosts ?? 0,
-          tips: data.tips ?? 0,
-          spins: data.spins ?? 0,
-        });
-      } catch (err) {
-        console.error("Error fetching credits", err);
-      } finally {
-        setLoadingCredits(false);
+  // Load credits for user (via API route)
+  const loadCredits = useCallback(async (email: string) => {
+    try {
+      setLoadingCredits(true);
+      const res = await fetch(`/api/credits?email=${encodeURIComponent(email)}`);
+      if (!res.ok) {
+        console.error("Failed to load credits", await res.text());
+        return;
       }
-    },
-    []
-  );
+      const data = await res.json();
+      setCredits({
+        boosts: data.boosts ?? 0,
+        tips: data.tips ?? 0,
+        spins: data.spins ?? 0,
+      });
+    } catch (err) {
+      console.error("Error fetching credits", err);
+    } finally {
+      setLoadingCredits(false);
+    }
+  }, []);
 
   // When we know the user, load posts, spins, credits
   useEffect(() => {
@@ -189,8 +179,9 @@ export default function DashboardPage() {
         .toString(36)
         .slice(2)}.${fileExt}`;
 
-      const { data: storageData, error: storageError } =
-        await supabase.storage.from("posts").upload(filePath, file);
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from("posts")
+        .upload(filePath, file);
 
       if (storageError || !storageData) {
         throw storageError ?? new Error("Upload failed");
@@ -201,10 +192,10 @@ export default function DashboardPage() {
       } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
       const { data: inserted, error: insertError } = await supabase
-        .from("posts")
+        .from(POSTS_TABLE)
         .insert({
-          user_email: userEmail,
-          image_url: publicUrl,
+          userEmail: userEmail,
+          imageUrl: publicUrl,
           caption: caption.trim(),
         })
         .select()
@@ -226,7 +217,7 @@ export default function DashboardPage() {
 
   const handleDeletePost = async (id: string) => {
     try {
-      const { error } = await supabase.from("posts").delete().eq("id", id);
+      const { error } = await supabase.from(POSTS_TABLE).delete().eq("id", id);
       if (error) throw error;
       setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
@@ -273,7 +264,6 @@ export default function DashboardPage() {
             spins: data.credits.spins ?? 0,
           });
         } else {
-          // Fallback if API didn't return credits
           setCredits((prev) =>
             prev
               ? {
@@ -301,7 +291,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           mode: "boost",
           userEmail,
-          amountCents: boostAmountCents, // ignored by server but left here
+          amountCents: boostAmountCents,
           postId,
         }),
       });
@@ -364,7 +354,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main 2-column layout */}
+      {/* Main layout */}
       <main className="max-w-6xl mx-auto px-4 py-6 flex gap-6">
         {/* Left rail – creator summary */}
         <aside className="hidden md:flex w-64 flex-col gap-4">
@@ -402,21 +392,15 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Boosts</span>
-                  <span className="font-mono">
-                    {credits.boosts}
-                  </span>
+                  <span className="font-mono">{credits.boosts}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Tips</span>
-                  <span className="font-mono">
-                    {credits.tips}
-                  </span>
+                  <span className="font-mono">{credits.tips}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Spins</span>
-                  <span className="font-mono">
-                    {credits.spins}
-                  </span>
+                  <span className="font-mono">{credits.spins}</span>
                 </div>
               </div>
             )}
@@ -452,12 +436,10 @@ export default function DashboardPage() {
             <div className="space-y-6 pb-12">
               {posts.map((post) => {
                 const displayName = (() => {
-                  if (!post.user_email) return "Someone";
-                  const [localPart] = post.user_email.split("@");
-                  const cleaned = localPart
-                    .replace(/\W+/g, " ")
-                    .trim();
-                  return cleaned || post.user_email;
+                  if (!post.userEmail) return "Someone";
+                  const [localPart] = post.userEmail.split("@");
+                  const cleaned = localPart.replace(/\W+/g, " ").trim();
+                  return cleaned || post.userEmail;
                 })();
 
                 return (
@@ -469,16 +451,14 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-                          {(post.user_email ?? "R")[0].toUpperCase()}
+                          {(post.userEmail ?? "R")[0].toUpperCase()}
                         </div>
                         <div className="flex flex-col">
                           <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
                             {displayName}
                           </span>
                           <span className="text-[11px] text-white/40">
-                            {new Date(
-                              post.created_at
-                            ).toLocaleString()}
+                            {new Date(post.createdAt).toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -504,7 +484,7 @@ export default function DashboardPage() {
                     {/* Media */}
                     <div>
                       <img
-                        src={post.image_url}
+                        src={post.imageUrl}
                         alt={post.caption}
                         className="w-full max-h-[480px] object-cover"
                       />

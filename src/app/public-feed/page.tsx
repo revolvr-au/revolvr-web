@@ -193,7 +193,7 @@ export default function PublicFeedPage() {
         };
 
         const { data, error } = await supabase
-          .from("Post") // Prisma-backed table
+          .from(POSTS_TABLE) // Prisma-backed table
           .select("id, userEmail, imageUrl, caption, createdAt")
           .order("createdAt", { ascending: false });
 
@@ -352,37 +352,38 @@ export default function PublicFeedPage() {
         data: { publicUrl },
       } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
-      const { data, error: insertError } = await supabase
-        .from("Post") // Prisma-backed table
+      // Generate an id on the client to satisfy Post.id NOT NULL PK
+      const newId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      const {
+        data: inserted,
+        error: insertError,
+      } = await supabase
+        .from(POSTS_TABLE) // Prisma-backed table
         .insert({
-          userEmail: userEmail,
+          id: newId,
+          userEmail: userEmail!, // ensured by ensureLoggedIn()
           imageUrl: publicUrl,
           caption: caption.trim(),
         })
-        .select("id, userEmail, imageUrl, caption, createdAt")
+        .select()
         .single();
 
       if (insertError) throw insertError;
 
-      const inserted = data as
-        | {
-            id: string;
-            userEmail: string;
-            imageUrl: string;
-            caption: string;
-            createdAt: string;
-          }
-        | null;
-
       // Add new post to top of feed (convert camelCase → snake_case)
       if (inserted) {
+        const row = inserted as any;
         setPosts((prev) => [
           {
-            id: inserted.id,
-            user_email: inserted.userEmail,
-            image_url: inserted.imageUrl,
-            caption: inserted.caption,
-            created_at: inserted.createdAt,
+            id: row.id,
+            user_email: row.userEmail,
+            image_url: row.imageUrl,
+            caption: row.caption,
+            created_at: row.createdAt,
             tip_count: 0,
             boost_count: 0,
             spin_count: 0,
@@ -612,7 +613,7 @@ export default function PublicFeedPage() {
             {/* 🔴 LIVE NOW STRIP */}
             {!liveDisabled && liveSessions.length > 0 && (
               <section className="mb-6 rounded-2xl border border-pink-500/20 bg-gradient-to-r from-pink-500/10 via-fuchsia-500/10 to-purple-500/10 px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify_between gap-3">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
                     <span className="text-sm font-semibold text-pink-100">
