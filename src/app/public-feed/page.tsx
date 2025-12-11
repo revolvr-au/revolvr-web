@@ -32,6 +32,8 @@ type Person = {
   postCount: number;
 };
 
+const POSTS_TABLE = "Post"; // must match Supabase table name exactly
+
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 
@@ -81,12 +83,22 @@ export default function PublicFeedPage() {
       try {
         setLiveLoading(true);
 
-        const { data, error } = await supabase
-          .from("live_sessions")
-          .select("id, room_name, title, status")
-          .eq("status", "live")
-          .order("created_at", { ascending: false })
-          .limit(10);
+        const { data: sessionsData, error: sessionsError } = await supabase
+  .from("live_sessions")
+  .select("id, room_name, host_email, is_live")
+  .eq("is_live", true);
+
+if (sessionsError) {
+  // If the table doesn't exist yet, just treat it as "no live sessions"
+  if ((sessionsError as any).code === "42P01") {
+    console.warn("[feed] live_sessions table not found yet – skipping live rail");
+  } else {
+    console.error("[feed] error loading live sessions", sessionsError);
+  }
+}
+
+const liveSessions = sessionsData ?? [];
+
 
         if (cancelled) return;
 
@@ -157,10 +169,25 @@ export default function PublicFeedPage() {
       try {
         setIsLoading(true);
 
-        const { data, error } = await supabase
-          .from("posts")
-          .select("*")
-          .order("created_at", { ascending: false });
+        type FeedPostRow = {
+  id: string;
+  userEmail: string;
+  imageUrl: string;
+  caption: string;
+  createdAt: string;
+};
+
+const { data: postsData, error: postsError } = await supabase
+  .from<FeedPostRow>("Post") // IMPORTANT: singular, capital P
+  .select("id, userEmail, imageUrl, caption, createdAt")
+  .order("createdAt", { ascending: false });
+
+if (postsError) {
+  console.error("[feed] error loading posts", postsError);
+}
+
+const posts: FeedPostRow[] = postsData ?? [];
+
 
         if (error) throw error;
 
