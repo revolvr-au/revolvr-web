@@ -18,26 +18,30 @@ export default function LiveRoomPage() {
   const params = useParams<{ room: string }>();
   const router = useRouter();
 
-  // Handle possible string | string[]
-  const rawRoom = params?.room ?? "";
-  const safeRoom =
-    typeof rawRoom === "string" ? rawRoom : rawRoom[0] ?? "";
-
+  // Safely derive the room name (handles undefined/array)
+  const safeRoom = params?.room ?? "";
   const roomName = useMemo(
-    () => decodeURIComponent(safeRoom),
+    () =>
+      decodeURIComponent(
+        Array.isArray(safeRoom) ? safeRoom[0] ?? "" : safeRoom
+      ),
     [safeRoom]
   );
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [credits, setCredits] = useState<CreditBalances | null>(null);
-  const [creditsLoading, setCreditsLoading] = useState(false);
-
   const [pendingPurchase, setPendingPurchase] =
     useState<PendingPurchase | null>(null);
 
-  // Load logged-in user
+  const [credits, setCredits] = useState<CreditBalances | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(false);
+
+  /* ------------------------------------------------------------------ */
+  /* Auth + credits                                                     */
+  /* ------------------------------------------------------------------ */
+
+  // Load current user
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -45,8 +49,8 @@ export default function LiveRoomPage() {
           data: { user },
         } = await supabase.auth.getUser();
         setUserEmail(user?.email ?? null);
-      } catch (err) {
-        console.error("[live] error loading user", err);
+      } catch (e) {
+        console.error("[live room] error loading user", e);
         setUserEmail(null);
       }
     };
@@ -54,7 +58,7 @@ export default function LiveRoomPage() {
     loadUser();
   }, []);
 
-  // Load credits whenever we have a user
+  // Load credits whenever user changes
   useEffect(() => {
     if (!userEmail) {
       setCredits(null);
@@ -66,9 +70,9 @@ export default function LiveRoomPage() {
         setCreditsLoading(true);
         const balances = await loadCreditsForUser(userEmail);
         setCredits(balances);
-      } catch (err) {
-        console.error("[live] error loading credits", err);
-        // Non-fatal: user can still pay via Stripe
+      } catch (e) {
+        console.error("[live room] error loading credits", e);
+        // Non-fatal; user can still check out via Stripe.
       } finally {
         setCreditsLoading(false);
       }
@@ -79,19 +83,22 @@ export default function LiveRoomPage() {
 
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      const redirect = encodeURIComponent(`/live/${encodeURIComponent(roomName)}`);
+      const redirect = encodeURIComponent(
+        `/live/${encodeURIComponent(roomName)}`
+      );
       router.push(`/login?redirectTo=${redirect}`);
       return false;
     }
     return true;
   };
 
-  /**
-   * Core checkout starter – only used when user has no credits left
-   * or spending a credit fails.
-   */
+  /* ------------------------------------------------------------------ */
+  /* Stripe checkout fallback                                           */
+  /* ------------------------------------------------------------------ */
+
   const startPayment = async (mode: PurchaseMode, kind: "single" | "pack") => {
-    if (!ensureLoggedIn() || !userEmail) return;
+    if (!ensureLoggedIn()) return;
+    if (!userEmail) return;
 
     try {
       setError(null);
@@ -107,9 +114,11 @@ export default function LiveRoomPage() {
         body: JSON.stringify({
           mode: checkoutMode,
           userEmail,
-          postId: null, // live support is tied to the stream, not a feed post
-          source: "live",
+          postId: roomName, // treat roomName as the target id for live
+          // send them back to THIS live room after Stripe
           returnPath: `/live/${encodeURIComponent(roomName)}`,
+          source: "live",
+          roomName,
         }),
       });
 
@@ -125,20 +134,21 @@ export default function LiveRoomPage() {
       } else {
         setError("Stripe did not return a checkout URL.");
       }
-    } catch (err) {
-      console.error("[live] error starting payment", err);
+    } catch (e) {
+      console.error("[live] error starting payment", e);
       setError("Revolvr glitched out talking to Stripe 😵‍💫");
     }
   };
 
-  /**
-   * When user taps Tip/Boost/Spin:
-   *  1) If they have a credit, spend it immediately.
-   *  2) If not, open the single vs pack sheet (Stripe).
-   */
-  const handleSupportClick = async (mode: PurchaseMode) => {
-    if (!ensureLoggedIn() || !userEmail) return;
+  /* ------------------------------------------------------------------ */
+  /* Spend credits first, then fall back to checkout                    */
+  /* ------------------------------------------------------------------ */
 
+  const handleSupportClick = async (mode: PurchaseMode) => {
+    if (!ensureLoggedIn()) return;
+    if (!userEmail) return;
+
+    // 1) Try to spend a credit of this type
     const available =
       mode === "tip"
         ? credits?.tip ?? 0
@@ -151,18 +161,18 @@ export default function LiveRoomPage() {
         const updated = await spendOneCredit(userEmail, mode);
         setCredits(updated);
 
-        // TODO: trigger live overlay / animations here.
+        // TODO: trigger your live overlay / reaction here.
         return;
-      } catch (err) {
+      } catch (e) {
         console.error(
           "[live] spend credit failed, falling back to checkout",
-          err
+          e
         );
         // fall through to checkout sheet
       }
     }
 
-    // No credits, or spending failed: show purchase choice sheet
+    // 2) No credits (or spend failed): open Stripe choice sheet
     setPendingPurchase({ mode });
   };
 
@@ -177,6 +187,10 @@ export default function LiveRoomPage() {
     await startPayment(pendingPurchase.mode, "pack");
     setPendingPurchase(null);
   };
+
+  /* ------------------------------------------------------------------ */
+  /* Render                                                             */
+  /* ------------------------------------------------------------------ */
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
@@ -204,13 +218,6 @@ export default function LiveRoomPage() {
               Room:{" "}
               <span className="font-mono text-white/80">{roomName}</span>
             </p>
-            {credits && (
-              <p className="mt-1 text-[11px] text-white/55">
-                Credits: {credits.tip} tips · {credits.boost} boosts ·{" "}
-                {credits.spin} spins{" "}
-                {creditsLoading && <span className="opacity-70">(updating…)</span>}
-              </p>
-            )}
           </div>
 
           <button
@@ -222,7 +229,7 @@ export default function LiveRoomPage() {
           </button>
         </header>
 
-        {/* Live player placeholder – swap this out with your real player */}
+        {/* Live player placeholder */}
         <section className="w-full max-w-xl rounded-2xl bg-black/40 border border-white/10 aspect-video mb-4 flex items-center justify-center text-white/60 text-xs sm:text-sm">
           Live broadcast goes here
         </section>
@@ -234,19 +241,43 @@ export default function LiveRoomPage() {
               Support this stream
             </h2>
             {userEmail && (
-              <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
+              <span className="text-[11px] text-white/45 truncate max-w-[180px] text-right">
                 Signed in as {userEmail}
               </span>
             )}
           </div>
 
           <p className="text-xs text-white/60">
-            Throw tips, boosts, or spins at the creator. We’ll use your
+            Throw tips, boosts, or spins at the creator. We&apos;ll use your
             existing credits first, then you can grab more with a quick
             checkout.
           </p>
 
-          <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
+          {/* Visible credit balances */}
+          {creditsLoading ? (
+            <p className="text-[11px] text-white/50 mt-1">
+              Checking your credits…
+            </p>
+          ) : credits ? (
+            <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-white/70">
+              <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/15">
+                Tip credits: {credits.tip ?? 0}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/15">
+                Boost credits: {credits.boost ?? 0}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/15">
+                Spin credits: {credits.spin ?? 0}
+              </span>
+            </div>
+          ) : (
+            <p className="text-[11px] text-white/45 mt-1">
+              No credits yet – your first support will open a quick checkout.
+            </p>
+          )}
+
+          {/* Buttons: these now spend credits first */}
+          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
             <button
               type="button"
               onClick={() => handleSupportClick("tip")}
