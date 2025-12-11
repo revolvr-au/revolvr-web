@@ -1,19 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  useParams,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   CreditBalances,
   loadCreditsForUser,
   spendOneCredit,
   PurchaseMode,
-  applyPackPurchase,
 } from "@/lib/credits";
+import { supabase } from "@/lib/supabaseClients";
 
 type PendingPurchase = {
   mode: PurchaseMode;
@@ -26,25 +21,19 @@ export default function LiveRoomPage() {
 
   const safeRoom = params?.room ?? "";
   const roomName = useMemo(
-    () =>
-      decodeURIComponent(
-        Array.isArray(safeRoom) ? safeRoom[0] ?? "" : safeRoom
-      ),
+    () => decodeURIComponent(safeRoom),
     [safeRoom]
   );
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
   const [pendingPurchase, setPendingPurchase] =
     useState<PendingPurchase | null>(null);
 
   const [credits, setCredits] = useState<CreditBalances | null>(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  /* ------------------------------------------------------------------ */
-  /* Auth                                                               */
-  /* ------------------------------------------------------------------ */
+  /* ---------------------- Load logged-in user ---------------------- */
 
   useEffect(() => {
     const loadUser = async () => {
@@ -53,8 +42,8 @@ export default function LiveRoomPage() {
           data: { user },
         } = await supabase.auth.getUser();
         setUserEmail(user?.email ?? null);
-      } catch (e) {
-        console.error("[live room] error loading user", e);
+      } catch (err) {
+        console.error("[live] error loading user", err);
         setUserEmail(null);
       }
     };
@@ -62,95 +51,46 @@ export default function LiveRoomPage() {
     loadUser();
   }, []);
 
-  const ensureLoggedIn = () => {
-    if (!userEmail) {
-      const redirect = encodeURIComponent(
-        `/live/${encodeURIComponent(roomName)}`
-      );
-      router.push(`/login?redirectTo=${redirect}`);
-      return false;
-    }
-    return true;
-  };
-
-  /* ------------------------------------------------------------------ */
-  /* Load credits for logged-in user                                    */
-  /* ------------------------------------------------------------------ */
-
+  /* ---------------------- Load credits for user -------------------- */
+  // Re-run when:
+  //  - userEmail changes
+  //  - search params change (e.g. returning from Stripe with success=1)
   useEffect(() => {
     if (!userEmail) {
       setCredits(null);
       return;
     }
 
-    const loadCredits = async () => {
+    const fetchCredits = async () => {
       try {
         setCreditsLoading(true);
         const balances = await loadCreditsForUser(userEmail);
         setCredits(balances);
-      } catch (e) {
-        console.error("[live room] error loading credits", e);
+      } catch (err) {
+        console.error("[live] error loading credits", err);
+        // Non-fatal: we just fall back to Stripe checkout.
+        setCredits(null);
       } finally {
         setCreditsLoading(false);
       }
     };
 
-    loadCredits();
-  }, [userEmail]);
+    fetchCredits();
+  }, [userEmail, searchParams?.toString()]);
 
-  /* ------------------------------------------------------------------ */
-  /* Apply pack purchase after Stripe redirect                          */
-  /* ------------------------------------------------------------------ */
-
-  useEffect(() => {
-    if (!userEmail) return;
-    if (!searchParams) return;
-
-    const success = searchParams.get("success");
-    const modeParam = searchParams.get("mode");
-
-    if (success !== "1") return;
-    if (!modeParam) return;
-
-    const isPack =
-      modeParam === "tip-pack" ||
-      modeParam === "boost-pack" ||
-      modeParam === "spin-pack";
-
-    if (!isPack) return;
-
-    // Best-effort: avoid double-applying in this tab using sessionStorage
-    const key = `credits_applied_${modeParam}`;
-    if (typeof window !== "undefined") {
-      const already = sessionStorage.getItem(key);
-      if (already === "1") {
-        return;
-      }
+  const ensureLoggedIn = () => {
+    if (!userEmail) {
+      const redirect = encodeURIComponent(`/live/${encodeURIComponent(roomName)}`);
+      router.push(`/login?redirectTo=${redirect}`);
+      return false;
     }
+    return true;
+  };
 
-    (async () => {
-      try {
-        const updated = await applyPackPurchase(
-          userEmail,
-          modeParam as "tip-pack" | "boost-pack" | "spin-pack"
-        );
-        setCredits(updated);
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem(key, "1");
-        }
-      } catch (e) {
-        console.error("[live] failed to apply pack purchase", e);
-      }
-    })();
-  }, [userEmail, searchParams]);
-
-  /* ------------------------------------------------------------------ */
-  /* Stripe checkout fallback                                           */
-  /* ------------------------------------------------------------------ */
+  /* ---------------------- Stripe checkout -------------------------- */
 
   const startPayment = async (mode: PurchaseMode, kind: "single" | "pack") => {
-    if (!ensureLoggedIn()) return;
-    if (!userEmail) return;
+    if (!ensureLoggedIn() || !userEmail) return;
 
     try {
       setError(null);
@@ -166,10 +106,9 @@ export default function LiveRoomPage() {
         body: JSON.stringify({
           mode: checkoutMode,
           userEmail,
-          postId: roomName, // treat room as target id
+          postId: roomName, // treat live room as target id
+          // make sure server sends us back here:
           returnPath: `/live/${encodeURIComponent(roomName)}`,
-          source: "live",
-          roomName,
         }),
       });
 
@@ -185,19 +124,16 @@ export default function LiveRoomPage() {
       } else {
         setError("Stripe did not return a checkout URL.");
       }
-    } catch (e) {
-      console.error("[live] error starting payment", e);
+    } catch (err) {
+      console.error("[live] error starting payment", err);
       setError("Revolvr glitched out talking to Stripe 😵‍💫");
     }
   };
 
-  /* ------------------------------------------------------------------ */
-  /* Spend credits first, then open choice sheet                        */
-  /* ------------------------------------------------------------------ */
+  /* ---------------------- Spend / support logic -------------------- */
 
   const handleSupportClick = async (mode: PurchaseMode) => {
-    if (!ensureLoggedIn()) return;
-    if (!userEmail) return;
+    if (!ensureLoggedIn() || !userEmail) return;
 
     const available =
       mode === "tip"
@@ -206,41 +142,54 @@ export default function LiveRoomPage() {
         ? credits?.boost ?? 0
         : credits?.spin ?? 0;
 
-    // If we have a credit of this type, spend it
+    // 1) If we have a credit, spend it immediately
     if (available > 0) {
       try {
         const updated = await spendOneCredit(userEmail, mode);
         setCredits(updated);
 
-        // TODO: trigger your live overlay / animation here
+        // TODO: plug in live overlay / animation here
+        console.log("[live] used one", mode, "credit on stream");
         return;
-      } catch (e) {
-        console.error(
-          "[live] spend credit failed, falling back to checkout",
-          e
-        );
+      } catch (err) {
+        console.error("[live] spend credit failed, falling back to checkout", err);
+        // fall through to checkout
       }
     }
 
-    // Otherwise, open the single vs pack sheet
+    // 2) No credits or spend failed: open purchase sheet
     setPendingPurchase({ mode });
   };
 
-  const handleSingleFromSheet = async () => {
-    if (!pendingPurchase) return;
-    await startPayment(pendingPurchase.mode, "single");
+  const handleSingle = async (mode: PurchaseMode) => {
+    await startPayment(mode, "single");
     setPendingPurchase(null);
   };
 
-  const handlePackFromSheet = async () => {
-    if (!pendingPurchase) return;
-    await startPayment(pendingPurchase.mode, "pack");
+  const handlePack = async (mode: PurchaseMode) => {
+    await startPayment(mode, "pack");
     setPendingPurchase(null);
   };
 
-  /* ------------------------------------------------------------------ */
-  /* Render                                                             */
-  /* ------------------------------------------------------------------ */
+  /* ---------------------- UI helpers -------------------------------- */
+
+  const creditsSummary = useMemo(() => {
+    if (!credits) return null;
+
+    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    if (total <= 0) return null;
+
+    const parts: string[] = [];
+    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.boost > 0)
+      parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
+    if (credits.spin > 0)
+      parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
+
+    return parts.join(" • ");
+  }, [credits]);
+
+  /* ---------------------- Render ------------------------------------ */
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
@@ -291,7 +240,7 @@ export default function LiveRoomPage() {
               Support this stream
             </h2>
             {userEmail && (
-              <span className="text-[11px] text-white/45 truncate max-w-[180px] text-right">
+              <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
                 Signed in as {userEmail}
               </span>
             )}
@@ -299,34 +248,18 @@ export default function LiveRoomPage() {
 
           <p className="text-xs text-white/60">
             Throw tips, boosts, or spins at the creator. We&apos;ll use your
-            existing credits first, then you can grab more with a quick
-            checkout.
+            existing credits first, then you can grab more with a quick checkout.
           </p>
 
-          {/* Visible credit balances */}
-          {creditsLoading ? (
-            <p className="text-[11px] text-white/50 mt-1">
-              Checking your credits…
-            </p>
-          ) : credits ? (
-            <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-white/70">
-              <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/15">
-                Tip credits: {credits.tip ?? 0}
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/15">
-                Boost credits: {credits.boost ?? 0}
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/15">
-                Spin credits: {credits.spin ?? 0}
-              </span>
-            </div>
-          ) : (
-            <p className="text-[11px] text-white/45 mt-1">
-              No credits yet – your first support will open a quick checkout.
-            </p>
-          )}
+          <p className="text-[11px] text-white/55 mt-1">
+            {creditsLoading
+              ? "Checking your credits…"
+              : creditsSummary
+              ? `Credits available: ${creditsSummary}.`
+              : "No credits yet – your first support will open a quick checkout."}
+          </p>
 
-          <div className="mt-3 grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
+          <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
             <button
               type="button"
               onClick={() => handleSupportClick("tip")}
@@ -363,12 +296,13 @@ export default function LiveRoomPage() {
         </section>
       </main>
 
+      {/* Bottom sheet: single vs pack choice */}
       {pendingPurchase && (
         <LivePurchaseChoiceSheet
           mode={pendingPurchase.mode}
           onClose={() => setPendingPurchase(null)}
-          onSingle={handleSingleFromSheet}
-          onPack={handlePackFromSheet}
+          onSingle={() => handleSingle(pendingPurchase.mode)}
+          onPack={() => handlePack(pendingPurchase.mode)}
         />
       )}
     </div>

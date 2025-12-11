@@ -9,33 +9,17 @@ export type CreditBalances = {
   spin: number;
 };
 
-export type PackMode = "tip-pack" | "boost-pack" | "spin-pack";
-
-const EMPTY_BALANCES: CreditBalances = {
-  tip: 0,
-  boost: 0,
-  spin: 0,
-};
-
-function normalizeRow(row: any | null): CreditBalances {
-  if (!row) return { ...EMPTY_BALANCES };
-  return {
-    tip: row.tip_credits ?? 0,
-    boost: row.boost_credits ?? 0,
-    spin: row.spin_credits ?? 0,
-  };
-}
-
 /**
- * Load current balances for a user. Returns zeros if no row exists yet.
+ * Load the current credit balances for a user from user_credits.
+ * If the user has no row yet, returns 0s.
  */
 export async function loadCreditsForUser(
-  userEmail: string
+  email: string
 ): Promise<CreditBalances> {
   const { data, error } = await supabase
     .from("user_credits")
     .select("tip_credits, boost_credits, spin_credits")
-    .eq("user_email", userEmail)
+    .eq("user_email", email)
     .maybeSingle();
 
   if (error) {
@@ -43,100 +27,57 @@ export async function loadCreditsForUser(
     throw error;
   }
 
-  return normalizeRow(data);
+  if (!data) {
+    // No row yet – treat as zero credits
+    return { tip: 0, boost: 0, spin: 0 };
+  }
+
+  const balances: CreditBalances = {
+    tip: data.tip_credits ?? 0,
+    boost: data.boost_credits ?? 0,
+    spin: data.spin_credits ?? 0,
+  };
+
+  console.log("[credits] loaded balances for", email, balances);
+  return balances;
 }
 
 /**
- * Persist balances for a user, creating/updating the row.
+ * Spend a single credit of the given mode and return the updated balances.
+ * For now this is a simple read-then-write (good enough for v0.1).
  */
-async function saveCreditsForUser(
-  userEmail: string,
-  balances: CreditBalances
+export async function spendOneCredit(
+  email: string,
+  mode: PurchaseMode
 ): Promise<CreditBalances> {
-  const { data, error } = await supabase
-    .from("user_credits")
-    .upsert(
-      {
-        user_email: userEmail,
-        tip_credits: balances.tip,
-        boost_credits: balances.boost,
-        spin_credits: balances.spin,
-      },
-      { onConflict: "user_email" }
-    )
-    .select("tip_credits, boost_credits, spin_credits")
-    .single();
+  // 1) Load current balances
+  const current = await loadCreditsForUser(email);
+
+  const next: CreditBalances = { ...current };
+  if (mode === "tip") {
+    if (next.tip <= 0) throw new Error("No tip credits left");
+    next.tip -= 1;
+  } else if (mode === "boost") {
+    if (next.boost <= 0) throw new Error("No boost credits left");
+    next.boost -= 1;
+  } else {
+    if (next.spin <= 0) throw new Error("No spin credits left");
+    next.spin -= 1;
+  }
+
+  // 2) Persist back to user_credits
+  const { error } = await supabase.from("user_credits").upsert({
+    user_email: email,
+    tip_credits: next.tip,
+    boost_credits: next.boost,
+    spin_credits: next.spin,
+  });
 
   if (error) {
-    console.error("[credits] saveCreditsForUser error", error);
+    console.error("[credits] spendOneCredit error", error);
     throw error;
   }
 
-  return normalizeRow(data);
-}
-
-/**
- * Spend a single credit of the given type. Throws if none available.
- * Returns updated balances.
- */
-export async function spendOneCredit(
-  userEmail: string,
-  mode: PurchaseMode
-): Promise<CreditBalances> {
-  const current = await loadCreditsForUser(userEmail);
-  const updated: CreditBalances = { ...current };
-
-  switch (mode) {
-    case "tip":
-      if (updated.tip <= 0) {
-        throw new Error("No tip credits left");
-      }
-      updated.tip -= 1;
-      break;
-    case "boost":
-      if (updated.boost <= 0) {
-        throw new Error("No boost credits left");
-      }
-      updated.boost -= 1;
-      break;
-    case "spin":
-      if (updated.spin <= 0) {
-        throw new Error("No spin credits left");
-      }
-      updated.spin -= 1;
-      break;
-  }
-
-  return saveCreditsForUser(userEmail, updated);
-}
-
-/**
- * Apply a completed pack purchase to the user's balances.
- * Returns updated balances.
- *
- * IMPORTANT: this assumes each pack is:
- * - tip-pack   -> 10 × tips
- * - boost-pack -> 10 × boosts
- * - spin-pack  -> 20 × spins
- */
-export async function applyPackPurchase(
-  userEmail: string,
-  mode: PackMode
-): Promise<CreditBalances> {
-  const current = await loadCreditsForUser(userEmail);
-  const updated: CreditBalances = { ...current };
-
-  switch (mode) {
-    case "tip-pack":
-      updated.tip += 10;
-      break;
-    case "boost-pack":
-      updated.boost += 10;
-      break;
-    case "spin-pack":
-      updated.spin += 20;
-      break;
-  }
-
-  return saveCreditsForUser(userEmail, updated);
+  console.log("[credits] spent 1", mode, "credit for", email, "=>", next);
+  return next;
 }
