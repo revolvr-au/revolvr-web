@@ -74,7 +74,7 @@ export default function PublicFeedPage() {
   const [showComposer, setShowComposer] = useState<boolean>(false);
 
   // Poll live sessions
-  useEffect(() => {
+    useEffect(() => {
     if (liveDisabled) return;
 
     let cancelled = false;
@@ -84,30 +84,21 @@ export default function PublicFeedPage() {
         setLiveLoading(true);
 
         const { data: sessionsData, error: sessionsError } = await supabase
-  .from("live_sessions")
-  .select("id, room_name, host_email, is_live")
-  .eq("is_live", true);
-
-if (sessionsError) {
-  // If the table doesn't exist yet, just treat it as "no live sessions"
-  if ((sessionsError as any).code === "42P01") {
-    console.warn("[feed] live_sessions table not found yet – skipping live rail");
-  } else {
-    console.error("[feed] error loading live sessions", sessionsError);
-  }
-}
-
-const liveSessions = sessionsData ?? [];
-
+          .from("live_sessions")
+          .select("id, room_name, host_email, is_live")
+          .eq("is_live", true);
 
         if (cancelled) return;
 
-        if (error) {
-          console.error("[public-feed] live_sessions error:", error);
-          const code = (error as any).code;
-          const message = (error as any).message as string | undefined;
+        if (sessionsError) {
+          // If the table doesn't exist yet, just treat it as "no live sessions"
+          const code = (sessionsError as any).code;
+          const message = (sessionsError as any).message as
+            | string
+            | undefined;
 
           if (
+            code === "42P01" ||
             code === "PGRST205" ||
             message?.toLowerCase().includes("could not find the table")
           ) {
@@ -119,13 +110,31 @@ const liveSessions = sessionsData ?? [];
             return;
           }
 
+          console.error(
+            "[public-feed] live_sessions error:",
+            sessionsError
+          );
           setLiveSessions([]);
-        } else {
-          setLiveSessions(data ?? []);
+          return;
         }
+
+        // Map raw rows into LiveSessionSummary objects
+        const summaries: LiveSessionSummary[] = (sessionsData ?? []).map(
+          (row: any) => ({
+            id: row.id,
+            room_name: row.room_name,
+            title: row.host_email || "Live stream",
+            status: "live",
+          })
+        );
+
+        setLiveSessions(summaries);
       } catch (err) {
         if (!cancelled) {
-          console.error("[public-feed] live_sessions unexpected error:", err);
+          console.error(
+            "[public-feed] live_sessions unexpected error:",
+            err
+          );
           setLiveSessions([]);
         }
       } finally {
@@ -141,6 +150,7 @@ const liveSessions = sessionsData ?? [];
       clearInterval(interval);
     };
   }, [liveDisabled]);
+
 
   // Load current user
   useEffect(() => {
@@ -164,56 +174,58 @@ const liveSessions = sessionsData ?? [];
   }, []);
 
   // Load posts
-  useEffect(() => {
-    async function fetchPosts() {
-      try {
-        setIsLoading(true);
+useEffect(() => {
+  async function fetchPosts() {
+    try {
+      setIsLoading(true);
 
-        type FeedPostRow = {
-  id: string;
-  userEmail: string;
-  imageUrl: string;
-  caption: string;
-  createdAt: string;
-};
+      type FeedPostRow = {
+        id: string;
+        userEmail: string;
+        imageUrl: string;
+        caption: string;
+        createdAt: string;
+      };
 
-const { data: postsData, error: postsError } = await supabase
-  .from<FeedPostRow>("Post") // IMPORTANT: singular, capital P
-  .select("id, userEmail, imageUrl, caption, createdAt")
-  .order("createdAt", { ascending: false });
+      const { data: postsData, error: postsError } = await supabase
+        .from<FeedPostRow>("Post") // Prisma-backed table
+        .select("id, userEmail, imageUrl, caption, createdAt")
+        .order("createdAt", { ascending: false });
 
-if (postsError) {
-  console.error("[feed] error loading posts", postsError);
-}
-
-const posts: FeedPostRow[] = postsData ?? [];
-
-
-        if (error) throw error;
-
-        setPosts(
-          (data ?? []).map((row: any) => ({
-            id: row.id,
-            user_email: row.user_email,
-            image_url: row.image_url,
-            caption: row.caption,
-            created_at: row.created_at,
-            tip_count: row.tip_count,
-            boost_count: row.boost_count,
-            spin_count: row.spin_count,
-            reactions: {},
-          }))
-        );
-      } catch (e) {
-        console.error("Error loading public feed posts", e);
+      if (postsError) {
+        console.error("[public-feed] error loading posts", postsError);
         setPosts([]);
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    }
 
-    fetchPosts();
-  }, []);
+      const rows: FeedPostRow[] = postsData ?? [];
+
+      // Convert Prisma camelCase → UI snake_case
+      setPosts(
+        rows.map((row) => ({
+          id: row.id,
+          user_email: row.userEmail,
+          image_url: row.imageUrl,
+          caption: row.caption,
+          created_at: row.createdAt,
+          tip_count: 0,
+          boost_count: 0,
+          spin_count: 0,
+          reactions: {},
+        }))
+      );
+
+    } catch (e) {
+      console.error("Error loading public feed posts", e);
+      setPosts([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  fetchPosts();
+}, []);
+
 
   // People rail data
   const people: Person[] = useMemo(() => {
@@ -319,11 +331,14 @@ const posts: FeedPostRow[] = postsData ?? [];
         data: { publicUrl },
       } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
-      const { data: inserted, error: insertError } = await supabase
-        .from("posts")
+                  const {
+        data: inserted,
+        error: insertError,
+      } = await supabase
+        .from("Post") // Prisma-backed table
         .insert({
-          user_email: userEmail,
-          image_url: publicUrl,
+          userEmail: userEmail,
+          imageUrl: publicUrl,
           caption: caption.trim(),
         })
         .select()
@@ -331,17 +346,26 @@ const posts: FeedPostRow[] = postsData ?? [];
 
       if (insertError) throw insertError;
 
+      // Add new post to top of feed (convert camelCase → snake_case)
       setPosts((prev) =>
         inserted
           ? [
               {
-                ...(inserted as any),
+                id: (inserted as any).id,
+                user_email: (inserted as any).userEmail,
+                image_url: (inserted as any).imageUrl,
+                caption: (inserted as any).caption,
+                created_at: (inserted as any).createdAt,
+                tip_count: 0,
+                boost_count: 0,
+                spin_count: 0,
                 reactions: {},
               },
               ...prev,
             ]
           : prev
       );
+
 
       setCaption("");
       setFile(null);
