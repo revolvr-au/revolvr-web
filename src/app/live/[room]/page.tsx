@@ -152,7 +152,10 @@ export default function LiveRoomPage() {
         console.log("[live] used one", mode, "credit on stream");
         return;
       } catch (err) {
-        console.error("[live] spend credit failed, falling back to checkout", err);
+        console.error(
+          "[live] spend credit failed, falling back to checkout",
+          err
+        );
         // fall through to checkout
       }
     }
@@ -176,11 +179,13 @@ export default function LiveRoomPage() {
   const creditsSummary = useMemo(() => {
     if (!credits) return null;
 
-    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    const total =
+      (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
     if (total <= 0) return null;
 
     const parts: string[] = [];
-    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.tip > 0)
+      parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
     if (credits.boost > 0)
       parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
     if (credits.spin > 0)
@@ -248,7 +253,8 @@ export default function LiveRoomPage() {
 
           <p className="text-xs text-white/60">
             Throw tips, boosts, or spins at the creator. We&apos;ll use your
-            existing credits first, then you can grab more with a quick checkout.
+            existing credits first, then you can grab more with a quick
+            checkout.
           </p>
 
           <p className="text-[11px] text-white/55 mt-1">
