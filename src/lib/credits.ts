@@ -1,7 +1,5 @@
 // src/lib/credits.ts
-"use client";
-
-import { supabase } from "./supabaseClients";
+import { supabase } from "@/lib/supabaseClients";
 
 export type PurchaseMode = "tip" | "boost" | "spin";
 
@@ -11,87 +9,87 @@ export type CreditBalances = {
   spin: number;
 };
 
+const TABLE = "UserCredits"; // <- Prisma table
+
+// Normalise a row from UserCredits into our simple shape
+function normalizeRow(row: any | null): CreditBalances {
+  if (!row) {
+    return { tip: 0, boost: 0, spin: 0 };
+  }
+
+  return {
+    tip: row.tips ?? 0,
+    boost: row.boosts ?? 0,
+    spin: row.spins ?? 0,
+  };
+}
+
 /**
- * Load the current credit balances for a user from public."UserCredits".
- * This table has columns: email, tips, boosts, spins
+ * Load the current credit balances for a user.
+ * Reads from public."UserCredits" (Prisma table).
  */
 export async function loadCreditsForUser(
   email: string
 ): Promise<CreditBalances> {
   const { data, error } = await supabase
-    .from("UserCredits")
+    .from(TABLE)
     .select("tips, boosts, spins")
     .eq("email", email)
     .maybeSingle();
 
-  // If there's some unexpected error (not just "no rows"), surface it
-  if (error && (error as any).code !== "PGRST116") {
+  if (error) {
     console.error("[credits] loadCreditsForUser error", error);
     throw error;
   }
 
-  return {
-    tip: data?.tips ?? 0,
-    boost: data?.boosts ?? 0,
-    spin: data?.spins ?? 0,
-  };
+  return normalizeRow(data);
 }
 
 /**
- * Spend a single credit of the given mode, and return the updated balances.
+ * Spend exactly one credit of the given mode for this user.
+ * Returns the UPDATED balances.
  */
 export async function spendOneCredit(
   email: string,
   mode: PurchaseMode
 ): Promise<CreditBalances> {
-  // First, fetch current balance
+  // First, get current balances
+  const current = await loadCreditsForUser(email);
+
+  const canSpend =
+    mode === "tip"
+      ? current.tip > 0
+      : mode === "boost"
+      ? current.boost > 0
+      : current.spin > 0;
+
+  if (!canSpend) {
+    throw new Error("[credits] No credits available to spend");
+  }
+
+  const updates: { tips?: number; boosts?: number; spins?: number } = {};
+
+  if (mode === "tip") {
+    updates.tips = current.tip - 1;
+  } else if (mode === "boost") {
+    updates.boosts = current.boost - 1;
+  } else {
+    updates.spins = current.spin - 1;
+  }
+
   const { data, error } = await supabase
-    .from("UserCredits")
-    .select("tips, boosts, spins")
+    .from(TABLE)
+    .update(updates)
     .eq("email", email)
-    .single();
+    .select("tips, boosts, spins")
+    .maybeSingle();
 
   if (error) {
-    console.error("[credits] spendOneCredit fetch error", error);
+    console.error("[credits] spendOneCredit error", error);
     throw error;
   }
 
-  const current: CreditBalances = {
-    tip: data?.tips ?? 0,
-    boost: data?.boosts ?? 0,
-    spin: data?.spins ?? 0,
-  };
-
-  // Decide which bucket to decrement
-  if (mode === "tip" && current.tip <= 0) {
-    throw new Error("No tip credits available");
-  }
-  if (mode === "boost" && current.boost <= 0) {
-    throw new Error("No boost credits available");
-  }
-  if (mode === "spin" && current.spin <= 0) {
-    throw new Error("No spin credits available");
-  }
-
-  const updatedRow = {
-    tips: mode === "tip" ? current.tip - 1 : current.tip,
-    boosts: mode === "boost" ? current.boost - 1 : current.boost,
-    spins: mode === "spin" ? current.spin - 1 : current.spin,
-  };
-
-  const { error: updateError } = await supabase
-    .from("UserCredits")
-    .update(updatedRow)
-    .eq("email", email);
-
-  if (updateError) {
-    console.error("[credits] spendOneCredit update error", updateError);
-    throw updateError;
-  }
-
-  return {
-    tip: updatedRow.tips,
-    boost: updatedRow.boosts,
-    spin: updatedRow.spins,
-  };
+  const normalized = normalizeRow(data);
+  console.log("[credits] after spendOneCredit", mode, normalized);
+  return normalized;
 }
