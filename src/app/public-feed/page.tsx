@@ -73,8 +73,11 @@ export default function PublicFeedPage() {
   const [isPosting, setIsPosting] = useState(false);
   const [showComposer, setShowComposer] = useState<boolean>(false);
 
-  // Poll live sessions
-    useEffect(() => {
+  /* ------------------------------------------------------------------ */
+  /* Live sessions polling                                              */
+  /* ------------------------------------------------------------------ */
+
+  useEffect(() => {
     if (liveDisabled) return;
 
     let cancelled = false;
@@ -110,10 +113,7 @@ export default function PublicFeedPage() {
             return;
           }
 
-          console.error(
-            "[public-feed] live_sessions error:",
-            sessionsError
-          );
+          console.error("[public-feed] live_sessions error:", sessionsError);
           setLiveSessions([]);
           return;
         }
@@ -151,8 +151,10 @@ export default function PublicFeedPage() {
     };
   }, [liveDisabled]);
 
+  /* ------------------------------------------------------------------ */
+  /* Load current user                                                  */
+  /* ------------------------------------------------------------------ */
 
-  // Load current user
   useEffect(() => {
     const fetchUser = async () => {
       try {
@@ -173,61 +175,65 @@ export default function PublicFeedPage() {
     fetchUser();
   }, []);
 
-  // Load posts
-useEffect(() => {
-  async function fetchPosts() {
-    try {
-      setIsLoading(true);
+  /* ------------------------------------------------------------------ */
+  /* Load posts from Prisma-backed "Post" table                         */
+  /* ------------------------------------------------------------------ */
 
-      type FeedPostRow = {
-        id: string;
-        userEmail: string;
-        imageUrl: string;
-        caption: string;
-        createdAt: string;
-      };
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        setIsLoading(true);
 
-      const { data: postsData, error: postsError } = await supabase
-        .from<FeedPostRow>("Post") // Prisma-backed table
-        .select("id, userEmail, imageUrl, caption, createdAt")
-        .order("createdAt", { ascending: false });
+        type FeedPostRow = {
+          id: string;
+          userEmail: string;
+          imageUrl: string;
+          caption: string;
+          createdAt: string;
+        };
 
-      if (postsError) {
-        console.error("[public-feed] error loading posts", postsError);
+        const { data, error } = await supabase
+          .from("Post") // Prisma-backed table
+          .select("id, userEmail, imageUrl, caption, createdAt")
+          .order("createdAt", { ascending: false });
+
+        if (error) {
+          console.error("[public-feed] error loading posts", error);
+          setPosts([]);
+          return;
+        }
+
+        const rows = (data ?? []) as FeedPostRow[];
+
+        // Convert Prisma camelCase → UI snake_case
+        setPosts(
+          rows.map((row) => ({
+            id: row.id,
+            user_email: row.userEmail,
+            image_url: row.imageUrl,
+            caption: row.caption,
+            created_at: row.createdAt,
+            tip_count: 0,
+            boost_count: 0,
+            spin_count: 0,
+            reactions: {},
+          }))
+        );
+      } catch (e) {
+        console.error("Error loading public feed posts", e);
         setPosts([]);
-        return;
+      } finally {
+        setIsLoading(false);
       }
-
-      const rows: FeedPostRow[] = postsData ?? [];
-
-      // Convert Prisma camelCase → UI snake_case
-      setPosts(
-        rows.map((row) => ({
-          id: row.id,
-          user_email: row.userEmail,
-          image_url: row.imageUrl,
-          caption: row.caption,
-          created_at: row.createdAt,
-          tip_count: 0,
-          boost_count: 0,
-          spin_count: 0,
-          reactions: {},
-        }))
-      );
-
-    } catch (e) {
-      console.error("Error loading public feed posts", e);
-      setPosts([]);
-    } finally {
-      setIsLoading(false);
     }
-  }
 
-  fetchPosts();
-}, []);
+    fetchPosts();
+  }, []);
 
+  /* ------------------------------------------------------------------ */
+  /* People rail data                                                   */
+  /* ------------------------------------------------------------------ */
 
-  // People rail data
   const people: Person[] = useMemo(() => {
     const byEmail = new Map<string, Person>();
 
@@ -256,7 +262,10 @@ useEffect(() => {
     return Array.from(byEmail.values());
   }, [posts]);
 
-  // Filtered posts
+  /* ------------------------------------------------------------------ */
+  /* Filtered posts                                                     */
+  /* ------------------------------------------------------------------ */
+
   const visiblePosts = useMemo(
     () =>
       selectedUserEmail
@@ -265,7 +274,10 @@ useEffect(() => {
     [posts, selectedUserEmail]
   );
 
-  // Local reactions (no backend yet)
+  /* ------------------------------------------------------------------ */
+  /* Local reactions (no backend yet)                                   */
+  /* ------------------------------------------------------------------ */
+
   const handleReact = (postId: string, emoji: ReactionEmoji) => {
     setPosts((prev) =>
       prev.map((p) =>
@@ -282,7 +294,10 @@ useEffect(() => {
     );
   };
 
-  // Make sure user is logged in
+  /* ------------------------------------------------------------------ */
+  /* Auth helpers                                                       */
+  /* ------------------------------------------------------------------ */
+
   const ensureLoggedIn = () => {
     if (!userEmail) {
       const redirect = encodeURIComponent("/public-feed");
@@ -292,7 +307,10 @@ useEffect(() => {
     return true;
   };
 
-  // Scroll to composer
+  /* ------------------------------------------------------------------ */
+  /* Scroll helpers                                                     */
+  /* ------------------------------------------------------------------ */
+
   const scrollToComposer = () => {
     const el = document.getElementById("revolvrComposer");
     if (el) {
@@ -300,7 +318,10 @@ useEffect(() => {
     }
   };
 
-  // Create post
+  /* ------------------------------------------------------------------ */
+  /* Create post                                                        */
+  /* ------------------------------------------------------------------ */
+
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!ensureLoggedIn()) return;
@@ -331,41 +352,45 @@ useEffect(() => {
         data: { publicUrl },
       } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
-                  const {
-        data: inserted,
-        error: insertError,
-      } = await supabase
+      const { data, error: insertError } = await supabase
         .from("Post") // Prisma-backed table
         .insert({
           userEmail: userEmail,
           imageUrl: publicUrl,
           caption: caption.trim(),
         })
-        .select()
+        .select("id, userEmail, imageUrl, caption, createdAt")
         .single();
 
       if (insertError) throw insertError;
 
-      // Add new post to top of feed (convert camelCase → snake_case)
-      setPosts((prev) =>
-        inserted
-          ? [
-              {
-                id: (inserted as any).id,
-                user_email: (inserted as any).userEmail,
-                image_url: (inserted as any).imageUrl,
-                caption: (inserted as any).caption,
-                created_at: (inserted as any).createdAt,
-                tip_count: 0,
-                boost_count: 0,
-                spin_count: 0,
-                reactions: {},
-              },
-              ...prev,
-            ]
-          : prev
-      );
+      const inserted = data as
+        | {
+            id: string;
+            userEmail: string;
+            imageUrl: string;
+            caption: string;
+            createdAt: string;
+          }
+        | null;
 
+      // Add new post to top of feed (convert camelCase → snake_case)
+      if (inserted) {
+        setPosts((prev) => [
+          {
+            id: inserted.id,
+            user_email: inserted.userEmail,
+            image_url: inserted.imageUrl,
+            caption: inserted.caption,
+            created_at: inserted.createdAt,
+            tip_count: 0,
+            boost_count: 0,
+            spin_count: 0,
+            reactions: {},
+          },
+          ...prev,
+        ]);
+      }
 
       setCaption("");
       setFile(null);
@@ -378,7 +403,9 @@ useEffect(() => {
     }
   };
 
-  // --- Payments: tip / boost / spin ------------------------------
+  /* ------------------------------------------------------------------ */
+  /* Payments: tip / boost / spin                                       */
+  /* ------------------------------------------------------------------ */
 
   const startPayment = async (
     mode: PurchaseMode,
@@ -436,7 +463,9 @@ useEffect(() => {
     setPendingPurchase(null);
   };
 
-  // --- JSX --------------------------------------------------------
+  /* ------------------------------------------------------------------ */
+  /* JSX                                                                */
+  /* ------------------------------------------------------------------ */
 
   return (
     <>
