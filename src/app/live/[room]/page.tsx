@@ -1,3 +1,4 @@
+// src/app/live/[room]/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -76,6 +77,7 @@ export default function LiveRoomPage() {
     };
 
     fetchCredits();
+    // Include search params so coming back from Stripe refreshes balances
   }, [userEmail, searchParams?.toString()]);
 
   const ensureLoggedIn = () => {
@@ -152,10 +154,7 @@ export default function LiveRoomPage() {
         console.log("[live] used one", mode, "credit on stream");
         return;
       } catch (err) {
-        console.error(
-          "[live] spend credit failed, falling back to checkout",
-          err
-        );
+        console.error("[live] spend credit failed, falling back to checkout", err);
         // fall through to checkout
       }
     }
@@ -253,8 +252,7 @@ export default function LiveRoomPage() {
 
           <p className="text-xs text-white/60">
             Throw tips, boosts, or spins at the creator. We&apos;ll use your
-            existing credits first, then you can grab more with a quick
-            checkout.
+            existing credits first, then you can grab more with a quick checkout.
           </p>
 
           <p className="text-[11px] text-white/55 mt-1">
