@@ -10,10 +10,38 @@ const stripe = new Stripe(stripeSecretKey);
 
 const prisma = new PrismaClient();
 
+type CreditDelta = { boosts: number; tips: number; spins: number };
+
+function creditsForMode(mode: string): CreditDelta | null {
+  switch (mode) {
+    // Packs
+    case "boost-pack":
+      return { boosts: 10, tips: 0, spins: 0 };
+    case "tip-pack":
+      return { boosts: 0, tips: 10, spins: 0 };
+    case "spin-pack":
+      return { boosts: 0, tips: 0, spins: 20 };
+
+    // Singles
+    case "boost":
+      return { boosts: 1, tips: 0, spins: 0 };
+    case "tip":
+      return { boosts: 0, tips: 1, spins: 0 };
+    case "spin":
+      return { boosts: 0, tips: 0, spins: 1 };
+
+    default:
+      return null;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
   if (!sig) {
-    return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing Stripe signature" },
+      { status: 400 }
+    );
   }
 
   let event: Stripe.Event;
@@ -30,53 +58,36 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
 
     const mode = session.metadata?.mode;
-    const email =
-      session.customer_email ??
-      session.customer_details?.email ??
-      null;
+    const email = session.customer_email ?? session.customer_details?.email ?? null;
 
     if (!email || !mode) {
-      console.warn("[stripe/webhook] Missing email or mode");
+      console.warn("[stripe/webhook] Missing email or mode", { email, mode });
       return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    let boosts = 0;
-    let tips = 0;
-    let spins = 0;
+    const delta = creditsForMode(mode);
 
-    switch (mode) {
-      case "boost-pack":
-        boosts = 10;
-        break;
-      case "tip-pack":
-        tips = 10;
-        break;
-      case "spin-pack":
-        spins = 20;
-        break;
-      default:
-        console.log("[stripe/webhook] Single purchase — no credit pack");
-        break;
+    if (!delta) {
+      console.warn("[stripe/webhook] Unknown mode — no credits awarded:", mode);
+      return NextResponse.json({ received: true }, { status: 200 });
     }
 
-    if (boosts || tips || spins) {
-      await prisma.userCredits.upsert({
-        where: { email },
-        update: {
-          boosts: { increment: boosts },
-          tips: { increment: tips },
-          spins: { increment: spins },
-        },
-        create: {
-          email,
-          boosts,
-          tips,
-          spins,
-        },
-      });
+    await prisma.userCredits.upsert({
+      where: { email },
+      update: {
+        boosts: { increment: delta.boosts },
+        tips: { increment: delta.tips },
+        spins: { increment: delta.spins },
+      },
+      create: {
+        email,
+        boosts: delta.boosts,
+        tips: delta.tips,
+        spins: delta.spins,
+      },
+    });
 
-      console.log("✅ Credits awarded:", { email, boosts, tips, spins });
-    }
+    console.log("✅ Credits awarded:", { email, mode, ...delta });
   }
 
   return NextResponse.json({ received: true }, { status: 200 });
