@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import { FloatingLiveButton } from "@/components/FloatingLiveButton";
 
+/* ------------------------------------------------------------------ */
+/* Types                                                              */
+/* ------------------------------------------------------------------ */
+
 type LiveSessionSummary = {
   id: string;
   room_name: string;
@@ -32,7 +36,11 @@ type Person = {
   postCount: number;
 };
 
-const POSTS_TABLE = "Post"; // must match Supabase table name exactly
+type UserCreditBalances = {
+  tips: number;
+  boosts: number;
+  spins: number;
+};
 
 const REACTION_EMOJIS = ["🔥", "💀", "😂", "🤪", "🥴"] as const;
 type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
@@ -44,6 +52,10 @@ type PendingPurchase = {
   mode: PurchaseMode;
 };
 
+/* ------------------------------------------------------------------ */
+/* Page                                                               */
+/* ------------------------------------------------------------------ */
+
 export default function PublicFeedPage() {
   const router = useRouter();
 
@@ -52,6 +64,10 @@ export default function PublicFeedPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Credits
+  const [credits, setCredits] = useState<UserCreditBalances | null>(null);
+  const [creditsLoading, setCreditsLoading] = useState(false);
 
   // Payments
   const [pendingPurchase, setPendingPurchase] =
@@ -94,7 +110,6 @@ export default function PublicFeedPage() {
         if (cancelled) return;
 
         if (sessionsError) {
-          // If the table doesn't exist yet, just treat it as "no live sessions"
           const code = (sessionsError as any).code;
           const message = (sessionsError as any).message as
             | string
@@ -118,7 +133,6 @@ export default function PublicFeedPage() {
           return;
         }
 
-        // Map raw rows into LiveSessionSummary objects
         const summaries: LiveSessionSummary[] = (sessionsData ?? []).map(
           (row: any) => ({
             id: row.id,
@@ -131,10 +145,7 @@ export default function PublicFeedPage() {
         setLiveSessions(summaries);
       } catch (err) {
         if (!cancelled) {
-          console.error(
-            "[public-feed] live_sessions unexpected error:",
-            err
-          );
+          console.error("[public-feed] live_sessions unexpected error:", err);
           setLiveSessions([]);
         }
       } finally {
@@ -176,6 +187,64 @@ export default function PublicFeedPage() {
   }, []);
 
   /* ------------------------------------------------------------------ */
+  /* Load credits for current user                                      */
+  /* ------------------------------------------------------------------ */
+
+  useEffect(() => {
+    if (!userEmail) {
+      setCredits(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadCredits() {
+      try {
+        setCreditsLoading(true);
+
+        const { data, error } = await supabase
+          .from("UserCredits")
+          .select("tips, boosts, spins")
+          .eq("email", userEmail)
+          .limit(1);
+
+        if (cancelled) return;
+
+        if (error) {
+          console.error("[credits] error loading user credits", error);
+          setCredits({ tips: 0, boosts: 0, spins: 0 });
+          return;
+        }
+
+        const row = data && data.length > 0 ? (data[0] as any) : null;
+
+        if (row) {
+          setCredits({
+            tips: row.tips ?? 0,
+            boosts: row.boosts ?? 0,
+            spins: row.spins ?? 0,
+          });
+        } else {
+          setCredits({ tips: 0, boosts: 0, spins: 0 });
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("[credits] unexpected error loading", err);
+          setCredits({ tips: 0, boosts: 0, spins: 0 });
+        }
+      } finally {
+        if (!cancelled) setCreditsLoading(false);
+      }
+    }
+
+    loadCredits();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userEmail]);
+
+  /* ------------------------------------------------------------------ */
   /* Load posts from Prisma-backed "Post" table                         */
   /* ------------------------------------------------------------------ */
 
@@ -193,7 +262,7 @@ export default function PublicFeedPage() {
         };
 
         const { data, error } = await supabase
-          .from(POSTS_TABLE)
+          .from("Post")
           .select("id, userEmail, imageUrl, caption, createdAt")
           .order("createdAt", { ascending: false });
 
@@ -205,7 +274,6 @@ export default function PublicFeedPage() {
 
         const rows = (data ?? []) as FeedPostRow[];
 
-        // Convert Prisma camelCase → UI snake_case
         setPosts(
           rows.map((row) => ({
             id: row.id,
@@ -295,7 +363,7 @@ export default function PublicFeedPage() {
   };
 
   /* ------------------------------------------------------------------ */
-  /* Auth helper                                                        */
+  /* Auth helpers                                                       */
   /* ------------------------------------------------------------------ */
 
   const ensureLoggedIn = () => {
@@ -308,7 +376,7 @@ export default function PublicFeedPage() {
   };
 
   /* ------------------------------------------------------------------ */
-  /* Scroll helper                                                      */
+  /* Scroll helpers                                                     */
   /* ------------------------------------------------------------------ */
 
   const scrollToComposer = () => {
@@ -352,40 +420,34 @@ export default function PublicFeedPage() {
         data: { publicUrl },
       } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
-      // Generate IDs / timestamps on the client so DB constraints are satisfied
+      // Generate id client-side to satisfy Post.id NOT NULL
       const newId = crypto.randomUUID();
-      const nowIso = new Date().toISOString();
 
-      const { data, error: insertError } = await supabase
-        .from(POSTS_TABLE)
+      const {
+        data: inserted,
+        error: insertError,
+      } = await supabase
+        .from("Post")
         .insert({
           id: newId,
           userEmail: userEmail,
           imageUrl: publicUrl,
           caption: caption.trim(),
-          createdAt: nowIso,
-          updatedAt: nowIso,
         })
         .select()
         .single();
 
       if (insertError) throw insertError;
 
-      const inserted = data as {
-        id: string;
-        userEmail: string;
-        imageUrl: string;
-        caption: string;
-        createdAt: string;
-      };
+      const row = inserted as any;
 
       setPosts((prev) => [
         {
-          id: inserted.id,
-          user_email: inserted.userEmail,
-          image_url: inserted.imageUrl,
-          caption: inserted.caption,
-          created_at: inserted.createdAt,
+          id: row.id,
+          user_email: row.userEmail,
+          image_url: row.imageUrl,
+          caption: row.caption,
+          created_at: row.createdAt,
           tip_count: 0,
           boost_count: 0,
           spin_count: 0,
@@ -406,7 +468,119 @@ export default function PublicFeedPage() {
   };
 
   /* ------------------------------------------------------------------ */
-  /* Payments: tip / boost / spin                                       */
+  /* Credits: spend locally, fallback to Stripe                         */
+  /* ------------------------------------------------------------------ */
+
+  const spendCredit = async (
+    mode: PurchaseMode,
+    postId: string
+  ): Promise<boolean> => {
+    if (!userEmail) return false;
+
+    try {
+      const { data, error } = await supabase
+        .from("UserCredits")
+        .select("tips, boosts, spins")
+        .eq("email", userEmail)
+        .limit(1);
+
+      if (error) {
+        console.error("[credits] error loading before spend", error);
+        return false;
+      }
+
+      const row = data && data.length > 0 ? (data[0] as any) : null;
+      if (!row) return false;
+
+      const current: UserCreditBalances = {
+        tips: row.tips ?? 0,
+        boosts: row.boosts ?? 0,
+        spins: row.spins ?? 0,
+      };
+
+      const column =
+        mode === "tip" ? "tips" : mode === "boost" ? "boosts" : "spins";
+
+      if (current[column as keyof UserCreditBalances] <= 0) {
+        setCredits(current);
+        return false;
+      }
+
+      const nextValue =
+        (current[column as keyof UserCreditBalances] as number) - 1;
+
+      const { data: updatedRows, error: updateError } = await supabase
+        .from("UserCredits")
+        .update({ [column]: nextValue })
+        .eq("email", userEmail)
+        .select("tips, boosts, spins");
+
+      if (updateError) {
+        console.error("[credits] error updating for spend", updateError);
+        return false;
+      }
+
+      if (updatedRows && updatedRows.length > 0) {
+        const updated = updatedRows[0] as any;
+        setCredits({
+          tips: updated.tips ?? 0,
+          boosts: updated.boosts ?? 0,
+          spins: updated.spins ?? 0,
+        });
+      } else {
+        setCredits((prev) =>
+          prev
+            ? { ...prev, [column]: nextValue }
+            : { tips: 0, boosts: 0, spins: 0 }
+        );
+      }
+
+      // Update post counters locally
+      setPosts((prev) =>
+        prev.map((p) => {
+          if (p.id !== postId) return p;
+
+          if (mode === "tip") {
+            return { ...p, tip_count: (p.tip_count ?? 0) + 1 };
+          }
+          if (mode === "boost") {
+            return { ...p, boost_count: (p.boost_count ?? 0) + 1 };
+          }
+          return { ...p, spin_count: (p.spin_count ?? 0) + 1 };
+        })
+      );
+
+      return true;
+    } catch (err) {
+      console.error("[credits] unexpected error spending", err);
+      return false;
+    }
+  };
+
+  const handleSupportClick = async (mode: PurchaseMode, postId: string) => {
+    if (!ensureLoggedIn()) return;
+    if (!userEmail) return;
+
+    const available =
+      mode === "tip"
+        ? credits?.tips ?? 0
+        : mode === "boost"
+        ? credits?.boosts ?? 0
+        : credits?.spins ?? 0;
+
+    if (available > 0) {
+      const ok = await spendCredit(mode, postId);
+      if (!ok) {
+        // If something went wrong, fall back to Stripe
+        setPendingPurchase({ postId, mode });
+      }
+    } else {
+      setPendingPurchase({ postId, mode });
+    }
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Payments: tip / boost / spin via Stripe                            */
   /* ------------------------------------------------------------------ */
 
   const startPayment = async (
@@ -496,6 +670,21 @@ export default function PublicFeedPage() {
                 v0.1 · social preview
               </p>
             </header>
+
+            {/* Credits pill */}
+            {userEmail && (
+              <section className="mb-2 flex items-center justify-center">
+                <div className="inline-flex items-center gap-3 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] text-white/80">
+                  <span className="font-medium">Your credits</span>
+                  <span>💸 {credits?.tips ?? 0} tips</span>
+                  <span>🚀 {credits?.boosts ?? 0} boosts</span>
+                  <span>🌀 {credits?.spins ?? 0} spins</span>
+                  {creditsLoading && (
+                    <span className="text-white/40">updating…</span>
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* Composer */}
             {userEmail && showComposer && (
@@ -687,15 +876,9 @@ export default function PublicFeedPage() {
                     key={post.id}
                     post={post}
                     onReact={handleReact}
-                    onTip={(postId) =>
-                      setPendingPurchase({ postId, mode: "tip" })
-                    }
-                    onBoost={(postId) =>
-                      setPendingPurchase({ postId, mode: "boost" })
-                    }
-                    onSpin={(postId) =>
-                      setPendingPurchase({ postId, mode: "spin" })
-                    }
+                    onTip={(postId) => handleSupportClick("tip", postId)}
+                    onBoost={(postId) => handleSupportClick("boost", postId)}
+                    onSpin={(postId) => handleSupportClick("spin", postId)}
                   />
                 ))}
               </div>
