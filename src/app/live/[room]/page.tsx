@@ -3,13 +3,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClients";
 import {
   CreditBalances,
   loadCreditsForUser,
   spendOneCredit,
   PurchaseMode,
 } from "@/lib/credits";
-import { supabase } from "@/lib/supabaseClients";
 
 type PendingPurchase = {
   mode: PurchaseMode;
@@ -21,21 +21,18 @@ export default function LiveRoomPage() {
   const searchParams = useSearchParams();
 
   const safeRoom = params?.room ?? "";
-  const roomName = useMemo(
-    () => decodeURIComponent(safeRoom),
-    [safeRoom]
-  );
+  const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pendingPurchase, setPendingPurchase] =
-    useState<PendingPurchase | null>(null);
 
   const [credits, setCredits] = useState<CreditBalances | null>(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  /* ---------------------- Load logged-in user ---------------------- */
+  const [pendingPurchase, setPendingPurchase] =
+    useState<PendingPurchase | null>(null);
 
+  /* ---------------------- Load logged-in user ---------------------- */
   useEffect(() => {
     const loadUser = async () => {
       try {
@@ -77,9 +74,9 @@ export default function LiveRoomPage() {
     };
 
     fetchCredits();
-    // Include search params so coming back from Stripe refreshes balances
   }, [userEmail, searchParams?.toString()]);
 
+  /* ---------------------- Auth helper ------------------------------ */
   const ensureLoggedIn = () => {
     if (!userEmail) {
       const redirect = encodeURIComponent(`/live/${encodeURIComponent(roomName)}`);
@@ -90,7 +87,6 @@ export default function LiveRoomPage() {
   };
 
   /* ---------------------- Stripe checkout -------------------------- */
-
   const startPayment = async (mode: PurchaseMode, kind: "single" | "pack") => {
     if (!ensureLoggedIn() || !userEmail) return;
 
@@ -108,8 +104,7 @@ export default function LiveRoomPage() {
         body: JSON.stringify({
           mode: checkoutMode,
           userEmail,
-          postId: roomName, // treat live room as target id
-          // make sure server sends us back here:
+          postId: roomName, // treat live room as target id (fine for now)
           returnPath: `/live/${encodeURIComponent(roomName)}`,
         }),
       });
@@ -133,7 +128,6 @@ export default function LiveRoomPage() {
   };
 
   /* ---------------------- Spend / support logic -------------------- */
-
   const handleSupportClick = async (mode: PurchaseMode) => {
     if (!ensureLoggedIn() || !userEmail) return;
 
@@ -147,10 +141,11 @@ export default function LiveRoomPage() {
     // 1) If we have a credit, spend it immediately
     if (available > 0) {
       try {
+        setError(null);
         const updated = await spendOneCredit(userEmail, mode);
         setCredits(updated);
 
-        // TODO: plug in live overlay / animation here
+        // TODO: hook into live overlay / animation event here
         console.log("[live] used one", mode, "credit on stream");
         return;
       } catch (err) {
@@ -173,18 +168,15 @@ export default function LiveRoomPage() {
     setPendingPurchase(null);
   };
 
-  /* ---------------------- UI helpers -------------------------------- */
-
+  /* ---------------------- UI helpers ------------------------------- */
   const creditsSummary = useMemo(() => {
     if (!credits) return null;
 
-    const total =
-      (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
     if (total <= 0) return null;
 
     const parts: string[] = [];
-    if (credits.tip > 0)
-      parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
     if (credits.boost > 0)
       parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
     if (credits.spin > 0)
@@ -193,19 +185,15 @@ export default function LiveRoomPage() {
     return parts.join(" • ");
   }, [credits]);
 
-  /* ---------------------- Render ------------------------------------ */
-
+  /* ---------------------- Render ----------------------------------- */
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      <main className="flex-1 flex flex-col items-center px-4 py-4">
+      <main className="flex-1 flex flex-col items-center px-4 py-4 pb-24">
         {/* Error banner */}
         {error && (
           <div className="w-full max-w-xl mb-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
             <span>{error}</span>
-            <button
-              className="text-xs underline"
-              onClick={() => setError(null)}
-            >
+            <button className="text-xs underline" onClick={() => setError(null)}>
               Dismiss
             </button>
           </div>
@@ -218,8 +206,7 @@ export default function LiveRoomPage() {
               Live on Revolvr
             </h1>
             <p className="text-xs text-white/50 mt-1">
-              Room:{" "}
-              <span className="font-mono text-white/80">{roomName}</span>
+              Room: <span className="font-mono text-white/80">{roomName}</span>
             </p>
           </div>
 
@@ -240,9 +227,7 @@ export default function LiveRoomPage() {
         {/* Support section */}
         <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm sm:text-base font-semibold">
-              Support this stream
-            </h2>
+            <h2 className="text-sm sm:text-base font-semibold">Support this stream</h2>
             {userEmail && (
               <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
                 Signed in as {userEmail}
@@ -251,8 +236,8 @@ export default function LiveRoomPage() {
           </div>
 
           <p className="text-xs text-white/60">
-            Throw tips, boosts, or spins at the creator. We&apos;ll use your
-            existing credits first, then you can grab more with a quick checkout.
+            Use your credits first. If you run out, you’ll be taken straight to
+            Stripe to top up.
           </p>
 
           <p className="text-[11px] text-white/55 mt-1">
@@ -270,9 +255,7 @@ export default function LiveRoomPage() {
               className="rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/60 px-3 py-2 text-left transition"
             >
               <div className="font-semibold">Tip</div>
-              <div className="text-emerald-200/80 mt-0.5">
-                From A$2 • quick kudos
-              </div>
+              <div className="text-emerald-200/80 mt-0.5">From A$2</div>
             </button>
 
             <button
@@ -281,9 +264,7 @@ export default function LiveRoomPage() {
               className="rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 px-3 py-2 text-left transition"
             >
               <div className="font-semibold">Boost</div>
-              <div className="text-indigo-200/80 mt-0.5">
-                From A$5 • push the stream
-              </div>
+              <div className="text-indigo-200/80 mt-0.5">From A$5</div>
             </button>
 
             <button
@@ -292,12 +273,19 @@ export default function LiveRoomPage() {
               className="rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 px-3 py-2 text-left transition"
             >
               <div className="font-semibold">Spin</div>
-              <div className="text-pink-200/80 mt-0.5">
-                From A$1 • fun chaos
-              </div>
+              <div className="text-pink-200/80 mt-0.5">From A$1</div>
             </button>
           </div>
         </section>
+
+        {/* OPTION D: Floating credits bubble */}
+        <LiveSupportBubble
+          credits={credits}
+          disabled={creditsLoading}
+          onTip={() => handleSupportClick("tip")}
+          onBoost={() => handleSupportClick("boost")}
+          onSpin={() => handleSupportClick("spin")}
+        />
       </main>
 
       {/* Bottom sheet: single vs pack choice */}
@@ -330,21 +318,13 @@ function LivePurchaseChoiceSheet({
   onSingle,
   onPack,
 }: LivePurchaseChoiceSheetProps) {
-  const modeLabel =
-    mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
+  const modeLabel = mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
 
-  const singleAmount =
-    mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
-
-  const packAmount =
-    mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
+  const singleAmount = mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
+  const packAmount = mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
 
   const packLabel =
-    mode === "tip"
-      ? "tip pack"
-      : mode === "boost"
-      ? "boost pack"
-      : "spin pack";
+    mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm">
@@ -353,17 +333,14 @@ function LivePurchaseChoiceSheet({
           <h2 className="text-sm font-semibold">
             Support this stream with a {modeLabel}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-xs text-white/50 hover:text-white"
-          >
+          <button onClick={onClose} className="text-xs text-white/50 hover:text-white">
             Close
           </button>
         </div>
 
         <p className="text-xs text-white/60">
-          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} so
-          you don&apos;t have to check out every time.
+          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} so you
+          don&apos;t have to check out every time.
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -375,9 +352,7 @@ function LivePurchaseChoiceSheet({
             <div className="font-semibold">
               Single {modeLabel} ({singleAmount})
             </div>
-            <div className="text-[11px] text-emerald-200/80">
-              Quick one-off support
-            </div>
+            <div className="text-[11px] text-emerald-200/80">Quick one-off support</div>
           </button>
 
           <button
@@ -402,6 +377,133 @@ function LivePurchaseChoiceSheet({
           Maybe later
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* OPTION D: Floating credits bubble                                  */
+/* ------------------------------------------------------------------ */
+
+type LiveSupportBubbleProps = {
+  credits: CreditBalances | null;
+  disabled?: boolean;
+  onTip: () => void;
+  onBoost: () => void;
+  onSpin: () => void;
+};
+
+function LiveSupportBubble({
+  credits,
+  disabled,
+  onTip,
+  onBoost,
+  onSpin,
+}: LiveSupportBubbleProps) {
+  const [open, setOpen] = useState(false);
+
+  const tips = credits?.tip ?? 0;
+  const boosts = credits?.boost ?? 0;
+  const spins = credits?.spin ?? 0;
+
+  return (
+    <div className="fixed bottom-24 right-4 z-40 sm:bottom-28 sm:right-6">
+      {/* Collapsed bubble */}
+      {!open && (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-3 rounded-full bg-black/70 border border-white/20 px-3 py-2 shadow-lg shadow-black/60 backdrop-blur-lg text-xs sm:text-sm hover:bg-black/85 disabled:opacity-60"
+        >
+          <span className="font-semibold text-white/90">Your credits</span>
+
+          <span className="flex items-center gap-1 text-emerald-200">
+            🪙 <span>{tips}</span>
+          </span>
+          <span className="flex items-center gap-1 text-sky-200">
+            🚀 <span>{boosts}</span>
+          </span>
+          <span className="flex items-center gap-1 text-indigo-200">
+            💧 <span>{spins}</span>
+          </span>
+        </button>
+      )}
+
+      {/* Expanded sheet */}
+      {open && (
+        <div className="rounded-2xl bg-[#050814]/95 border border-white/15 px-3 py-3 shadow-2xl shadow-black/70 w-64 max-w-[80vw] backdrop-blur">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-white/80">Support this stream</span>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="text-[11px] text-white/40 hover:text-white/70"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] mb-2 text-white/60">
+            <span className="flex items-center gap-1">
+              🪙 <span>{tips}</span> tips
+            </span>
+            <span className="flex items-center gap-1">
+              🚀 <span>{boosts}</span> boosts
+            </span>
+            <span className="flex items-center gap-1">
+              💧 <span>{spins}</span> spins
+            </span>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onTip}
+              className="w-full rounded-xl border border-emerald-400/60 bg-emerald-500/15 hover:bg-emerald-500/25 px-3 py-2 text-left text-xs text-emerald-50 disabled:opacity-60"
+            >
+              <div className="font-semibold">
+                Tip A$2{" "}
+                <span className="ml-1 text-[10px] text-emerald-200/80">
+                  ({tips} left)
+                </span>
+              </div>
+              <div className="text-[11px] text-emerald-100/80">Quick appreciation</div>
+            </button>
+
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onBoost}
+              className="w-full rounded-xl border border-sky-400/60 bg-sky-500/15 hover:bg-sky-500/25 px-3 py-2 text-left text-xs text-sky-50 disabled:opacity-60"
+            >
+              <div className="font-semibold">
+                Boost A$5{" "}
+                <span className="ml-1 text-[10px] text-sky-200/80">
+                  ({boosts} left)
+                </span>
+              </div>
+              <div className="text-[11px] text-sky-100/80">Push this stream up</div>
+            </button>
+
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onSpin}
+              className="w-full rounded-xl border border-fuchsia-400/70 bg-fuchsia-500/15 hover:bg-fuchsia-500/25 px-3 py-2 text-left text-xs text-fuchsia-50 disabled:opacity-60"
+            >
+              <div className="font-semibold">
+                Spin A$1{" "}
+                <span className="ml-1 text-[10px] text-fuchsia-200/80">
+                  ({spins} left)
+                </span>
+              </div>
+              <div className="text-[11px] text-fuchsia-100/80">Light-touch support</div>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
