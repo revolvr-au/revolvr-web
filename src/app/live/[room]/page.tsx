@@ -32,6 +32,8 @@ export default function LiveRoomPage() {
   const [pendingPurchase, setPendingPurchase] =
     useState<PendingPurchase | null>(null);
 
+  const [supportBusy, setSupportBusy] = useState(false);
+
   /* ---------------------- Load logged-in user ---------------------- */
   useEffect(() => {
     const loadUser = async () => {
@@ -50,9 +52,6 @@ export default function LiveRoomPage() {
   }, []);
 
   /* ---------------------- Load credits for user -------------------- */
-  // Re-run when:
-  //  - userEmail changes
-  //  - search params change (e.g. returning from Stripe with success=1)
   useEffect(() => {
     if (!userEmail) {
       setCredits(null);
@@ -79,7 +78,9 @@ export default function LiveRoomPage() {
   /* ---------------------- Auth helper ------------------------------ */
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      const redirect = encodeURIComponent(`/live/${encodeURIComponent(roomName)}`);
+      const redirect = encodeURIComponent(
+        `/live/${encodeURIComponent(roomName)}`
+      );
       router.push(`/login?redirectTo=${redirect}`);
       return false;
     }
@@ -129,33 +130,38 @@ export default function LiveRoomPage() {
 
   /* ---------------------- Spend / support logic -------------------- */
   const handleSupportClick = async (mode: PurchaseMode) => {
-    if (!ensureLoggedIn() || !userEmail) return;
+    if (!ensureLoggedIn() || !userEmail || supportBusy) return;
 
-    const available =
-      mode === "tip"
-        ? credits?.tip ?? 0
-        : mode === "boost"
-        ? credits?.boost ?? 0
-        : credits?.spin ?? 0;
+    setSupportBusy(true);
 
-    // 1) If we have a credit, spend it immediately
-    if (available > 0) {
-      try {
-        setError(null);
+    try {
+      setError(null);
+
+      const available =
+        mode === "tip"
+          ? credits?.tip ?? 0
+          : mode === "boost"
+          ? credits?.boost ?? 0
+          : credits?.spin ?? 0;
+
+      // 1) If we have credits, spend immediately
+      if (available > 0) {
         const updated = await spendOneCredit(userEmail, mode);
         setCredits(updated);
 
         // TODO: hook into live overlay / animation event here
         console.log("[live] used one", mode, "credit on stream");
         return;
-      } catch (err) {
-        console.error("[live] spend credit failed, falling back to checkout", err);
-        // fall through to checkout
       }
-    }
 
-    // 2) No credits or spend failed: open purchase sheet
-    setPendingPurchase({ mode });
+      // 2) No credits: open purchase sheet
+      setPendingPurchase({ mode });
+    } catch (err) {
+      console.error("[live] support error", err);
+      setError("Could not apply support. Try again.");
+    } finally {
+      setSupportBusy(false);
+    }
   };
 
   const handleSingle = async (mode: PurchaseMode) => {
@@ -172,11 +178,13 @@ export default function LiveRoomPage() {
   const creditsSummary = useMemo(() => {
     if (!credits) return null;
 
-    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    const total =
+      (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
     if (total <= 0) return null;
 
     const parts: string[] = [];
-    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.tip > 0)
+      parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
     if (credits.boost > 0)
       parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
     if (credits.spin > 0)
@@ -220,14 +228,23 @@ export default function LiveRoomPage() {
         </header>
 
         {/* Live player placeholder */}
-        <section className="w-full max-w-xl rounded-2xl bg-black/40 border border-white/10 aspect-video mb-4 flex items-center justify-center text-white/60 text-xs sm:text-sm">
-          Live broadcast goes here
+        <section className="w-full max-w-xl rounded-2xl bg-black/40 border border-white/10 aspect-video mb-4 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-sm font-semibold text-white/80">
+              Stream starting soon
+            </div>
+            <div className="text-[11px] text-white/50 mt-1">
+              The creator is getting ready
+            </div>
+          </div>
         </section>
 
         {/* Support section */}
         <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm sm:text-base font-semibold">Support this stream</h2>
+            <h2 className="text-sm sm:text-base font-semibold">
+              Support this stream
+            </h2>
             {userEmail && (
               <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
                 Signed in as {userEmail}
@@ -252,7 +269,8 @@ export default function LiveRoomPage() {
             <button
               type="button"
               onClick={() => handleSupportClick("tip")}
-              className="rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/60 px-3 py-2 text-left transition"
+              disabled={supportBusy}
+              className="rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/60 px-3 py-2 text-left transition disabled:opacity-60"
             >
               <div className="font-semibold">Tip</div>
               <div className="text-emerald-200/80 mt-0.5">From A$2</div>
@@ -261,7 +279,8 @@ export default function LiveRoomPage() {
             <button
               type="button"
               onClick={() => handleSupportClick("boost")}
-              className="rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 px-3 py-2 text-left transition"
+              disabled={supportBusy}
+              className="rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 px-3 py-2 text-left transition disabled:opacity-60"
             >
               <div className="font-semibold">Boost</div>
               <div className="text-indigo-200/80 mt-0.5">From A$5</div>
@@ -270,7 +289,8 @@ export default function LiveRoomPage() {
             <button
               type="button"
               onClick={() => handleSupportClick("spin")}
-              className="rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 px-3 py-2 text-left transition"
+              disabled={supportBusy}
+              className="rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 px-3 py-2 text-left transition disabled:opacity-60"
             >
               <div className="font-semibold">Spin</div>
               <div className="text-pink-200/80 mt-0.5">From A$1</div>
@@ -281,7 +301,7 @@ export default function LiveRoomPage() {
         {/* OPTION D: Floating credits bubble */}
         <LiveSupportBubble
           credits={credits}
-          disabled={creditsLoading}
+          disabled={creditsLoading || supportBusy}
           onTip={() => handleSupportClick("tip")}
           onBoost={() => handleSupportClick("boost")}
           onSpin={() => handleSupportClick("spin")}
@@ -408,7 +428,6 @@ function LiveSupportBubble({
 
   return (
     <div className="fixed bottom-24 right-4 z-40 sm:bottom-28 sm:right-6">
-      {/* Collapsed bubble */}
       {!open && (
         <button
           type="button"
@@ -430,11 +449,12 @@ function LiveSupportBubble({
         </button>
       )}
 
-      {/* Expanded sheet */}
       {open && (
         <div className="rounded-2xl bg-[#050814]/95 border border-white/15 px-3 py-3 shadow-2xl shadow-black/70 w-64 max-w-[80vw] backdrop-blur">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-white/80">Support this stream</span>
+            <span className="text-xs font-semibold text-white/80">
+              Support this stream
+            </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -469,7 +489,9 @@ function LiveSupportBubble({
                   ({tips} left)
                 </span>
               </div>
-              <div className="text-[11px] text-emerald-100/80">Quick appreciation</div>
+              <div className="text-[11px] text-emerald-100/80">
+                Quick appreciation
+              </div>
             </button>
 
             <button
@@ -484,7 +506,9 @@ function LiveSupportBubble({
                   ({boosts} left)
                 </span>
               </div>
-              <div className="text-[11px] text-sky-100/80">Push this stream up</div>
+              <div className="text-[11px] text-sky-100/80">
+                Push this stream up
+              </div>
             </button>
 
             <button
@@ -499,7 +523,9 @@ function LiveSupportBubble({
                   ({spins} left)
                 </span>
               </div>
-              <div className="text-[11px] text-fuchsia-100/80">Light-touch support</div>
+              <div className="text-[11px] text-fuchsia-100/80">
+                Light-touch support
+              </div>
             </button>
           </div>
         </div>
