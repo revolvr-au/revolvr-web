@@ -1,8 +1,10 @@
 // src/app/login/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+export const dynamic = "force-dynamic";
+
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import {
   guessCountryFromLocale,
@@ -14,14 +16,12 @@ import {
 
 type Step = "country" | "au-age" | "login";
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginInner() {
   const sp = useSearchParams();
 
-const redirectTo = useMemo(() => {
-  return sp?.get("redirectTo") || "/public-feed";
-}, [sp]);
-
+  const redirectTo = useMemo(() => {
+    return sp.get("redirectTo") || "/public-feed";
+  }, [sp]);
 
   const [step, setStep] = useState<Step>("country");
   const [country, setCountry] = useState<string>("US");
@@ -88,11 +88,14 @@ const redirectTo = useMemo(() => {
       setError("Invalid date of birth.");
       return;
     }
+
     const now = new Date();
     const age =
       now.getFullYear() -
       birth.getFullYear() -
-      (now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
+      (now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate())
+        ? 1
+        : 0);
 
     if (age < 16) {
       setError("Revolvr is currently available to people aged 16 or older.");
@@ -143,7 +146,9 @@ const redirectTo = useMemo(() => {
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
         <div className="text-center">
           <div className="text-xl font-semibold tracking-tight">Revolvr</div>
-          <div className="text-[11px] text-white/50 mt-1">v0.1 • social preview</div>
+          <div className="text-[11px] text-white/50 mt-1">
+            v0.1 • social preview
+          </div>
         </div>
 
         {error && (
@@ -157,7 +162,8 @@ const redirectTo = useMemo(() => {
             <div>
               <div className="text-sm font-semibold">Where are you located?</div>
               <div className="text-xs text-white/60 mt-1">
-                Australia requires date-of-birth verification. Other countries can continue.
+                Australia requires date-of-birth verification. Other countries
+                can continue.
               </div>
             </div>
 
@@ -282,5 +288,13 @@ const redirectTo = useMemo(() => {
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050814]" />}>
+      <LoginInner />
+    </Suspense>
   );
 }
