@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import {
-  clearAgeOk,
   guessCountryFromLocale,
   getStoredCountry,
   isAgeOk,
@@ -35,110 +34,97 @@ type CountryCode =
 export default function LoginPage() {
   const router = useRouter();
 
+  // Read redirectTo without useSearchParams (pre-render + suspense issues on Vercel)
   const [redirectTo, setRedirectTo] = useState<string>("/public-feed");
 
+  // Country + AU age verification
   const [country, setCountry] = useState<CountryCode>("US");
+  const [auAgeVerified, setAuAgeVerified] = useState<boolean>(false);
 
-  // AU-only DOB fields
-  const [dob, setDob] = useState<string>(""); // yyyy-mm-dd
+  // AU-only DOB fields (HTML date input returns yyyy-mm-dd)
+  const [dob, setDob] = useState<string>("");
   const [confirm16, setConfirm16] = useState(false);
 
-  // login
+  // Login
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
 
-  // Pull redirectTo from URL without useSearchParams (avoids Next Suspense/prerender issues)
+  // Initial boot: country + redirectTo + local age state
   useEffect(() => {
+    // redirectTo
     try {
       const sp = new URLSearchParams(window.location.search);
-      const raw = sp.get("redirectTo") || "/public-feed";
-
-      // Safety: only allow internal paths
-      const safe = raw.startsWith("/") ? raw : "/public-feed";
-      setRedirectTo(safe);
+      const r = sp.get("redirectTo");
+      if (r && r.startsWith("/")) setRedirectTo(r);
     } catch {
-      setRedirectTo("/public-feed");
+      // keep default
     }
-  }, []);
 
-  // Init: set country (stored > guessed), and enforce AU gating rules
-  useEffect(() => {
+    // country
     const stored = getStoredCountry();
-    const guessed = (stored || guessCountryFromLocale()) as CountryCode;
-
+    const guessed = (stored || guessCountryFromLocale() || "US") as CountryCode;
     setCountry(guessed);
     setStoredCountry(guessed);
 
-    // If AU, do NOT auto-allow. If non-AU, allow immediately.
-    if (guessed === "AU") {
-      // If previously age-ok from non-AU device use, AU must still gate.
-      // We force-clear and require AU verification now.
-      clearAgeOk();
-    } else {
-      setAgeOk();
-    }
+    // age state (persisted)
+    setAuAgeVerified(isAgeOk());
   }, []);
 
-  const requiresAuGate = useMemo(() => country === "AU" && !isAgeOk(), [country]);
+  // When country changes:
+  // - persist it
+  // - if non-AU: consider them cleared for this device
+  // - if AU: require verification unless already verified
+  useEffect(() => {
+    setStoredCountry(country);
 
-  const canSendMagicLink = useMemo(() => {
-    if (!email.trim()) return false;
-    if (country === "AU") return !requiresAuGate; // AU must complete gate first
-    return true; // non-AU can continue
-  }, [email, country, requiresAuGate]);
-
-  const onCountryChange = (next: CountryCode) => {
-    setError(null);
-    setCountry(next);
-    setStoredCountry(next);
-
-    // Reset AU fields when changing
-    setDob("");
-    setConfirm16(false);
-    setSent(false);
-
-    if (next === "AU") {
-      clearAgeOk();
-    } else {
+    if (country !== "AU") {
+      // Non-AU: no DOB gate. Mark ok (device-level) and enable sign-in.
       setAgeOk();
+      setAuAgeVerified(true);
+    } else {
+      // AU: require verification; keep whatever we already know from storage
+      setAuAgeVerified(isAgeOk());
     }
-  };
 
-  const confirmAuAge = () => {
+    // Reset transient UI bits
+    setError(null);
+    setSent(false);
+  }, [country]);
+
+  const needsAuAgeGate = useMemo(() => country === "AU" && !auAgeVerified, [country, auAgeVerified]);
+
+  const validateAuAge = () => {
     setError(null);
 
-    if (!dob) {
-      setError("Please enter your date of birth.");
-      return;
-    }
-    if (!confirm16) {
-      setError("Please confirm you are 16 years of age or older.");
-      return;
-    }
+    if (!dob) return "Please enter your date of birth.";
+    if (!confirm16) return "Please confirm you are 16 years of age or older.";
 
+    // dob expected yyyy-mm-dd from <input type="date" />
     const birth = new Date(dob);
-    if (Number.isNaN(birth.getTime())) {
-      setError("Invalid date of birth.");
-      return;
-    }
+    if (Number.isNaN(birth.getTime())) return "Invalid date of birth.";
 
     const now = new Date();
-    const age =
-      now.getFullYear() -
-      birth.getFullYear() -
-      (now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate())
-        ? 1
-        : 0);
+    const birthdayThisYear = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
+    const age = now.getFullYear() - birth.getFullYear() - (now < birthdayThisYear ? 1 : 0);
 
-    if (age < 16) {
-      setError("Revolvr is currently available to people aged 16 or older.");
+    if (age < 16) return "Revolvr is currently available to people aged 16 or older.";
+
+    return null;
+  };
+
+  const onConfirmAuAge = () => {
+    const msg = validateAuAge();
+    if (msg) {
+      setError(msg);
       return;
     }
 
+    // Persist + unlock sign-in immediately
     setAgeOk();
+    setAuAgeVerified(true);
     setError(null);
   };
 
@@ -146,23 +132,31 @@ export default function LoginPage() {
     setError(null);
     setSent(false);
 
-    if (!canSendMagicLink) {
-      if (country === "AU" && requiresAuGate) {
-        setError("Please confirm your age to continue.");
-      } else {
-        setError("Enter your email address.");
-      }
+    // Country is mandatory
+    if (!country) {
+      setError("Please select your country to continue.");
+      return;
+    }
+
+    // If AU selected, must verify first
+    if (needsAuAgeGate) {
+      setError("Please confirm your age to continue (Australia).");
+      return;
+    }
+
+    if (!email.trim()) {
+      setError("Enter your email address.");
       return;
     }
 
     try {
       setSending(true);
 
+      const emailRedirectTo = `${window.location.origin}${redirectTo}`;
+
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}${redirectTo}`,
-        },
+        options: { emailRedirectTo },
       });
 
       if (error) {
@@ -180,26 +174,13 @@ export default function LoginPage() {
     }
   };
 
-  // Optional helper: if already signed in, skip login page
-  useEffect(() => {
-    const run = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) router.push(redirectTo);
-    };
-    run().catch(() => {});
-  }, [router, redirectTo]);
-
   return (
     <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
         <div className="text-center">
           <div className="text-xl font-semibold tracking-tight">Revolvr</div>
           <div className="text-[11px] text-white/50 mt-1">v0.1 • social preview</div>
-          <div className="text-[12px] text-white/60 mt-2">
-            Sign in with a magic link.
-          </div>
+          <div className="text-[11px] text-white/45 mt-2">Sign in with a magic link.</div>
         </div>
 
         {error && (
@@ -211,11 +192,10 @@ export default function LoginPage() {
         {/* Country (mandatory) */}
         <div className="mt-6 space-y-2">
           <label className="text-xs text-white/70">Country (required)</label>
-
           <select
             className="w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
             value={country}
-            onChange={(e) => onCountryChange(e.target.value as CountryCode)}
+            onChange={(e) => setCountry(e.target.value as CountryCode)}
           >
             <option value="US">United States</option>
             <option value="CA">Canada</option>
@@ -236,55 +216,57 @@ export default function LoginPage() {
             <option value="OTHER">Other</option>
           </select>
 
-          <div className="text-[11px] text-white/45">
-            Australia requires age verification. Other countries can continue.
+          <div className="text-[11px] text-white/55">
+            {country === "AU"
+              ? "Australia requires age verification before you can sign in."
+              : "Australia requires age verification. Other countries can continue."}
           </div>
         </div>
 
-        {/* AU Age Verification (only if AU selected) */}
+        {/* AU age verification (inline block) */}
         {country === "AU" && (
-          <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4 space-y-3">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
             <div className="text-sm font-semibold">Australia — confirm your age</div>
-            <div className="text-[11px] text-white/55">
+            <div className="text-xs text-white/60 mt-1">
               Required before you can sign in.
             </div>
 
-            <div>
-              <label className="text-xs text-white/70">Date of birth</label>
-              <input
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-                className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-              />
-            </div>
-
-            <label className="flex items-center gap-2 text-xs text-white/70">
-              <input
-                type="checkbox"
-                checked={confirm16}
-                onChange={(e) => setConfirm16(e.target.checked)}
-              />
-              I confirm that I am 16 years of age or older.
-            </label>
-
-            <button
-              type="button"
-              onClick={confirmAuAge}
-              className="w-full rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-white font-semibold py-3"
-            >
-              Confirm age
-            </button>
-
-            {!requiresAuGate && (
-              <div className="text-[11px] text-emerald-200/90">
-                Age confirmed for this device.
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-xs text-white/70">Date of birth</label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
+                />
               </div>
-            )}
+
+              <label className="flex items-center gap-2 text-xs text-white/70">
+                <input
+                  type="checkbox"
+                  checked={confirm16}
+                  onChange={(e) => setConfirm16(e.target.checked)}
+                />
+                I confirm that I am 16 years of age or older.
+              </label>
+
+              <button
+                type="button"
+                onClick={onConfirmAuAge}
+                className={`w-full rounded-xl py-3 font-semibold ${
+                  auAgeVerified
+                    ? "bg-emerald-500/20 text-emerald-100 border border-emerald-400/30"
+                    : "bg-white/10 hover:bg-white/15 border border-white/15 text-white"
+                }`}
+              >
+                {auAgeVerified ? "Age confirmed" : "Confirm age"}
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Sign in (same for new/existing in magic-link world) */}
+        {/* Sign in */}
         <div className="mt-6 space-y-4">
           <div className="text-center">
             <div className="text-lg font-semibold">Sign in</div>
@@ -300,17 +282,16 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
               placeholder="you@example.com"
-              disabled={country === "AU" && requiresAuGate}
             />
           </div>
 
           <button
             type="button"
-            disabled={sending || !canSendMagicLink}
+            disabled={sending || needsAuAgeGate}
             onClick={sendMagicLink}
-            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-black font-semibold py-3"
+            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:hover:bg-emerald-500 text-black font-semibold py-3"
           >
-            {sending ? "Sending…" : "Send magic link"}
+            {needsAuAgeGate ? "Confirm age to continue" : sending ? "Sending…" : "Send magic link"}
           </button>
 
           {sent && (
@@ -319,9 +300,14 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="text-[11px] text-white/40 text-center">
-            You’ll only need to do country/age once per device.
-          </div>
+          {/* Optional: a safe “back” action if someone lands here unexpectedly */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="w-full text-[11px] text-white/45 hover:text-white/70"
+          >
+            Back to Revolvr
+          </button>
         </div>
       </div>
     </div>
