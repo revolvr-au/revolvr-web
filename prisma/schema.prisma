@@ -56,13 +56,34 @@ enum RevolvrStatus {
 }
 
 model UserCredits {
-  id        String   @id @default(cuid())
+  id String @id @default(dbgenerated("gen_random_uuid()"))
   email     String   @unique
   boosts    Int      @default(0)
   tips      Int      @default(0)
   spins     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@schema("public")
+}
+enum SupportSource {
+  FEED
+  LIVE
+
+  @@schema("public")
+}
+
+enum CreatorStatus {
+  ACTIVE
+  DISABLED
+
+  @@schema("public")
+}
+
+enum SupportKind {
+  TIP
+  BOOST
+  SPIN
 
   @@schema("public")
 }
