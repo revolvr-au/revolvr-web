@@ -18,7 +18,10 @@ export default function LoginPage() {
   const router = useRouter();
   const sp = useSearchParams();
 
-  const redirectTo = useMemo(() => sp.get("redirectTo") || "/public-feed", [sp]);
+const redirectTo = useMemo(() => {
+  return sp?.get("redirectTo") || "/public-feed";
+}, [sp]);
+
 
   const [step, setStep] = useState<Step>("country");
   const [country, setCountry] = useState<string>("US");
