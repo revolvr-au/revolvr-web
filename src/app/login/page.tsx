@@ -19,15 +19,17 @@ type Step = "country" | "au-age" | "login";
 function LoginInner() {
   const sp = useSearchParams();
 
+  // ✅ Null-safe for your build environment
   const redirectTo = useMemo(() => {
-    return sp.get("redirectTo") || "/public-feed";
+    const v = sp?.get("redirectTo");
+    return v && v.startsWith("/") ? v : "/public-feed";
   }, [sp]);
 
   const [step, setStep] = useState<Step>("country");
   const [country, setCountry] = useState<string>("US");
 
   // AU-only DOB fields
-  const [dob, setDob] = useState<string>(""); // yyyy-mm-dd (input type="date")
+  const [dob, setDob] = useState<string>(""); // yyyy-mm-dd
   const [confirm16, setConfirm16] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +39,6 @@ function LoginInner() {
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
-    // decide initial step
     if (isAgeOk()) {
       setStep("login");
       return;
@@ -52,7 +53,6 @@ function LoginInner() {
     if (guessed === "AU") {
       setStep("au-age");
     } else {
-      // non-AU: no DOB gate
       setAgeOk();
       setStep("login");
     }
@@ -82,7 +82,6 @@ function LoginInner() {
       return;
     }
 
-    // Minimal DOB validation (client-side)
     const birth = new Date(dob);
     if (Number.isNaN(birth.getTime())) {
       setError("Invalid date of birth.");
@@ -121,7 +120,6 @@ function LoginInner() {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
-          // ensure it returns back into the app
           emailRedirectTo: `${window.location.origin}${redirectTo}`,
         },
       });
@@ -162,8 +160,8 @@ function LoginInner() {
             <div>
               <div className="text-sm font-semibold">Where are you located?</div>
               <div className="text-xs text-white/60 mt-1">
-                Australia requires date-of-birth verification. Other countries
-                can continue.
+                Australia requires date-of-birth verification. Other countries can
+                continue.
               </div>
             </div>
 
