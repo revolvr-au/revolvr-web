@@ -5,7 +5,7 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["multiSchema"]
 }
 
@@ -56,7 +56,8 @@ enum RevolvrStatus {
 }
 
 model UserCredits {
-  id String @id @default(dbgenerated("gen_random_uuid()"))
+  // Keep your DB default to avoid drift (matches your migration fix)
+  id        String   @id @default(dbgenerated("gen_random_uuid()"))
   email     String   @unique
   boosts    Int      @default(0)
   tips      Int      @default(0)
@@ -66,12 +67,10 @@ model UserCredits {
 
   @@schema("public")
 }
-enum SupportSource {
-  FEED
-  LIVE
 
-  @@schema("public")
-}
+// -------------------------------------------------------------------
+// Creator onboarding + revenue split (auto-approved, launch-safe)
+// -------------------------------------------------------------------
 
 enum CreatorStatus {
   ACTIVE
@@ -84,6 +83,61 @@ enum SupportKind {
   TIP
   BOOST
   SPIN
+
+  @@schema("public")
+}
+
+enum SupportSource {
+  FEED
+  LIVE
+
+  @@schema("public")
+}
+
+model CreatorProfile {
+  id          String        @id @default(cuid())
+  email       String        @unique
+  displayName String
+  handle      String?       @unique
+  payoutShare Int           @default(45) // creator share %
+  status      CreatorStatus @default(ACTIVE)
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@schema("public")
+}
+
+model CreatorBalance {
+  // one row per creator for quick reads
+  creatorEmail     String   @id
+  totalEarnedCents Int      @default(0)
+  availableCents   Int      @default(0)
+  updatedAt        DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model SupportLedger {
+  id            String        @id @default(cuid())
+
+  creatorEmail   String
+  viewerEmail    String?
+  kind           SupportKind
+  source         SupportSource
+  targetId       String?       // postId or room name
+  units          Int           @default(1)
+
+  currency       String        @default("AUD")
+  grossCents     Int           @default(0) // total attributed value
+  creatorCents   Int           @default(0) // 45% share
+  platformCents  Int           @default(0) // 55% share
+
+  createdAt      DateTime      @default(now())
+
+  @@index([creatorEmail])
+  @@index([viewerEmail])
+  @@index([targetId])
 
   @@schema("public")
 }
