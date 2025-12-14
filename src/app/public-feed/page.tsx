@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function PublicFeedPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
