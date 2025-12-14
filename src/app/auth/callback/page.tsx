@@ -1,31 +1,33 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
-function safeRedirectTo(): string {
-  try {
-    const u = new URL(window.location.href);
-    const r = u.searchParams.get("redirectTo") || "/public-feed";
-    return r.startsWith("/") ? r : "/public-feed";
-  } catch {
-    return "/public-feed";
-  }
+function safeRedirectTo(sp: URLSearchParams): string {
+  const r = sp.get("redirectTo") || "/public-feed";
+  return r.startsWith("/") ? r : "/public-feed";
 }
 
 export default function AuthCallbackPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const run = async () => {
-      const redirectTo = safeRedirectTo();
+      const code = searchParams.get("code");
+      const redirectTo = safeRedirectTo(searchParams);
 
-      try {
-        // This is the correct place to do the exchange
-        await supabase.auth.exchangeCodeForSession(window.location.href);
-      } catch (e) {
-        console.warn("[auth/callback] exchangeCodeForSession failed", e);
+      // If there is no code, send them to login.
+      if (!code) {
+        router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+        return;
+      }
+
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        console.error("[auth/callback] exchangeCodeForSession failed", error);
         router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
         return;
       }
@@ -34,14 +36,11 @@ export default function AuthCallbackPage() {
     };
 
     run();
-  }, [router]);
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-        <div className="text-lg font-semibold">Signing you in…</div>
-        <div className="text-xs text-white/60 mt-2">Please wait.</div>
-      </div>
+      <div className="text-sm text-white/70">Signing you in…</div>
     </div>
   );
 }

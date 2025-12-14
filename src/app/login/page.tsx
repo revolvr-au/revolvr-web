@@ -1,4 +1,3 @@
-// src/app/login/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -19,8 +18,7 @@ function getRedirectToFromUrl(): string {
     const u = new URL(window.location.href);
     const r = u.searchParams.get("redirectTo");
     if (!r) return "/public-feed";
-    if (!r.startsWith("/")) return "/public-feed"; // internal-only
-    return r;
+    return r.startsWith("/") ? r : "/public-feed";
   } catch {
     return "/public-feed";
   }
@@ -45,30 +43,16 @@ export default function LoginPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // If a session already exists, go straight through (prevents “bounce back to login”)
+  // If already signed in, go straight through.
   useEffect(() => {
-    let cancelled = false;
-
-    const run = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled && data.session) {
-        router.replace(redirectTo);
-      }
+    const goIfSignedIn = async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) router.replace(redirectTo);
     };
-
-    run();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
-      if (session) router.replace(redirectTo);
-    });
-
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
+    goIfSignedIn();
   }, [router, redirectTo]);
 
-  // Country gate boot
+  // Gate flow
   useEffect(() => {
     if (isAgeOk()) {
       setStep("login");
@@ -77,26 +61,20 @@ export default function LoginPage() {
 
     const stored = getStoredCountry();
     const guessed = stored || guessCountryFromLocale();
+
     setCountry(guessed);
     setStoredCountry(guessed);
-
-    // Mandatory country step first
     setStep("country");
   }, []);
 
   const onCountryContinue = () => {
     setError(null);
-
-    if (!country) {
-      setError("Please select your country.");
-      return;
-    }
+    if (!country) return setError("Please select your country.");
 
     setStoredCountry(country);
 
-    if (country === "AU") {
-      setStep("au-age");
-    } else {
+    if (country === "AU") setStep("au-age");
+    else {
       setAgeOk();
       setStep("login");
     }
@@ -135,14 +113,13 @@ export default function LoginPage() {
     try {
       setSending(true);
 
+      const emailRedirectTo = `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(
+        redirectTo
+      )}`;
+
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: {
-          // IMPORTANT: send to /auth/callback (not /login)
-          emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(
-            redirectTo
-          )}`,
-        },
+        options: { emailRedirectTo },
       });
 
       if (error) {
@@ -259,9 +236,7 @@ export default function LoginPage() {
           <div className="mt-6 space-y-4">
             <div className="text-center">
               <div className="text-lg font-semibold">Sign in</div>
-              <div className="text-xs text-white/60 mt-1">
-                We’ll email you a one-tap link. No passwords.
-              </div>
+              <div className="text-xs text-white/60 mt-1">We’ll email you a one-tap link.</div>
             </div>
 
             <div>
