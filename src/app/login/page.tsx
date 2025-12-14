@@ -12,137 +12,151 @@ import {
   setStoredCountry,
 } from "@/lib/ageGate";
 
-type CountryCode =
-  | "US"
-  | "CA"
-  | "GB"
-  | "AU"
-  | "NZ"
-  | "IE"
-  | "SG"
-  | "DE"
-  | "FR"
-  | "ES"
-  | "IT"
-  | "NL"
-  | "SE"
-  | "NO"
-  | "DK"
-  | "CH"
-  | "OTHER";
+type Step = "country" | "au-age" | "login";
+
+function getRedirectToFromUrl(): string {
+  try {
+    const u = new URL(window.location.href);
+    const r = u.searchParams.get("redirectTo");
+    if (!r) return "/public-feed";
+    // Basic safety: only allow internal paths
+    if (!r.startsWith("/")) return "/public-feed";
+    return r;
+  } catch {
+    return "/public-feed";
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
 
-  // Read redirectTo without useSearchParams (pre-render + suspense issues on Vercel)
-  const [redirectTo, setRedirectTo] = useState<string>("/public-feed");
+  const redirectTo = useMemo(() => {
+    if (typeof window === "undefined") return "/public-feed";
+    return getRedirectToFromUrl();
+  }, []);
 
-  // Country + AU age verification
-  const [country, setCountry] = useState<CountryCode>("US");
-  const [auAgeVerified, setAuAgeVerified] = useState<boolean>(false);
+  const [step, setStep] = useState<Step>("country");
+  const [country, setCountry] = useState<string>("US");
 
-  // AU-only DOB fields (HTML date input returns yyyy-mm-dd)
-  const [dob, setDob] = useState<string>("");
+  // AU-only DOB fields
+  const [dob, setDob] = useState<string>(""); // yyyy-mm-dd
   const [confirm16, setConfirm16] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Login
+  // login
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  const [error, setError] = useState<string | null>(null);
-
-  // Initial boot: country + redirectTo + local age state
+  // 1) On load: exchange magic-link code for a session (critical)
   useEffect(() => {
-    // redirectTo
-    try {
-      const sp = new URLSearchParams(window.location.search);
-      const r = sp.get("redirectTo");
-      if (r && r.startsWith("/")) setRedirectTo(r);
-    } catch {
-      // keep default
-    }
+    const exchange = async () => {
+      try {
+        // If Supabase magic link adds ?code=... this will turn it into a session
+        // Safe to call even if there's no code in the URL.
+        await supabase.auth.exchangeCodeForSession(window.location.href);
+      } catch (e) {
+        // Non-fatal: user can still sign in again
+        console.warn("[login] exchangeCodeForSession failed (non-fatal)", e);
+      }
+    };
 
-    // country
-    const stored = getStoredCountry();
-    const guessed = (stored || guessCountryFromLocale() || "US") as CountryCode;
-    setCountry(guessed);
-    setStoredCountry(guessed);
-
-    // age state (persisted)
-    setAuAgeVerified(isAgeOk());
+    exchange();
   }, []);
 
-  // When country changes:
-  // - persist it
-  // - if non-AU: consider them cleared for this device
-  // - if AU: require verification unless already verified
+  // 2) If already signed in, send them to redirectTo immediately
   useEffect(() => {
-    setStoredCountry(country);
+    const goIfSignedIn = async () => {
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-    if (country !== "AU") {
-      // Non-AU: no DOB gate. Mark ok (device-level) and enable sign-in.
-      setAgeOk();
-      setAuAgeVerified(true);
-    } else {
-      // AU: require verification; keep whatever we already know from storage
-      setAuAgeVerified(isAgeOk());
-    }
+        if (user) {
+          router.replace(redirectTo);
+        }
+      } catch (e) {
+        console.warn("[login] getUser failed (non-fatal)", e);
+      }
+    };
 
-    // Reset transient UI bits
-    setError(null);
-    setSent(false);
-  }, [country]);
+    goIfSignedIn();
+  }, [router, redirectTo]);
 
-  const needsAuAgeGate = useMemo(() => country === "AU" && !auAgeVerified, [country, auAgeVerified]);
-
-  const validateAuAge = () => {
-    setError(null);
-
-    if (!dob) return "Please enter your date of birth.";
-    if (!confirm16) return "Please confirm you are 16 years of age or older.";
-
-    // dob expected yyyy-mm-dd from <input type="date" />
-    const birth = new Date(dob);
-    if (Number.isNaN(birth.getTime())) return "Invalid date of birth.";
-
-    const now = new Date();
-    const birthdayThisYear = new Date(now.getFullYear(), birth.getMonth(), birth.getDate());
-    const age = now.getFullYear() - birth.getFullYear() - (now < birthdayThisYear ? 1 : 0);
-
-    if (age < 16) return "Revolvr is currently available to people aged 16 or older.";
-
-    return null;
-  };
-
-  const onConfirmAuAge = () => {
-    const msg = validateAuAge();
-    if (msg) {
-      setError(msg);
+  // 3) Decide gate flow (country mandatory; AU triggers age gate)
+  useEffect(() => {
+    // If already age-ok, go straight to login UI (or redirect if signed in above)
+    if (isAgeOk()) {
+      setStep("login");
       return;
     }
 
-    // Persist + unlock sign-in immediately
-    setAgeOk();
-    setAuAgeVerified(true);
+    const stored = getStoredCountry();
+    const guessed = stored || guessCountryFromLocale();
+
+    setCountry(guessed);
+    setStoredCountry(guessed);
+
+    // Always force the country step first (mandatory)
+    setStep("country");
+  }, []);
+
+  const onCountryContinue = () => {
     setError(null);
+
+    if (!country) {
+      setError("Please select your country.");
+      return;
+    }
+
+    setStoredCountry(country);
+
+    if (country === "AU") {
+      setStep("au-age");
+    } else {
+      setAgeOk();
+      setStep("login");
+    }
+  };
+
+  const onAuContinue = () => {
+    setError(null);
+
+    if (!dob) {
+      setError("Please enter your date of birth.");
+      return;
+    }
+    if (!confirm16) {
+      setError("Please confirm you are 16 years of age or older.");
+      return;
+    }
+
+    const birth = new Date(dob);
+    if (Number.isNaN(birth.getTime())) {
+      setError("Invalid date of birth.");
+      return;
+    }
+
+    const now = new Date();
+    const age =
+      now.getFullYear() -
+      birth.getFullYear() -
+      (now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate())
+        ? 1
+        : 0);
+
+    if (age < 16) {
+      setError("Revolvr is currently available to people aged 16 or older.");
+      return;
+    }
+
+    setAgeOk();
+    setStep("login");
   };
 
   const sendMagicLink = async () => {
     setError(null);
     setSent(false);
-
-    // Country is mandatory
-    if (!country) {
-      setError("Please select your country to continue.");
-      return;
-    }
-
-    // If AU selected, must verify first
-    if (needsAuAgeGate) {
-      setError("Please confirm your age to continue (Australia).");
-      return;
-    }
 
     if (!email.trim()) {
       setError("Enter your email address.");
@@ -152,11 +166,15 @@ export default function LoginPage() {
     try {
       setSending(true);
 
-      const emailRedirectTo = `${window.location.origin}${redirectTo}`;
-
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: { emailRedirectTo },
+        options: {
+          // Send them back to /login with redirectTo preserved.
+          // The exchangeCodeForSession() above will finalize the session.
+          emailRedirectTo: `${window.location.origin}/login?redirectTo=${encodeURIComponent(
+            redirectTo
+          )}`,
+        },
       });
 
       if (error) {
@@ -179,8 +197,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
         <div className="text-center">
           <div className="text-xl font-semibold tracking-tight">Revolvr</div>
-          <div className="text-[11px] text-white/50 mt-1">v0.1 • social preview</div>
-          <div className="text-[11px] text-white/45 mt-2">Sign in with a magic link.</div>
+          <div className="text-[11px] text-white/50 mt-1">
+            Sign in to watch and support
+          </div>
         </div>
 
         {error && (
@@ -189,126 +208,130 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Country (mandatory) */}
-        <div className="mt-6 space-y-2">
-          <label className="text-xs text-white/70">Country (required)</label>
-          <select
-            className="w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-            value={country}
-            onChange={(e) => setCountry(e.target.value as CountryCode)}
-          >
-            <option value="US">United States</option>
-            <option value="CA">Canada</option>
-            <option value="GB">United Kingdom</option>
-            <option value="AU">Australia</option>
-            <option value="NZ">New Zealand</option>
-            <option value="IE">Ireland</option>
-            <option value="SG">Singapore</option>
-            <option value="DE">Germany</option>
-            <option value="FR">France</option>
-            <option value="ES">Spain</option>
-            <option value="IT">Italy</option>
-            <option value="NL">Netherlands</option>
-            <option value="SE">Sweden</option>
-            <option value="NO">Norway</option>
-            <option value="DK">Denmark</option>
-            <option value="CH">Switzerland</option>
-            <option value="OTHER">Other</option>
-          </select>
-
-          <div className="text-[11px] text-white/55">
-            {country === "AU"
-              ? "Australia requires age verification before you can sign in."
-              : "Australia requires age verification. Other countries can continue."}
-          </div>
-        </div>
-
-        {/* AU age verification (inline block) */}
-        {country === "AU" && (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="text-sm font-semibold">Australia — confirm your age</div>
-            <div className="text-xs text-white/60 mt-1">
-              Required before you can sign in.
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-xs text-white/70">Date of birth</label>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-                />
+        {/* STEP 1: Country (mandatory) */}
+        {step === "country" && (
+          <div className="mt-6 space-y-4">
+            <div>
+              <div className="text-sm font-semibold">
+                Select your country (required)
               </div>
-
-              <label className="flex items-center gap-2 text-xs text-white/70">
-                <input
-                  type="checkbox"
-                  checked={confirm16}
-                  onChange={(e) => setConfirm16(e.target.checked)}
-                />
-                I confirm that I am 16 years of age or older.
-              </label>
-
-              <button
-                type="button"
-                onClick={onConfirmAuAge}
-                className={`w-full rounded-xl py-3 font-semibold ${
-                  auAgeVerified
-                    ? "bg-emerald-500/20 text-emerald-100 border border-emerald-400/30"
-                    : "bg-white/10 hover:bg-white/15 border border-white/15 text-white"
-                }`}
-              >
-                {auAgeVerified ? "Age confirmed" : "Confirm age"}
-              </button>
+              <div className="text-xs text-white/60 mt-1">
+                Australia requires age verification. Other countries continue
+                straight to sign-in.
+              </div>
             </div>
+
+            <select
+              className="w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+            >
+              <option value="US">United States</option>
+              <option value="CA">Canada</option>
+              <option value="GB">United Kingdom</option>
+              <option value="AU">Australia</option>
+              <option value="NZ">New Zealand</option>
+              <option value="IE">Ireland</option>
+              <option value="SG">Singapore</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="ES">Spain</option>
+              <option value="IT">Italy</option>
+              <option value="NL">Netherlands</option>
+              <option value="SE">Sweden</option>
+              <option value="NO">Norway</option>
+              <option value="DK">Denmark</option>
+              <option value="CH">Switzerland</option>
+              <option value="OTHER">Other</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={onCountryContinue}
+              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3"
+            >
+              Continue
+            </button>
           </div>
         )}
 
-        {/* Sign in */}
-        <div className="mt-6 space-y-4">
-          <div className="text-center">
-            <div className="text-lg font-semibold">Sign in</div>
-            <div className="text-xs text-white/60 mt-1">
-              We’ll email you a one-tap link. No passwords.
+        {/* STEP 2: AU age gate */}
+        {step === "au-age" && (
+          <div className="mt-6 space-y-4">
+            <div className="text-center">
+              <div className="text-lg font-semibold">Confirm your age</div>
+              <div className="text-xs text-white/60 mt-1">
+                Australia requires date-of-birth verification.
+              </div>
             </div>
-          </div>
 
-          <div>
-            <label className="text-xs text-white/70">Email</label>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <button
-            type="button"
-            disabled={sending || needsAuAgeGate}
-            onClick={sendMagicLink}
-            className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 disabled:hover:bg-emerald-500 text-black font-semibold py-3"
-          >
-            {needsAuAgeGate ? "Confirm age to continue" : sending ? "Sending…" : "Send magic link"}
-          </button>
-
-          {sent && (
-            <div className="text-[11px] text-emerald-200/90 text-center">
-              Magic link sent. Check your inbox.
+            <div>
+              <label className="text-xs text-white/70">Date of birth</label>
+              <input
+                type="date"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
+              />
             </div>
-          )}
 
-          {/* Optional: a safe “back” action if someone lands here unexpectedly */}
-          <button
-            type="button"
-            onClick={() => router.push("/")}
-            className="w-full text-[11px] text-white/45 hover:text-white/70"
-          >
-            Back to Revolvr
-          </button>
-        </div>
+            <label className="flex items-center gap-2 text-xs text-white/70">
+              <input
+                type="checkbox"
+                checked={confirm16}
+                onChange={(e) => setConfirm16(e.target.checked)}
+              />
+              I confirm that I am 16 years of age or older.
+            </label>
+
+            <button
+              type="button"
+              onClick={onAuContinue}
+              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-semibold py-3"
+            >
+              Continue
+            </button>
+
+            {/* NOTE: no “change country” link (you said it’s pointless here) */}
+          </div>
+        )}
+
+        {/* STEP 3: Sign in */}
+        {step === "login" && (
+          <div className="mt-6 space-y-4">
+            <div className="text-center">
+              <div className="text-lg font-semibold">Sign in</div>
+              <div className="text-xs text-white/60 mt-1">
+                We’ll email you a one-tap link. No passwords.
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-white/70">Email</label>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <button
+              type="button"
+              disabled={sending}
+              onClick={sendMagicLink}
+              className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-black font-semibold py-3"
+            >
+              {sending ? "Sending…" : "Send magic link"}
+            </button>
+
+            {sent && (
+              <div className="text-[11px] text-emerald-200/90 text-center">
+                Magic link sent. Check your inbox.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
