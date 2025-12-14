@@ -8,6 +8,8 @@ export default function CallbackClient() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    if (!searchParams) return; // TS + safety
+
     const code = searchParams.get("code");
     const error = searchParams.get("error");
 
@@ -16,8 +18,11 @@ export default function CallbackClient() {
       return;
     }
 
-    // Do your callback logic here (exchange code, call API, etc.)
-    // Then redirect:
+    if (!code) {
+      router.replace("/auth/login?error=missing_code");
+      return;
+    }
+
     router.replace("/app");
   }, [router, searchParams]);
 
