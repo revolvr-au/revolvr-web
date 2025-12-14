@@ -19,8 +19,7 @@ function getRedirectToFromUrl(): string {
     const u = new URL(window.location.href);
     const r = u.searchParams.get("redirectTo");
     if (!r) return "/public-feed";
-    // Basic safety: only allow internal paths
-    if (!r.startsWith("/")) return "/public-feed";
+    if (!r.startsWith("/")) return "/public-feed"; // internal-only
     return r;
   } catch {
     return "/public-feed";
@@ -38,54 +37,39 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>("country");
   const [country, setCountry] = useState<string>("US");
 
-  // AU-only DOB fields
-  const [dob, setDob] = useState<string>(""); // yyyy-mm-dd
+  const [dob, setDob] = useState<string>("");
   const [confirm16, setConfirm16] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // login
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // 1) On load: exchange magic-link code for a session (critical)
+  // If a session already exists, go straight through (prevents “bounce back to login”)
   useEffect(() => {
-    const exchange = async () => {
-      try {
-        // If Supabase magic link adds ?code=... this will turn it into a session
-        // Safe to call even if there's no code in the URL.
-        await supabase.auth.exchangeCodeForSession(window.location.href);
-      } catch (e) {
-        // Non-fatal: user can still sign in again
-        console.warn("[login] exchangeCodeForSession failed (non-fatal)", e);
+    let cancelled = false;
+
+    const run = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!cancelled && data.session) {
+        router.replace(redirectTo);
       }
     };
 
-    exchange();
-  }, []);
+    run();
 
-  // 2) If already signed in, send them to redirectTo immediately
-  useEffect(() => {
-    const goIfSignedIn = async () => {
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      if (session) router.replace(redirectTo);
+    });
 
-        if (user) {
-          router.replace(redirectTo);
-        }
-      } catch (e) {
-        console.warn("[login] getUser failed (non-fatal)", e);
-      }
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
     };
-
-    goIfSignedIn();
   }, [router, redirectTo]);
 
-  // 3) Decide gate flow (country mandatory; AU triggers age gate)
+  // Country gate boot
   useEffect(() => {
-    // If already age-ok, go straight to login UI (or redirect if signed in above)
     if (isAgeOk()) {
       setStep("login");
       return;
@@ -93,11 +77,10 @@ export default function LoginPage() {
 
     const stored = getStoredCountry();
     const guessed = stored || guessCountryFromLocale();
-
     setCountry(guessed);
     setStoredCountry(guessed);
 
-    // Always force the country step first (mandatory)
+    // Mandatory country step first
     setStep("country");
   }, []);
 
@@ -122,33 +105,19 @@ export default function LoginPage() {
   const onAuContinue = () => {
     setError(null);
 
-    if (!dob) {
-      setError("Please enter your date of birth.");
-      return;
-    }
-    if (!confirm16) {
-      setError("Please confirm you are 16 years of age or older.");
-      return;
-    }
+    if (!dob) return setError("Please enter your date of birth.");
+    if (!confirm16) return setError("Please confirm you are 16 years of age or older.");
 
     const birth = new Date(dob);
-    if (Number.isNaN(birth.getTime())) {
-      setError("Invalid date of birth.");
-      return;
-    }
+    if (Number.isNaN(birth.getTime())) return setError("Invalid date of birth.");
 
     const now = new Date();
     const age =
       now.getFullYear() -
       birth.getFullYear() -
-      (now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate())
-        ? 1
-        : 0);
+      (now < new Date(now.getFullYear(), birth.getMonth(), birth.getDate()) ? 1 : 0);
 
-    if (age < 16) {
-      setError("Revolvr is currently available to people aged 16 or older.");
-      return;
-    }
+    if (age < 16) return setError("Revolvr is currently available to people aged 16 or older.");
 
     setAgeOk();
     setStep("login");
@@ -169,9 +138,8 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
         options: {
-          // Send them back to /login with redirectTo preserved.
-          // The exchangeCodeForSession() above will finalize the session.
-          emailRedirectTo: `${window.location.origin}/login?redirectTo=${encodeURIComponent(
+          // IMPORTANT: send to /auth/callback (not /login)
+          emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(
             redirectTo
           )}`,
         },
@@ -197,9 +165,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-black/40">
         <div className="text-center">
           <div className="text-xl font-semibold tracking-tight">Revolvr</div>
-          <div className="text-[11px] text-white/50 mt-1">
-            Sign in to watch and support
-          </div>
+          <div className="text-[11px] text-white/50 mt-1">Sign in to watch and support</div>
         </div>
 
         {error && (
@@ -208,16 +174,12 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* STEP 1: Country (mandatory) */}
         {step === "country" && (
           <div className="mt-6 space-y-4">
             <div>
-              <div className="text-sm font-semibold">
-                Select your country (required)
-              </div>
+              <div className="text-sm font-semibold">Select your country (required)</div>
               <div className="text-xs text-white/60 mt-1">
-                Australia requires age verification. Other countries continue
-                straight to sign-in.
+                Australia requires age verification. Other countries continue straight to sign-in.
               </div>
             </div>
 
@@ -255,7 +217,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* STEP 2: AU age gate */}
         {step === "au-age" && (
           <div className="mt-6 space-y-4">
             <div className="text-center">
@@ -291,12 +252,9 @@ export default function LoginPage() {
             >
               Continue
             </button>
-
-            {/* NOTE: no “change country” link (you said it’s pointless here) */}
           </div>
         )}
 
-        {/* STEP 3: Sign in */}
         {step === "login" && (
           <div className="mt-6 space-y-4">
             <div className="text-center">
