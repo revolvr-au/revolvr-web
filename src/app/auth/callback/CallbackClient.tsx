@@ -1,30 +1,29 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
+// import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"; // if using this
 
 export default function CallbackClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  // const supabase = createClientComponentClient();
 
   useEffect(() => {
-    if (!searchParams) return; // TS + safety
+    (async () => {
+      // 1) Perform the exchange / session establishment here (provider-specific)
+      // await supabase.auth.exchangeCodeForSession(window.location.search);
 
-    const code = searchParams.get("code");
-    const error = searchParams.get("error");
+      // 2) Then confirm session exists before leaving the page
+      // const { data } = await supabase.auth.getSession();
+      // if (!data.session) { ...show error...; return; }
 
-    if (error) {
-      router.replace(`/auth/login?error=${encodeURIComponent(error)}`);
-      return;
-    }
+      // 3) Only then redirect
+      router.replace("/public-feed");
 
-    if (!code) {
-      router.replace("/auth/login?error=missing_code");
-      return;
-    }
-
-    router.replace("/app");
-  }, [router, searchParams]);
+      // 4) Force Next to re-fetch server components with fresh cookies
+      router.refresh();
+    })();
+  }, [router]);
 
   return <div>Completing sign-in…</div>;
 }
