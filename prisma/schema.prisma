@@ -56,7 +56,6 @@ enum RevolvrStatus {
 }
 
 model UserCredits {
-  // keep your gen_random_uuid default (matches your “fix_usercredits_id_default” migration)
   id        String   @id @default(dbgenerated("gen_random_uuid()"))
   email     String   @unique
   boosts    Int      @default(0)
@@ -68,14 +67,7 @@ model UserCredits {
   @@schema("public")
 }
 
-// --- Creator onboarding + earnings (launch-safe) ---
-
-enum SupportSource {
-  FEED
-  LIVE
-
-  @@schema("public")
-}
+// --- Creator onboarding + earnings (minimal, launch-safe) ---
 
 enum CreatorStatus {
   ACTIVE
@@ -88,6 +80,13 @@ enum SupportKind {
   TIP
   BOOST
   SPIN
+
+  @@schema("public")
+}
+
+enum SupportSource {
+  FEED
+  LIVE
 
   @@schema("public")
 }
