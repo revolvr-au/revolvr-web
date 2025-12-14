@@ -52,7 +52,7 @@ export function FloatingLiveButton() {
       return;
     }
 
-    router.push("/live/host");
+    router.push("/creator");
   };
 
   return (
