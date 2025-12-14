@@ -12,17 +12,16 @@ type AuthState = {
 export function FloatingLiveButton() {
   const router = useRouter();
   const pathname = usePathname();
+
   const [auth, setAuth] = useState<AuthState>({
     checked: false,
     isLoggedIn: false,
   });
 
-  // ✅ Only show on public feed
-  if (pathname !== "/public-feed") {
-    return null;
-  }
-
+  // ✅ Hooks ALWAYS run
   useEffect(() => {
+    if (pathname !== "/public-feed") return;
+
     const checkUser = async () => {
       try {
         const {
@@ -37,7 +36,12 @@ export function FloatingLiveButton() {
     };
 
     checkUser();
-  }, []);
+  }, [pathname]);
+
+  // ✅ Conditional return AFTER hooks
+  if (pathname !== "/public-feed") {
+    return null;
+  }
 
   const handleClick = () => {
     if (!auth.checked) return;
