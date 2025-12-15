@@ -9,64 +9,48 @@ export default function PublicFeedClient() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
+    let alive = true;
 
-    const redirectToLogin = () => {
-      router.replace("/login?redirectTo=/creator/onboard");
+    const run = async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const user = data?.user ?? null;
 
-    const init = async () => {
-      // 1) First check
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (sessionData.session) {
-        if (isMounted) setReady(true);
-        return;
+        if (!alive) return;
+
+        // If not signed in, send to login.
+        // IMPORTANT: we want creator intent to land on onboarding, not bounce back to /public-feed.
+        if (!user) {
+          router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+          return;
+        }
+
+        setReady(true);
+      } catch {
+        if (!alive) return;
+        router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
       }
-
-      // 2) Listen for session after magic-link redirect
-      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (!isMounted) return;
-        if (session) setReady(true);
-        else redirectToLogin();
-      });
-
-      // 3) Safety timeout
-      const t = window.setTimeout(async () => {
-        if (!isMounted) return;
-        const { data } = await supabase.auth.getSession();
-        if (data.session) setReady(true);
-        else redirectToLogin();
-      }, 2000);
-
-      return () => {
-        window.clearTimeout(t);
-        authListener.subscription.unsubscribe();
-      };
     };
 
-    let cleanup: void | (() => void);
-
-    init().then((fn) => {
-      cleanup = fn;
-    });
+    run();
 
     return () => {
-      isMounted = false;
-      if (cleanup) cleanup();
+      alive = false;
     };
   }, [router]);
 
   if (!ready) {
     return (
       <div className="min-h-screen p-6">
-        <div className="text-sm opacity-70">Loading feed…</div>
+        Loading feed…
       </div>
     );
   }
 
   return (
     <div className="min-h-screen p-6">
-      <h1 className="text-xl font-semibold">Public Feed</h1>
-      <p className="mt-2 text-sm opacity-70">Feed is ready. Next: render posts here.</p>
+      <h1 className="text-2xl font-semibold">Public Feed</h1>
+      <p className="mt-2 opacity-70">Feed is ready. Next: render posts here.</p>
     </div>
   );
 }
