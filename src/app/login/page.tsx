@@ -116,18 +116,21 @@ const sendMagicLink = async () => {
 
     const baseUrl = window.location.origin.replace(/\/$/, "");
 
-    // Persist redirect target across email hop (works even if Supabase returns to "/?code=...")
-    document.cookie = `revolvr_redirectTo=${encodeURIComponent(
-      redirectTo
-    )}; Path=/; SameSite=Lax; Secure`;
+// Backup: store redirect for the email hop
+document.cookie = `revolvr_redirectTo=${encodeURIComponent(
+  redirectTo
+)}; Path=/; SameSite=Lax; Secure`;
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: {
-        // Supabase should land here; our route.ts exchanges the code for a session
-        emailRedirectTo: `${baseUrl}/auth/callback`,
-      },
-    });
+// Primary: put redirectTo on the callback URL so the server ALWAYS sees it
+const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(
+  redirectTo
+)}`;
+
+const { error } = await supabase.auth.signInWithOtp({
+  email: cleanEmail,
+  options: { emailRedirectTo },
+});
+
 
     if (error) {
       console.error("[login] signInWithOtp error", error);
