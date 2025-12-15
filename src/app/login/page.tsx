@@ -101,11 +101,11 @@ export default function LoginPage() {
     setStep("login");
   };
 
-  const sendMagicLink = async () => {
+const sendMagicLink = async () => {
   setError(null);
   setSent(false);
 
-  const cleanEmail = email.trim().toLowerCase();
+  const cleanEmail = email.trim();
   if (!cleanEmail) {
     setError("Enter your email address.");
     return;
@@ -114,19 +114,20 @@ export default function LoginPage() {
   try {
     setSending(true);
 
-  const baseUrl = window.location.origin;
-const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
-// store redirect target for 10 minutes (so callback can recover it)
-document.cookie = `revolvr_redirectTo=${encodeURIComponent(
-  redirectTo
-)}; Path=/; Max-Age=600; SameSite=Lax; Secure`;
+    const baseUrl = window.location.origin.replace(/\/$/, "");
 
+    // Persist redirect target across email hop (works even if Supabase returns to "/?code=...")
+    document.cookie = `revolvr_redirectTo=${encodeURIComponent(
+      redirectTo
+    )}; Path=/; SameSite=Lax; Secure`;
 
-await supabase.auth.signInWithOtp({
-  email: cleanEmail,
-  options: { emailRedirectTo },
-});
-
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: {
+        // Supabase should land here; our route.ts exchanges the code for a session
+        emailRedirectTo: `${baseUrl}/auth/callback`,
+      },
+    });
 
     if (error) {
       console.error("[login] signInWithOtp error", error);
@@ -142,6 +143,7 @@ await supabase.auth.signInWithOtp({
     setSending(false);
   }
 };
+
 
 
   return (
