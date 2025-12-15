@@ -7,7 +7,12 @@ import CreatorDashboard from "./_dashboard";
 
 type CreatorMeResponse = {
   ok: boolean;
-  profile: { status?: string; displayName?: string; display_name?: string; handle?: string } | null;
+  profile: {
+    status?: string;
+    displayName?: string;
+    display_name?: string;
+    handle?: string;
+  } | null;
   balance: {
     creatorEmail: string;
     totalEarnedCents: number;
@@ -35,11 +40,12 @@ export default function CreatorPage() {
 
         const email = user.email.toLowerCase().trim();
 
-        const res = await fetch(`/api/creator/me?email=${encodeURIComponent(email)}`, {
-          cache: "no-cache",
-        });
-        const json = (await res.json()) as CreatorMeResponse;
+        const res = await fetch(
+          `/api/creator/me?email=${encodeURIComponent(email)}`,
+          { cache: "no-store" }
+        );
 
+        const json = (await res.json()) as CreatorMeResponse;
         if (!mounted) return;
 
         const status = (json?.profile?.status || "").toUpperCase();
@@ -50,7 +56,7 @@ export default function CreatorPage() {
         }
 
         setMe(json);
-      } catch {
+      } catch (err) {
         router.replace("/creator/onboard");
       } finally {
         if (mounted) setLoading(false);
@@ -63,17 +69,20 @@ export default function CreatorPage() {
     };
   }, [router]);
 
-if (loading) return <div className="min-h-screen p-6">Loading creator dashboard…</div>;
+  if (loading) {
+    return <div className="min-h-screen p-6">Loading creator dashboard…</div>;
+  }
 
-if (!me) {
-  return (
-    <div className="min-h-screen p-6">
-      <div className="text-lg font-semibold">Creator not ready</div>
-      <div className="mt-2 opacity-70">
-        We couldn’t load your creator profile. Redirecting to onboarding…
+  if (!me) {
+    return (
+      <div className="min-h-screen p-6">
+        <div className="text-lg font-semibold">Creator not ready</div>
+        <div className="mt-2 opacity-70">
+          Redirecting to creator onboarding…
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-return <CreatorDashboard me={me} />;
+  return <CreatorDashboard me={me} />;
+}
