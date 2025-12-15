@@ -9,48 +9,32 @@ export default function PublicFeedClient() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    let alive = true;
+    let cancelled = false;
 
     const run = async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        const user = data?.user ?? null;
+      const { data } = await supabase.auth.getUser();
 
-        if (!alive) return;
+      if (cancelled) return;
 
-        // If not signed in, send to login.
-        // IMPORTANT: we want creator intent to land on onboarding, not bounce back to /public-feed.
-        if (!user) {
-          router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
-          return;
-        }
-
-        setReady(true);
-      } catch {
-        if (!alive) return;
-        router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
-      }
+      // ❗ DO NOT redirect if user is logged out
+      // Public feed must be PUBLIC
+      setReady(true);
     };
 
     run();
-
     return () => {
-      alive = false;
+      cancelled = true;
     };
-  }, [router]);
+  }, []);
 
   if (!ready) {
-    return (
-      <div className="min-h-screen p-6">
-        Loading feed…
-      </div>
-    );
+    return <div className="p-6 text-white">Loading feed…</div>;
   }
 
   return (
-    <div className="min-h-screen p-6">
-      <h1 className="text-2xl font-semibold">Public Feed</h1>
-      <p className="mt-2 opacity-70">Feed is ready. Next: render posts here.</p>
+    <div className="p-6 text-white">
+      <h1 className="text-xl font-semibold">Public Feed</h1>
+      {/* your feed UI here */}
     </div>
   );
 }
