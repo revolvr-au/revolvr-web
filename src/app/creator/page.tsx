@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
-import CreatorDashboard from "./_dashboard";
+import CreatorDashboard from "./_dashboard.tsx";
 
 type CreatorMeResponse = {
   ok: boolean;
