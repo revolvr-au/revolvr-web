@@ -116,6 +116,8 @@ export default function LoginPage() {
 
   const baseUrl = window.location.origin;
 const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
+// store redirect target for 10 minutes (so callback can recover it)
+document.cookie = `revolvr_redirectTo=${encodeURIComponent(redirectTo)}; Path=/; Max-Age=600; SameSite=Lax; Secure`;
 
 await supabase.auth.signInWithOtp({
   email: cleanEmail,
