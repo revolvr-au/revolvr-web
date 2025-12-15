@@ -20,16 +20,6 @@ type CreatorMeResponse = {
   };
 };
 
-useEffect(() => {
-  const checkCreator = async () => {
-    const { data } = await supabase.auth.getUser();
-    if (!data.user?.user_metadata?.is_creator) {
-      router.replace("/creator/onboard");
-    }
-  };
-  checkCreator();
-}, [router]);
-
 export default function CreatorPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -43,8 +33,15 @@ export default function CreatorPage() {
         const { data } = await supabase.auth.getUser();
         const user = data.user;
 
+        // Not logged in -> go login, come back here
         if (!user?.email) {
           router.replace(`/login?redirectTo=${encodeURIComponent("/creator")}`);
+          return;
+        }
+
+        // Logged in but not marked as creator -> onboarding
+        if (!user.user_metadata?.is_creator) {
+          router.replace("/creator/onboard");
           return;
         }
 
@@ -87,9 +84,7 @@ export default function CreatorPage() {
     return (
       <div className="min-h-screen p-6">
         <div className="text-lg font-semibold">Creator not ready</div>
-        <div className="mt-2 opacity-70">
-          Redirecting to creator onboarding…
-        </div>
+        <div className="mt-2 opacity-70">Redirecting to creator onboarding…</div>
       </div>
     );
   }
