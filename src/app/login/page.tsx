@@ -114,8 +114,8 @@ export default function LoginPage() {
   try {
     setSending(true);
 
-    const baseUrl =
-      (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
+    const baseUrl = window.location.origin; // always correct for codespaces + vercel
+
 
     // Supabase returns here first; /auth/callback completes session + redirects onward.
     const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(

@@ -12,6 +12,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false, // IMPORTANT: we do the exchange manually in /auth/callback
+    detectSessionInUrl: false, // keep this false because /auth/callback does the exchange
+    flowType: "pkce",          // THIS is the key fix (stops #access_token redirects)
   },
 });
