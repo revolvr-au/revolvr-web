@@ -13,22 +13,26 @@ import {
 
 type Step = "country" | "au-age" | "login";
 
+function safeRedirect(path: string | null | undefined) {
+  if (!path) return "/login";
+  return path.startsWith("/") ? path : "/login";
+}
+
 function getRedirectToFromUrl(): string {
   try {
     const u = new URL(window.location.href);
-    const r = u.searchParams.get("redirectTo");
-    if (!r) return "/public-feed";
-    return r.startsWith("/") ? r : "/public-feed";
+    return safeRedirect(u.searchParams.get("redirectTo"));
   } catch {
-    return "/public-feed";
+    return "/login";
   }
 }
+
 
 export default function LoginPage() {
   const router = useRouter();
 
   const redirectTo = useMemo(() => {
-    if (typeof window === "undefined") return "/public-feed";
+    if (typeof window === "undefined") return "/login";
     return getRedirectToFromUrl();
   }, []);
 
@@ -115,22 +119,20 @@ const sendMagicLink = async () => {
     setSending(true);
 
     const baseUrl = window.location.origin.replace(/\/$/, "");
+    const redirect = redirectTo || "/login";
 
-// Backup: store redirect for the email hop
-document.cookie = `revolvr_redirectTo=${encodeURIComponent(
-  redirectTo
-)}; Path=/; SameSite=Lax; Secure`;
+    // Backup cookie (ONLY add Secure on https)
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie =
+      `revolvr_redirectTo=${encodeURIComponent(redirect)}; Path=/; SameSite=Lax${secure}`;
 
-// Primary: put redirectTo on the callback URL so the server ALWAYS sees it
-const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(
-  redirectTo
-)}`;
+    // Primary: redirectTo is embedded in the callback URL
+    const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
 
-const { error } = await supabase.auth.signInWithOtp({
-  email: cleanEmail,
-  options: { emailRedirectTo },
-});
-
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: { emailRedirectTo },
+    });
 
     if (error) {
       console.error("[login] signInWithOtp error", error);
@@ -146,6 +148,7 @@ const { error } = await supabase.auth.signInWithOtp({
     setSending(false);
   }
 };
+
 
 
 
