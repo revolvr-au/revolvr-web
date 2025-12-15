@@ -12,8 +12,7 @@ export default function PublicFeedClient() {
     let isMounted = true;
 
     const redirectToLogin = () => {
-      router.replace("/login?redirectTo=/public-feed");
-    };
+      router.replace("/login?redirectTo=/creator/onboard");
 
     const init = async () => {
       // 1) First check

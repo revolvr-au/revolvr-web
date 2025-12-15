@@ -52,7 +52,8 @@ export function FloatingLiveButton() {
       return;
     }
 
-    router.push("/creator");
+    router.push("/creator/onboard");
+
   };
 
   return (
