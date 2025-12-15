@@ -44,17 +44,16 @@ export function FloatingLiveButton() {
   }
 
   const handleClick = () => {
-    if (!auth.checked) return;
+  if (!auth.checked) return;
 
-    if (!auth.isLoggedIn) {
-      const redirect = encodeURIComponent("/public-feed");
-      router.push(`/login?redirectTo=${redirect}`);
-      return;
-    }
+  if (!auth.isLoggedIn) {
+    router.push(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+    return;
+  }
 
-    router.push("/creator/onboard");
+  router.push("/creator/onboard");
+};
 
-  };
 
   return (
     <button
