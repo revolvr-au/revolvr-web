@@ -6,25 +6,23 @@ import { supabase } from "@/lib/supabaseClients";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const sp = useSearchParams();
+  const sp = useSearchParams(); // may be null in typings
   const [msg, setMsg] = useState("Signing you in…");
 
   const redirectTo = useMemo(() => {
-    const r = sp.get("redirectTo") || "/public-feed";
+    const r = sp?.get("redirectTo") || "/public-feed";
     return r.startsWith("/") ? r : "/public-feed";
   }, [sp]);
 
   useEffect(() => {
     const run = async () => {
       try {
-        // If Supabase redirected with ?code= (PKCE)
-        const code = sp.get("code");
+        const code = sp?.get("code");
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
           if (error) throw error;
         } else {
-          // If Supabase redirected with #access_token= (implicit)
-          // detectSessionInUrl must be TRUE for supabase-js to pick it up.
+          // Handles implicit flow (#access_token...) once detectSessionInUrl is true
           const { data } = await supabase.auth.getSession();
           if (!data.session) {
             setMsg("No session found. Redirecting to login…");
@@ -34,7 +32,7 @@ export default function AuthCallbackPage() {
         }
 
         router.replace(redirectTo);
-      } catch (e: any) {
+      } catch (e) {
         console.error("[auth/callback] error", e);
         setMsg("Sign-in failed. Redirecting to login…");
         router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
