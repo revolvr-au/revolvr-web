@@ -114,18 +114,14 @@ export default function LoginPage() {
   try {
     setSending(true);
 
-    const baseUrl = window.location.origin; // always correct for codespaces + vercel
+  const baseUrl = window.location.origin;
+const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
 
+await supabase.auth.signInWithOtp({
+  email: cleanEmail,
+  options: { emailRedirectTo },
+});
 
-    // Supabase returns here first; /auth/callback completes session + redirects onward.
-    const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(
-      redirectTo
-    )}`;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: { emailRedirectTo },
-    });
 
     if (error) {
       console.error("[login] signInWithOtp error", error);
