@@ -43,16 +43,27 @@ export function FloatingLiveButton() {
     return null;
   }
 
-  const handleClick = () => {
-  if (!auth.checked) return;
+  const handleClick = async () => {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!auth.isLoggedIn) {
-    router.push(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+  // Not logged in → login → onboarding
+  if (!user) {
+    router.push("/login?redirectTo=/creator/onboard");
     return;
   }
 
-  router.push("/creator/onboard");
+  // Logged in but NOT a creator → onboarding
+  if (!user.user_metadata?.is_creator) {
+    router.push("/creator/onboard");
+    return;
+  }
+
+  // Creator → dashboard
+  router.push("/creator");
 };
+
 
 
   return (

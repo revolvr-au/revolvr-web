@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import CreatorDashboard from "./_dashboard"; // ✅ no .tsx extension
 
-
-
 type CreatorMeResponse = {
   ok: boolean;
   profile: {
@@ -21,6 +19,16 @@ type CreatorMeResponse = {
     availableCents: number;
   };
 };
+
+useEffect(() => {
+  const checkCreator = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user?.user_metadata?.is_creator) {
+      router.replace("/creator/onboard");
+    }
+  };
+  checkCreator();
+}, [router]);
 
 export default function CreatorPage() {
   const router = useRouter();
