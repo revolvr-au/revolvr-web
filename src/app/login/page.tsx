@@ -110,7 +110,7 @@ const sendMagicLink = async () => {
   try {
     setSending(true);
 
-    const baseUrl = window.location.origin.replace(/\/$/, "");
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
     const redirect = redirectTo || "/login";
 
     // Backup cookie (ONLY add Secure on https)
