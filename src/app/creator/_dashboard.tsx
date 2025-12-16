@@ -1,15 +1,18 @@
 import { SUPPORT_EMAIL } from "@/lib/constants";
 
-export default function CreatorDashboard({
-  me,
-}: {
-  me: {
-    profile: any;
-    balance: { totalEarnedCents: number; availableCents: number };
-  };
-}) {
-  const total = (me.balance?.totalEarnedCents ?? 0) / 100;
-  const available = (me.balance?.availableCents ?? 0) / 100;
+type CreatorMeResponse = {
+  ok: boolean;
+  profile: any | null;
+  balance?: {
+    creatorEmail: string;
+    totalEarnedCents: number;
+    availableCents: number;
+  } | null;
+};
+
+export default function CreatorDashboard({ me }: { me: CreatorMeResponse }) {
+  const total = ((me.balance?.totalEarnedCents ?? 0) as number) / 100;
+  const available = ((me.balance?.availableCents ?? 0) as number) / 100;
 
   const displayName = me.profile?.displayName || me.profile?.display_name || "Creator";
   const handle = me.profile?.handle ? `@${me.profile.handle}` : "";
