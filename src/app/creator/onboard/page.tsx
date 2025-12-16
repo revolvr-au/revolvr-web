@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
@@ -10,10 +10,6 @@ const isValidHandle = (s: string) => /^[a-z0-9_]{3,20}$/.test(s);
 export default function CreatorOnboardPage() {
   const router = useRouter();
 
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,58 +17,46 @@ export default function CreatorOnboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
 
-  // HARD GUARD: if no session, bounce to login with redirectTo
-  useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      const { data, error } = await supabase.auth.getUser();
-
-      if (!mounted) return;
-
-      const u = data?.user;
-      if (error || !u?.id || !u?.email) {
-        router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
-        return;
-      }
-
-      setUserId(u.id);
-      setUserEmail(u.email.toLowerCase().trim());
-      setCheckingAuth(false);
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
-
   const activateCreator = async () => {
     setError(null);
 
-    if (checkingAuth || !userId || !userEmail) {
-      router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+    if (!agree) {
+      setError("You must accept the creator terms to continue.");
       return;
     }
-
-    if (!agree) return setError("You must accept the creator terms to continue.");
 
     const dn = displayName.trim();
     const h = normalizeHandle(handle);
 
     if (!dn) return setError("Please enter a display name.");
     if (!h) return setError("Please choose a handle.");
-    if (!isValidHandle(h)) return setError("Handle must be 3–20 chars: a–z, 0–9, underscore.");
+    if (!isValidHandle(h)) {
+      return setError("Handle must be 3–20 chars: a–z, 0–9, underscore.");
+    }
 
     try {
       setLoading(true);
 
+      // Use session as the source of truth; if missing, force login.
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) throw sessionErr;
+
+      const session = sessionData.session;
+      if (!session?.user?.id || !session.user.email) {
+        router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+        return;
+      }
+
+      const user = session.user;
+
       const { error: upsertErr } = await supabase.from("creator_profiles").upsert({
-        user_id: userId,
-        email: userEmail,
+        user_id: user.id,
+        email: user.email.toLowerCase().trim(),
         status: "ACTIVE",
         revenue_share: 0.45,
         display_name: dn,
         handle: h,
+        // avatar_url: null (for now)
       });
 
       if (upsertErr) throw upsertErr;
@@ -86,15 +70,12 @@ export default function CreatorOnboardPage() {
       router.replace("/creator");
     } catch (e) {
       console.error("[creator/onboard] activate error", e);
-      setError("Failed to activate creator account.");
+      // If session is missing, don’t pretend it’s an activation failure—force re-login.
+      router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
     } finally {
       setLoading(false);
     }
   };
-
-  if (checkingAuth) {
-    return <div className="min-h-screen p-6 text-white">Checking sign-in…</div>;
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050814] text-white p-6">
@@ -108,18 +89,25 @@ export default function CreatorOnboardPage() {
         {error && <div className="mt-4 text-sm text-red-400 text-center">{error}</div>}
 
         <div className="mt-6 space-y-3">
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-            placeholder="Display name"
-          />
-          <input
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            className="w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-            placeholder="@handle"
-          />
+          <div>
+            <label className="text-xs text-white/70">Display name</label>
+            <input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
+              placeholder="Westley Buhagiar"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-white/70">Handle</label>
+            <input
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
+              placeholder="@westwing"
+            />
+          </div>
         </div>
 
         <label className="mt-6 flex items-center gap-2 text-sm">
