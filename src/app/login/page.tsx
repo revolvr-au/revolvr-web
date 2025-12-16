@@ -47,14 +47,6 @@ export default function LoginPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // If already signed in, go straight through.
-  useEffect(() => {
-    const goIfSignedIn = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data.user) router.replace(redirectTo);
-    };
-    goIfSignedIn();
-  }, [router, redirectTo]);
 
   // Gate flow
   useEffect(() => {

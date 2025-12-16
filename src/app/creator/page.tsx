@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
-import CreatorDashboard from "./_dashboard"; // ✅ no .tsx extension
+import CreatorDashboard from "./_dashboard";
 
 type CreatorMeResponse = {
   ok: boolean;
@@ -13,11 +13,11 @@ type CreatorMeResponse = {
     display_name?: string;
     handle?: string;
   } | null;
-  balance: {
+  balance?: {
     creatorEmail: string;
     totalEarnedCents: number;
     availableCents: number;
-  };
+  } | null;
 };
 
 export default function CreatorPage() {
@@ -30,40 +30,37 @@ export default function CreatorPage() {
 
     const run = async () => {
       try {
-        const { data } = await supabase.auth.getUser();
+        const { data, error: userErr } = await supabase.auth.getUser();
+        if (userErr) throw userErr;
+
         const user = data.user;
 
-        // Not logged in -> go login, come back here
+        // Not logged in -> login, but come back to /creator
         if (!user?.email) {
           router.replace(`/login?redirectTo=${encodeURIComponent("/creator")}`);
           return;
         }
 
-        // Logged in but not marked as creator -> onboarding
-        if (!user.user_metadata?.is_creator) {
-          router.replace("/creator/onboard");
-          return;
-        }
-
         const email = user.email.toLowerCase().trim();
 
-        const res = await fetch(
-          `/api/creator/me?email=${encodeURIComponent(email)}`,
-          { cache: "no-store" }
-        );
+        // Server decides if creator is ACTIVE (creator_profiles)
+        const res = await fetch(`/api/creator/me?email=${encodeURIComponent(email)}`, {
+          cache: "no-store",
+        });
 
         const json = (await res.json()) as CreatorMeResponse;
         if (!mounted) return;
 
         const status = (json?.profile?.status || "").toUpperCase();
 
+        // Not an ACTIVE creator -> onboarding
         if (!res.ok || !json?.ok || status !== "ACTIVE") {
           router.replace("/creator/onboard");
           return;
         }
 
         setMe(json);
-      } catch (err) {
+      } catch (e) {
         router.replace("/creator/onboard");
       } finally {
         if (mounted) setLoading(false);
