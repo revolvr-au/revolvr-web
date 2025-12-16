@@ -1,12 +1,38 @@
-import { Suspense } from "react";
-import CallbackClient from "./CallbackClient";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { supabase } from "@/lib/supabaseClients";
 
 export default function AuthCallbackPage() {
-  return (
-    <Suspense fallback={<div className="p-6 text-white">Signing you in…</div>}>
-      <CallbackClient />
-    </Suspense>
-  );
+  const router = useRouter();
+  const params = useSearchParams();
+  const ran = useRef(false);
+
+  useEffect(() => {
+    if (ran.current) return;
+    ran.current = true;
+
+    const run = async () => {
+      const code = params?.get("code");
+      if (!code) {
+        router.replace("/login");
+        return;
+      }
+
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (error) {
+        console.error("Auth callback error:", error);
+        router.replace("/login");
+        return;
+      }
+
+      router.replace("/public-feed");
+    };
+
+    run();
+  }, [params, router]);
+
+  return <div className="p-6 text-white">Signing you in…</div>;
 }

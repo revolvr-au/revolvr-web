@@ -3,10 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-function setIntentCookie(intent: "creator" | "watch") {
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `revolvr_intent=${intent}; Path=/; Max-Age=600; SameSite=Lax${secure}`;
-}
+
 
 export default function Home() {
   const router = useRouter();
