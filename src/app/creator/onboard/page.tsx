@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
@@ -17,50 +17,61 @@ export default function CreatorOnboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
 
+  // If you want: clear the old error as user types / checks box
+  useEffect(() => {
+    if (error) setError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayName, handle, agree]);
+
+  const canSubmit = useMemo(() => {
+    const dn = displayName.trim();
+    const h = normalizeHandle(handle);
+    return agree && dn.length > 0 && isValidHandle(h);
+  }, [agree, displayName, handle]);
+
   const activateCreator = async () => {
     setError(null);
-
-    if (!agree) {
-      setError("You must accept the creator terms to continue.");
-      return;
-    }
 
     const dn = displayName.trim();
     const h = normalizeHandle(handle);
 
+    if (!agree) return setError("You must accept the creator terms to continue.");
     if (!dn) return setError("Please enter a display name.");
     if (!h) return setError("Please choose a handle.");
-    if (!isValidHandle(h)) {
+    if (!isValidHandle(h))
       return setError("Handle must be 3–20 chars: a–z, 0–9, underscore.");
-    }
 
     try {
       setLoading(true);
 
-      // Use session as the source of truth; if missing, force login.
-      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
-      if (sessionErr) throw sessionErr;
+      // IMPORTANT: we are using getSession() here (not getUser()) so it
+      // relies on the local persisted session. If session is missing, we send them to login.
+      const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
+      if (sessErr) throw sessErr;
 
       const session = sessionData.session;
-      if (!session?.user?.id || !session.user.email) {
+      const user = session?.user;
+      const email = user?.email?.toLowerCase().trim();
+
+      if (!user?.id || !email) {
         router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
         return;
       }
 
-      const user = session.user;
-
+      // Upsert profile (your DB columns in Supabase screenshot)
       const { error: upsertErr } = await supabase.from("creator_profiles").upsert({
         user_id: user.id,
-        email: user.email.toLowerCase().trim(),
+        email,
         status: "ACTIVE",
         revenue_share: 0.45,
         display_name: dn,
         handle: h,
-        // avatar_url: null (for now)
+        // avatar_url: null, // add later if/when you create the column
       });
 
       if (upsertErr) throw upsertErr;
 
+      // Optional: mark user metadata
       const { error: metaErr } = await supabase.auth.updateUser({
         data: { is_creator: true },
       });
@@ -70,8 +81,7 @@ export default function CreatorOnboardPage() {
       router.replace("/creator");
     } catch (e) {
       console.error("[creator/onboard] activate error", e);
-      // If session is missing, don’t pretend it’s an activation failure—force re-login.
-      router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+      setError("Failed to activate creator account.");
     } finally {
       setLoading(false);
     }
@@ -96,6 +106,7 @@ export default function CreatorOnboardPage() {
               onChange={(e) => setDisplayName(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
               placeholder="Westley Buhagiar"
+              autoComplete="name"
             />
           </div>
 
@@ -105,8 +116,14 @@ export default function CreatorOnboardPage() {
               value={handle}
               onChange={(e) => setHandle(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-              placeholder="@westwing"
+              placeholder="@westley"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
             />
+            <div className="mt-2 text-[11px] text-white/50">
+              3–20 chars: a–z, 0–9, underscore. “@” is optional.
+            </div>
           </div>
         </div>
 
@@ -117,7 +134,7 @@ export default function CreatorOnboardPage() {
 
         <button
           onClick={activateCreator}
-          disabled={loading}
+          disabled={loading || !canSubmit}
           className="mt-6 w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-black font-semibold py-3"
         >
           {loading ? "Activating…" : "Activate Creator Account"}
