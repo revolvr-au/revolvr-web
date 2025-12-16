@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
-  const params = useSearchParams();
   const ran = useRef(false);
 
   useEffect(() => {
@@ -14,7 +13,9 @@ export default function AuthCallbackPage() {
     ran.current = true;
 
     const run = async () => {
-      const code = params?.get("code");
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
       if (!code) {
         router.replace("/login");
         return;
@@ -28,11 +29,12 @@ export default function AuthCallbackPage() {
         return;
       }
 
+      // SUCCESS: always land safely
       router.replace("/public-feed");
     };
 
     run();
-  }, [params, router]);
+  }, [router]);
 
   return <div className="p-6 text-white">Signing you in…</div>;
 }
