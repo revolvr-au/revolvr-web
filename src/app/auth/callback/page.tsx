@@ -15,6 +15,11 @@ export default function AuthCallbackPage() {
     const run = async () => {
       const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
+      const { data: s } = await supabase.auth.getSession();
+if (!s.session) {
+  router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+  return;
+}
 
       if (!code) {
         router.replace("/login");
