@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
@@ -17,65 +17,64 @@ export default function CreatorOnboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
 
-  // If you want: clear the old error as user types / checks box
-  useEffect(() => {
-    if (error) setError(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayName, handle, agree]);
-
-  const canSubmit = useMemo(() => {
-    const dn = displayName.trim();
-    const h = normalizeHandle(handle);
-    return agree && dn.length > 0 && isValidHandle(h);
-  }, [agree, displayName, handle]);
-
   const activateCreator = async () => {
     setError(null);
 
+    if (!agree) {
+      setError("You must accept the creator terms to continue.");
+      return;
+    }
+
     const dn = displayName.trim();
     const h = normalizeHandle(handle);
 
-    if (!agree) return setError("You must accept the creator terms to continue.");
-    if (!dn) return setError("Please enter a display name.");
-    if (!h) return setError("Please choose a handle.");
-    if (!isValidHandle(h))
-      return setError("Handle must be 3–20 chars: a–z, 0–9, underscore.");
+    if (!dn) {
+      setError("Please enter a display name.");
+      return;
+    }
+
+    if (!h) {
+      setError("Please choose a handle.");
+      return;
+    }
+
+    if (!isValidHandle(h)) {
+      setError("Handle must be 3–20 chars: a–z, 0–9, underscore. (“@” is optional)");
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // IMPORTANT: we are using getSession() here (not getUser()) so it
-      // relies on the local persisted session. If session is missing, we send them to login.
-      const { data: sessionData, error: sessErr } = await supabase.auth.getSession();
-      if (sessErr) throw sessErr;
+      const { data: authData, error: authErr } = await supabase.auth.getUser();
+      if (authErr) throw authErr;
 
-      const session = sessionData.session;
-      const user = session?.user;
+      const user = authData.user;
+
+      // Hard-guard: fixes TS + prevents runtime weirdness
+      const userId = user?.id;
       const email = user?.email?.toLowerCase().trim();
 
-      if (!user?.id || !email) {
+      if (!userId || !email) {
         router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
         return;
       }
 
-      // Upsert profile (your DB columns in Supabase screenshot)
       const { error: upsertErr } = await supabase.from("creator_profiles").upsert({
-        user_id: user.id,
+        user_id: userId,
         email,
         status: "ACTIVE",
         revenue_share: 0.45,
         display_name: dn,
         handle: h,
-        // avatar_url: null, // add later if/when you create the column
+        // avatar_url: null, // later
       });
 
       if (upsertErr) throw upsertErr;
 
-      // Optional: mark user metadata
       const { error: metaErr } = await supabase.auth.updateUser({
         data: { is_creator: true },
       });
-
       if (metaErr) throw metaErr;
 
       router.replace("/creator");
@@ -98,15 +97,15 @@ export default function CreatorOnboardPage() {
 
         {error && <div className="mt-4 text-sm text-red-400 text-center">{error}</div>}
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 space-y-4">
           <div>
             <label className="text-xs text-white/70">Display name</label>
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
-              placeholder="Westley Buhagiar"
-              autoComplete="name"
+              placeholder="Your name"
+              disabled={loading}
             />
           </div>
 
@@ -117,9 +116,7 @@ export default function CreatorOnboardPage() {
               onChange={(e) => setHandle(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
               placeholder="@westley"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
+              disabled={loading}
             />
             <div className="mt-2 text-[11px] text-white/50">
               3–20 chars: a–z, 0–9, underscore. “@” is optional.
@@ -128,13 +125,18 @@ export default function CreatorOnboardPage() {
         </div>
 
         <label className="mt-6 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={agree}
+            onChange={(e) => setAgree(e.target.checked)}
+            disabled={loading}
+          />
           I agree to the creator terms and revenue share.
         </label>
 
         <button
           onClick={activateCreator}
-          disabled={loading || !canSubmit}
+          disabled={loading}
           className="mt-6 w-full rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-black font-semibold py-3"
         >
           {loading ? "Activating…" : "Activate Creator Account"}
