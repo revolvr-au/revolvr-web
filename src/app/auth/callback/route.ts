@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+const INTENT_COOKIE = "revolvr_intent";
 const REDIRECT_COOKIE = "revolvr_redirectTo";
 
 function safeRedirect(path: string | null | undefined) {
@@ -15,20 +16,13 @@ export async function GET(request: Request) {
 
   const cookieStore = await cookies();
 
+  const intent = cookieStore.get(INTENT_COOKIE)?.value || null;
+  const cookieRedirect = cookieStore.get(REDIRECT_COOKIE)?.value || null;
   const queryRedirect = url.searchParams.get("redirectTo");
-  const cookieRedirectRaw = cookieStore.get(REDIRECT_COOKIE)?.value;
 
-  // cookie value may be URI-encoded; decode safely
-  let cookieRedirect: string | null = null;
-  if (cookieRedirectRaw) {
-    try {
-      cookieRedirect = decodeURIComponent(cookieRedirectRaw);
-    } catch {
-      cookieRedirect = cookieRedirectRaw;
-    }
-  }
-
-  const redirectTo = safeRedirect(queryRedirect || cookieRedirect);
+  const redirectTo = safeRedirect(
+    queryRedirect || (cookieRedirect ? decodeURIComponent(cookieRedirect) : null)
+  );
 
   // If no code, bounce to login (keep redirectTo)
   if (!code) {
@@ -37,29 +31,20 @@ export async function GET(request: Request) {
     );
   }
 
-  // Must have env vars at runtime
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnon) {
-    // fail safe: send back to login rather than white page
-    return NextResponse.redirect(
-      new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, url.origin)
-    );
-  }
-
-  const supabase = createServerClient(supabaseUrl, supabaseAnon, {
-    cookies: {
-      getAll() {
-        return cookieStore.getAll();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
       },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set(name, value, options);
-        });
-      },
-    },
-  });
+    }
+  );
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
@@ -69,8 +54,18 @@ export async function GET(request: Request) {
     );
   }
 
-  // Clear redirect cookie once used (prevent future “sticky” misroutes)
+  // Fetch user to decide where to land
+  const { data } = await supabase.auth.getUser();
+  const isCreator = Boolean(data.user?.user_metadata?.is_creator);
+
+  // Clear cookies used for hopping
   cookieStore.set(REDIRECT_COOKIE, "", { path: "/", maxAge: 0 });
+  cookieStore.set(INTENT_COOKIE, "", { path: "/", maxAge: 0 });
+
+  // If they clicked "Go Live as Creator", force onboarding unless already creator
+  if (intent === "creator" && !isCreator) {
+    return NextResponse.redirect(new URL("/creator/onboard", url.origin));
+  }
 
   return NextResponse.redirect(new URL(redirectTo, url.origin));
 }
