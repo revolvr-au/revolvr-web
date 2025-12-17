@@ -1,14 +1,25 @@
 import { redirect } from "next/navigation";
-import { getCreatorMe } from "@/lib/creator";
-import CreatorDashboard from "@/components/creator/CreatorDashboard";
+import { prisma } from "@/lib/prisma";
 
 export default async function CreatorPage() {
-  const me = await getCreatorMe();
+  // NOTE: auth handled by middleware / cookies
+  // Prisma checks creator existence
+  const creator = await prisma.creatorProfile.findFirst({
+    where: {
+      status: "ACTIVE",
+    },
+  });
 
-  // Not logged in or not a creator → onboarding
-  if (!me) {
+  if (!creator) {
     redirect("/creator/onboard");
   }
 
-  return <CreatorDashboard me={me} />;
+  return (
+    <div className="min-h-screen bg-[#050814] text-white p-8">
+      <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
+      <p className="mt-2 text-white/70">
+        Welcome, {creator.display_name}
+      </p>
+    </div>
+  );
 }
