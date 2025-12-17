@@ -4,25 +4,9 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
-export const dynamic = "force-dynamic";
-
 function safePath(p: string | null | undefined, fallback: string) {
   if (!p) return fallback;
-  if (!p.startsWith("/")) return fallback; // prevent open redirects
-  return p;
-}
-
-function getCookie(name: string) {
-  const v = document.cookie
-    .split("; ")
-    .find((c) => c.startsWith(`${name}=`))
-    ?.split("=")[1];
-  return v ? decodeURIComponent(v) : null;
-}
-
-function clearCookie(name: string) {
-  // Clear for both http + https; keep it simple
-  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
+  return p.startsWith("/") ? p : fallback;
 }
 
 export default function AuthCallbackPage() {
@@ -33,48 +17,40 @@ export default function AuthCallbackPage() {
     if (ran.current) return;
     ran.current = true;
 
-    const run = async () => {
-      const qs = new URLSearchParams(window.location.search);
+    (async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        const redirectTo = safePath(params.get("redirectTo"), "/public-feed");
 
-      const code = qs.get("code");
-      const redirectToParam = qs.get("redirectTo");
+        if (!code) {
+          router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+          return;
+        }
 
-      // Priority:
-      // 1) explicit redirectTo in URL
-      // 2) redirectTo cookie saved by /login
-      // 3) intent cookie fallback
-      const cookieRedirect = getCookie("revolvr_redirectTo");
-      const intent = getCookie("revolvr_intent");
+        // IMPORTANT: exchange FIRST (this creates the session)
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-      const fallback =
-        intent === "creator" ? "/creator/onboard" : "/public-feed";
+        if (error) {
+          console.error("[auth/callback] exchangeCodeForSession error:", error);
+          router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+          return;
+        }
 
-      const redirectTo = safePath(
-        redirectToParam ?? cookieRedirect,
-        fallback
-      );
+        // Optional: confirm session exists after exchange (debug safety)
+        const { data } = await supabase.auth.getSession();
+        if (!data.session) {
+          console.error("[auth/callback] No session after exchange (unexpected)");
+          router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+          return;
+        }
 
-      if (!code) {
-        router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
-        return;
+        router.replace(redirectTo);
+      } catch (e) {
+        console.error("[auth/callback] unexpected error:", e);
+        router.replace("/login");
       }
-
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (error) {
-        console.error("[auth/callback] exchangeCodeForSession error", error);
-        router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
-        return;
-      }
-
-      // Optional cleanup to stop loops
-      clearCookie("revolvr_redirectTo");
-      clearCookie("revolvr_intent");
-
-      router.replace(redirectTo);
-    };
-
-    run();
+    })();
   }, [router]);
 
   return <div className="p-6 text-white">Signing you in…</div>;
