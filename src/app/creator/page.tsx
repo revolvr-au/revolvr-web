@@ -18,7 +18,7 @@ export default async function CreatorPage() {
     <div className="min-h-screen bg-[#050814] text-white p-8">
       <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
       <p className="mt-2 text-white/70">
-        Welcome, {creator.display_name}
+        Welcome, {creator.displayName}
       </p>
     </div>
   );
