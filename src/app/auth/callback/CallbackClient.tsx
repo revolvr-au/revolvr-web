@@ -21,8 +21,8 @@ export default function CallbackClient() {
     ran.current = true;
 
     const run = async () => {
-      const code = params.get("code");
-      const redirectTo = safePath(params.get("redirectTo"), "/public-feed");
+    const code = params?.get("code") ?? null;
+    const redirectTo = safePath(params?.get("redirectTo"), "/public-feed");
 
       if (!code) {
         router.replace("/login");
