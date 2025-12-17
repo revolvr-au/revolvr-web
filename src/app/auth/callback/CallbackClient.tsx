@@ -1,41 +1,43 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
-function getCookie(name: string) {
-  const v = document.cookie
-    .split("; ")
-    .find((c) => c.startsWith(`${name}=`))
-    ?.split("=")[1];
-  return v ? decodeURIComponent(v) : null;
+function safePath(p: string | null, fallback: string) {
+  if (!p) return fallback;
+  // prevent open-redirects; allow only internal paths
+  if (!p.startsWith("/")) return fallback;
+  return p;
 }
 
 export default function CallbackClient() {
   const router = useRouter();
   const params = useSearchParams();
+  const ran = useRef(false);
 
   useEffect(() => {
+    if (ran.current) return;
+    ran.current = true;
+
     const run = async () => {
-      const code = params?.get("code") ?? null;
+      const code = params.get("code");
+      const redirectTo = safePath(params.get("redirectTo"), "/public-feed");
 
       if (!code) {
-        router.replace("/");
+        router.replace("/login");
         return;
       }
 
       const { error } = await supabase.auth.exchangeCodeForSession(code);
+
       if (error) {
         console.error("[auth/callback] exchangeCodeForSession error", error);
         router.replace("/login");
         return;
       }
 
-      const intent = getCookie("revolvr_intent");
-
-      if (intent === "creator") router.replace("/creator/onboard");
-      else router.replace("/public-feed");
+      router.replace(redirectTo);
     };
 
     run();
