@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
@@ -10,6 +10,7 @@ const isValidHandle = (s: string) => /^[a-z0-9_]{3,20}$/.test(s);
 export default function CreatorOnboardPage() {
   const router = useRouter();
 
+  const [ready, setReady] = useState(false);
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,31 +18,45 @@ export default function CreatorOnboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
 
+  const hNormalized = useMemo(() => normalizeHandle(handle), [handle]);
+
+  // HARD GUARD: never allow this page to run without a session
+  useEffect(() => {
+    let mounted = true;
+
+    const run = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        if (!data.session) {
+          router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+          return;
+        }
+
+        setReady(true);
+      } catch (e) {
+        router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
+      }
+    };
+
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
   const activateCreator = async () => {
     setError(null);
 
-    if (!agree) {
-      setError("You must accept the creator terms to continue.");
-      return;
-    }
+    if (!agree) return setError("You must accept the creator terms to continue.");
 
     const dn = displayName.trim();
     const h = normalizeHandle(handle);
 
-    if (!dn) {
-      setError("Please enter a display name.");
-      return;
-    }
-
-    if (!h) {
-      setError("Please choose a handle.");
-      return;
-    }
-
-    if (!isValidHandle(h)) {
-      setError("Handle must be 3–20 chars: a–z, 0–9, underscore. (“@” is optional)");
-      return;
-    }
+    if (!dn) return setError("Please enter a display name.");
+    if (!h) return setError("Please choose a handle.");
+    if (!isValidHandle(h)) return setError("Handle must be 3–20 chars: a–z, 0–9, underscore.");
 
     try {
       setLoading(true);
@@ -50,18 +65,15 @@ export default function CreatorOnboardPage() {
       if (authErr) throw authErr;
 
       const user = authData.user;
-
-      // Hard-guard: fixes TS + prevents runtime weirdness
-      const userId = user?.id;
-      const email = user?.email?.toLowerCase().trim();
-
-      if (!userId || !email) {
+      if (!user?.id || !user?.email) {
         router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
         return;
       }
 
+      const email = user.email.toLowerCase().trim();
+
       const { error: upsertErr } = await supabase.from("creator_profiles").upsert({
-        user_id: userId,
+        user_id: user.id,
         email,
         status: "ACTIVE",
         revenue_share: 0.45,
@@ -75,6 +87,7 @@ export default function CreatorOnboardPage() {
       const { error: metaErr } = await supabase.auth.updateUser({
         data: { is_creator: true },
       });
+
       if (metaErr) throw metaErr;
 
       router.replace("/creator");
@@ -85,6 +98,10 @@ export default function CreatorOnboardPage() {
       setLoading(false);
     }
   };
+
+  if (!ready) {
+    return <div className="min-h-screen p-6 text-white">Checking session…</div>;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050814] text-white p-6">
@@ -105,7 +122,6 @@ export default function CreatorOnboardPage() {
               onChange={(e) => setDisplayName(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
               placeholder="Your name"
-              disabled={loading}
             />
           </div>
 
@@ -116,21 +132,21 @@ export default function CreatorOnboardPage() {
               onChange={(e) => setHandle(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
               placeholder="@westley"
-              disabled={loading}
             />
             <div className="mt-2 text-[11px] text-white/50">
               3–20 chars: a–z, 0–9, underscore. “@” is optional.
+              {hNormalized && (
+                <>
+                  {" "}
+                  Your handle: <span className="text-white/70">@{hNormalized}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         <label className="mt-6 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={agree}
-            onChange={(e) => setAgree(e.target.checked)}
-            disabled={loading}
-          />
+          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
           I agree to the creator terms and revenue share.
         </label>
 
