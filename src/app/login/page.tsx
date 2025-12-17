@@ -46,21 +46,22 @@ export default function LoginPage() {
 
   // ✅ 1) SESSION ESCAPE HATCH (THIS WAS BROKEN)
   useEffect(() => {
-    let mounted = true;
+  let mounted = true;
 
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
+  (async () => {
+    const { data } = await supabase.auth.getSession();
+    if (!mounted) return;
 
-      if (data.session) {
-        router.replace(redirectTo);
-      }
-    })();
+    if (data.session) {
+      router.replace(redirectTo || "/public-feed");
+    }
+  })();
 
-    return () => {
-      mounted = false;
-    };
-  }, [router, redirectTo]);
+  return () => {
+    mounted = false;
+  };
+}, [router, redirectTo]);
+
 
   // ✅ 2) AGE GATE
   useEffect(() => {
@@ -111,44 +112,50 @@ export default function LoginPage() {
     setStep("login");
   };
 
-  // ✅ 3) MAGIC LINK SEND (CLEAN)
-  const sendMagicLink = async () => {
-    setError(null);
-    setSent(false);
+const sendMagicLink = async () => {
+  setError(null);
+  setSent(false);
 
-    const cleanEmail = email.trim();
-    if (!cleanEmail) {
-      setError("Enter your email address.");
+  const cleanEmail = email.trim();
+  if (!cleanEmail) {
+    setError("Enter your email address.");
+    return;
+  }
+
+  try {
+    setSending(true);
+
+    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
+    const redirect = safeRedirect(redirectTo || "/public-feed");
+
+    // Backup cookie (ONLY add Secure on https)
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie =
+      `revolvr_redirectTo=${encodeURIComponent(redirect)}; Path=/; SameSite=Lax${secure}`;
+
+    // Primary: redirectTo is embedded in the callback URL
+    const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: { emailRedirectTo },
+    });
+
+    if (error) {
+      console.error("[login] signInWithOtp error", error);
+      setError("Could not send magic link.");
       return;
     }
 
-    try {
-      setSending(true);
+    setSent(true);
+  } catch (e) {
+    console.error("[login] unexpected error", e);
+    setError("Could not send magic link.");
+  } finally {
+    setSending(false);
+  }
+};
 
-      const baseUrl = window.location.origin.replace(/\/$/, "");
-
-      const emailRedirectTo =
-        `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: { emailRedirectTo },
-      });
-
-      if (error) {
-        console.error("[login] signInWithOtp error", error);
-        setError("Could not send magic link.");
-        return;
-      }
-
-      setSent(true);
-    } catch (e) {
-      console.error("[login] unexpected error", e);
-      setError("Could not send magic link.");
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-4">

@@ -7,14 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-
-    // Use PKCE explicitly (you are using code exchange)
-    flowType: "pkce",
-
-    // Keep your manual callback flow
-    detectSessionInUrl: false,
-
-    // Optional but recommended to avoid collisions across preview/prod
+    detectSessionInUrl: false, // we handle in /auth/callback
     storageKey: "revolvr-auth",
   },
 });
