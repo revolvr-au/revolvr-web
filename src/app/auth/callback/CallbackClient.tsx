@@ -4,11 +4,17 @@ import { useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
-function safePath(p: string | null, fallback: string) {
-  if (!p) return fallback;
-  // prevent open-redirects; allow only internal paths
-  if (!p.startsWith("/")) return fallback;
-  return p;
+function safePath(p: string | null | undefined, fallback: string) {
+  const v = (p ?? "").trim();
+  if (!v) return fallback;
+
+  // Prevent open-redirects: only allow internal paths
+  if (!v.startsWith("/")) return fallback;
+
+  // Optional: show discipline, block weird protocol tricks
+  if (v.startsWith("//")) return fallback;
+
+  return v;
 }
 
 export default function CallbackClient() {
@@ -21,8 +27,10 @@ export default function CallbackClient() {
     ran.current = true;
 
     const run = async () => {
-    const code = params?.get("code") ?? null;
-    const redirectTo = safePath(params?.get("redirectTo"), "/public-feed");
+      const code = params?.get("code") ?? null;
+
+      // default landing (safe)
+      const redirectTo = safePath(params?.get("redirectTo"), "/public-feed");
 
       if (!code) {
         router.replace("/login");
