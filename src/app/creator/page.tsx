@@ -77,7 +77,7 @@ export default function CreatorPage() {
     return <div className="min-h-screen p-6">Loading creator dashboard…</div>;
   }
 
-  if (!me) {
+  if (!me) return null;
     return (
       <div className="min-h-screen p-6">
         <div className="text-lg font-semibold">Creator not ready</div>

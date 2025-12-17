@@ -6,16 +6,7 @@ import { supabase } from "@/lib/supabaseClients";
 
 function safePath(p: string | null | undefined, fallback: string) {
   if (!p) return fallback;
-  // prevent open-redirects; allow only internal paths
   return p.startsWith("/") ? p : fallback;
-}
-
-function getCookie(name: string) {
-  const v = document.cookie
-    .split("; ")
-    .find((c) => c.startsWith(`${name}=`))
-    ?.split("=")[1];
-  return v ? decodeURIComponent(v) : null;
 }
 
 export default function AuthCallbackPage() {
@@ -29,27 +20,34 @@ export default function AuthCallbackPage() {
     const run = async () => {
       try {
         const url = new URL(window.location.href);
+
         const code = url.searchParams.get("code");
+        const redirectTo = safePath(url.searchParams.get("redirectTo"), "/public-feed");
 
-        // redirectTo priority: query param -> cookie -> intent -> default
-        const redirectFromQuery = url.searchParams.get("redirectTo");
-        const redirectFromCookie = getCookie("revolvr_redirectTo");
-        const intent = getCookie("revolvr_intent");
+        // 1) PKCE flow (preferred)
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error("[auth/callback] exchangeCodeForSession error", error);
+            router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+            return;
+          }
 
-        const redirectTo = safePath(
-          redirectFromQuery || redirectFromCookie || null,
-          intent === "creator" ? "/creator/onboard" : "/public-feed"
-        );
-
-        if (!code) {
-          router.replace("/login");
+          router.replace(redirectTo);
           return;
         }
 
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        // 2) Hash-token flow (fallback)
+        // If Supabase sent #access_token=... etc, this will store a session.
+        const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
         if (error) {
-          console.error("[auth/callback] exchangeCodeForSession error", error);
-          router.replace("/login");
+          console.error("[auth/callback] getSessionFromUrl error", error);
+          router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+          return;
+        }
+
+        if (!data?.session) {
+          router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
           return;
         }
 

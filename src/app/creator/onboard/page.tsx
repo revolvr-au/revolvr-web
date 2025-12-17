@@ -10,7 +10,6 @@ const isValidHandle = (s: string) => /^[a-z0-9_]{3,20}$/.test(s);
 export default function CreatorOnboardPage() {
   const router = useRouter();
 
-  const [ready, setReady] = useState(false);
   const [agree, setAgree] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,38 +17,29 @@ export default function CreatorOnboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
 
-  const hNormalized = useMemo(() => normalizeHandle(handle), [handle]);
+  const handlePreview = useMemo(() => normalizeHandle(handle), [handle]);
 
-  // HARD GUARD: never allow this page to run without a session
+  // If user is not logged in, bounce to login (and come back here)
   useEffect(() => {
-    let mounted = true;
-
     const run = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!mounted) return;
+      const { data, error } = await supabase.auth.getSession();
+      if (error) return;
 
-        if (!data.session) {
-          router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
-          return;
-        }
-
-        setReady(true);
-      } catch (e) {
+      if (!data.session) {
         router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
       }
     };
 
     run();
-    return () => {
-      mounted = false;
-    };
   }, [router]);
 
   const activateCreator = async () => {
     setError(null);
 
-    if (!agree) return setError("You must accept the creator terms to continue.");
+    if (!agree) {
+      setError("You must accept the creator terms to continue.");
+      return;
+    }
 
     const dn = displayName.trim();
     const h = normalizeHandle(handle);
@@ -65,30 +55,39 @@ export default function CreatorOnboardPage() {
       if (authErr) throw authErr;
 
       const user = authData.user;
-      if (!user?.id || !user?.email) {
+      const email = user?.email?.toLowerCase().trim();
+
+      if (!user?.id || !email) {
         router.replace(`/login?redirectTo=${encodeURIComponent("/creator/onboard")}`);
         return;
       }
 
-      const email = user.email.toLowerCase().trim();
-
-      const { error: upsertErr } = await supabase.from("creator_profiles").upsert({
-        user_id: user.id,
-        email,
-        status: "ACTIVE",
-        revenue_share: 0.45,
-        display_name: dn,
-        handle: h,
-        // avatar_url: null, // later
+      // IMPORTANT: use Prisma-backed route so /api/creator/me sees ACTIVE
+      const res = await fetch("/api/creator/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        cache: "no-store",
+        body: JSON.stringify({
+          email,
+          displayName: dn,
+          handle: h,
+        }),
       });
 
-      if (upsertErr) throw upsertErr;
+      const json = await res.json().catch(() => ({} as any));
+      if (!res.ok) {
+        setError(json?.error || "Could not activate creator account.");
+        return;
+      }
 
+      // Optional: mark user metadata
       const { error: metaErr } = await supabase.auth.updateUser({
         data: { is_creator: true },
       });
-
-      if (metaErr) throw metaErr;
+      if (metaErr) {
+        // non-fatal
+        console.warn("[creator/onboard] updateUser meta error", metaErr);
+      }
 
       router.replace("/creator");
     } catch (e) {
@@ -99,17 +98,14 @@ export default function CreatorOnboardPage() {
     }
   };
 
-  if (!ready) {
-    return <div className="min-h-screen p-6 text-white">Checking session…</div>;
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050814] text-white p-6">
       <div className="max-w-md w-full rounded-2xl border border-white/10 bg-white/5 p-6">
         <h1 className="text-xl font-semibold text-center">Become a Creator on Revolvr</h1>
 
         <p className="text-sm text-white/70 mt-4 text-center">
-          Creators earn <strong>45%</strong> on all tips, boosts, and spins.
+          Creators earn <strong>45%</strong> on all tips, boosts, and spins — across live broadcasts
+          and the public feed.
         </p>
 
         {error && <div className="mt-4 text-sm text-red-400 text-center">{error}</div>}
@@ -122,6 +118,7 @@ export default function CreatorOnboardPage() {
               onChange={(e) => setDisplayName(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
               placeholder="Your name"
+              autoComplete="name"
             />
           </div>
 
@@ -132,15 +129,11 @@ export default function CreatorOnboardPage() {
               onChange={(e) => setHandle(e.target.value)}
               className="mt-2 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3 text-sm"
               placeholder="@westley"
+              autoComplete="nickname"
             />
             <div className="mt-2 text-[11px] text-white/50">
               3–20 chars: a–z, 0–9, underscore. “@” is optional.
-              {hNormalized && (
-                <>
-                  {" "}
-                  Your handle: <span className="text-white/70">@{hNormalized}</span>
-                </>
-              )}
+              {handlePreview ? <span className="ml-2">Preview: @{handlePreview}</span> : null}
             </div>
           </div>
         </div>
