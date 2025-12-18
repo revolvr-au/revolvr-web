@@ -1,8 +1,6 @@
 // src/app/api/credits/spend/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 type SpendKind = "boost" | "tip" | "spin";
 

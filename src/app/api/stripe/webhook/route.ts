@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
+
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
@@ -8,7 +9,6 @@ const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 // Use Stripe account default API version
 const stripe = new Stripe(stripeSecretKey);
 
-const prisma = new PrismaClient();
 
 type CreditDelta = { boosts: number; tips: number; spins: number };
 
