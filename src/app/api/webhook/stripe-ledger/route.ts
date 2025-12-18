@@ -18,98 +18,95 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    const rawBody = await req.text(); // MUST be raw text
+    const rawBody = await req.text();
     event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err) {
     console.error("[stripe-ledger] signature verification failed", err);
     return new NextResponse("Invalid signature", { status: 400 });
   }
 
-  // Critical: only process the single v1 event for the thin slice
   if (event.type !== "checkout.session.completed") {
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ received: true });
   }
 
   const session = event.data.object as Stripe.Checkout.Session;
 
-  // 1) Idempotency gate (Stripe retries are normal)
+  // --- IDEMPOTENCY ---
   try {
     await prisma.stripeEvent.create({
       data: { id: event.id, type: event.type },
     });
   } catch {
-    // Duplicate delivery -> no-op
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ received: true });
   }
 
-  // 2) Validate minimum metadata required for attribution
+  // --- METADATA ---
   const md = session.metadata ?? {};
-  const creatorId = md.creator_id;
-  const paymentType = md.payment_type; // e.g. tip_single, boost_pack, etc.
+  const creatorEmail = md.creator_email;
+  const paymentType = md.payment_type;
   const sessionId = md.session_id ?? null;
 
-  if (!creatorId || !paymentType) {
-    console.warn("[stripe-ledger] missing required metadata", {
+  if (!creatorEmail || !paymentType) {
+    console.warn("[stripe-ledger] missing metadata", {
       eventId: event.id,
-      creatorId,
+      creatorEmail,
       paymentType,
-      sessionId,
     });
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ received: true });
   }
 
-  // 3) Validate Stripe fields we depend on
-  const gross = session.amount_total; // integer cents
+  // --- STRIPE FIELDS ---
+  const grossCents = session.amount_total;
   const currency = session.currency;
-
   const paymentIntentId =
-    typeof session.payment_intent === "string" ? session.payment_intent : null;
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : null;
 
-  if (!gross || !currency || !paymentIntentId) {
-    console.warn("[stripe-ledger] missing required Stripe fields", {
+  if (!grossCents || !currency || !paymentIntentId) {
+    console.warn("[stripe-ledger] missing stripe fields", {
       eventId: event.id,
-      gross,
+      grossCents,
       currency,
       paymentIntentId,
     });
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ received: true });
   }
 
-  // 4) Compute split (integer cents; creator gets 45%)
-  const amountCreator = Math.round(gross * CREATOR_SHARE);
-  const amountPlatform = gross - amountCreator;
+  // --- SPLIT ---
+  const creatorCents = Math.round(grossCents * CREATOR_SHARE);
+  const platformCents = grossCents - creatorCents;
 
-  // 5) Write ledger + update balance atomically
+  // --- LEDGER + BALANCE (ATOMIC) ---
   await prisma.$transaction([
     prisma.payment.create({
       data: {
         stripeEventId: event.id,
         stripePaymentIntentId: paymentIntentId,
         stripeSessionId: session.id,
-        creatorId,
+        creatorId: creatorEmail, // mapped to existing Payment schema
         sessionId,
         type: paymentType,
-        amountGross: gross,
-        amountCreator,
-        amountPlatform,
+        amountGross: grossCents,
+        amountCreator: creatorCents,
+        amountPlatform: platformCents,
         currency,
         status: "completed",
       },
     }),
     prisma.creatorBalance.upsert({
-      where: { creatorId },
+      where: { creatorEmail },
       update: {
-        pendingBalance: { increment: amountCreator },
-        lifetimeEarned: { increment: amountCreator },
+        totalEarnedCents: { increment: creatorCents },
+        availableCents: { increment: creatorCents },
       },
       create: {
-        creatorId,
-        pendingBalance: amountCreator,
-        availableBalance: 0,
-        lifetimeEarned: amountCreator,
+        creatorEmail,
+        totalEarnedCents: creatorCents,
+        availableCents: creatorCents,
       },
     }),
   ]);
 
-  return NextResponse.json({ received: true }, { status: 200 });
+  return NextResponse.json({ received: true });
 }
