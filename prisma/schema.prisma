@@ -1,13 +1,13 @@
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["public"] // Do NOT include "auth"
+  schemas  = ["public"]
 }
 
+
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["multiSchema"]
+  provider = "prisma-client-js"
 }
+
 
 model Post {
   id        String   @id @default(uuid())
@@ -134,6 +134,42 @@ model SupportLedger {
   @@index([creatorEmail])
   @@index([viewerEmail])
   @@index([targetId])
+
+  @@schema("public")
+}
+model StripeEvent {
+  id        String   @id // Stripe event.id
+  type      String
+  createdAt DateTime @default(now())
+
+  @@schema("public")
+}
+
+model Payment {
+  id                    String   @id @default(uuid())
+  stripeEventId         String   @unique
+  stripePaymentIntentId String
+  stripeSessionId       String?
+  creatorId             String
+  sessionId             String?
+  type                  String
+  amountGross           Int
+  amountCreator         Int
+  amountPlatform        Int
+  currency              String
+  status                String // completed | refunded | failed
+  createdAt             DateTime @default(now())
+
+  @@schema("public")
+}
+
+model CreatorPayout {
+  id               String   @id @default(uuid())
+  creatorId        String
+  amount           Int
+  stripeTransferId String
+  status           String // pending | completed | failed
+  createdAt        DateTime @default(now())
 
   @@schema("public")
 }

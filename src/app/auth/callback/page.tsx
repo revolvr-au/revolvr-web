@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
@@ -10,11 +12,17 @@ function safeInternalPath(p: string | null | undefined, fallback: string) {
 }
 
 function getCookie(name: string) {
+  if (typeof document === "undefined") return null;
   const v = document.cookie
     .split("; ")
     .find((c) => c.startsWith(`${name}=`))
     ?.split("=")[1];
   return v ? decodeURIComponent(v) : null;
+}
+
+function clearCookie(name: string) {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
 export default function AuthCallbackPage() {
@@ -35,6 +43,8 @@ export default function AuthCallbackPage() {
         "/public-feed"
       );
 
+      clearCookie("revolvr_redirectTo");
+
       const errorDesc =
         url.searchParams.get("error_description") || url.searchParams.get("error");
       if (errorDesc) {
@@ -43,11 +53,25 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      // Magic link OTP style
+      // Prefer PKCE code if present
+      const code = url.searchParams.get("code");
+      if (code && code.length > 0) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error("[auth/callback] exchangeCodeForSession error", error);
+          router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+          return;
+        }
+
+        router.replace(redirectTo);
+        return;
+      }
+
+      // Magic link OTP token_hash fallback
       const token_hash = url.searchParams.get("token_hash");
       const type = url.searchParams.get("type") || "magiclink";
 
-      if (token_hash) {
+      if (token_hash && token_hash.length > 0) {
         const { error } = await supabase.auth.verifyOtp({
           token_hash,
           type: type as any,
@@ -63,22 +87,6 @@ export default function AuthCallbackPage() {
         return;
       }
 
-      // Fallback: PKCE code style (only if present)
-      const code = url.searchParams.get("code");
-      if (code) {
-        const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-        if (error) {
-          console.error("[auth/callback] exchangeCodeForSession error", error);
-          router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
-          return;
-        }
-
-        router.replace(redirectTo);
-        return;
-      }
-
-      // Nothing usable in URL
       router.replace(`/login?redirectTo=${encodeURIComponent(redirectTo)}`);
     })().catch((e) => {
       console.error("[auth/callback] unexpected error", e);

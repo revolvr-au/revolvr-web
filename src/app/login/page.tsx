@@ -39,31 +39,32 @@ export default function LoginPage() {
   const [country, setCountry] = useState("US");
   const [dob, setDob] = useState("");
   const [confirm16, setConfirm16] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
+
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // ✅ 1) SESSION ESCAPE HATCH (THIS WAS BROKEN)
+  // 1) If already signed in, go straight through
   useEffect(() => {
-  let mounted = true;
+    let mounted = true;
 
-  (async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!mounted) return;
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
 
-    if (data.session) {
-      router.replace(redirectTo || "/public-feed");
-    }
-  })();
+      if (data.session) {
+        router.replace(redirectTo || "/public-feed");
+      }
+    })();
 
-  return () => {
-    mounted = false;
-  };
-}, [router, redirectTo]);
+    return () => {
+      mounted = false;
+    };
+  }, [router, redirectTo]);
 
-
-  // ✅ 2) AGE GATE
+  // 2) Age gate
   useEffect(() => {
     if (isAgeOk()) {
       setStep("login");
@@ -112,55 +113,59 @@ export default function LoginPage() {
     setStep("login");
   };
 
-const sendMagicLink = async () => {
-  setError(null);
-  setSent(false);
+  const sendMagicLink = async () => {
+    setError(null);
+    setSent(false);
 
-  const cleanEmail = email.trim();
-  if (!cleanEmail) {
-    setError("Enter your email address.");
-    return;
-  }
-
-  try {
-    setSending(true);
-
-    const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || window.location.origin).replace(/\/$/, "");
-    const redirect = safeRedirect(redirectTo || "/public-feed");
-
-    // Backup cookie (ONLY add Secure on https)
-    const secure = window.location.protocol === "https:" ? "; Secure" : "";
-    document.cookie =
-      `revolvr_redirectTo=${encodeURIComponent(redirect)}; Path=/; SameSite=Lax${secure}`;
-
-    // Primary: redirectTo is embedded in the callback URL
-    const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: { emailRedirectTo },
-    });
-
-    if (error) {
-      console.error("[login] signInWithOtp error", error);
-      setError("Could not send magic link.");
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setError("Enter your email address.");
       return;
     }
 
-    setSent(true);
-  } catch (e) {
-    console.error("[login] unexpected error", e);
-    setError("Could not send magic link.");
-  } finally {
-    setSending(false);
-  }
-};
+    try {
+      setSending(true);
 
+      // Canonical host for callbacks (prevents preview-domain mismatch)
+      const siteUrl = (
+        process.env.NEXT_PUBLIC_SITE_URL || "https://revolvr-web.vercel.app"
+      ).replace(/\/$/, "");
+
+      const redirect = safeRedirect(redirectTo || "/public-feed");
+
+      // Cookie fallback (only add Secure on https)
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `revolvr_redirectTo=${encodeURIComponent(
+        redirect
+      )}; Path=/; SameSite=Lax${secure}`;
+
+      const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(
+        redirect
+      )}`;
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: { emailRedirectTo },
+      });
+
+      if (error) {
+        console.error("[login] signInWithOtp error", error);
+        setError("Could not send magic link.");
+        return;
+      }
+
+      setSent(true);
+    } catch (e) {
+      console.error("[login] unexpected error", e);
+      setError("Could not send magic link.");
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6">
-
         <div className="text-center mb-4">
           <div className="text-xl font-semibold">Revolvr</div>
           <div className="text-xs text-white/60">Sign in to watch and support</div>
@@ -181,7 +186,10 @@ const sendMagicLink = async () => {
               <option value="OTHER">Other</option>
             </select>
 
-            <button onClick={onCountryContinue} className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold">
+            <button
+              onClick={onCountryContinue}
+              className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold"
+            >
               Continue
             </button>
           </>
@@ -197,11 +205,18 @@ const sendMagicLink = async () => {
             />
 
             <label className="flex gap-2 mt-3 text-xs">
-              <input type="checkbox" checked={confirm16} onChange={(e) => setConfirm16(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={confirm16}
+                onChange={(e) => setConfirm16(e.target.checked)}
+              />
               I am 16 or older
             </label>
 
-            <button onClick={onAuContinue} className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold">
+            <button
+              onClick={onAuContinue}
+              className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold"
+            >
               Continue
             </button>
           </>
@@ -219,12 +234,16 @@ const sendMagicLink = async () => {
             <button
               disabled={sending}
               onClick={sendMagicLink}
-              className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold"
+              className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold disabled:opacity-60"
             >
               {sending ? "Sending…" : "Send magic link"}
             </button>
 
-            {sent && <div className="text-xs text-emerald-300 mt-2 text-center">Check your inbox</div>}
+            {sent && (
+              <div className="text-xs text-emerald-300 mt-2 text-center">
+                Check your inbox
+              </div>
+            )}
           </>
         )}
       </div>

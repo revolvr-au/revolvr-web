@@ -7,7 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: false, // we handle in /auth/callback
+    detectSessionInUrl: false, // we handle it manually in /auth/callback
     storageKey: "revolvr-auth",
   },
 });
