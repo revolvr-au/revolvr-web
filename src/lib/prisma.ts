@@ -1,14 +1,16 @@
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-  pgPool?: Pool;
-};
+declare global {
+  // eslint-disable-next-line no-var
+  var __prisma: PrismaClient | undefined;
+  // eslint-disable-next-line no-var
+  var __pgPool: Pool | undefined;
+}
 
 const pool =
-  globalForPrisma.pgPool ??
+  global.__pgPool ??
   new Pool({
     connectionString: process.env.DATABASE_URL,
   });
@@ -16,13 +18,13 @@ const pool =
 const adapter = new PrismaPg(pool);
 
 export const prisma =
-  globalForPrisma.prisma ??
+  global.__prisma ??
   new PrismaClient({
     adapter,
     log: ["error", "warn"],
   });
 
 if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-  globalForPrisma.pgPool = pool;
+  global.__prisma = prisma;
+  global.__pgPool = pool;
 }
