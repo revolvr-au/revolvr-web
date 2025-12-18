@@ -1,6 +1,9 @@
 // middleware.ts
-import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+const CANONICAL_HOST =
+  process.env.NEXT_PUBLIC_CANONICAL_HOST || "revolvr-web.vercel.app";
 
 function createMiddlewareSupabaseClient(req: NextRequest) {
   // Response that Supabase will attach refreshed auth cookies to
@@ -26,73 +29,94 @@ function createMiddlewareSupabaseClient(req: NextRequest) {
   return { supabase, res };
 }
 
-export async function middleware(req: NextRequest) {
-  const pathname = req.nextUrl.pathname;
+function isLocalhost(host: string) {
+  return (
+    host.startsWith("localhost") ||
+    host.startsWith("127.0.0.1") ||
+    host.startsWith("[::1]")
+  );
+}
 
-  // Don't apply age-gate on these paths
-  const isAgePage = pathname.startsWith('/age-verification');
-  const isUnderagePage = pathname.startsWith('/underage');
+export async function middleware(req: NextRequest) {
+  const url = req.nextUrl;
+  const pathname = url.pathname;
+
+  // ------------------------------------------------------------
+  // 0) Canonical host enforcement (prevents preview-domain auth loops)
+  // ------------------------------------------------------------
+  const host = req.headers.get("host") || "";
+
+  // Allow localhost/dev
+  if (!isLocalhost(host)) {
+    // Only enforce if we're on a Vercel host (or any host) that isn't canonical
+    if (host !== CANONICAL_HOST) {
+      const redirectUrl = url.clone();
+      redirectUrl.host = CANONICAL_HOST;
+      redirectUrl.protocol = "https:";
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  // ------------------------------------------------------------
+  // 1) Skip age-gate + auth checks on specific routes
+  // ------------------------------------------------------------
+  const isAgePage = pathname.startsWith("/age-verification");
+  const isUnderagePage = pathname.startsWith("/underage");
+
+  // Keep your existing auth pages, and also exclude callback/auth routes
   const isAuthPage =
-    pathname.startsWith('/login') || pathname.startsWith('/signup');
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/auth");
 
   if (isAgePage || isUnderagePage || isAuthPage) {
-    // Let these through without checks
     return NextResponse.next();
   }
 
+  // ------------------------------------------------------------
+  // 2) Supabase cookie refresh + AU age-gate
+  // ------------------------------------------------------------
   const { supabase, res } = createMiddlewareSupabaseClient(req);
 
-  // 1) Get the current Supabase user (from cookies)
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Not logged in → no age gate (you can tighten this later if you want)
-  if (!user) {
-    return res;
-  }
+  // Not logged in → no age gate
+  if (!user) return res;
 
-  // 2) Load this user's profile
   const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('country, is_age_verified, underage_locked')
-    .eq('id', user.id)
+    .from("profiles")
+    .select("country, is_age_verified, underage_locked")
+    .eq("id", user.id)
     .single();
 
-  if (error || !profile) {
-    // If we can't read profile, don't block the user
-    return res;
-  }
+  if (error || !profile) return res;
 
-  // 3) Only apply gate to Australian users
-  if (profile.country !== 'AU') {
-    return res;
-  }
+  // Only apply gate to Australian users
+  if (profile.country !== "AU") return res;
 
-  // 4) Enforce lock & verification
-
-  // Underage users are always sent to /underage
+  // Underage users always go to /underage
   if (profile.underage_locked) {
     if (!isUnderagePage) {
-      const url = req.nextUrl.clone();
-      url.pathname = '/underage';
-      return NextResponse.redirect(url);
+      const u = req.nextUrl.clone();
+      u.pathname = "/underage";
+      return NextResponse.redirect(u);
     }
     return res;
   }
 
-  // AU + not yet verified → must go to /age-verification
+  // AU + not verified → /age-verification
   if (!profile.is_age_verified) {
-    const url = req.nextUrl.clone();
-    url.pathname = '/age-verification';
-    return NextResponse.redirect(url);
+    const u = req.nextUrl.clone();
+    u.pathname = "/age-verification";
+    return NextResponse.redirect(u);
   }
 
-  // 5) AU + verified → normal access
   return res;
 }
 
 // Run middleware on all non-static, non-API routes
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api).*)"],
 };
