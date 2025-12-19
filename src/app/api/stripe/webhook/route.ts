@@ -109,23 +109,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-// Persist creator balances (CreatorBalance unique key is creatorEmail)
 await prisma.creatorBalance.upsert({
-  where: { creatorEmail }, // <-- this is the unique key Prisma client expects
+  where: { creatorEmail },
   create: {
     creatorEmail,
-    pendingBalance: 0,
-    availableBalance: amountCreator,
-    lifetimeEarned: amountCreator,
+    totalEarnedCents: amountCreator,
+    availableCents: amountCreator,
   },
   update: {
-    availableBalance: { increment: amountCreator },
-    lifetimeEarned: { increment: amountCreator },
+    totalEarnedCents: { increment: amountCreator },
+    availableCents: { increment: amountCreator },
   },
 });
-
-
-
     console.log("[stripe/webhook] Payment recorded", {
       sessionId: session.id,
       creatorEmail,
