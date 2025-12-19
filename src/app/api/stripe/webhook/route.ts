@@ -109,20 +109,22 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Persist creator balances (CreatorBalance uses creatorId as @id)
-    await prisma.creatorBalance.upsert({
-      where: { creatorId },
-      create: {
-        creatorId,
-        pendingBalance: 0,
-        availableBalance: amountCreator,
-        lifetimeEarned: amountCreator,
-      },
-      update: {
-        availableBalance: { increment: amountCreator },
-        lifetimeEarned: { increment: amountCreator },
-      },
-    });
+// Persist creator balances (CreatorBalance unique key is creatorEmail)
+await prisma.creatorBalance.upsert({
+  where: { creatorEmail }, // <-- this is the unique key Prisma client expects
+  create: {
+    creatorEmail,
+    pendingBalance: 0,
+    availableBalance: amountCreator,
+    lifetimeEarned: amountCreator,
+  },
+  update: {
+    availableBalance: { increment: amountCreator },
+    lifetimeEarned: { increment: amountCreator },
+  },
+});
+
+
 
     console.log("[stripe/webhook] Payment recorded", {
       sessionId: session.id,
