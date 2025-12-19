@@ -1,94 +1,121 @@
+// src/app/api/stripe/webhook/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY!;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-// Use Stripe account default API version
+if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
+if (!webhookSecret) throw new Error("Missing STRIPE_WEBHOOK_SECRET");
+
 const stripe = new Stripe(stripeSecretKey);
 
-
-type CreditDelta = { boosts: number; tips: number; spins: number };
-
-function creditsForMode(mode: string): CreditDelta | null {
-  switch (mode) {
-    // Packs
-    case "boost-pack":
-      return { boosts: 10, tips: 0, spins: 0 };
-    case "tip-pack":
-      return { boosts: 0, tips: 10, spins: 0 };
-    case "spin-pack":
-      return { boosts: 0, tips: 0, spins: 20 };
-
-    // Singles
-    case "boost":
-      return { boosts: 1, tips: 0, spins: 0 };
-    case "tip":
-      return { boosts: 0, tips: 1, spins: 0 };
-    case "spin":
-      return { boosts: 0, tips: 0, spins: 1 };
-
-    default:
-      return null;
-  }
-}
-
 export async function POST(req: NextRequest) {
-  const sig = req.headers.get("stripe-signature");
-  if (!sig) {
-    return NextResponse.json(
-      { error: "Missing Stripe signature" },
-      { status: 400 }
-    );
+  const body = await req.text();
+  const signature = req.headers.get("stripe-signature");
+  if (!signature) {
+    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
   }
 
   let event: Stripe.Event;
-
   try {
-    const body = await req.text();
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret);
-  } catch (err) {
-    console.error("[stripe/webhook] Signature verification failed:", err);
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err: any) {
+    console.error("Stripe webhook signature verification failed", err?.message);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
 
-    const mode = session.metadata?.mode;
-    const email = session.customer_email ?? session.customer_details?.email ?? null;
+    // Support BOTH your old keys and new keys
+    const creatorEmail =
+      session.metadata?.creatorEmail ||
+      session.metadata?.creator_id ||
+      null;
 
-    if (!email || !mode) {
-      console.warn("[stripe/webhook] Missing email or mode", { email, mode });
-      return NextResponse.json({ received: true }, { status: 200 });
+    const paymentType =
+      (session.metadata?.payment_type ||
+        session.metadata?.mode ||
+        "unknown") as string;
+
+    const postId =
+      session.metadata?.postId ||
+      session.metadata?.session_id ||
+      "";
+
+    // Stripe truth for buyer email
+    const buyerEmail =
+      session.customer_details?.email ||
+      session.customer_email ||
+      session.metadata?.userEmail ||
+      null;
+
+    const amountGross = session.amount_total ?? 0; // cents
+    const currency = (session.currency ?? "aud").toLowerCase();
+
+    if (!creatorEmail) {
+      console.warn("[stripe/webhook] missing creator identifier in metadata", {
+        sessionId: session.id,
+        metadata: session.metadata,
+      });
+      return NextResponse.json({ received: true });
     }
 
-    const delta = creditsForMode(mode);
+    // Choose your creator share rule (example: 70%)
+    const amountCreator = Math.round(amountGross * 0.7);
 
-    if (!delta) {
-      console.warn("[stripe/webhook] Unknown mode — no credits awarded:", mode);
-      return NextResponse.json({ received: true }, { status: 200 });
+    try {
+      // Idempotency: use session.id as Payment.id to avoid duplicates on retries
+      await prisma.payment.upsert({
+        where: { id: session.id },
+        create: {
+          id: session.id,
+          creatorId: creatorEmail,      // you store email in creatorId currently
+          amountGross,
+          amountCreator,
+          currency,
+          type: paymentType,
+          // if your schema has these fields, include them; otherwise remove:
+          // buyerEmail,
+          // postId,
+        },
+        update: {}, // nothing; if it already exists, keep it
+      });
+
+      await prisma.creatorBalance.upsert({
+        where: { creatorEmail },
+        create: {
+          creatorEmail,
+          totalEarnedCents: amountCreator,
+          availableCents: amountCreator,
+        },
+        update: {
+          totalEarnedCents: { increment: amountCreator },
+          availableCents: { increment: amountCreator },
+        },
+      });
+
+      console.log("[stripe/webhook] Payment recorded", {
+        sessionId: session.id,
+        creatorEmail,
+        buyerEmail,
+        amountGross,
+        amountCreator,
+        currency,
+        paymentType,
+        postId,
+      });
+    } catch (e) {
+      console.error("[stripe/webhook] DB write failed", e);
+      // Return 200 so Stripe doesn't hammer retries while you debug,
+      // OR return 500 if you want Stripe to retry automatically.
     }
-
-    await prisma.userCredits.upsert({
-      where: { email },
-      update: {
-        boosts: { increment: delta.boosts },
-        tips: { increment: delta.tips },
-        spins: { increment: delta.spins },
-      },
-      create: {
-        email,
-        boosts: delta.boosts,
-        tips: delta.tips,
-        spins: delta.spins,
-      },
-    });
-
-    console.log("✅ Credits awarded:", { email, mode, ...delta });
   }
 
-  return NextResponse.json({ received: true }, { status: 200 });
+  return NextResponse.json({ received: true });
 }
