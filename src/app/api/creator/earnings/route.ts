@@ -5,21 +5,22 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  try {
-    const creatorEmail = req.headers.get("x-creator-email");
-    if (!creatorEmail) {
-      return NextResponse.json(
-        { error: "Missing creator email" },
-        { status: 401 }
-      );
-    }
+  const creatorEmail = req.headers.get("x-creator-email");
+  if (!creatorEmail) {
+    return NextResponse.json(
+      { error: "Missing x-creator-email" },
+      { status: 400 }
+    );
+  }
 
+  try {
     const balance = await prisma.creatorBalance.findUnique({
       where: { creatorEmail },
     });
 
     const payments = await prisma.payment.findMany({
-      where: { creatorId: creatorEmail }, // your Payment model uses creatorId string; you’ve been storing email here
+      // In your current setup, you’ve been storing email into Payment.creatorId
+      where: { creatorId: creatorEmail },
       orderBy: { createdAt: "desc" },
       take: 20,
     });
@@ -27,7 +28,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       balances: {
         lifetimeEarned: balance?.totalEarnedCents ?? 0,
-        pendingBalance: 0, // not in your current schema
         availableBalance: balance?.availableCents ?? 0,
       },
       recentPayments: payments.map((p) => ({
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       })),
     });
   } catch (err) {
-    console.error("[api/creator/earnings]", err);
+    console.error("[creator/earnings] error", err);
     return NextResponse.json(
       { error: "Failed to load earnings" },
       { status: 500 }
