@@ -17,13 +17,18 @@ const stripe = new Stripe(stripeSecretKey);
 export async function POST(req: NextRequest) {
   const body = await req.text();
   const signature = req.headers.get("stripe-signature");
+
   if (!signature) {
-    return NextResponse.json({ error: "Missing stripe-signature header" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing stripe-signature header" },
+      { status: 400 }
+    );
   }
 
   let event: Stripe.Event;
+
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret!);
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
     console.error("Stripe webhook signature verification failed", err?.message);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
@@ -34,19 +39,14 @@ export async function POST(req: NextRequest) {
 
     // Support BOTH your old keys and new keys
     const creatorEmail =
-      session.metadata?.creatorEmail ||
-      session.metadata?.creator_id ||
-      null;
+      session.metadata?.creatorEmail || session.metadata?.creator_id || null;
 
     const paymentType =
       (session.metadata?.payment_type ||
         session.metadata?.mode ||
         "unknown") as string;
 
-    const postId =
-      session.metadata?.postId ||
-      session.metadata?.session_id ||
-      "";
+    const postId = session.metadata?.postId || session.metadata?.session_id || "";
 
     // Stripe truth for buyer email
     const buyerEmail =
@@ -69,34 +69,47 @@ export async function POST(req: NextRequest) {
     // Choose your creator share rule (example: 70%)
     const amountCreator = Math.round(amountGross * 0.7);
 
+    const stripeEventId = event.id;
+
+    const stripePaymentIntentId =
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id ?? "";
+
+    const amountPlatform = Math.max(0, amountGross - amountCreator);
+
     try {
       // Idempotency: use session.id as Payment.id to avoid duplicates on retries
       await prisma.payment.upsert({
         where: { id: session.id },
         create: {
           id: session.id,
-          creatorId: creatorEmail,      // you store email in creatorId currently
+          creatorId: creatorEmail,
           amountGross,
           amountCreator,
+          amountPlatform,
           currency,
           type: paymentType,
-          // if your schema has these fields, include them; otherwise remove:
-          // buyerEmail,
-          // postId,
+          stripeEventId,
+          stripePaymentIntentId,
+          status: "completed" as any,
+          stripeSessionId: session.id,
+          sessionId: postId || null,
         },
-        update: {}, // nothing; if it already exists, keep it
+        update: {},
       });
 
       await prisma.creatorBalance.upsert({
-        where: { creatorEmail },
+        where: { creatorId: creatorEmail },
         create: {
-          creatorEmail,
-          totalEarnedCents: amountCreator,
-          availableCents: amountCreator,
+          creatorId: creatorEmail,
+          lifetimeEarned: amountCreator,
+          availableBalance: amountCreator,
+          pendingBalance: 0,
         },
         update: {
-          totalEarnedCents: { increment: amountCreator },
-          availableCents: { increment: amountCreator },
+          lifetimeEarned: { increment: amountCreator },
+          availableBalance: { increment: amountCreator },
         },
       });
 
@@ -112,8 +125,6 @@ export async function POST(req: NextRequest) {
       });
     } catch (e) {
       console.error("[stripe/webhook] DB write failed", e);
-      // Return 200 so Stripe doesn't hammer retries while you debug,
-      // OR return 500 if you want Stripe to retry automatically.
     }
   }
 
