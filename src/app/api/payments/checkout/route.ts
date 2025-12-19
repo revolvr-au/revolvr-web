@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
-if (!stripeSecretKey) {
-  throw new Error("Missing STRIPE_SECRET_KEY");
-}
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 // Node runtime, use account default API version
 const stripe = new Stripe(stripeSecretKey);
@@ -24,29 +24,28 @@ type CheckoutMode =
 
 type Body = {
   mode: CheckoutMode;
+  creatorEmail: string; // REQUIRED for ledger attribution
   userEmail?: string | null;
   postId?: string | null;
-  /**
-   * Optional path we should return the user to after checkout.
-   * Example: "/live/my-room" or "/public-feed"
-   */
   returnPath?: string | null;
 };
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body;
-    const { mode, postId, userEmail, returnPath } = body;
+    const { mode, creatorEmail, postId, userEmail, returnPath } = body;
 
     if (!mode) {
       return NextResponse.json({ error: "Missing mode" }, { status: 400 });
+    }
+    if (!creatorEmail) {
+      return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
     }
 
     let name = "";
     let amountCents = 0;
 
     switch (mode) {
-      // Single actions
       case "tip":
         name = "Creator tip";
         amountCents = 200; // A$2
@@ -59,8 +58,6 @@ export async function POST(req: NextRequest) {
         name = "Revolvr spinner spin";
         amountCents = 100; // A$1
         break;
-
-      // Packs
       case "tip-pack":
         name = "Tip pack (10× A$2 tips)";
         amountCents = 2000; // A$20
@@ -73,13 +70,15 @@ export async function POST(req: NextRequest) {
         name = "Spin pack (20× A$1 spins)";
         amountCents = 2000; // A$20
         break;
-
       default:
         return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
     }
 
-    // Where should we send the user back to?
-    // Only allow internal paths that start with "/"
+    // map to what the ledger webhook expects
+    const paymentType = mode;          // your ledger expects payment_type
+    const creatorId = creatorEmail;    // your ledger expects creator_id (you store email as id)
+    const sessionId = postId ?? "";    // optional, but supported by ledger
+
     const safeReturnPath =
       returnPath && returnPath.startsWith("/") ? returnPath : "/public-feed";
 
@@ -120,6 +119,12 @@ export async function POST(req: NextRequest) {
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
       metadata: {
+        // REQUIRED by your ledger webhook
+        creator_id: creatorId,
+        payment_type: paymentType,
+        session_id: sessionId,
+
+        // optional/extra (keep if useful)
         mode,
         bundleType,
         postId: postId ?? "",
@@ -129,9 +134,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (err) {
     console.error("[payments/checkout] error", err);
-    return NextResponse.json(
-      { error: "Stripe checkout failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Stripe checkout failed" }, { status: 500 });
   }
 }
