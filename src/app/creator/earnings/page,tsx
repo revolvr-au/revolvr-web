@@ -1,0 +1,81 @@
+// src/app/creator/earnings/page.tsx
+export const dynamic = "force-dynamic";
+
+import { getCreatorEarnings } from "@/lib/creatorEarnings";
+
+function formatAudCents(cents: number) {
+  const dollars = cents / 100;
+  return dollars.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
+}
+
+export default async function CreatorEarningsPage() {
+  // TODO: replace with real logged-in email (Supabase auth)
+  const creatorEmail = "creator@example.com";
+
+  const data = await getCreatorEarnings(creatorEmail);
+
+  return (
+    <div className="mx-auto max-w-3xl p-6">
+      <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <div className="text-sm text-neutral-500">Lifetime earned</div>
+          <div className="mt-1 text-2xl font-semibold">
+            {formatAudCents(data.balances.lifetimeEarned)}
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-white p-4 shadow-sm">
+          <div className="text-sm text-neutral-500">Available balance</div>
+          <div className="mt-1 text-2xl font-semibold">
+            {formatAudCents(data.balances.availableBalance)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-8 rounded-xl border bg-white p-4 shadow-sm">
+        <h2 className="text-lg font-semibold">Recent payments</h2>
+
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="text-neutral-500">
+              <tr className="border-b">
+                <th className="py-2 pr-4">Date</th>
+                <th className="py-2 pr-4">Type</th>
+                <th className="py-2 pr-4">Gross</th>
+                <th className="py-2 pr-4">Creator</th>
+                <th className="py-2 pr-4">ID</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.recentPayments.map((p) => (
+                <tr key={p.id} className="border-b last:border-b-0">
+                  <td className="py-2 pr-4">
+                    {new Date(p.createdAt).toLocaleString("en-AU")}
+                  </td>
+                  <td className="py-2 pr-4">{p.type}</td>
+                  <td className="py-2 pr-4">{formatAudCents(p.amountGross)}</td>
+                  <td className="py-2 pr-4">
+                    {formatAudCents(p.amountCreator)}
+                  </td>
+                  <td className="py-2 pr-4 font-mono text-xs text-neutral-600">
+                    {p.id.slice(0, 18)}…
+                  </td>
+                </tr>
+              ))}
+
+              {data.recentPayments.length === 0 && (
+                <tr>
+                  <td className="py-6 text-neutral-500" colSpan={5}>
+                    No payments yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
