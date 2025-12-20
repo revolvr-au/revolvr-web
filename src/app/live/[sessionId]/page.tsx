@@ -1,4 +1,4 @@
-// src/app/live/[room]/page.tsx
+// src/app/live/[sessionId]/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -14,12 +14,12 @@ import {
 type PendingPurchase = { mode: PurchaseMode };
 
 export default function LiveRoomPage() {
-  const params = useParams<{ room: string }>();
+  const params = useParams<{ sessionId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const safeRoom = params?.room ?? "";
-  const roomName = useMemo(() => decodeURIComponent(safeRoom), [safeRoom]);
+  const safeSessionId = params?.sessionId ?? "";
+  const sessionId = useMemo(() => decodeURIComponent(safeSessionId), [safeSessionId]);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export default function LiveRoomPage() {
   const ensureLoggedIn = () => {
     if (!userEmail) {
       const redirect = encodeURIComponent(
-        `/live/${encodeURIComponent(roomName)}`
+        `/live/${encodeURIComponent(sessionId)}`
       );
       router.push(`/login?redirectTo=${redirect}`);
       return false;
@@ -104,8 +104,8 @@ export default function LiveRoomPage() {
         body: JSON.stringify({
           mode: checkoutMode,
           userEmail,
-          postId: roomName, // ok for now
-          returnPath: `/live/${encodeURIComponent(roomName)}`,
+          postId: sessionId, // ok for now
+          returnPath: `/live/${encodeURIComponent(sessionId)}`,
         }),
       });
 
@@ -198,7 +198,7 @@ export default function LiveRoomPage() {
               Live on Revolvr
             </h1>
             <p className="text-xs text-white/50 mt-1">
-              Room: <span className="font-mono text-white/80">{roomName}</span>
+              Room: <span className="font-mono text-white/80">{sessionId}</span>
             </p>
           </div>
 

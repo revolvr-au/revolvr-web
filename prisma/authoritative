@@ -5,20 +5,21 @@ model StripeEvent {
 }
 
 model Payment {
-  id                       String   @id @default(uuid())
-  stripeEventId            String   @unique
-  stripePaymentIntentId    String
-  stripeSessionId          String?
-  creatorId                String
-  sessionId                String?
-  type                     String
-  amountGross              Int      // cents
-  amountCreator            Int
-  amountPlatform           Int
-  currency                 String
-  status                   String   // completed | refunded | failed
-  createdAt                DateTime @default(now())
+  id                    String   @id // Stripe Checkout Session ID (cs_...)
+  stripeEventId         String   @unique
+  stripePaymentIntentId String
+  stripeSessionId       String?
+  creatorId             String
+  sessionId             String?
+  type                  String
+  amountGross           Int
+  amountCreator         Int
+  amountPlatform        Int
+  currency              String
+  status                String
+  createdAt             DateTime @default(now())
 }
+
 
 model CreatorBalance {
   creatorId        String  @id

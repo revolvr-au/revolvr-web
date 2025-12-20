@@ -1,12 +1,12 @@
 datasource db {
   provider = "postgresql"
-  schemas  = ["public"]
+  schemas  = ["auth", "public"]
 }
-
 
 generator client {
   provider = "prisma-client-js"
 }
+
 
 
 model Post {
