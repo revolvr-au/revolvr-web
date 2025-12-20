@@ -146,7 +146,9 @@ model StripeEvent {
 }
 
 model Payment {
-  id                    String   @id @default(uuid())
+  // Option B: Use Stripe Checkout Session ID as the primary key (cs_...)
+  id                    String   @id
+
   stripeEventId         String   @unique
   stripePaymentIntentId String
   stripeSessionId       String?
@@ -162,6 +164,7 @@ model Payment {
 
   @@schema("public")
 }
+
 
 model CreatorPayout {
   id               String   @id @default(uuid())
