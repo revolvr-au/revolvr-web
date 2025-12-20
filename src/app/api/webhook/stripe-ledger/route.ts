@@ -98,38 +98,46 @@ export async function POST(req: NextRequest) {
 
   const paymentId = session.id; // Stripe Checkout Session ID (stable)
 
-await prisma.$transaction([
-  prisma.payment.upsert({
-    where: { id: paymentId },
-    create: {
-      id: paymentId,
-      stripeEventId: event.id,
-      stripePaymentIntentId: paymentIntentId,
-      stripeSessionId: session.id,
+  try {
+    await prisma.$transaction([
+      prisma.payment.upsert({
+        where: { id: paymentId },
+        create: {
+          id: paymentId,
+          stripeEventId: event.id,
+          stripePaymentIntentId: paymentIntentId,
+          stripeSessionId: session.id,
 
-      creatorId: creatorEmail,
-      sessionId: internalSessionId,
+          creatorId: creatorEmail,
+          ...(internalSessionId ? { sessionId: internalSessionId } : {}),
 
-      type: paymentType,
-      amountGross: grossCents,
-      amountCreator: creatorCents,
-      amountPlatform: platformCents,
-      currency,
-      status: "completed",
-    },
-    update: {}, // keep existing record if retried
-  }),
+          type: paymentType,
+          amountGross: grossCents,
+          amountCreator: creatorCents,
+          amountPlatform: platformCents,
+          currency,
+          status: "completed",
+        },
+        update: {}, // keep existing record if retried
+      }),
 
-  prisma.creatorBalance.upsert({
-    where: { creatorEmail },
-    create: {
-      creatorEmail,
-      totalEarnedCents: creatorCents,
-      availableCents: creatorCents,
-    },
-    update: {
-      totalEarnedCents: { increment: creatorCents },
-      availableCents: { increment: creatorCents },
-    },
-  }),
-]);
+      prisma.creatorBalance.upsert({
+        where: { creatorEmail },
+        create: {
+          creatorEmail,
+          totalEarnedCents: creatorCents,
+          availableCents: creatorCents,
+        },
+        update: {
+          totalEarnedCents: { increment: creatorCents },
+          availableCents: { increment: creatorCents },
+        },
+      }),
+    ]);
+  } catch (err) {
+    console.error("[stripe-ledger] DB write failed", err);
+    // Return 200 so Stripe doesn't hammer retries while you debug
+  }
+
+  return NextResponse.json({ received: true });
+}
