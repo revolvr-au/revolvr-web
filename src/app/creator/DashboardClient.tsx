@@ -1,4 +1,4 @@
-// src/app/creator/dashboardClient.tsx
+// src/app/creator/DashboardClient.tsx
 "use client";
 
 import React, { useCallback, useEffect, useState, FormEvent } from "react";

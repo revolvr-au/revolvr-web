@@ -1,7 +1,4 @@
-// src/app/creator/page.tsx
-import DashboardClient from "./dashboard/DashboardClient";
-
-export const dynamic = "force-dynamic";
+import DashboardClient from "./DashboardClient";
 
 export default function CreatorPage() {
   return <DashboardClient />;
