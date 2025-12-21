@@ -4,7 +4,7 @@
 import React, { useCallback, useEffect, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
-import SpinButton from "./_spinButton";
+import SpinButton from "@/components/SpinButton";
 import IdentityLens from "@/components/IdentityLens";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 
