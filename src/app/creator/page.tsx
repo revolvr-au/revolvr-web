@@ -1,5 +1,5 @@
-import DashboardClient from "./DashboardClient";
+import CreatorGate from "./CreatorGate";
 
 export default function CreatorPage() {
-  return <DashboardClient />;
+  return <CreatorGate />;
 }

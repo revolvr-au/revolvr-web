@@ -1,35 +1,102 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { createServerClient } from "@supabase/ssr";
 
+function supabaseServer() {
+  const cookieStore = cookies();
 
-export async function GET(req: NextRequest) {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          // In a Route Handler we can set cookies on the response.
+          // Supabase may request setting cookies during token refresh.
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+}
+
+export async function GET() {
   try {
-    const { searchParams } = new URL(req.url);
-    const email = String(searchParams.get("email") || "").trim().toLowerCase();
+    const supabase = supabaseServer();
 
-    if (!email) {
-      return NextResponse.json({ error: "Missing email" }, { status: 400 });
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    // Not logged in (or session invalid)
+    if (error || !user) {
+      return NextResponse.json(
+        {
+          loggedIn: false,
+          creator: {
+            isActive: false,
+            handle: null,
+            stripeOnboardingComplete: false,
+          },
+        },
+        { status: 200 }
+      );
     }
 
-    const profile = await prisma.creatorProfile.findUnique({ where: { email } });
-    const balance = await prisma.creatorBalance.findUnique({
-      where: { creatorEmail: email },
-    });
+    // Prefer user.id as the stable key; email is secondary
+    const email = (user.email ?? "").trim().toLowerCase();
+
+    // Your Prisma models appear to be creatorProfile + creatorBalance.
+    // We look up by email because that’s what your schema currently uses.
+    // (If you have userId in Prisma, switch to userId immediately.)
+    const profile = email
+      ? await prisma.creatorProfile.findUnique({ where: { email } })
+      : null;
+
+    // Balance is OPTIONAL. Never block creator identity on it.
+    const balance = email
+      ? await prisma.creatorBalance.findUnique({ where: { creatorEmail: email } })
+      : null;
 
     return NextResponse.json(
       {
-        ok: true,
-        profile,
-        balance: balance ?? {
-          creatorEmail: email,
-          totalEarnedCents: 0,
-          availableCents: 0,
+        loggedIn: true,
+        user: {
+          id: user.id,
+          email: email || null,
         },
+        creator: {
+          isActive: Boolean(profile?.isActive),
+          handle: profile?.handle ?? null,
+          stripeOnboardingComplete: Boolean(profile?.stripeOnboardingComplete),
+        },
+        // keep these for your dashboard
+        profile,
+        balance:
+          balance ?? (email ? { creatorEmail: email, totalEarnedCents: 0, availableCents: 0 } : null),
       },
       { status: 200 }
     );
   } catch (e) {
-    console.error("[creator/me] error", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("[api/creator/me] error", e);
+    return NextResponse.json(
+      {
+        loggedIn: false,
+        creator: {
+          isActive: false,
+          handle: null,
+          stripeOnboardingComplete: false,
+        },
+        error: "Server error",
+      },
+      { status: 500 }
+    );
   }
 }
