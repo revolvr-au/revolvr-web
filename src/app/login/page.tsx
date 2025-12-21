@@ -43,6 +43,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
@@ -113,11 +115,39 @@ export default function LoginPage() {
     setStep("login");
   };
 
+  const signInWithPassword = async () => {
+    setError(null);
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      setError("Email and password required.");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      router.replace(redirectTo || "/public-feed");
+      router.refresh();
+    } catch (e) {
+      console.error("[login] password sign-in error", e);
+      setError("Could not sign in.");
+    }
+  };
+
   const sendMagicLink = async () => {
     setError(null);
     setSent(false);
 
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
       setError("Enter your email address.");
       return;
@@ -126,14 +156,12 @@ export default function LoginPage() {
     try {
       setSending(true);
 
-      // Canonical host for callbacks (prevents preview-domain mismatch)
-      const siteUrl = (
-        process.env.NEXT_PUBLIC_SITE_URL || "https://revolvr-web.vercel.app"
-      ).replace(/\/$/, "");
+      const siteUrl =
+        (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")) ||
+        window.location.origin;
 
       const redirect = safeRedirect(redirectTo || "/public-feed");
 
-      // Cookie fallback (only add Secure on https)
       const secure = window.location.protocol === "https:" ? "; Secure" : "";
       document.cookie = `revolvr_redirectTo=${encodeURIComponent(
         redirect
@@ -231,10 +259,27 @@ export default function LoginPage() {
               placeholder="you@example.com"
             />
 
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-3 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3"
+              placeholder="Password"
+            />
+
+            <button
+              onClick={signInWithPassword}
+              className="mt-3 w-full border border-white/20 py-3 rounded-xl font-semibold"
+            >
+              Sign in
+            </button>
+
+            <div className="my-3 text-center text-xs text-white/50">or</div>
+
             <button
               disabled={sending}
               onClick={sendMagicLink}
-              className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold disabled:opacity-60"
+              className="w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold disabled:opacity-60"
             >
               {sending ? "Sending…" : "Send magic link"}
             </button>

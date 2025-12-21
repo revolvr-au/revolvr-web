@@ -30,10 +30,10 @@ export default function Home() {
           </button>
 
           <button
-            className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold py-4"
-            onClick={() => router.push("/creator")}
-          >
-            Go Live as a Creator
+          className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold py-4"
+          onClick={() => router.push("/login?redirectTo=%2Fcreator")}
+>
+          Go Live as a Creator
           </button>
         </div>
 
