@@ -21,7 +21,7 @@ export default function CreatorOnboardPage() {
         router.replace("/login");
         return;
       }
-      if (data.creator?.isActive) {
+      if (data.creator?.Active) {
         router.replace("/creator/dashboard");
         return;
       }

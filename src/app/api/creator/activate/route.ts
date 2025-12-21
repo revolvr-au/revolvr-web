@@ -57,20 +57,20 @@ export async function POST(req: Request) {
     }
 
     const profile = await prisma.creatorProfile.upsert({
-      where: { email },
-      create: {
-        email,
-        handle,
-        displayName: displayName || handle,
-        isActive: true,
-        stripeOnboardingComplete: false,
-      },
-      update: {
-        handle,
-        displayName: displayName || undefined,
-        isActive: true,
-      },
-    });
+  where: { email },
+  create: {
+    email,
+    handle,
+    displayName: displayName || handle,
+    status: "ACTIVE",
+  },
+  update: {
+    handle,
+    displayName: displayName || undefined,
+    status: "ACTIVE",
+  },
+});
+
 
     await prisma.creatorBalance.upsert({
       where: { creatorEmail: email },
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
       {
         ok: true,
         creator: {
-          isActive: Boolean(profile.isActive),
+          Active: Boolean(profile.Active),
           handle: profile.handle ?? null,
           stripeOnboardingComplete: Boolean(profile.stripeOnboardingComplete),
         },

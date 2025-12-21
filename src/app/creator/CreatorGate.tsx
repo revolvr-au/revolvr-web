@@ -7,7 +7,7 @@ import DashboardClient from "./DashboardClient"; // Ensure casing matches file n
 type MeResponse = {
   loggedIn: boolean;
   creator: {
-    isActive: boolean;
+    Active: boolean;
     handle: string | null;
     stripeOnboardingComplete: boolean;
   };
@@ -30,7 +30,7 @@ export default function CreatorGate() {
           return;
         }
 
-        if (!data.creator?.isActive) {
+        if (!data.creator?.Active) {
           router.replace("/creator/onboard");
           return;
         }
@@ -50,7 +50,7 @@ export default function CreatorGate() {
   }
 
   // If they aren't active we already redirected; keep this safe
-  if (!state?.creator?.isActive) return null;
+  if (!state?.creator?.Active) return null;
 
   return <DashboardClient />;
 }
