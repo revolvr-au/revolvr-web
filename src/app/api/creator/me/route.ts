@@ -36,7 +36,6 @@ export async function GET() {
           creator: {
             'Active': false,
             handle: null,
-            stripeOnboardingComplete: false,
           },
         },
         { status: 200 }
@@ -58,10 +57,10 @@ export async function GET() {
         loggedIn: true,
         user: { id: user.id, email: email || null },
         creator: {
-          Active: Boolean(profile?.Active),
-          handle: profile?.handle ?? null,
-          stripeOnboardingComplete: Boolean(profile?.stripeOnboardingComplete),
-        },
+  isActive: profile?.status === "ACTIVE",
+  handle: profile?.handle ?? null,
+},
+
         profile,
         balance:
           balance ??
@@ -77,10 +76,10 @@ export async function GET() {
       {
         loggedIn: false,
         creator: {
-          Active: false,
-          handle: null,
-          stripeOnboardingComplete: false,
-        },
+  isActive: false,
+  handle: null,
+},
+
         error: "Server error",
       },
       { status: 500 }
