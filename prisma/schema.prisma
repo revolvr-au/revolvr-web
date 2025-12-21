@@ -105,12 +105,6 @@ model CreatorProfile {
   @@schema("public")
 }
 
-model CreatorProfile {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  handle    String   @unique
-  ...
-}
 
 model CreatorBalance {
   creatorEmail     String   @id
