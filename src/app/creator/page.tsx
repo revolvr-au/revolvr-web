@@ -1,5 +1,5 @@
-import CreatorGate from "./CreatorGate";
+import CreatorOnboard from "./onboard/page";
 
 export default function CreatorPage() {
-  return <CreatorGate />;
+  return <CreatorOnboard />;
 }
