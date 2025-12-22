@@ -4,85 +4,64 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
-type CreatorMeResponse = {
-  loggedIn?: boolean;
-  ok?: boolean;
-  creator?: {
-    isActive?: boolean;
-    handle?: string | null;
-  };
-  profile?: {
-    status?: string;
-    handle?: string | null;
-  } | null;
-};
-
 export default function CreatorGate() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
+    let cancelled = false;
 
     (async () => {
       try {
-        // 1) Must have a session
-        const { data: sess } = await supabase.auth.getSession();
-        const session = sess.session;
+        const { data } = await supabase.auth.getSession();
 
-        if (!session) {
+        if (cancelled) return;
+
+        if (!data.session) {
           router.replace("/login?redirectTo=%2Fcreator");
           return;
         }
 
-        // 2) Ask server what creator state is
-        const res = await fetch("/api/creator/me", { cache: "no-store" });
-        const data = (await res.json().catch(() => ({}))) as CreatorMeResponse;
+        // If you have a "me" endpoint that determines creator onboarding status:
+        // - 200 => creator exists / allowed, stay on /creator
+        // - 404/401 => push to /creator/onboard
+        try {
+          const res = await fetch("/api/creator/me", { cache: "no-store" });
 
-        // Treat “not logged in” as no session (cookie mismatch)
-        const isLoggedIn =
-          data.loggedIn === true || data.ok === true || res.status === 200;
+          if (cancelled) return;
 
-        if (!isLoggedIn) {
-          router.replace("/login?redirectTo=%2Fcreator");
-          return;
-        }
+          if (res.status === 200) {
+            // user is authenticated + creator accessible
+            setChecking(false);
+            return;
+          }
 
-        // Prefer “creator” shape, fallback to “profile” shape
-        const handle =
-          data.creator?.handle ?? data.profile?.handle ?? null;
-
-        const isActive =
-          data.creator?.isActive ??
-          (data.profile?.status ? data.profile.status === "ACTIVE" : false);
-
-        if (!handle || !isActive) {
+          // If not a creator yet, go to onboard
           router.replace("/creator/onboard");
-          return;
+        } catch {
+          // If API call fails for any reason, don’t dead-end; send to onboard
+          router.replace("/creator/onboard");
         }
-
-        router.replace("/creator/dashboard");
       } catch (e) {
-        // Any unexpected failure: go to login with explicit redirect target
+        console.error("[CreatorGate] session check error", e);
         router.replace("/login?redirectTo=%2Fcreator");
-      } finally {
-        if (mounted) setLoading(false);
       }
     })();
 
     return () => {
-      mounted = false;
+      cancelled = true;
     };
   }, [router]);
 
-  if (!loading) return null;
-
-  return (
-    <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-6">
-      <div className="text-center">
-        <div className="text-xl font-semibold">Loading creator…</div>
-        <div className="text-white/60 text-sm mt-2">Checking your session</div>
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-6">
+        Loading creator…
       </div>
-    </div>
-  );
+    );
+  }
+
+  // If your /creator page itself renders dashboard/onboard, keep it.
+  // This gate just prevents unauthenticated access.
+  return null;
 }
