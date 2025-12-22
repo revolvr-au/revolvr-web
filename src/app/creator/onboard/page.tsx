@@ -18,9 +18,11 @@ export default function CreatorOnboardPage() {
       const data = await res.json();
 
       if (!data.loggedIn) {
-        router.replace("/login");
-        return;
-      }
+  // Wait for session to settle instead of hard redirect
+  setLoading(false);
+  return;
+}
+
       if (data.creator?.Active) {
         router.replace("/creator/dashboard");
         return;
