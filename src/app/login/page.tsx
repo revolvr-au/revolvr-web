@@ -26,7 +26,6 @@ function getRedirectToFromUrl(): string {
     return "/public-feed";
   }
 }
-
 export default function LoginPage() {
   const router = useRouter();
 
@@ -34,6 +33,26 @@ export default function LoginPage() {
     if (typeof window === "undefined") return "/public-feed";
     return getRedirectToFromUrl();
   }, []);
+
+useEffect(() => {
+  (async () => {
+    if (typeof window === "undefined") return;
+
+    if (window.location.hash.includes("access_token=")) {
+      const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+
+      if (error) {
+        console.error("[login] getSessionFromUrl error", error);
+        setError("Could not complete sign in.");
+        return;
+      }
+
+      router.replace(redirectTo || "/public-feed");
+      router.refresh();
+    }
+  })();
+}, [router, redirectTo]);
+
 
   const [step, setStep] = useState<Step>("country");
   const [country, setCountry] = useState("US");
@@ -65,6 +84,24 @@ export default function LoginPage() {
       mounted = false;
     };
   }, [router, redirectTo]);
+  useEffect(() => {
+  (async () => {
+    // If we landed here from a Supabase magic link with hash tokens:
+    if (typeof window !== "undefined" && window.location.hash.includes("access_token=")) {
+      const { error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+
+      if (error) {
+        console.error("[login] getSessionFromUrl error", error);
+        setError("Could not complete sign in.");
+        return;
+      }
+
+      // Once stored, go to intended destination
+      router.replace(redirectTo || "/public-feed");
+      router.refresh();
+    }
+  })();
+}, [router, redirectTo]);
 
   // 2) Age gate
   useEffect(() => {
@@ -156,25 +193,16 @@ export default function LoginPage() {
     try {
       setSending(true);
 
-      const siteUrl =
-        (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "")) ||
-        window.location.origin;
+      const siteUrl = window.location.origin;
+const redirect = safeRedirect(redirectTo || "/public-feed");
 
-      const redirect = safeRedirect(redirectTo || "/public-feed");
+const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
 
-      const secure = window.location.protocol === "https:" ? "; Secure" : "";
-      document.cookie = `revolvr_redirectTo=${encodeURIComponent(
-        redirect
-      )}; Path=/; SameSite=Lax${secure}`;
 
-      const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(
-        redirect
-      )}`;
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: { emailRedirectTo },
-      });
+const { error } = await supabase.auth.signInWithOtp({
+  email: cleanEmail.trim().toLowerCase(),
+  options: { emailRedirectTo },
+});
 
       if (error) {
         console.error("[login] signInWithOtp error", error);
