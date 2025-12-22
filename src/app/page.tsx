@@ -7,7 +7,9 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // If Supabase drops us on "/" with ?code=..., forward to callback handler.
+    // PKCE flow only:
+    // If Supabase lands us on "/" with ?code=..., forward to /auth/callback
+    // so the server route can exchange code -> session and set cookies.
     const url = new URL(window.location.href);
     const code = url.searchParams.get("code");
     if (code) {
@@ -30,10 +32,10 @@ export default function Home() {
           </button>
 
           <button
-          className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold py-4"
-          onClick={() => router.push("/login?redirectTo=%2Fcreator")}
->
-          Go Live as a Creator
+            className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold py-4"
+            onClick={() => router.push("/login?redirectTo=%2Fcreator")}
+          >
+            Go Live as a Creator
           </button>
         </div>
 
