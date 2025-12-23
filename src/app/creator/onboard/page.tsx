@@ -18,10 +18,10 @@ export default function CreatorOnboardPage() {
       const data = await res.json();
 
       if (!data.loggedIn) {
-  router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
-
+  router.replace("/login?redirectTo=%2Fcreator");
   return;
 }
+
       if (data.creator?.isActive) {
         router.replace("/creator/dashboard");
         return;
