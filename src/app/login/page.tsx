@@ -1,4 +1,3 @@
-// src/app/login/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -28,6 +27,17 @@ function getRedirectToFromUrl(): string {
   }
 }
 
+// For implicit-flow links that land with #access_token=...&refresh_token=...
+function getHashParams() {
+  const hash = typeof window !== "undefined" ? window.location.hash : "";
+  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
+  const params = new URLSearchParams(raw);
+  return {
+    access_token: params.get("access_token"),
+    refresh_token: params.get("refresh_token"),
+  };
+}
+
 export default function LoginPage() {
   const router = useRouter();
 
@@ -47,7 +57,46 @@ export default function LoginPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // If already signed in, bypass login UI
+  // 1) If we landed here with an implicit magic-link hash, set session then redirect.
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      if (typeof window === "undefined") return;
+
+      const { access_token, refresh_token } = getHashParams();
+      if (!access_token || !refresh_token) return;
+
+      try {
+        const { error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+
+        if (cancelled) return;
+
+        if (error) {
+          console.error("[login] setSession error", error);
+          setError("Could not complete sign in.");
+          return;
+        }
+
+        // Clean the hash so we don't re-run on refresh
+        window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+
+        router.replace(redirectTo || "/public-feed");
+        router.refresh();
+      } catch (e) {
+        console.error("[login] implicit callback handler error", e);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router, redirectTo]);
+
+  // 2) If already signed in, bypass login UI
   useEffect(() => {
     let mounted = true;
 
@@ -65,7 +114,7 @@ export default function LoginPage() {
     };
   }, [router, redirectTo]);
 
-  // Age gate
+  // 3) Age gate
   useEffect(() => {
     if (isAgeOk()) {
       setStep("login");
@@ -130,12 +179,12 @@ export default function LoginPage() {
       // Destination we want AFTER auth completes
       const redirect = safeRedirect(redirectTo || "/public-feed");
 
-      // Store destination for callback route to read (10 minutes)
+      // Store destination for callback to read (10 minutes)
       document.cookie = `rv_redirect=${encodeURIComponent(
         redirect
       )}; Path=/; Max-Age=600; SameSite=Lax`;
 
-      // Always send Supabase back to our callback route
+      // Important: always send magic links to the server callback route
       const siteUrl = window.location.origin.replace(/\/$/, "");
       const emailRedirectTo = `${siteUrl}/auth/callback`;
 
