@@ -69,7 +69,8 @@ export default function DashboardClient() {
         if (error) throw error;
 
         if (!user || !user.email) {
-          router.replace("/login");
+          router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
+
           return;
         }
 
