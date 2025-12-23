@@ -1,5 +1,5 @@
 // src/app/auth/callback/route.ts
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 function safeRedirect(path: string | null) {
@@ -7,17 +7,20 @@ function safeRedirect(path: string | null) {
   return path.startsWith("/") ? path : "/public-feed";
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
 
-  // If supabase didn't give us a code, we can't exchange a session.
+  // Determine where to go after login
+  const qpRedirect = url.searchParams.get("redirectTo");
+  const redirectTo = safeRedirect(qpRedirect);
+
+  // If no code, bounce to login
   if (!code) {
-    return NextResponse.redirect(new URL("/login", url));
+    return NextResponse.redirect(new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, url));
   }
 
-  // IMPORTANT: create the response FIRST, then write cookies onto it.
+  // Create the redirect response up-front so we can attach cookies to it
   const res = NextResponse.redirect(new URL(redirectTo, url));
 
   const supabase = createServerClient(
@@ -26,9 +29,11 @@ export async function GET(req: NextRequest) {
     {
       cookies: {
         getAll() {
-          return req.cookies.getAll();
+          // Read from the incoming request
+          return (req as any).cookies?.getAll?.() ?? [];
         },
         setAll(cookiesToSet) {
+          // Write to the outgoing response (this is the critical bit)
           cookiesToSet.forEach(({ name, value, options }) => {
             res.cookies.set(name, value, options);
           });
