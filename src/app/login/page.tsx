@@ -1,3 +1,4 @@
+// src/app/login/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -27,15 +28,6 @@ function getRedirectToFromUrl(): string {
   }
 }
 
-function parseHashTokens(hash: string) {
-  // hash like: #access_token=...&refresh_token=...&token_type=bearer&expires_in=...
-  const h = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(h);
-  const access_token = params.get("access_token") || "";
-  const refresh_token = params.get("refresh_token") || "";
-  return { access_token, refresh_token };
-}
-
 export default function LoginPage() {
   const router = useRouter();
 
@@ -52,66 +44,10 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // A) If we landed here from Supabase link, complete sign-in then redirect.
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      if (typeof window === "undefined") return;
-
-      const url = new URL(window.location.href);
-
-      try {
-        // PKCE flow: Supabase link landed with ?code=...
-        if (url.searchParams.get("code")) {
-          window.location.replace(`/auth/callback${url.search}`);
-          return;
-        }
-
-        // Implicit flow fallback: link landed with #access_token=...
-        if (window.location.hash.includes("access_token=")) {
-          const { access_token, refresh_token } = parseHashTokens(window.location.hash);
-
-          if (!access_token || !refresh_token) {
-            if (!cancelled) setError("Could not complete sign in.");
-            return;
-          }
-
-          const { error } = await supabase.auth.setSession({
-            access_token,
-            refresh_token,
-          });
-
-          if (cancelled) return;
-
-          if (error) {
-            console.error("[login] setSession error", error);
-            setError("Could not complete sign in.");
-            return;
-          }
-
-          // Clean the URL hash so it doesn't re-run
-          window.history.replaceState({}, document.title, url.pathname + url.search);
-
-          router.replace(redirectTo || "/public-feed");
-          router.refresh();
-        }
-      } catch (e) {
-        console.error("[login] callback handler error", e);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router, redirectTo]);
-
-  // B) If already signed in, bypass login UI
+  // If already signed in, bypass login UI
   useEffect(() => {
     let mounted = true;
 
@@ -129,7 +65,7 @@ export default function LoginPage() {
     };
   }, [router, redirectTo]);
 
-  // C) Age gate
+  // Age gate
   useEffect(() => {
     if (isAgeOk()) {
       setStep("login");
@@ -178,34 +114,6 @@ export default function LoginPage() {
     setStep("login");
   };
 
-  const signInWithPassword = async () => {
-    setError(null);
-
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !password) {
-      setError("Email and password required.");
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: cleanEmail,
-        password,
-      });
-
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
-      router.replace(redirectTo || "/public-feed");
-      router.refresh();
-    } catch (e) {
-      console.error("[login] password sign-in error", e);
-      setError("Could not sign in.");
-    }
-  };
-
   const sendMagicLink = async () => {
     setError(null);
     setSent(false);
@@ -219,13 +127,17 @@ export default function LoginPage() {
     try {
       setSending(true);
 
-      const siteUrl = window.location.origin.replace(/\/$/, "");
+      // Destination we want AFTER auth completes
       const redirect = safeRedirect(redirectTo || "/public-feed");
 
-      // IMPORTANT: always send through /auth/callback so cookies/session are set server-side
-      const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(
+      // Store destination for callback route to read (10 minutes)
+      document.cookie = `rv_redirect=${encodeURIComponent(
         redirect
-      )}`;
+      )}; Path=/; Max-Age=600; SameSite=Lax`;
+
+      // Always send Supabase back to our callback route
+      const siteUrl = window.location.origin.replace(/\/$/, "");
+      const emailRedirectTo = `${siteUrl}/auth/callback`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
@@ -313,31 +225,12 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3"
               placeholder="you@example.com"
-              autoComplete="email"
             />
-
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-3 w-full rounded-xl bg-black/30 border border-white/15 px-3 py-3"
-              placeholder="Password"
-              autoComplete="current-password"
-            />
-
-            <button
-              onClick={signInWithPassword}
-              className="mt-3 w-full border border-white/20 py-3 rounded-xl font-semibold"
-            >
-              Sign in
-            </button>
-
-            <div className="my-3 text-center text-xs text-white/50">or</div>
 
             <button
               disabled={sending}
               onClick={sendMagicLink}
-              className="w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold disabled:opacity-60"
+              className="mt-4 w-full bg-emerald-500 py-3 rounded-xl text-black font-semibold disabled:opacity-60"
             >
               {sending ? "Sending…" : "Send magic link"}
             </button>
