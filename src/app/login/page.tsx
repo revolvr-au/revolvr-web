@@ -18,24 +18,16 @@ function safeRedirect(path: string | null | undefined) {
   return path.startsWith("/") ? path : "/public-feed";
 }
 
-function getCookie(name: string) {
-  if (typeof document === "undefined") return null;
-  const m = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return m ? decodeURIComponent(m[1]) : null;
-}
-
-function getRedirectTarget(): string {
+function getRedirectToFromUrl(): string {
   try {
     const u = new URL(window.location.href);
-    const qp = u.searchParams.get("redirectTo");
-    const cookie = getCookie("rv_redirect");
-    return safeRedirect(qp ?? cookie);
+    return safeRedirect(u.searchParams.get("redirectTo"));
   } catch {
     return "/public-feed";
   }
 }
 
-// Legacy implicit-flow links that land with #access_token=...&refresh_token=...
+// Legacy implicit-flow links (#access_token=...&refresh_token=...)
 function getHashParams() {
   const hash = typeof window !== "undefined" ? window.location.hash : "";
   const raw = hash.startsWith("#") ? hash.slice(1) : hash;
@@ -51,7 +43,7 @@ export default function LoginPage() {
 
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/public-feed";
-    return getRedirectTarget();
+    return getRedirectToFromUrl();
   }, []);
 
   const [step, setStep] = useState<Step>("country");
@@ -65,7 +57,7 @@ export default function LoginPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // 1) Legacy implicit hash handling (just in case a link lands on /login#access_token=...)
+  // 1) Legacy implicit flow support (if a link lands on /login#access_token=...)
   useEffect(() => {
     let cancelled = false;
 
@@ -75,32 +67,27 @@ export default function LoginPage() {
       const { access_token, refresh_token } = getHashParams();
       if (!access_token || !refresh_token) return;
 
-      try {
-        const { error } = await supabase.auth.setSession({
-          access_token,
-          refresh_token,
-        });
+      const { error } = await supabase.auth.setSession({
+        access_token,
+        refresh_token,
+      });
 
-        if (cancelled) return;
+      if (cancelled) return;
 
-        if (error) {
-          console.error("[login] setSession error", error);
-          setError("Could not complete sign in.");
-          return;
-        }
-
-        // Clean the hash so we don't re-run on refresh
-        window.history.replaceState(
-          {},
-          document.title,
-          window.location.pathname + window.location.search
-        );
-
-        router.replace(redirectTo);
-        router.refresh();
-      } catch (e) {
-        console.error("[login] implicit callback handler error", e);
+      if (error) {
+        console.error("[login] setSession error", error);
+        setError("Could not complete sign in.");
+        return;
       }
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + window.location.search
+      );
+
+      router.replace(redirectTo);
+      router.refresh();
     })();
 
     return () => {
@@ -108,7 +95,7 @@ export default function LoginPage() {
     };
   }, [router, redirectTo]);
 
-  // 2) If already signed in, bypass login UI
+  // 2) If already signed in, bounce immediately to redirectTo
   useEffect(() => {
     let mounted = true;
 
@@ -116,9 +103,7 @@ export default function LoginPage() {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
 
-      if (data.session) {
-        router.replace(redirectTo);
-      }
+      if (data.session) router.replace(redirectTo);
     })();
 
     return () => {
@@ -180,25 +165,24 @@ export default function LoginPage() {
     setSent(false);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) {
-      setError("Enter your email address.");
-      return;
-    }
+    if (!cleanEmail) return setError("Enter your email address.");
 
     try {
       setSending(true);
 
-      // Destination AFTER auth completes
       const redirect = safeRedirect(redirectTo);
 
-      // Store destination for callback to read (10 minutes)
+      // keep cookie as fallback (nice-to-have)
       document.cookie = `rv_redirect=${encodeURIComponent(
         redirect
       )}; Path=/; Max-Age=600; SameSite=Lax`;
 
-      // Always send magic links to the server callback route
       const siteUrl = window.location.origin.replace(/\/$/, "");
-      const emailRedirectTo = `${siteUrl}/auth/callback`;
+
+      // IMPORTANT: include redirectTo in the callback URL
+      const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(
+        redirect
+      )}`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
