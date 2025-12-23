@@ -1,19 +1,44 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+// middleware.ts (repo root)
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const url = req.nextUrl;
 
-  // If Supabase lands on "/" with ?code=..., forward to /auth/callback preserving querystring
+  // 1) If Supabase lands on "/" with ?code=..., forward to /auth/callback (keep querystring)
   if (url.pathname === "/" && url.searchParams.has("code")) {
-    const dest = new URL("/auth/callback", url.origin);
-    dest.search = url.search; // preserve code + redirectTo if present
+    const dest = url.clone();
+    dest.pathname = "/auth/callback";
+    // search is already preserved by clone()
     return NextResponse.redirect(dest);
   }
 
-  return NextResponse.next();
+  // 2) Default: refresh session cookies only (no routing decisions)
+  const res = NextResponse.next({ request: req });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            res.cookies.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  // Refresh cookies if needed
+  await supabase.auth.getSession();
+
+  return res;
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: ["/((?!_next|api|favicon.ico).*)"],
 };
