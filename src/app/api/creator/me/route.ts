@@ -30,17 +30,18 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (error || !user) {
-      return NextResponse.json(
-        {
-          loggedIn: false,
-          creator: {
-            'Active': false,
-            handle: null,
-          },
-        },
-        { status: 200 }
-      );
-    }
+  return NextResponse.json(
+    {
+      loggedIn: false,
+      creator: {
+        isActive: false,
+        handle: null,
+      },
+    },
+    { status: 200 }
+  );
+}
+
 
     const email = (user.email ?? "").trim().toLowerCase();
 
@@ -60,7 +61,6 @@ export async function GET() {
   isActive: profile?.status === "ACTIVE",
   handle: profile?.handle ?? null,
 },
-
         profile,
         balance:
           balance ??
