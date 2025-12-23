@@ -27,17 +27,6 @@ function getRedirectToFromUrl(): string {
   }
 }
 
-// Legacy implicit-flow links (#access_token=...&refresh_token=...)
-function getHashParams() {
-  const hash = typeof window !== "undefined" ? window.location.hash : "";
-  const raw = hash.startsWith("#") ? hash.slice(1) : hash;
-  const params = new URLSearchParams(raw);
-  return {
-    access_token: params.get("access_token"),
-    refresh_token: params.get("refresh_token"),
-  };
-}
-
 export default function LoginPage() {
   const router = useRouter();
 
@@ -45,6 +34,8 @@ export default function LoginPage() {
     if (typeof window === "undefined") return "/public-feed";
     return getRedirectToFromUrl();
   }, []);
+
+  const redirect = useMemo(() => safeRedirect(redirectTo), [redirectTo]);
 
   const [step, setStep] = useState<Step>("country");
   const [country, setCountry] = useState("US");
@@ -57,45 +48,7 @@ export default function LoginPage() {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
-  // 1) Legacy implicit flow support (if a link lands on /login#access_token=...)
-  useEffect(() => {
-    let cancelled = false;
-
-    (async () => {
-      if (typeof window === "undefined") return;
-
-      const { access_token, refresh_token } = getHashParams();
-      if (!access_token || !refresh_token) return;
-
-      const { error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
-
-      if (cancelled) return;
-
-      if (error) {
-        console.error("[login] setSession error", error);
-        setError("Could not complete sign in.");
-        return;
-      }
-
-      window.history.replaceState(
-        {},
-        document.title,
-        window.location.pathname + window.location.search
-      );
-
-      router.replace(redirectTo);
-      router.refresh();
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [router, redirectTo]);
-
-  // 2) If already signed in, bounce immediately to redirectTo
+  // If already signed in, bounce immediately to redirect
   useEffect(() => {
     let mounted = true;
 
@@ -103,15 +56,15 @@ export default function LoginPage() {
       const { data } = await supabase.auth.getSession();
       if (!mounted) return;
 
-      if (data.session) router.replace(redirectTo);
+      if (data.session) router.replace(redirect);
     })();
 
     return () => {
       mounted = false;
     };
-  }, [router, redirectTo]);
+  }, [router, redirect]);
 
-  // 3) Age gate
+  // Age gate
   useEffect(() => {
     if (isAgeOk()) {
       setStep("login");
@@ -170,16 +123,7 @@ export default function LoginPage() {
     try {
       setSending(true);
 
-      const redirect = safeRedirect(redirectTo);
-
-      // keep cookie as fallback (nice-to-have)
-      document.cookie = `rv_redirect=${encodeURIComponent(
-        redirect
-      )}; Path=/; Max-Age=600; SameSite=Lax`;
-
       const siteUrl = window.location.origin.replace(/\/$/, "");
-
-      // IMPORTANT: include redirectTo in the callback URL
       const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(
         redirect
       )}`;
