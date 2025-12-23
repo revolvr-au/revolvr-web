@@ -1,9 +1,10 @@
 // src/app/creator/DashboardClient.tsx
 "use client";
 
-import React, { useCallback, useEffect, useState, FormEvent } from "react";
+import React, { useCallback, useEffect, useMemo, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
+import { useAuthedUser } from "@/lib/useAuthedUser";
 import SpinButton from "@/components/SpinButton";
 import IdentityLens from "@/components/IdentityLens";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
@@ -36,8 +37,15 @@ type Spin = {
 export default function DashboardClient() {
   const router = useRouter();
 
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  // Stable auth state (prevents bounce caused by "resolving" being treated as "logged out")
+  const { user, ready } = useAuthedUser();
+
+  // Derived user email (normalized)
+  const userEmail = useMemo(() => {
+    if (!ready) return null;
+    const email = user?.email ? String(user.email).trim().toLowerCase() : null;
+    return email || null;
+  }, [ready, user]);
 
   const [credits, setCredits] = useState<UserCredits | null>(null);
   const [loadingCredits, setLoadingCredits] = useState(false);
@@ -56,36 +64,13 @@ export default function DashboardClient() {
 
   const [isLensOpen, setIsLensOpen] = useState(false);
 
-  // Load current user
+  // Redirect ONLY after auth is resolved
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        setLoadingUser(true);
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
-
-        if (error) throw error;
-
-        if (!user || !user.email) {
-          router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
-
-
-          return;
-        }
-
-        setUserEmail(user.email);
-      } catch (e) {
-        console.error("Error loading user", e);
-        setError("Revolvr glitched out checking your session 😵‍💫");
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-
-    loadUser();
-  }, [router]);
+    if (!ready) return;
+    if (!userEmail) {
+      router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
+    }
+  }, [ready, userEmail, router]);
 
   // Load posts from Supabase Post table
   const loadPosts = useCallback(async () => {
@@ -122,7 +107,7 @@ export default function DashboardClient() {
 
       if (error) throw error;
 
-      setSpins(data ?? []);
+      setSpins((data as Spin[]) ?? []);
     } catch (e) {
       console.error("Error loading spins", e);
     } finally {
@@ -152,13 +137,15 @@ export default function DashboardClient() {
     }
   }, []);
 
-  // When we know the user, load posts, spins, credits
+  // When auth is resolved and we have an email, load posts, spins, credits
   useEffect(() => {
+    if (!ready) return;
     if (!userEmail) return;
+
     loadPosts();
     loadSpins(userEmail);
     loadCredits(userEmail);
-  }, [userEmail, loadPosts, loadSpins, loadCredits]);
+  }, [ready, userEmail, loadPosts, loadSpins, loadCredits]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -227,6 +214,7 @@ export default function DashboardClient() {
     }
   };
 
+  // Spend boost credit if available, else fallback to Stripe
   const handleBoostPost = async (postId: string, boostAmountCents = 500) => {
     if (!userEmail) {
       setError("You need to be logged in to boost a post.");
@@ -236,6 +224,7 @@ export default function DashboardClient() {
     try {
       setError(null);
 
+      // 1) If user has boost credits, spend one instead of charging via Stripe
       if (credits && credits.boosts > 0) {
         const res = await fetch("/api/credits/spend", {
           method: "POST",
@@ -255,6 +244,7 @@ export default function DashboardClient() {
           return;
         }
 
+        // Update local credits state
         if (data.credits) {
           setCredits({
             boosts: data.credits.boosts ?? 0,
@@ -263,19 +253,19 @@ export default function DashboardClient() {
           });
         } else {
           setCredits((prev) =>
-            prev
-              ? { ...prev, boosts: Math.max(0, prev.boosts - 1) }
-              : prev
+            prev ? { ...prev, boosts: Math.max(0, prev.boosts - 1) } : prev
           );
         }
 
+        // Optionally mark the post as boosted locally
         setPosts((prev) =>
           prev.map((p) => (p.id === postId ? { ...p, is_boosted: true } : p))
         );
 
-        return;
+        return; // done, no Stripe
       }
 
+      // 2) No credits left → fall back to Stripe checkout
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -305,10 +295,8 @@ export default function DashboardClient() {
     }
   };
 
-  const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
-
-  // Optional: show something while auth is resolving (prevents “looks blank”)
-  if (loadingUser) {
+  // UI guards (prevents flash/bounce rendering)
+  if (!ready) {
     return (
       <div className="min-h-screen bg-[#050816] text-white p-8">
         <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
@@ -316,6 +304,11 @@ export default function DashboardClient() {
       </div>
     );
   }
+
+  // ready but not authed -> redirecting
+  if (!userEmail) return null;
+
+  const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
@@ -350,7 +343,7 @@ export default function DashboardClient() {
 
       {/* Main layout */}
       <main className="max-w-6xl mx-auto px-4 py-6 flex gap-6">
-        {/* Left rail */}
+        {/* Left rail – creator summary */}
         <aside className="hidden md:flex w-64 flex-col gap-4">
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 space-y-3">
             <div className="flex items-center gap-2">
@@ -366,9 +359,10 @@ export default function DashboardClient() {
                 <RevolvrIcon name="add" size={14} />
                 <span>New post</span>
               </button>
-              <SpinButton userEmail={userEmail ?? ""} />
+              <SpinButton userEmail={userEmail} />
             </div>
 
+            {/* Credits widget */}
             {credits && (
               <div className="mt-3 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs space-y-1">
                 <div className="flex items-center justify-between">
@@ -392,8 +386,9 @@ export default function DashboardClient() {
           </section>
         </aside>
 
-        {/* Center column */}
+        {/* Center column – feed */}
         <section className="flex-1 space-y-5">
+          {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
               <span>{error}</span>
@@ -403,6 +398,7 @@ export default function DashboardClient() {
             </div>
           )}
 
+          {/* Posts */}
           {isLoadingPosts ? (
             <div className="text-sm text-white/70">Loading the feed…</div>
           ) : posts.length === 0 ? (
@@ -424,6 +420,7 @@ export default function DashboardClient() {
                     key={post.id}
                     className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
                   >
+                    {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -457,10 +454,12 @@ export default function DashboardClient() {
                       </div>
                     </div>
 
+                    {/* Media */}
                     <div>
                       <img src={post.imageUrl} alt={post.caption} className="w-full max-h-[480px] object-cover" />
                     </div>
 
+                    {/* Caption */}
                     {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
                   </article>
                 );
@@ -485,8 +484,10 @@ export default function DashboardClient() {
             </div>
 
             <form className="px-4 py-3 space-y-4" onSubmit={handleCreatePost}>
+              {/* Upload Section */}
               <div>
                 <label className="text-xs font-medium text-white/70 block mb-2">Image or short video</label>
+
                 <div
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
@@ -509,7 +510,11 @@ export default function DashboardClient() {
                       {file.type.startsWith("video") ? (
                         <video src={URL.createObjectURL(file)} controls className="w-full h-full object-cover" />
                       ) : (
-                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
+                        <img
+                          src={URL.createObjectURL(file)}
+                          className="w-full h-full object-cover"
+                          alt="preview"
+                        />
                       )}
                     </div>
                   )}
@@ -524,6 +529,7 @@ export default function DashboardClient() {
                 />
               </div>
 
+              {/* Caption */}
               <label className="text-sm font-medium space-y-1">
                 <span>Caption</span>
                 <textarea
