@@ -75,12 +75,9 @@ export default function LiveRoomPage() {
   }, [userEmail, searchParams?.toString()]);
 
   /* ---------------------- Auth helper ------------------------------ */
-  const ensureLoggedIn = () => {
+    const ensureLoggedIn = () => {
     if (!userEmail) {
-      const redirect = encodeURIComponent(
-        `/live/${encodeURIComponent(sessionId)}`
-      );
-      router.push(`/login?redirectTo=${redirect}`);
+      setError("Not signed in (diagnostic). Click login below.");
       return false;
     }
     return true;
@@ -181,18 +178,32 @@ export default function LiveRoomPage() {
   }, [credits]);
 
   return (
-    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-      <main className="flex-1 flex flex-col items-center px-4 py-4 pb-24">
-        {error && (
-          <div className="w-full max-w-xl mb-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
-            <span>{error}</span>
-            <button className="text-xs underline" onClick={() => setError(null)}>
-              Dismiss
-            </button>
-          </div>
-        )}
+     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+        <main className="flex-1 flex flex-col items-center px-4 py-4 pb-24">
+      {!userEmail && (
+        <div className="w-full max-w-xl mb-3 text-xs text-white/70">
+          <a
+            className="underline"
+            href={`/login?redirectTo=${encodeURIComponent(
+              `/live/${encodeURIComponent(sessionId)}`
+            )}`}
+          >
+            Login to support this stream
+          </a>
+        </div>
+      )}
 
-        <header className="w-full max-w-xl mb-4 flex items-center justify-between">
+      {error && (
+        <div className="w-full max-w-xl mb-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
+          <span>{error}</span>
+          <button className="text-xs underline" onClick={() => setError(null)}>
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <header className="w-full max-w-xl mb-4 flex items-center justify-between">
+
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
               Live on Revolvr
