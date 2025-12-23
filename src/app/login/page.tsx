@@ -114,40 +114,40 @@ export default function LoginPage() {
   };
 
   const sendMagicLink = async () => {
-    setError(null);
-    setSent(false);
+  setError(null);
+  setSent(false);
 
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) return setError("Enter your email address.");
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return setError("Enter your email address.");
 
-    try {
-      setSending(true);
+  try {
+    setSending(true);
 
-      const siteUrl = window.location.origin.replace(/\/$/, "");
-      const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(
-        redirect
-      )}`;
+    const redirect = safeRedirect(redirectTo || "/public-feed");
+    const siteUrl = window.location.origin.replace(/\/$/, "");
+    const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(
+      redirect
+    )}`;
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: { emailRedirectTo },
-      });
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: { emailRedirectTo },
+    });
 
-      if (error) {
-        console.error("[login] signInWithOtp error", error);
-        setError("Could not send magic link.");
-        return;
-      }
-
-      setSent(true);
-    } catch (e) {
-      console.error("[login] unexpected error", e);
+    if (error) {
+      console.error("[login] signInWithOtp error", error);
       setError("Could not send magic link.");
-    } finally {
-      setSending(false);
+      return;
     }
-  };
 
+    setSent(true);
+  } catch (e) {
+    console.error("[login] unexpected error", e);
+    setError("Could not send magic link.");
+  } finally {
+    setSending(false);
+  }
+};
   return (
     <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-6">

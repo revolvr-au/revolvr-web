@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+// src/app/auth/callback/route.ts
+import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 function safeRedirect(path: string | null) {
@@ -7,26 +7,18 @@ function safeRedirect(path: string | null) {
   return path.startsWith("/") ? path : "/public-feed";
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
+  const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
 
-  const cookieStore = await cookies();
-
-  // Highest priority: explicit redirectTo query param
-  const qpRedirect = url.searchParams.get("redirectTo");
-
-  // Fallback: cookie set by /login before sending the magic link
-  const cookieRedirectRaw = cookieStore.get("rv_redirect")?.value ?? null;
-  const cookieRedirect = cookieRedirectRaw
-    ? decodeURIComponent(cookieRedirectRaw)
-    : null;
-
-  const redirectTo = safeRedirect(qpRedirect ?? cookieRedirect);
-
+  // If supabase didn't give us a code, we can't exchange a session.
   if (!code) {
     return NextResponse.redirect(new URL("/login", url));
   }
+
+  // IMPORTANT: create the response FIRST, then write cookies onto it.
+  const res = NextResponse.redirect(new URL(redirectTo, url));
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,11 +26,11 @@ export async function GET(req: Request) {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll();
+          return req.cookies.getAll();
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
+            res.cookies.set(name, value, options);
           });
         },
       },
@@ -47,13 +39,10 @@ export async function GET(req: Request) {
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-  // Always clear the one-time redirect cookie (prevents stale redirects)
-  cookieStore.set("rv_redirect", "", { path: "/", maxAge: 0 });
-
   if (error) {
     console.error("[auth/callback] exchangeCodeForSession failed", error);
     return NextResponse.redirect(new URL("/login", url));
   }
 
-  return NextResponse.redirect(new URL(redirectTo, url));
+  return res;
 }
