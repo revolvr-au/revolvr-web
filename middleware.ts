@@ -1,8 +1,19 @@
-// middleware.ts
+// middleware.ts (repo root)
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(req: NextRequest) {
+  const url = req.nextUrl;
+
+  // 1) If Supabase lands on "/" with ?code=..., forward to /auth/callback (keep querystring)
+  if (url.pathname === "/" && url.searchParams.has("code")) {
+    const dest = url.clone();
+    dest.pathname = "/auth/callback";
+    // search is already preserved by clone()
+    return NextResponse.redirect(dest);
+  }
+
+  // 2) Default: refresh session cookies only (no routing decisions)
   const res = NextResponse.next({ request: req });
 
   const supabase = createServerClient(
@@ -10,16 +21,19 @@ export async function middleware(req: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll: () => req.cookies.getAll(),
-        setAll: (cookies) =>
-          cookies.forEach(({ name, value, options }) =>
-            res.cookies.set(name, value, options)
-          ),
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            res.cookies.set(name, value, options);
+          });
+        },
       },
     }
   );
 
-  // Only refresh session cookies – NO routing decisions
+  // Refresh cookies if needed
   await supabase.auth.getSession();
 
   return res;
