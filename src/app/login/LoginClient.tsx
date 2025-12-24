@@ -41,8 +41,8 @@ export default function LoginClient() {
       setSending(true);
       setError(null);
 
-      // IMPORTANT: use *current* deployment origin so previews work
-      const siteUrl = window.location.origin.replace(/\/$/, "");
+      // IMPORTANT: force a stable base URL for magic-link callback to avoid preview-origin issues
+      const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://revolvr-web.vercel.app").replace(/\/$/, "");
       const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
 
       const { error } = await supabase.auth.signInWithOtp({
