@@ -2,28 +2,19 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://revolvr-web.vercel.app").replace(/\/$/, "");
-
-const safeRedirect = (v: string | null) => {
-  if (!v) return "/";
-  const s = v.trim();
-  if (!s.startsWith("/")) return "/";
-  if (s.startsWith("//")) return "/";
-  return s;
-};
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
+
+  const redirectTo = url.searchParams.get("redirectTo") || "/";
+
+  // Supabase can return either:
+  // - PKCE:   ?code=...
+  // - Magic:  ?token_hash=...&type=magiclink (or recovery/invite/etc)
   const code = url.searchParams.get("code");
-  const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
+  const token_hash = url.searchParams.get("token_hash");
+  const type = url.searchParams.get("type");
 
-  if (!code) {
-    return NextResponse.redirect(
-      new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, SITE_URL)
-    );
-  }
-
-  const cookieStore = await cookies();
+  const cookieStore = await cookies(); // NOT async
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -42,12 +33,33 @@ export async function GET(request: Request) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) {
+  try {
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) console.error("[auth/callback] exchangeCodeForSession", error);
+    } else if (token_hash && type) {
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash,
+        type: type as any,
+      });
+      if (error) console.error("[auth/callback] verifyOtp", error);
+    } else {
+      return NextResponse.redirect(
+        new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, url.origin)
+      );
+    }
+  } catch (e) {
+    console.error("[auth/callback] unexpected", e);
     return NextResponse.redirect(
-      new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, SITE_URL)
+      new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, url.origin)
     );
   }
 
-  return NextResponse.redirect(new URL(redirectTo, SITE_URL));
+  // internal-only redirect guard
+  const safe =
+    redirectTo.startsWith("/") && !redirectTo.startsWith("//") && !redirectTo.includes("\\")
+      ? redirectTo
+      : "/public-feed";
+
+  return NextResponse.redirect(new URL(safe, url.origin));
 }
