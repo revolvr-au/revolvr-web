@@ -66,11 +66,15 @@ export default function DashboardClient() {
 
   // Redirect ONLY after auth is resolved
   useEffect(() => {
-    if (!ready) return;
-    if (!userEmail) {
-      router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
-    }
-  }, [ready, userEmail, router]);
+  if (!ready) return;
+
+  // DIAGNOSTIC: disable redirect during bounce isolation
+  if (!userEmail) {
+    console.warn("[creator/dashboard] no userEmail after ready (diagnostic)");
+    // router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
+  }
+}, [ready, userEmail, router]);
+
 
   // Load posts from Supabase Post table
   const loadPosts = useCallback(async () => {
@@ -306,7 +310,20 @@ export default function DashboardClient() {
   }
 
   // ready but not authed -> redirecting
-  if (!userEmail) return null;
+  if (!userEmail) {
+  return (
+    <div className="min-h-screen bg-[#050816] text-white p-8">
+      <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
+      <p className="mt-2 text-white/70">
+        Not signed in (diagnostic). No redirect will happen right now.
+      </p>
+      <a className="underline text-white/80" href="/login?redirectTo=%2Fcreator%2Fdashboard">
+        Go to login
+      </a>
+    </div>
+  );
+}
+
 
   const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
 

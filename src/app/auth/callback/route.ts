@@ -5,14 +5,10 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") ?? "/creator/dashboard";
-
-  // Always redirect back to site origin
-  const redirectTo = new URL(next, url.origin);
+  const redirectTo = url.searchParams.get("redirectTo") || "/";
 
   if (!code) {
-    // No code -> send them to login (or home)
-    return NextResponse.redirect(new URL(`/login?redirectTo=${encodeURIComponent(next)}`, url.origin));
+    return NextResponse.redirect(new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, url.origin));
   }
 
   const cookieStore = await cookies();
@@ -34,12 +30,7 @@ export async function GET(request: Request) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  await supabase.auth.exchangeCodeForSession(code);
 
-  // If exchange fails, go to login and let user retry
-  if (error) {
-    return NextResponse.redirect(new URL(`/login?redirectTo=${encodeURIComponent(next)}`, url.origin));
-  }
-
-  return NextResponse.redirect(redirectTo);
+  return NextResponse.redirect(new URL(redirectTo, url.origin));
 }

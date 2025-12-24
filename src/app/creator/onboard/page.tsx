@@ -18,9 +18,12 @@ export default function CreatorOnboardPage() {
       const data = await res.json();
 
       if (!data.loggedIn) {
-  router.replace("/login?redirectTo=%2Fcreator");
+  // DIAGNOSTIC: disable redirect during bounce isolation
+  setError("Not signed in (diagnostic).");
+  setLoading(false);
   return;
 }
+
 
       if (data.creator?.isActive) {
         router.replace("/creator/dashboard");

@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useCallback, useEffect, useState, FormEvent } from "react";
+import React, { useCallback, useEffect, useMemo, useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
+import { useAuthedUser } from "@/lib/useAuthedUser";
 import SpinButton from "@/components/SpinButton";
 import IdentityLens from "@/components/IdentityLens";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
@@ -21,7 +22,6 @@ type Post = {
   imageUrl: string;
   caption: string;
   createdAt: string;
-  // keep optional in case we add these later
   is_boosted?: boolean | null;
   boost_expires_at?: string | null;
 };
@@ -35,9 +35,10 @@ type Spin = {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, ready } = useAuthedUser();
 
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  // Single source of truth for email (prevents “stale state” auth bugs)
+  const userEmail = useMemo(() => user?.email ?? null, [user]);
 
   const [credits, setCredits] = useState<UserCredits | null>(null);
   const [loadingCredits, setLoadingCredits] = useState(false);
@@ -56,33 +57,13 @@ export default function DashboardPage() {
 
   const [isLensOpen, setIsLensOpen] = useState(false);
 
-  // Load current user
+  // 1) Redirect only AFTER auth is ready (this is the key bounce fix)
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        setLoadingUser(true);
-        const {
-          data: { user },
-          error,
-        } = await supabase.auth.getUser();
-        if (error) throw error;
-
-        if (!user || !user.email) {
-          router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
-          return;
-        }
-
-        setUserEmail(user.email);
-      } catch (e) {
-        console.error("Error loading user", e);
-        setError("Revolvr glitched out checking your session 😵‍💫");
-      } finally {
-        setLoadingUser(false);
-      }
-    };
-
-    loadUser();
-  }, [router]);
+    if (!ready) return;
+    if (!userEmail) {
+      router.replace("/login?redirectTo=%2Fcreator%2Fdashboard");
+    }
+  }, [ready, userEmail, router]);
 
   // Load posts from Supabase Post table
   const loadPosts = useCallback(async () => {
@@ -92,7 +73,7 @@ export default function DashboardPage() {
 
       const { data, error } = await supabase
         .from(POSTS_TABLE)
-        .select("*") // id, userEmail, imageUrl, caption, createdAt, updatedAt, ...
+        .select("*")
         .order("createdAt", { ascending: false });
 
       if (error) throw error;
@@ -149,13 +130,15 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // When we know the user, load posts, spins, credits
+  // 2) Only load data AFTER auth is ready AND we have an email
   useEffect(() => {
+    if (!ready) return;
     if (!userEmail) return;
+
     loadPosts();
     loadSpins(userEmail);
     loadCredits(userEmail);
-  }, [userEmail, loadPosts, loadSpins, loadCredits]);
+  }, [ready, userEmail, loadPosts, loadSpins, loadCredits]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -165,6 +148,7 @@ export default function DashboardPage() {
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!userEmail) return;
+
     if (!file) {
       setError("Please add an image or short video before posting.");
       return;
@@ -175,9 +159,7 @@ export default function DashboardPage() {
       setError(null);
 
       const fileExt = file.name.split(".").pop();
-      const filePath = `${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2)}.${fileExt}`;
+      const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
       const { data: storageData, error: storageError } = await supabase.storage
         .from("posts")
@@ -236,7 +218,6 @@ export default function DashboardPage() {
     try {
       setError(null);
 
-      // 1) If user has boost credits, spend one instead of charging via Stripe
       if (credits && credits.boosts > 0) {
         const res = await fetch("/api/credits/spend", {
           method: "POST",
@@ -256,7 +237,6 @@ export default function DashboardPage() {
           return;
         }
 
-        // Update local credits state
         if (data.credits) {
           setCredits({
             boosts: data.credits.boosts ?? 0,
@@ -274,17 +254,10 @@ export default function DashboardPage() {
           );
         }
 
-        // Optionally mark the post as boosted locally
-        setPosts((prev) =>
-          prev.map((p) =>
-            p.id === postId ? { ...p, is_boosted: true } : p
-          )
-        );
-
-        return; // done, no Stripe
+        setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, is_boosted: true } : p)));
+        return;
       }
 
-      // 2) No credits left → fall back to Stripe checkout
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -316,20 +289,21 @@ export default function DashboardPage() {
 
   const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
 
+  // Important: keep UI stable during auth hydration
+  if (!ready) {
+    return <div className="min-h-screen bg-[#050816] text-white p-8">Loading your session…</div>;
+  }
+
+  // If not logged in, we’re redirecting—don’t render the dashboard
+  if (!userEmail) return null;
+
   return (
     <div className="min-h-screen bg-[#050816] text-white">
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
         <div className="flex items-center gap-2">
-          <RevolvrIcon
-            name="boost"
-            size={20}
-            className="hidden sm:block"
-            alt="Revolvr"
-          />
-          <span className="text-lg font-semibold tracking-tight">
-            Revolvr
-          </span>
+          <RevolvrIcon name="boost" size={20} className="hidden sm:block" alt="Revolvr" />
+          <span className="text-lg font-semibold tracking-tight">Revolvr</span>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -363,9 +337,7 @@ export default function DashboardPage() {
               <RevolvrIcon name="analytics" size={18} />
               <h2 className="text-sm font-semibold">Creator dashboard</h2>
             </div>
-            <p className="text-xs text-white/60">
-              Post from here. Everyone else watches the chaos.
-            </p>
+            <p className="text-xs text-white/60">Post from here. Everyone else watches the chaos.</p>
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => setIsComposerOpen(true)}
@@ -374,21 +346,15 @@ export default function DashboardPage() {
                 <RevolvrIcon name="add" size={14} />
                 <span>New post</span>
               </button>
-              <SpinButton userEmail={userEmail ?? ""} />
+              <SpinButton userEmail={userEmail} />
             </div>
 
             {/* Credits widget */}
             {credits && (
               <div className="mt-3 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-white/80">
-                    Your credits
-                  </span>
-                  {loadingCredits && (
-                    <span className="text-[10px] text-white/50">
-                      Refreshing…
-                    </span>
-                  )}
+                  <span className="font-medium text-white/80">Your credits</span>
+                  {loadingCredits && <span className="text-[10px] text-white/50">Refreshing…</span>}
                 </div>
                 <div className="flex justify-between">
                   <span>Boosts</span>
@@ -409,28 +375,20 @@ export default function DashboardPage() {
 
         {/* Center column – feed */}
         <section className="flex-1 space-y-5">
-          {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
               <span>{error}</span>
-              <button
-                className="text-xs underline"
-                onClick={() => setError(null)}
-              >
+              <button className="text-xs underline" onClick={() => setError(null)}>
                 Dismiss
               </button>
             </div>
           )}
 
-          {/* Posts */}
           {isLoadingPosts ? (
-            <div className="text-sm text-white/70">
-              Loading the feed…
-            </div>
+            <div className="text-sm text-white/70">Loading the feed…</div>
           ) : posts.length === 0 ? (
             <div className="text-sm text-white/70">
-              No posts yet. Be the first to spin something into
-              existence ✨
+              No posts yet. Be the first to spin something into existence ✨
             </div>
           ) : (
             <div className="space-y-6 pb-12">
@@ -447,7 +405,6 @@ export default function DashboardPage() {
                     key={post.id}
                     className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
                   >
-                    {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -481,21 +438,11 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    {/* Media */}
                     <div>
-                      <img
-                        src={post.imageUrl}
-                        alt={post.caption}
-                        className="w-full max-h-[480px] object-cover"
-                      />
+                      <img src={post.imageUrl} alt={post.caption} className="w-full max-h-[480px] object-cover" />
                     </div>
 
-                    {/* Caption */}
-                    {post.caption && (
-                      <p className="px-4 py-3 text-sm text-white/90">
-                        {post.caption}
-                      </p>
-                    )}
+                    {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
                   </article>
                 );
               })}
@@ -519,13 +466,11 @@ export default function DashboardPage() {
             </div>
 
             <form className="px-4 py-3 space-y-4" onSubmit={handleCreatePost}>
-              {/* Upload Section */}
               <div>
                 <label className="text-xs font-medium text-white/70 block mb-2">
                   Image or short video
                 </label>
 
-                {/* Drop Zone */}
                 <div
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
@@ -533,19 +478,12 @@ export default function DashboardPage() {
                     const dropped = e.dataTransfer.files?.[0];
                     if (dropped) setFile(dropped);
                   }}
-                  className="w-full h-64 rounded-xl border border-white/15 bg-black/20 
-                             flex flex-col items-center justify-center cursor-pointer 
-                             hover:bg-black/30 transition"
-                  onClick={() =>
-                    document.getElementById("revolvrUploadInput")?.click()
-                  }
+                  className="w-full h-64 rounded-xl border border-white/15 bg-black/20 flex flex-col items-center justify-center cursor-pointer hover:bg-black/30 transition"
+                  onClick={() => document.getElementById("revolvrUploadInput")?.click()}
                 >
                   {!file ? (
                     <div className="flex flex-col items-center gap-2 text-white/60">
-                      <div
-                        className="w-12 h-12 border border-white/20 rounded-lg 
-                                   flex items-center justify-center"
-                      >
+                      <div className="w-12 h-12 border border-white/20 rounded-lg flex items-center justify-center">
                         <span className="text-xl">↑</span>
                       </div>
                       <span className="text-xs">Click or drop to upload</span>
@@ -553,23 +491,14 @@ export default function DashboardPage() {
                   ) : (
                     <div className="w-full h-full overflow-hidden rounded-lg">
                       {file.type.startsWith("video") ? (
-                        <video
-                          src={URL.createObjectURL(file)}
-                          controls
-                          className="w-full h-full object-cover"
-                        />
+                        <video src={URL.createObjectURL(file)} controls className="w-full h-full object-cover" />
                       ) : (
-                        <img
-                          src={URL.createObjectURL(file)}
-                          className="w-full h-full object-cover"
-                          alt="preview"
-                        />
+                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
                       )}
                     </div>
                   )}
                 </div>
 
-                {/* Hidden input */}
                 <input
                   id="revolvrUploadInput"
                   type="file"
@@ -579,7 +508,6 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* Caption */}
               <label className="text-sm font-medium space-y-1">
                 <span>Caption</span>
                 <textarea
@@ -612,11 +540,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <IdentityLens
-        open={isLensOpen}
-        onClose={() => setIsLensOpen(false)}
-        userEmail={userEmail}
-      />
+      <IdentityLens open={isLensOpen} onClose={() => setIsLensOpen(false)} userEmail={userEmail} />
     </div>
   );
 }
