@@ -50,7 +50,7 @@ export default function LoginClient() {
       setSending(true);
       setError(null);
 
-      const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin).replace(/\/$/, "");
+      const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app").replace(/\/$/, "");
       const emailRedirectTo = `${baseUrl}/auth/callback?redirectTo=${encodeURIComponent(redirectTo)}`;
 
       const { error } = await supabase.auth.signInWithOtp({
