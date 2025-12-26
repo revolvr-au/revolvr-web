@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
+
+const supabase = createSupabaseBrowserClient();
 export default function CreatorOnboardPage() {
   const router = useRouter();
   const [status, setStatus] = useState<
