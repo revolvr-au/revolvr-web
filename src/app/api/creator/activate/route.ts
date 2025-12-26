@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { createServerClient } from "@supabase/ssr";
 
 function normalizeHandle(input: string) {
   return input
@@ -13,37 +11,40 @@ function normalizeHandle(input: string) {
     .slice(0, 24);
 }
 
+async function getUserEmailFromBearer(req: Request) {
+  const auth = req.headers.get("authorization") || "";
+  const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  if (!token) return null;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+  if (!apikey) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+
+  const res = await fetch(`${url}/auth/v1/user`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null;
+
+  const user = await res.json().catch(() => null);
+  const email = user?.email ? String(user.email).trim().toLowerCase() : null;
+  return email;
+}
+
 export async function POST(req: Request) {
   try {
-    const cookieStore = await cookies();
+    const email = await getUserEmailFromBearer(req);
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          },
-        },
-      }
-    );
-
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error || !user || !user.email) {
+    if (!email) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const email = user.email.trim().toLowerCase();
     const body = await req.json().catch(() => ({} as any));
 
     const handle = normalizeHandle(String(body.handle ?? ""));
@@ -97,3 +98,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
+

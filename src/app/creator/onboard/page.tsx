@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClients";
 
 export default function CreatorOnboardPage() {
   const router = useRouter();
@@ -12,18 +13,27 @@ export default function CreatorOnboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  async function getAccessToken() {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  }
+
   useEffect(() => {
     (async () => {
-      const res = await fetch("/api/creator/me", { cache: "no-store" });
-      const data = await res.json();
+      const token = await getAccessToken();
+
+      const res = await fetch("/api/creator/me", {
+        cache: "no-store",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      const data = await res.json().catch(() => ({}));
 
       if (!data.loggedIn) {
-  // DIAGNOSTIC: disable redirect during bounce isolation
-  setError("Not signed in (diagnostic).");
-  setLoading(false);
-  return;
-}
-
+        setError("Not authenticated");
+        setLoading(false);
+        return;
+      }
 
       if (data.creator?.isActive) {
         router.replace("/creator/dashboard");
@@ -34,25 +44,53 @@ export default function CreatorOnboardPage() {
     })();
   }, [router]);
 
+  async function startStripeOnboarding() {
+    const token = await getAccessToken();
+
+    const res = await fetch("/api/stripe/connect/link", {
+      method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Could not start Stripe onboarding.");
+    }
+    if (!data?.url) throw new Error("No Stripe URL returned.");
+    window.location.href = data.url;
+  }
+
   async function submit() {
     setSubmitting(true);
     setError(null);
 
-    const res = await fetch("/api/creator/activate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ handle, displayName }),
-    });
+    try {
+      const token = await getAccessToken();
 
-    const data = await res.json();
+      const res = await fetch("/api/creator/activate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ handle, displayName }),
+      });
 
-    if (!res.ok) {
-      setError(data.error ?? "Could not activate creator profile.");
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error ?? "Could not activate creator profile.");
+        setSubmitting(false);
+        return;
+      }
+
+      // After activation -> go straight into Stripe Connect onboarding
+      await startStripeOnboarding();
+    } catch (e: any) {
+      setError(String(e?.message ?? e));
       setSubmitting(false);
-      return;
     }
-
-    router.replace("/creator/dashboard");
   }
 
   if (loading) {

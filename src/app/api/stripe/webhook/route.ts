@@ -1,145 +1,70 @@
-// src/app/api/stripe/webhook/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2025-12-15.clover",
+});
 
-if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
-if (!webhookSecret) throw new Error("Missing STRIPE_WEBHOOK_SECRET");
-
-// Use account default API version
-const stripe = new Stripe(stripeSecretKey);
-
-export async function POST(req: NextRequest) {
-  const body = await req.text();
-  const signature = req.headers.get("stripe-signature");
-
-  if (!signature) {
-    return NextResponse.json(
-      { error: "Missing stripe-signature header" },
-      { status: 400 }
-    );
+export async function POST(req: Request) {
+  const sig = req.headers.get("stripe-signature");
+  if (!sig) {
+    return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
   }
+
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+  const rawBody = await req.text();
 
   let event: Stripe.Event;
 
   try {
-    // webhookSecret validated above; TS still sees possible undefined
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret!);
+    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err: any) {
-    console.error("[stripe/webhook] signature verification failed", err?.message);
-    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+    return NextResponse.json(
+      { error: `Webhook error: ${err.message}` },
+      { status: 400 }
+    );
   }
-
-  if (event.type !== "checkout.session.completed") {
-    return NextResponse.json({ received: true });
-  }
-
-  const session = event.data.object as Stripe.Checkout.Session;
-
-  // Support BOTH old + new metadata keys
-  const creatorEmail =
-    session.metadata?.creatorEmail || session.metadata?.creator_id || null;
-
-  const paymentType =
-    (session.metadata?.payment_type || session.metadata?.mode || "unknown") as string;
-
-  const postId = session.metadata?.postId || session.metadata?.session_id || "";
-
-  // Stripe truth for buyer email (not stored in your current schema, but useful for logs)
-  const buyerEmail =
-    session.customer_details?.email ||
-    session.customer_email ||
-    session.metadata?.userEmail ||
-    null;
-
-  const amountGross = session.amount_total ?? 0; // cents
-  const currency = (session.currency ?? "aud").toLowerCase();
-
-  if (!creatorEmail) {
-    console.warn("[stripe/webhook] missing creator identifier in metadata", {
-      sessionId: session.id,
-      metadata: session.metadata,
-    });
-    return NextResponse.json({ received: true });
-  }
-
-  // Creator share rule (70% example)
-  const amountCreator = Math.round(amountGross * 0.7);
-  const amountPlatform = Math.max(0, amountGross - amountCreator);
-
-  const stripeEventId = event.id;
-
-  // PaymentIntent id (required in schema)
-  const stripePaymentIntentId =
-    typeof session.payment_intent === "string"
-      ? session.payment_intent
-      : session.payment_intent?.id ?? session.id;
-
-  // Your DB uses email as the creator identifier
-  const creatorId = creatorEmail;
 
   try {
-    /**
-     * Option B: Payment.id = Stripe Checkout Session ID (session.id)
-     * This guarantees idempotency even when Stripe retries/resends events.
-     */
-    await prisma.payment.upsert({
-      where: { id: session.id },
-      create: {
-        id: session.id, // <-- IMPORTANT: requires Payment.id String @id (no uuid default)
-        stripeEventId,
-        stripePaymentIntentId,
-        stripeSessionId: session.id,
-        creatorId,
-        sessionId: postId || null,
-        type: paymentType,
-        amountGross,
-        amountCreator,
-        amountPlatform,
-        currency,
-        status: "completed",
-      },
-      // On retries, do not re-increment balances; just keep the record stable.
-      update: {},
-    });
+    if (event.type === "account.updated") {
+      const acct = event.data.object as Stripe.Account;
 
-    // Balances: CreatorBalance primary key is creatorEmail (per your schema)
-    await prisma.creatorBalance.upsert({
-      where: { creatorEmail },
-      create: {
-        creatorEmail,
-        totalEarnedCents: amountCreator,
-        availableCents: amountCreator,
-      },
-      update: {
-        totalEarnedCents: { increment: amountCreator },
-        availableCents: { increment: amountCreator },
-      },
-    });
+      const stripeAccountId = acct.id;
+      const chargesEnabled = !!acct.charges_enabled;
+      const payoutsEnabled = !!acct.payouts_enabled;
 
-    console.log("[stripe/webhook] Payment recorded", {
-      sessionId: session.id,
-      creatorEmail,
-      buyerEmail,
-      amountGross,
-      amountCreator,
-      amountPlatform,
-      currency,
-      paymentType,
-      postId,
-      stripeEventId,
-      stripePaymentIntentId,
-    });
+      const onboardingStatus =
+        chargesEnabled && payoutsEnabled ? "complete" : "pending";
+
+      const data: any = {};
+
+      if ("stripeChargesEnabled" in acct) {
+        data.stripeChargesEnabled = chargesEnabled;
+        data.stripePayoutsEnabled = payoutsEnabled;
+        data.stripeOnboardingStatus = onboardingStatus;
+      } else {
+        data.stripe_charges_enabled = chargesEnabled;
+        data.stripe_payouts_enabled = payoutsEnabled;
+        data.stripe_onboarding_status = onboardingStatus;
+      }
+
+      await prisma.creatorProfile.updateMany({
+        where: {
+          OR: [
+            { stripeAccountId: stripeAccountId },
+            { stripe_account_id: stripeAccountId },
+          ] as any,
+        },
+        data,
+      });
+    }
+
+    return NextResponse.json({ received: true }, { status: 200 });
   } catch (e) {
-    console.error("[stripe/webhook] DB write failed", e);
-    // Return 200 so Stripe doesn't hammer retries while you debug.
+    console.error("[stripe/webhook] handler failed", e);
+    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
-
-  return NextResponse.json({ received: true });
 }
