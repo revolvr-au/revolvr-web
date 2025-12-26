@@ -78,9 +78,9 @@ export default function CreatorOnboardPage() {
           sub.subscription.unsubscribe();
           if (!mounted) return;
           setStatus("needs_login");
-          setMessage("We couldn’t complete sign-in. Please try again.");
-          router.replace("/login");
-        }, 2000);
+          setMessage("We couldn’t complete sign-in. Use the button below to sign in again.");
+          // Do NOT auto-redirect; avoid “bounce” UX.
+        }, 8000);
       } catch (e) {
         const err = e as Error;
         if (!mounted) return;
