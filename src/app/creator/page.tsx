@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
-export default function CreatorRoot() {
+export default function CreatorEntry() {
   redirect("/creator/onboard");
 }
