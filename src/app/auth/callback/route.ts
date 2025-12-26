@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   console.log("[auth/callback] url", url.toString());
   console.log("[auth/callback] redirectTo param", url.searchParams.get("redirectTo"));
 
-  const redirectTo = url.searchParams.get("redirectTo") || "/";
+  const redirectTo = url.searchParams.get("redirectTo") || "/creator/onboard";
 
   // Supabase can return either:
   // - PKCE:   ?code=...
