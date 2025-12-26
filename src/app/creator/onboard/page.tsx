@@ -68,11 +68,17 @@ export default function CreatorOnboardPage() {
     try {
       const token = await getAccessToken();
 
+      if (!token) {
+        setError("Not authenticated");
+        setSubmitting(false);
+        return;
+      }
+
       const res = await fetch("/api/creator/activate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ handle, displayName }),
       });
@@ -85,7 +91,7 @@ export default function CreatorOnboardPage() {
         return;
       }
 
-      // After activation -> go straight into Stripe Connect onboarding
+      // After activation -> go to Stripe onboarding
       await startStripeOnboarding();
     } catch (e: any) {
       setError(String(e?.message ?? e));
