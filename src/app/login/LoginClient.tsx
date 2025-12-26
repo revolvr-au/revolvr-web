@@ -27,7 +27,12 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
 
   const redirectTo = useMemo(() => safeDecode(searchParams?.get("redirectTo") ?? null), [searchParams]);
-  const redirect = useMemo(() => safeRedirect(redirectTo) ?? "/public-feed", [redirectTo]);
+  const redirect = useMemo(() => {
+    const raw = redirectTo ?? null;
+    const isInternal =
+      !!raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("\\");
+    return isInternal ? raw : (safeRedirect(raw) ?? "/public-feed");
+  }, [redirectTo]);
 
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
