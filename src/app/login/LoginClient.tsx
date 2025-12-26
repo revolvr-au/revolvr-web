@@ -50,7 +50,7 @@ export default function LoginClient() {
 
       // IMPORTANT: force a stable base URL for magic-link callback to avoid preview-origin issues
       const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://revolvr-web.vercel.app").replace(/\/$/, "");
-      const emailRedirectTo = `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
+      const emailRedirectTo = `${siteUrl}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
       console.log("[login] redirectTo param (raw)", redirectTo);
       console.log("[login] redirect (safeRedirect result)", redirect);
       console.log("[login] emailRedirectTo", emailRedirectTo);
