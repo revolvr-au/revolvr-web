@@ -2,125 +2,95 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function CreatorOnboardPage() {
   const router = useRouter();
+  const supabase = createSupabaseBrowserClient();
 
-  const [handle, setHandle] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<
+    "booting" | "needs_login" | "activating" | "success" | "error"
+  >("booting");
+  const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
-    (async () => {
-      const me = await fetch("/api/creator/me", { cache: "no-store" })
-        .then((r) => r.json())
-        .catch(() => null);
+    let mounted = true;
 
-      if (!me?.loggedIn) {
-        setError("No session token. You are not signed in.");
-        setLoading(false);
-        return;
+    const boot = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+
+        const session = data.session;
+        if (!session?.access_token) {
+          if (!mounted) return;
+          setStatus("needs_login");
+          setMessage("You’re not signed in. Please log in again.");
+          router.replace("/login");
+          return;
+        }
+
+        if (!mounted) return;
+        setStatus("activating");
+        setMessage("Activating your creator account…");
+
+        const res = await fetch("/api/creator/activate", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({}),
+        });
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          throw new Error(
+            `Activation failed (${res.status}). ${text || "No response body."}`
+          );
+        }
+
+        if (!mounted) return;
+        setStatus("success");
+        setMessage("Success. Redirecting…");
+        router.replace("/creator");
+      } catch (e) {
+        const err = e as Error;
+        if (!mounted) return;
+        setStatus("error");
+        setMessage(err.message || "Something went wrong.");
       }
+    };
 
-      if (me?.creator?.isActive) {
-        router.replace("/creator/dashboard");
-        return;
-      }
-
-      setLoading(false);
-    })();
-  }, [router]);
-
-  async function submit() {
-    setSubmitting(true);
-    setError(null);
-
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
-
-    if (!token) {
-      setError("No session token. You are not signed in.");
-      setSubmitting(false);
-      router.push("/login?redirectTo=/creator/onboard");
-      return;
-    }
-
-    const res = await fetch("/api/creator/activate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ handle, displayName }),
-    });
-
-    const data2 = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      setError(data2?.error ?? "Could not activate creator profile.");
-      setSubmitting(false);
-      return;
-    }
-
-    router.replace("/creator/dashboard");
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#050816] text-white p-8">
-        <h1 className="text-2xl font-semibold">Creator onboarding</h1>
-        <p className="mt-2 text-white/70">Loading…</p>
-      </div>
-    );
-  }
+    void boot();
+    return () => {
+      mounted = false;
+    };
+  }, [router, supabase]);
 
   return (
-    <div className="min-h-screen bg-[#050816] text-white p-8 max-w-xl mx-auto">
-      <h1 className="text-2xl font-semibold">Become a Revolvr creator</h1>
-      <p className="mt-2 text-white/70">Create your handle. You can connect payouts next.</p>
+    <div className="min-h-[60vh] flex items-center justify-center px-6">
+      <div className="w-full max-w-md rounded-xl border bg-white p-6">
+        <h1 className="text-xl font-semibold">Creator onboarding</h1>
 
-      {error && (
-        <div className="mt-4 rounded-xl bg-red-500/10 text-red-200 px-3 py-2">
-          {error}
-          <div className="mt-2 text-sm">
-            <a className="underline" href="/login?redirectTo=/creator/onboard">
-              Go to login
-            </a>
-          </div>
-        </div>
-      )}
+        <p className="mt-2 text-sm text-gray-600">
+          {status === "booting" && "Checking your session…"}
+          {status === "activating" && "Please keep this tab open."}
+          {(status === "needs_login" ||
+            status === "error" ||
+            status === "success") &&
+            (message || "—")}
+        </p>
 
-      <div className="mt-6 space-y-4">
-        <label className="block">
-          <span className="text-sm text-white/80">Handle</span>
-          <input
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            placeholder="e.g. revolvr_au"
-            className="mt-2 w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 outline-none"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm text-white/80">Display name (optional)</span>
-          <input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="e.g. Revolvr AU"
-            className="mt-2 w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 outline-none"
-          />
-        </label>
-
-        <button
-          onClick={submit}
-          disabled={submitting}
-          className="w-full rounded-full bg-emerald-500 text-black font-medium py-2 disabled:opacity-60"
-        >
-          {submitting ? "Activating…" : "Activate creator"}
-        </button>
+        {(status === "error" || status === "needs_login") && (
+          <button
+            type="button"
+            className="mt-4 w-full rounded-lg bg-black px-4 py-2 text-white disabled:opacity-60"
+            onClick={() => router.replace("/login")}
+          >
+            Go to login
+          </button>
+        )}
       </div>
     </div>
   );
