@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
+
+const supabase = createSupabaseBrowserClient();
 
 const safeDecode = (v: string | null) => {
   if (!v) return null;
