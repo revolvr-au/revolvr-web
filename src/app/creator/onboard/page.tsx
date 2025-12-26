@@ -1,12 +1,11 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 export default function CreatorOnboardPage() {
   const router = useRouter();
-  const params = useSearchParams();
 
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -16,8 +15,9 @@ export default function CreatorOnboardPage() {
 
   useEffect(() => {
     (async () => {
-      // If we already have an active creator, bounce to dashboard
-      const me = await fetch("/api/creator/me", { cache: "no-store" }).then(r => r.json()).catch(() => null);
+      const me = await fetch("/api/creator/me", { cache: "no-store" })
+        .then((r) => r.json())
+        .catch(() => null);
 
       if (!me?.loggedIn) {
         setError("No session token. You are not signed in.");
@@ -38,16 +38,13 @@ export default function CreatorOnboardPage() {
     setSubmitting(true);
     setError(null);
 
-    // Ensure we have a browser session token for API auth
     const { data } = await supabase.auth.getSession();
     const token = data?.session?.access_token;
 
     if (!token) {
       setError("No session token. You are not signed in.");
       setSubmitting(false);
-
-      const redirectTo = encodeURIComponent(params?.get("redirectTo") || "/creator/onboard");
-      router.push(`/login?redirectTo=${redirectTo}`);
+      router.push("/login?redirectTo=/creator/onboard");
       return;
     }
 
@@ -89,7 +86,9 @@ export default function CreatorOnboardPage() {
         <div className="mt-4 rounded-xl bg-red-500/10 text-red-200 px-3 py-2">
           {error}
           <div className="mt-2 text-sm">
-            <a className="underline" href="/login?redirectTo=/creator/onboard">Go to login</a>
+            <a className="underline" href="/login?redirectTo=/creator/onboard">
+              Go to login
+            </a>
           </div>
         </div>
       )}
