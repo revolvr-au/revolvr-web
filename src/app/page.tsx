@@ -33,7 +33,7 @@ export default function Home() {
 
           <button
             className="w-full rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-semibold py-4"
-            onClick={() => router.push("/login?redirectTo=/creator")}
+            onClick={() => router.push("/login?redirectTo=/creator/onboard")}
           >
             Go Live as a Creator
           </button>
