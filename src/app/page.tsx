@@ -44,6 +44,10 @@ export default function Home() {
           and spins.
         </p>
       </div>
-    </div>
+    
+
+{/* BUILD_MARKER:535250d */}
+<p className="mt-6 text-xs text-white/30 text-center">build 535250d</p>
+</div>
   );
 }
