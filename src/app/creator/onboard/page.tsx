@@ -1,11 +1,12 @@
-"use client";
+ "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
 export default function CreatorOnboardPage() {
   const router = useRouter();
+  const params = useSearchParams();
 
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -13,77 +14,61 @@ export default function CreatorOnboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function getAccessToken() {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw new Error(error.message);
-    const token = data?.session?.access_token;
-    if (!token) throw new Error("No session token. You are not signed in.");
-    return token;
-  }
-
   useEffect(() => {
     (async () => {
-      try {
-        setError(null);
-        const token = await getAccessToken();
+      // If we already have an active creator, bounce to dashboard
+      const me = await fetch("/api/creator/me", { cache: "no-store" }).then(r => r.json()).catch(() => null);
 
-        const res = await fetch("/api/creator/me", {
-          cache: "no-store",
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          setError(data?.error || `creator/me failed (${res.status})`);
-          setLoading(false);
-          return;
-        }
-
-        if (data?.creator?.isActive) {
-          router.replace("/creator/dashboard");
-          return;
-        }
-
+      if (!me?.loggedIn) {
+        setError("No session token. You are not signed in.");
         setLoading(false);
-      } catch (e: any) {
-        setError(String(e?.message || e));
-        setLoading(false);
+        return;
       }
+
+      if (me?.creator?.isActive) {
+        router.replace("/creator/dashboard");
+        return;
+      }
+
+      setLoading(false);
     })();
   }, [router]);
 
   async function submit() {
-    try {
-      setSubmitting(true);
-      setError(null);
+    setSubmitting(true);
+    setError(null);
 
-      // proves click handler is firing immediately
-      // (if this doesn't flip to "Working...", hydration is broken)
-      const token = await getAccessToken();
+    // Ensure we have a browser session token for API auth
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
 
-      const res = await fetch("/api/creator/activate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ handle, displayName }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        setError(data?.error || `Activate failed (${res.status})`);
-        setSubmitting(false);
-        return;
-      }
-
-      router.replace("/creator/dashboard");
-    } catch (e: any) {
-      setError(String(e?.message || e));
+    if (!token) {
+      setError("No session token. You are not signed in.");
       setSubmitting(false);
+
+      const redirectTo = encodeURIComponent(params?.get("redirectTo") || "/creator/onboard");
+      router.push(`/login?redirectTo=${redirectTo}`);
+      return;
     }
+
+    const res = await fetch("/api/creator/activate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ handle, displayName }),
+    });
+
+    const data2 = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      setError(data2?.error ?? "Could not activate creator profile.");
+      setSubmitting(false);
+      return;
+    }
+
+    router.replace("/creator/dashboard");
   }
 
   if (loading) {
@@ -101,8 +86,11 @@ export default function CreatorOnboardPage() {
       <p className="mt-2 text-white/70">Create your handle. You can connect payouts next.</p>
 
       {error && (
-        <div className="mt-4 rounded-xl bg-red-500/10 text-red-200 px-3 py-2 whitespace-pre-wrap">
+        <div className="mt-4 rounded-xl bg-red-500/10 text-red-200 px-3 py-2">
           {error}
+          <div className="mt-2 text-sm">
+            <a className="underline" href="/login?redirectTo=/creator/onboard">Go to login</a>
+          </div>
         </div>
       )}
 
@@ -128,12 +116,11 @@ export default function CreatorOnboardPage() {
         </label>
 
         <button
-          type="button"
           onClick={submit}
           disabled={submitting}
           className="w-full rounded-full bg-emerald-500 text-black font-medium py-2 disabled:opacity-60"
         >
-          {submitting ? "Working…" : "Activate creator"}
+          {submitting ? "Activating…" : "Activate creator"}
         </button>
       </div>
     </div>
