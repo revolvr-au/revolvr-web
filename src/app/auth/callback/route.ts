@@ -38,9 +38,11 @@ export async function GET(request: Request) {
 
   try {
     if (code) {
+      console.log("[auth/callback] mode", "code");
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) console.error("[auth/callback] exchangeCodeForSession", error);
     } else if (token_hash && type) {
+      console.log("[auth/callback] mode", "otp", type);
       const { error } = await supabase.auth.verifyOtp({
         token_hash,
         type: type as any,
@@ -57,6 +59,8 @@ export async function GET(request: Request) {
       new URL(`/login?redirectTo=${encodeURIComponent(redirectTo)}`, url.origin)
     );
   }
+
+  console.log("[auth/callback] after exchange cookies", cookieStore.getAll().map(c => c.name));
 
   // internal-only redirect guard
   const safe =
