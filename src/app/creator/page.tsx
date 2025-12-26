@@ -1,5 +1,5 @@
-import CreatorOnboard from "./onboard/page";
+import { redirect } from "next/navigation";
 
-export default function CreatorPage() {
-  return <CreatorOnboard />;
+export default function CreatorRoot() {
+  redirect("/creator/onboard");
 }
