@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const token_hash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
 
-  const cookieStore = await cookies(); // NOT async
+  const cookieStore = cookies(); // NOT async
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
