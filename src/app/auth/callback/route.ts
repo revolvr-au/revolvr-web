@@ -5,6 +5,9 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: Request) {
   const url = new URL(request.url);
 
+  console.log("[auth/callback] url", url.toString());
+  console.log("[auth/callback] redirectTo param", url.searchParams.get("redirectTo"));
+
   const redirectTo = url.searchParams.get("redirectTo") || "/";
 
   // Supabase can return either:
