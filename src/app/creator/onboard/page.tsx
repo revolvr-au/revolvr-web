@@ -14,65 +14,53 @@ export default function CreatorOnboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   async function getAccessToken() {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token ?? null;
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw new Error(error.message);
+    const token = data?.session?.access_token;
+    if (!token) throw new Error("No session token. You are not signed in.");
+    return token;
   }
 
   useEffect(() => {
     (async () => {
-      const token = await getAccessToken();
+      try {
+        setError(null);
+        const token = await getAccessToken();
 
-      const res = await fetch("/api/creator/me", {
-        cache: "no-store",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+        const res = await fetch("/api/creator/me", {
+          cache: "no-store",
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-      const data = await res.json().catch(() => ({}));
+        const data = await res.json().catch(() => ({}));
 
-      if (!data.loggedIn) {
-        setError("Not authenticated");
+        if (!res.ok) {
+          setError(data?.error || `creator/me failed (${res.status})`);
+          setLoading(false);
+          return;
+        }
+
+        if (data?.creator?.isActive) {
+          router.replace("/creator/dashboard");
+          return;
+        }
+
         setLoading(false);
-        return;
+      } catch (e: any) {
+        setError(String(e?.message || e));
+        setLoading(false);
       }
-
-      if (data.creator?.isActive) {
-        router.replace("/creator/dashboard");
-        return;
-      }
-
-      setLoading(false);
     })();
   }, [router]);
 
-  async function startStripeOnboarding() {
-    const token = await getAccessToken();
-
-    const res = await fetch("/api/stripe/connect/link", {
-      method: "POST",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(data?.error || "Could not start Stripe onboarding.");
-    }
-    if (!data?.url) throw new Error("No Stripe URL returned.");
-    window.location.href = data.url;
-  }
-
   async function submit() {
-    setSubmitting(true);
-    setError(null);
-
     try {
-      const token = await getAccessToken();
+      setSubmitting(true);
+      setError(null);
 
-      if (!token) {
-        setError("Not authenticated");
-        setSubmitting(false);
-        return;
-      }
+      // proves click handler is firing immediately
+      // (if this doesn't flip to "Working...", hydration is broken)
+      const token = await getAccessToken();
 
       const res = await fetch("/api/creator/activate", {
         method: "POST",
@@ -86,15 +74,14 @@ export default function CreatorOnboardPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error ?? "Could not activate creator profile.");
+        setError(data?.error || `Activate failed (${res.status})`);
         setSubmitting(false);
         return;
       }
 
-      // After activation -> go to Stripe onboarding
-      await startStripeOnboarding();
+      router.replace("/creator/dashboard");
     } catch (e: any) {
-      setError(String(e?.message ?? e));
+      setError(String(e?.message || e));
       setSubmitting(false);
     }
   }
@@ -111,12 +98,10 @@ export default function CreatorOnboardPage() {
   return (
     <div className="min-h-screen bg-[#050816] text-white p-8 max-w-xl mx-auto">
       <h1 className="text-2xl font-semibold">Become a Revolvr creator</h1>
-      <p className="mt-2 text-white/70">
-        Create your handle. You can connect payouts next.
-      </p>
+      <p className="mt-2 text-white/70">Create your handle. You can connect payouts next.</p>
 
       {error && (
-        <div className="mt-4 rounded-xl bg-red-500/10 text-red-200 px-3 py-2">
+        <div className="mt-4 rounded-xl bg-red-500/10 text-red-200 px-3 py-2 whitespace-pre-wrap">
           {error}
         </div>
       )}
@@ -143,11 +128,12 @@ export default function CreatorOnboardPage() {
         </label>
 
         <button
+          type="button"
           onClick={submit}
           disabled={submitting}
           className="w-full rounded-full bg-emerald-500 text-black font-medium py-2 disabled:opacity-60"
         >
-          {submitting ? "Activating…" : "Activate creator"}
+          {submitting ? "Working…" : "Activate creator"}
         </button>
       </div>
     </div>
