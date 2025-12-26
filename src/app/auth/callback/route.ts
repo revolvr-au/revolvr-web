@@ -4,15 +4,8 @@ import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const redirectTo = url.searchParams.get("redirectTo") || "/";
 
-  console.log("[auth/callback] url", url.toString());
-  console.log("[auth/callback] redirectTo param", url.searchParams.get("redirectTo"));
-
-  const redirectTo = url.searchParams.get("redirectTo") || "/creator/onboard";
-
-  // Supabase can return either:
-  // - PKCE:   ?code=...
-  // - Magic:  ?token_hash=...&type=magiclink (or recovery/invite/etc)
   const code = url.searchParams.get("code");
   const token_hash = url.searchParams.get("token_hash");
   const type = url.searchParams.get("type");
@@ -38,11 +31,9 @@ export async function GET(request: Request) {
 
   try {
     if (code) {
-      console.log("[auth/callback] mode", "code");
       const { error } = await supabase.auth.exchangeCodeForSession(code);
       if (error) console.error("[auth/callback] exchangeCodeForSession", error);
     } else if (token_hash && type) {
-      console.log("[auth/callback] mode", "otp", type);
       const { error } = await supabase.auth.verifyOtp({
         token_hash,
         type: type as any,
@@ -60,11 +51,10 @@ export async function GET(request: Request) {
     );
   }
 
-  console.log("[auth/callback] after exchange cookies", cookieStore.getAll().map(c => c.name));
-
-  // internal-only redirect guard
   const safe =
-    redirectTo.startsWith("/") && !redirectTo.startsWith("//") && !redirectTo.includes("\\")
+    redirectTo.startsWith("/") &&
+    !redirectTo.startsWith("//") &&
+    !redirectTo.includes("\\")
       ? redirectTo
       : "/public-feed";
 
