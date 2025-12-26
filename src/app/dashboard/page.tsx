@@ -61,7 +61,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!ready) return;
     if (!userEmail) {
-      router.replace("/login?redirectTo=/creator/dashboard");
+      router.replace("/login?redirectTo=/creator/onboard/onboard");
     }
   }, [ready, userEmail, router]);
 

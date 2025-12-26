@@ -71,7 +71,7 @@ export default function DashboardClient() {
   // DIAGNOSTIC: disable redirect during bounce isolation
   if (!userEmail) {
     console.warn("[creator/dashboard] no userEmail after ready (diagnostic)");
-    // router.replace("/login?redirectTo=/creator/dashboard");
+    // router.replace("/login?redirectTo=/creator/onboard/onboard");
   }
 }, [ready, userEmail, router]);
 
@@ -317,7 +317,7 @@ export default function DashboardClient() {
       <p className="mt-2 text-white/70">
         Not signed in (diagnostic). No redirect will happen right now.
       </p>
-      <a className="underline text-white/80" href="/login?redirectTo=/creator/dashboard">
+      <a className="underline text-white/80" href="/login?redirectTo=/creator/onboard/onboard">
         Go to login
       </a>
     </div>
