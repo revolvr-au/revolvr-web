@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
-const safeRedirect = (v: string | null) => {
+export const dynamic = "force-dynamic";
+
+function safeRedirect(v: string | null) {
   if (!v) return "/public-feed";
   if (!v.startsWith("/")) return "/public-feed";
   if (v.startsWith("//")) return "/public-feed";
   if (v.includes("\\")) return "/public-feed";
   return v;
-};
+}
 
-export async function GET(req: NextRequest) {
+export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
@@ -25,36 +27,35 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(back);
   }
 
-  // Create a response we can attach cookies to
+  // Response we can attach cookies to
   const res = NextResponse.redirect(new URL(redirectTo, url.origin));
+
+  // IMPORTANT: in your build, cookies() is Promise-typed
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnon, {
     cookies: {
       getAll() {
-        return req.cookies.getAll();
+        return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
+        for (const { name, value, options } of cookiesToSet) {
           res.cookies.set(name, value, options);
-        });
+        }
       },
     },
   });
 
-  try {
-    if (code) {
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
-      if (error) {
-        const back = new URL("/login", url.origin);
-        back.searchParams.set("redirectTo", redirectTo);
-        back.searchParams.set("error", "otp_invalid_or_expired");
-        return NextResponse.redirect(back);
-      }
-    }
-  } catch {
+  // If no code, just continue the redirect (already signed-in users may hit this route)
+  if (!code) return res;
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    // This commonly happens if the callback ran twice (code already consumed)
     const back = new URL("/login", url.origin);
     back.searchParams.set("redirectTo", redirectTo);
-    back.searchParams.set("error", "otp_exchange_failed");
+    back.searchParams.set("error", "otp_invalid_or_expired");
     return NextResponse.redirect(back);
   }
 
