@@ -26,7 +26,6 @@ async function getUserEmailFromBearer(req: Request) {
   });
 
   if (!res.ok) return null;
-
   const user = await res.json().catch(() => null);
   return user?.email ? String(user.email).trim().toLowerCase() : null;
 }
@@ -40,11 +39,10 @@ export async function POST(req: Request) {
     const email = await getUserEmailFromBearer(req);
     if (!email) return jsonError("Not authenticated", 401);
 
-    const profile = await prisma.creatorProfile.findUnique({ where: { email } }).catch(() => null);
+    const profile = await prisma.creatorProfile.findUnique({ where: { email } });
     if (!profile) return jsonError("Creator not found. Activate creator first.", 404);
 
-    let stripeAccountId =
-      (profile as any).stripeAccountId || (profile as any).stripe_account_id || null;
+    let stripeAccountId = profile.stripeAccountId;
 
     if (!stripeAccountId) {
       const acct = await stripe.accounts.create({
@@ -60,14 +58,20 @@ export async function POST(req: Request) {
 
       stripeAccountId = acct.id;
 
-      const data: any = {};
-      if ("stripeAccountId" in (profile as any)) data.stripeAccountId = stripeAccountId;
-      else data.stripe_account_id = stripeAccountId;
-
-      if ("payoutCurrency" in (profile as any)) data.payoutCurrency = "aud";
-      else data.payout_currency = "aud";
-
-      await prisma.creatorProfile.update({ where: { email }, data });
+      await prisma.creatorProfile.update({
+        where: { email },
+        data: {
+          stripeAccountId,
+          payoutCurrency: "aud",
+          stripeOnboardingStatus: "pending",
+        },
+      });
+    } else {
+      // if already exists, just mark pending when user re-opens onboarding
+      await prisma.creatorProfile.update({
+        where: { email },
+        data: { stripeOnboardingStatus: "pending" },
+      });
     }
 
     const app = appBaseUrl();
@@ -81,14 +85,8 @@ export async function POST(req: Request) {
       refresh_url: refreshUrl,
     });
 
-    const update: any = {};
-    if ("stripeOnboardingStatus" in (profile as any)) update.stripeOnboardingStatus = "pending";
-    else update.stripe_onboarding_status = "pending";
-
-    await prisma.creatorProfile.update({ where: { email }, data: update });
-
     return NextResponse.json({ ok: true, url: link.url }, { status: 200 });
-  } catch (e: any) {
+  } catch (e) {
     console.error("[api/stripe/connect/link] error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

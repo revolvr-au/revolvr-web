@@ -96,15 +96,21 @@ model CreatorProfile {
   email       String        @unique
   displayName String
   handle      String?       @unique
-  payoutShare Int           @default(45) // creator share %
+  payoutShare Int           @default(45)
   status      CreatorStatus @default(ACTIVE)
+
+  // Stripe Connect (Express)
+  stripeAccountId        String?  @map("stripe_account_id")
+  stripeOnboardingStatus String   @default("not_started") @map("stripe_onboarding_status")
+  payoutCurrency         String   @default("aud") @map("payout_currency")
+  stripeChargesEnabled   Boolean  @default(false) @map("stripe_charges_enabled")
+  stripePayoutsEnabled   Boolean  @default(false) @map("stripe_payouts_enabled")
 
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   @@schema("public")
 }
-
 
 model CreatorBalance {
   creatorEmail     String   @id
