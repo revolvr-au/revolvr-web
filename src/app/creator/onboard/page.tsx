@@ -39,8 +39,13 @@ export default function CreatorOnboardPage() {
 
       const json = await res.json().catch(() => null);
 
+      // DEBUG: surface API status/body
+      console.log('[creator/onboard] activate status', res.status);
+      console.log('[creator/onboard] activate body', json);
+
+
       if (!res.ok) {
-        setErr(json?.error || "Server error");
+        setErr(`${res.status} ${json?.error || 'Server error'}`);
         return;
       }
 
