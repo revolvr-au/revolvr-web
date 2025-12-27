@@ -1,43 +1,72 @@
 "use client";
 
 import { useState } from "react";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function ConnectStripeButton() {
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  async function onClick() {
-    setLoading(true);
-    setErr(null);
-
+  const onClick = async () => {
     try {
-      const res = await fetch("/api/stripe/connect/link", { method: "POST" });
-      const data = await res.json();
+      setLoading(true);
+      setError(null);
 
-      if (!res.ok) {
-        throw new Error(data?.error || "Failed to create Stripe onboarding link");
+      const supabase = createSupabaseBrowserClient();
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      if (!token) {
+        setError("Please sign in again (session missing).");
+        return;
       }
 
-      if (!data?.url) throw new Error("No Stripe onboarding URL returned");
+      const res = await fetch("/api/stripe/connect/link", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
 
-      window.location.href = data.url; // send user to Stripe onboarding
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setError(json?.error || `Stripe link failed (${res.status})`);
+        return;
+      }
+
+      const url = json?.url;
+      if (!url) {
+        setError("Stripe link missing from response.");
+        return;
+      }
+
+      window.location.href = url;
     } catch (e: any) {
-      setErr(String(e?.message || e));
+      setError(e?.message || "Something went wrong.");
+    } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
     <div>
+      {error && (
+        <div className="mb-3 rounded-lg border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+          {error}
+        </div>
+      )}
+
       <button
+        type="button"
         onClick={onClick}
         disabled={loading}
-        className="rounded-lg px-4 py-2 bg-emerald-500 text-white disabled:opacity-60"
+        className="rounded-lg bg-black px-4 py-2 text-white disabled:opacity-60"
       >
-        {loading ? "Opening Stripe..." : "Connect payouts (Stripe)"}
+        {loading ? "Opening Stripe…" : "Connect Stripe"}
       </button>
-
-      {err ? <p className="mt-2 text-sm text-red-500">{err}</p> : null}
     </div>
   );
 }

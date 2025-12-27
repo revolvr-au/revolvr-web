@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { prisma } from "@/lib/prisma";
 
 function normalizeHandle(input: string) {
   return input
@@ -15,7 +15,7 @@ function normalizeHandle(input: string) {
 
 export async function POST(req: Request) {
   try {
-    const cookieStore = await cookies();
+    const cookieStore: any = await Promise.resolve(cookies() as any);
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,10 +23,12 @@ export async function POST(req: Request) {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            if (typeof cookieStore.getAll === "function") return cookieStore.getAll();
+            return [];
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
+            if (typeof cookieStore.set !== "function") return;
+            cookiesToSet.forEach(({ name, value, options }: any) => {
               cookieStore.set(name, value, options);
             });
           },
