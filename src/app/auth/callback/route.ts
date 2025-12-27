@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
 const safeRedirect = (v: string | null) => {
@@ -9,22 +10,8 @@ const safeRedirect = (v: string | null) => {
   return v;
 };
 
-function parseCookieHeader(header: string | null) {
-  if (!header) return [];
-  return header
-    .split(";")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .map((kv) => {
-      const idx = kv.indexOf("=");
-      if (idx === -1) return { name: kv, value: "" };
-      return { name: kv.slice(0, idx), value: kv.slice(idx + 1) };
-    });
-}
-
 export async function GET(req: Request) {
   const url = new URL(req.url);
-
   const code = url.searchParams.get("code");
   const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
 
@@ -38,16 +25,16 @@ export async function GET(req: Request) {
     return NextResponse.redirect(back);
   }
 
-  // Response we can attach cookies to (Supabase will set pkce/session cookies here)
+  // We'll attach any auth cookies to THIS response.
   const res = NextResponse.redirect(new URL(redirectTo, url.origin));
 
-  // Read incoming cookies from the request header (avoids cookies() Promise typing issues)
-  const reqCookies = parseCookieHeader(req.headers.get("cookie"));
+  // Your Next build types cookies() as async.
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnon, {
     cookies: {
       getAll() {
-        return reqCookies;
+        return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
@@ -58,20 +45,18 @@ export async function GET(req: Request) {
   });
 
   try {
-    if (!code) {
-      // No code means user hit /auth/callback directly — send them back to login cleanly
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        const back = new URL("/login", url.origin);
+        back.searchParams.set("redirectTo", redirectTo);
+        back.searchParams.set("error", "otp_invalid_or_expired");
+        return NextResponse.redirect(back);
+      }
+    } else {
       const back = new URL("/login", url.origin);
       back.searchParams.set("redirectTo", redirectTo);
       back.searchParams.set("error", "missing_code");
-      return NextResponse.redirect(back);
-    }
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (error) {
-      const back = new URL("/login", url.origin);
-      back.searchParams.set("redirectTo", redirectTo);
-      back.searchParams.set("error", "otp_invalid_or_expired");
       return NextResponse.redirect(back);
     }
   } catch {
