@@ -1,88 +1,63 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
 import { prisma } from "@/lib/prisma";
 
-function normalizeHandle(input: string) {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/^@/, "")
-    .replace(/[^a-z0-9_.]/g, "_")
-    .replace(/_+/g, "_")
-    .slice(0, 24);
+async function getUserEmailFromBearer(req: Request) {
+  const auth = req.headers.get("authorization") || "";
+  const token = auth.toLowerCase().startsWith("bearer ")
+    ? auth.slice(7).trim()
+    : null;
+
+  if (!token) return null;
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !apikey) throw new Error("Supabase env missing");
+
+  const res = await fetch(`${url}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null;
+
+  const user = await res.json();
+  return user?.email?.toLowerCase() ?? null;
 }
 
 export async function POST(req: Request) {
   try {
-    const cookieStore: any = await Promise.resolve(cookies() as any);
-
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            if (typeof cookieStore.getAll === "function") return cookieStore.getAll();
-            return [];
-          },
-          setAll(cookiesToSet) {
-            if (typeof cookieStore.set !== "function") return;
-            cookiesToSet.forEach(({ name, value, options }: any) => {
-              cookieStore.set(name, value, options);
-            });
-          },
-        },
-      }
-    );
-
-    const { data, error } = await supabase.auth.getUser();
-    const user = data?.user;
-
-    if (error || !user?.email) {
-      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    const email = await getUserEmailFromBearer(req);
+    if (!email) {
+      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
     }
 
-    const email = user.email.trim().toLowerCase();
-    const body = await req.json().catch(() => ({} as any));
+    const body = await req.json();
+    const handle = String(body.handle || "").trim();
+    const displayName = String(body.displayName || "").trim();
 
-    const handle = normalizeHandle(String(body.handle ?? ""));
-    const displayName = String(body.displayName ?? "").trim();
-
-    if (!handle || handle.length < 3) {
-      return NextResponse.json(
-        { error: "Handle must be at least 3 characters." },
-        { status: 400 }
-      );
+    if (!handle) {
+      return NextResponse.json({ error: "handle_required" }, { status: 400 });
     }
 
-    const profile = await prisma.creatorProfile.upsert({
+    // 🔒 Single source of truth
+    const creator = await prisma.creatorProfile.upsert({
       where: { email },
+      update: {
+        handle,
+        displayName: displayName || handle,
+        status: "ACTIVE",
+      },
       create: {
         email,
         handle,
         displayName: displayName || handle,
         status: "ACTIVE",
       },
-      update: {
-        handle,
-        displayName: displayName || undefined,
-        status: "ACTIVE",
-      },
     });
 
-    await prisma.creatorBalance.upsert({
-      where: { creatorEmail: email },
-      create: { creatorEmail: email, totalEarnedCents: 0, availableCents: 0 },
-      update: {},
-    });
-
-    return NextResponse.json(
-      { ok: true, creator: { isActive: true, handle: profile.handle } },
-      { status: 200 }
-    );
-  } catch (e) {
-    console.error("[api/creator/activate] error", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ ok: true, creator }, { status: 200 });
+  } catch (err) {
+    console.error("[creator/activate]", err);
+    return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 }
