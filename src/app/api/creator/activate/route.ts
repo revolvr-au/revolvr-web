@@ -1,17 +1,23 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-async function getUserEmailFromBearer(req: Request) {
+function jsonError(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+async function getUserFromBearer(req: Request) {
   const auth = req.headers.get("authorization") || "";
   const token = auth.toLowerCase().startsWith("bearer ")
     ? auth.slice(7).trim()
-    : null;
+    : "";
 
   if (!token) return null;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !apikey) throw new Error("Supabase env missing");
+
+  if (!url) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+  if (!apikey) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
   const res = await fetch(`${url}/auth/v1/user`, {
     headers: { Authorization: `Bearer ${token}`, apikey },
@@ -19,45 +25,52 @@ async function getUserEmailFromBearer(req: Request) {
   });
 
   if (!res.ok) return null;
+  return res.json().catch(() => null);
+}
 
-  const user = await res.json();
-  return user?.email?.toLowerCase() ?? null;
+function normalizeHandle(raw: unknown) {
+  const h = String(raw ?? "").trim();
+  // basic: lower, spaces -> dashes, remove weird chars
+  return h
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9._-]/g, "")
+    .slice(0, 32);
 }
 
 export async function POST(req: Request) {
   try {
-    const email = await getUserEmailFromBearer(req);
-    if (!email) {
-      return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-    }
+    const user = await getUserFromBearer(req);
+    const email = user?.email ? String(user.email).trim().toLowerCase() : null;
 
-    const body = await req.json();
-    const handle = String(body.handle || "").trim();
-    const displayName = String(body.displayName || "").trim();
+    if (!email) return jsonError("unauthenticated", 401);
 
-    if (!handle) {
-      return NextResponse.json({ error: "handle_required" }, { status: 400 });
-    }
+    const body = await req.json().catch(() => ({}));
+    const handle = normalizeHandle(body.handle);
+    const displayNameRaw = String(body.displayName ?? "").trim();
+    const displayName = displayNameRaw || handle;
 
-    // 🔒 Single source of truth
-    const creator = await prisma.creatorProfile.upsert({
+    if (!handle) return jsonError("Handle is required", 400);
+
+    // Idempotent activation
+    const profile = await prisma.creatorProfile.upsert({
       where: { email },
       update: {
         handle,
-        displayName: displayName || handle,
+        displayName,
         status: "ACTIVE",
       },
       create: {
         email,
         handle,
-        displayName: displayName || handle,
+        displayName,
         status: "ACTIVE",
       },
     });
 
-    return NextResponse.json({ ok: true, creator }, { status: 200 });
-  } catch (err) {
-    console.error("[creator/activate]", err);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
+    return NextResponse.json({ ok: true, profile }, { status: 200 });
+  } catch (e: any) {
+    console.error("[api/creator/activate] error", e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
