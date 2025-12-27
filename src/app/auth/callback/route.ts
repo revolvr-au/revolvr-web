@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 const safeRedirect = (v: string | null) => {
@@ -10,7 +10,7 @@ const safeRedirect = (v: string | null) => {
   return v;
 };
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
   const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
@@ -25,16 +25,13 @@ export async function GET(req: Request) {
     return NextResponse.redirect(back);
   }
 
-  // We'll attach any auth cookies to THIS response.
+  // Create a response we can attach cookies to
   const res = NextResponse.redirect(new URL(redirectTo, url.origin));
-
-  // Your Next build types cookies() as async.
-  const cookieStore = await cookies();
 
   const supabase = createServerClient(supabaseUrl, supabaseAnon, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        return req.cookies.getAll();
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
@@ -53,11 +50,6 @@ export async function GET(req: Request) {
         back.searchParams.set("error", "otp_invalid_or_expired");
         return NextResponse.redirect(back);
       }
-    } else {
-      const back = new URL("/login", url.origin);
-      back.searchParams.set("redirectTo", redirectTo);
-      back.searchParams.set("error", "missing_code");
-      return NextResponse.redirect(back);
     }
   } catch {
     const back = new URL("/login", url.origin);
