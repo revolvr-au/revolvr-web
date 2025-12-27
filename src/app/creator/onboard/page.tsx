@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
@@ -12,6 +12,41 @@ export default function CreatorOnboardPage() {
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Guard: if already a creator, skip onboarding
+  useEffect(() => {
+    let cancelled = false;
+
+    async function check() {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+
+        if (!token) {
+          router.replace("/login");
+          return;
+        }
+
+        const res = await fetch("/api/creator/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+
+        if (json?.isCreator) {
+          router.replace("/creator/dashboard");
+        }
+      } catch {
+        // If this guard fails, allow the page to render normally.
+      }
+    }
+
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   const onActivate = async () => {
     setErr(null);
@@ -39,13 +74,8 @@ export default function CreatorOnboardPage() {
 
       const json = await res.json().catch(() => null);
 
-      // DEBUG: surface API status/body
-      console.log('[creator/onboard] activate status', res.status);
-      console.log('[creator/onboard] activate body', json);
-
-
       if (!res.ok) {
-        setErr(`${res.status} ${json?.error || 'Server error'}`);
+        setErr(json?.error || "Server error");
         return;
       }
 
