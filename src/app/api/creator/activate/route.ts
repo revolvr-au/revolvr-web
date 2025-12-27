@@ -15,9 +15,7 @@ async function getUserFromBearer(req: Request) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-  if (!apikey) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  if (!url || !apikey) return null;
 
   const res = await fetch(`${url}/auth/v1/user`, {
     headers: { Authorization: `Bearer ${token}`, apikey },
@@ -29,9 +27,8 @@ async function getUserFromBearer(req: Request) {
 }
 
 function normalizeHandle(raw: unknown) {
-  const h = String(raw ?? "").trim();
-  // basic: lower, spaces -> dashes, remove weird chars
-  return h
+  return String(raw ?? "")
+    .trim()
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9._-]/g, "")
@@ -41,18 +38,25 @@ function normalizeHandle(raw: unknown) {
 export async function POST(req: Request) {
   try {
     const user = await getUserFromBearer(req);
-    const email = user?.email ? String(user.email).trim().toLowerCase() : null;
+    const email = user?.email?.toLowerCase();
 
     if (!email) return jsonError("unauthenticated", 401);
 
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json();
     const handle = normalizeHandle(body.handle);
-    const displayNameRaw = String(body.displayName ?? "").trim();
-    const displayName = displayNameRaw || handle;
+    const displayName = String(body.displayName || handle).trim();
 
-    if (!handle) return jsonError("Handle is required", 400);
+    if (!handle) return jsonError("Handle required");
 
-    // Idempotent activation
+    // Ensure handle is not owned by someone else
+    const existingHandle = await prisma.creatorProfile.findFirst({
+      where: { handle },
+    });
+
+    if (existingHandle && existingHandle.email !== email) {
+      return jsonError("Handle already taken", 409);
+    }
+
     const profile = await prisma.creatorProfile.upsert({
       where: { email },
       update: {
@@ -68,9 +72,12 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, profile }, { status: 200 });
+    return NextResponse.json({ ok: true, profile });
   } catch (e: any) {
-    console.error("[api/creator/activate] error", e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("[creator/activate]", e);
+    return NextResponse.json(
+      { error: e.code || e.message || "Server error" },
+      { status: 500 }
+    );
   }
 }
