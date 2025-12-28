@@ -40,6 +40,7 @@ export async function POST(req: Request) {
     const email = user?.email?.toLowerCase();
     if (!email) return jsonError("unauthenticated", 401);
 
+    
     const body = await req.json().catch(() => ({}));
     const tier = normalizeTier((body as any).tier);
 
