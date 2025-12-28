@@ -66,6 +66,7 @@ export default function DashboardClient() {
   const [error, setError] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
   const [isLoadingVerify, setIsLoadingVerify] = useState(false);
+  const [verifiedEmails, setVerifiedEmails] = useState<Record<string, boolean>>({});
   const [verifiedMap, setVerifiedMap] = useState<Record<string, boolean>>({});
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
