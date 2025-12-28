@@ -469,12 +469,14 @@ export default function DashboardClient() {
               <RevolvrIcon name="analytics" size={18} />
               <h2 className="text-sm font-semibold">Creator dashboard</h2>
             </div>
+
             <p className="text-xs text-white/60">Post from here. Everyone else watches the chaos.</p>
+
             <div className="mt-2 flex items-center gap-2">
               {isVerified ? (
                 <span className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200">
                   <span className="h-2 w-2 rounded-full bg-blue-400" />
-                  Blue Tick active
+                  Verified active
                 </span>
               ) : (
                 <div className="flex items-center gap-2">
@@ -500,16 +502,17 @@ export default function DashboardClient() {
             </div>
 
             <div className="flex flex-col gap-2">
-onClick={() => setIsComposerOpen(true)}
+              <button
+                onClick={() => setIsComposerOpen(true)}
                 className="w-full inline-flex items-center justify-center rounded-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-medium shadow-lg shadow-emerald-500/25 transition gap-2"
               >
                 <RevolvrIcon name="add" size={14} />
                 <span>New post</span>
               </button>
+
               <SpinButton userEmail={userEmail} />
             </div>
 
-            {/* Credits widget */}
             {credits && (
               <div className="mt-3 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-xs space-y-1">
                 <div className="flex items-center justify-between">
