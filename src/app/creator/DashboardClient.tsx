@@ -33,6 +33,14 @@ type Spin = {
   post_id: string | null;
   created_at: string;
 };
+const VerifiedBadge = () => (
+  <span
+    title="Verified creator"
+    className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px]"
+  >
+    ✓
+  </span>
+);
 
 export default function DashboardClient() {
   const router = useRouter();
@@ -386,6 +394,7 @@ export default function DashboardClient() {
           >
             {avatarInitial}
           </button>
+          {isVerified && <VerifiedBadge />}
           <a
             href="/public-feed"
             className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition inline-flex items-center gap-1"
