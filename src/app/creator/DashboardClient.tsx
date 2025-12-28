@@ -56,6 +56,8 @@ export default function DashboardClient() {
   const [isLoadingSpins, setIsLoadingSpins] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isLoadingVerify, setIsLoadingVerify] = useState(false);
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [caption, setCaption] = useState("");
@@ -141,7 +143,19 @@ export default function DashboardClient() {
     }
   }, []);
 
-  // When auth is resolved and we have an email, load posts, spins, credits
+  
+  const loadCreatorMe = useCallback(async () => {
+    try {
+      const res = await fetch("/api/creator/me", { cache: "no-store" });
+      const json = await res.json().catch(() => null);
+      const verified = Boolean(json?.creator?.isVerified);
+      setIsVerified(verified);
+    } catch (e) {
+      console.warn("[creator/dashboard] failed to load /api/creator/me", e);
+    }
+  }, []);
+
+// When auth is resolved and we have an email, load posts, spins, credits
   useEffect(() => {
     if (!ready) return;
     if (!userEmail) return;
@@ -149,12 +163,42 @@ export default function DashboardClient() {
     loadPosts();
     loadSpins(userEmail);
     loadCredits(userEmail);
-  }, [ready, userEmail, loadPosts, loadSpins, loadCredits]);
+  
+
+    loadCreatorMe();}, [ready, userEmail, loadPosts, loadSpins, loadCredits]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/public-feed");
   };
+
+  const handleStartBlueTick = async () => {
+    try {
+      setIsLoadingVerify(true);
+      setError(null);
+
+      const res = await fetch("/api/creator/verify/start", { method: "POST" });
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setError(data?.error || "Could not start Blue Tick checkout.");
+        return;
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      setError("Stripe did not return a checkout URL.");
+    } catch (e) {
+      console.error("[creator/dashboard] start blue tick error", e);
+      setError("Revolvr glitched out starting Blue Tick 😵‍💫");
+    } finally {
+      setIsLoadingVerify(false);
+    }
+  };
+
 
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
@@ -368,6 +412,24 @@ export default function DashboardClient() {
               <h2 className="text-sm font-semibold">Creator dashboard</h2>
             </div>
             <p className="text-xs text-white/60">Post from here. Everyone else watches the chaos.</p>
+            <div className="mt-2 flex items-center gap-2">
+              {isVerified ? (
+                <span className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200">
+                  <span className="h-2 w-2 rounded-full bg-blue-400" />
+                  Blue Tick active
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isLoadingVerify}
+                  onClick={handleStartBlueTick}
+                  className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
+                >
+                  {isLoadingVerify ? "Starting…" : "Get Blue Tick (Recurring)"}
+                </button>
+              )}
+            </div>
+
             <div className="flex flex-col gap-2">
               <button
                 onClick={() => setIsComposerOpen(true)}
