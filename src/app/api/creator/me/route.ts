@@ -30,19 +30,20 @@ export async function GET() {
     } = await supabase.auth.getUser();
 
     if (error || !user) {
-  return NextResponse.json(
-    {
-      loggedIn: false,
-      creator: {
-        isActive: false,
-        handle: null,
-        isVerified: false,
-      },
-    },
-    { status: 200 }
-  );
-}
-
+      return NextResponse.json(
+        {
+          loggedIn: false,
+          creator: {
+            isActive: false,
+            handle: null,
+            isVerified: false,
+            verificationStatus: null,
+            verificationCurrentPeriodEnd: null,
+          },
+        },
+        { status: 200 }
+      );
+    }
 
     const email = (user.email ?? "").trim().toLowerCase();
 
@@ -50,15 +51,13 @@ export async function GET() {
       ? await prisma.creatorProfile.findUnique({ where: { email } })
       : null;
 
-    // Blue Tick (recurring) — normalize a single boolean for UI
-    const isVerified =
-      (profile as any)?.blueTickStatus === "active" ||
-      (profile as any)?.isVerified === true ||
-      (profile as any)?.verified === true;
-
     const balance = email
       ? await prisma.creatorBalance.findUnique({ where: { creatorEmail: email } })
       : null;
+
+    const isVerified = Boolean((profile as any)?.isVerified);
+    const verificationStatus = (profile as any)?.verificationStatus ?? null;
+    const verificationCurrentPeriodEnd = (profile as any)?.verificationCurrentPeriodEnd ?? null;
 
     return NextResponse.json(
       {
@@ -68,6 +67,8 @@ export async function GET() {
           isActive: profile?.status === "ACTIVE",
           handle: profile?.handle ?? null,
           isVerified,
+          verificationStatus,
+          verificationCurrentPeriodEnd,
         },
         profile,
         balance:
@@ -84,10 +85,12 @@ export async function GET() {
       {
         loggedIn: false,
         creator: {
-  isActive: false,
-  handle: null,
-},
-
+          isActive: false,
+          handle: null,
+          isVerified: false,
+          verificationStatus: null,
+          verificationCurrentPeriodEnd: null,
+        },
         error: "Server error",
       },
       { status: 500 }

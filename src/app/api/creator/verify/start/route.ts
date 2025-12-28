@@ -27,22 +27,36 @@ async function getUserFromBearer(req: Request) {
   return res.json().catch(() => null);
 }
 
+type Tier = "blue" | "gold";
+
+function normalizeTier(v: unknown): Tier {
+  const t = String(v ?? "").trim().toLowerCase();
+  return t === "gold" ? "gold" : "blue";
+}
+
 export async function POST(req: Request) {
   try {
     const user = await getUserFromBearer(req);
     const email = user?.email?.toLowerCase();
     if (!email) return jsonError("unauthenticated", 401);
 
+    const body = await req.json().catch(() => ({}));
+    const tier = normalizeTier((body as any).tier);
+
     const secret = process.env.STRIPE_SECRET_KEY;
-    const priceId = process.env.STRIPE_BLUE_TICK_PRICE_ID;
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+    const bluePriceId = process.env.STRIPE_BLUE_TICK_PRICE_ID;
+    const goldPriceId = process.env.STRIPE_GOLD_TICK_PRICE_ID; // add this in Vercel
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "");
 
     if (!secret) return jsonError("missing STRIPE_SECRET_KEY", 500);
-    if (!priceId) return jsonError("missing STRIPE_BLUE_TICK_PRICE_ID", 500);
+    if (!bluePriceId) return jsonError("missing STRIPE_BLUE_TICK_PRICE_ID", 500);
+    if (!goldPriceId) return jsonError("missing STRIPE_GOLD_TICK_PRICE_ID", 500);
+
+    const priceId = tier === "gold" ? goldPriceId : bluePriceId;
 
     const stripe = new Stripe(secret, { apiVersion: "2025-01-27.acacia" as any });
 
-    // Ensure creator profile exists (onboarding should have created it; this is a safe backstop)
+    // Ensure creator profile exists (safe backstop)
     const profile = await prisma.creatorProfile.upsert({
       where: { email },
       update: {},
@@ -55,31 +69,40 @@ export async function POST(req: Request) {
     });
 
     // Reuse existing customer if present
-    let customerId = profile.stripeCustomerId || null;
+    const existingCustomerId =
+      (profile as any).stripeCustomerId ||
+      (profile as any).stripe_customer_id ||
+      null;
+
+    let customerId = existingCustomerId as string | null;
+
     if (!customerId) {
       const customer = await stripe.customers.create({ email });
       customerId = customer.id;
 
-      await prisma.creatorProfile.update({
-        where: { email },
-        data: { stripeCustomerId: customerId },
-      });
+      const data: any = {};
+      if ("stripeCustomerId" in (profile as any)) data.stripeCustomerId = customerId;
+      else data.stripe_customer_id = customerId;
+
+      await prisma.creatorProfile.update({ where: { email }, data });
     }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      customer: customerId,
+      customer: customerId!,
       line_items: [{ price: priceId, quantity: 1 }],
       allow_promotion_codes: true,
       success_url: `${siteUrl}/creator/dashboard?verified=success`,
       cancel_url: `${siteUrl}/creator/dashboard?verified=cancel`,
       metadata: {
-        purpose: "blue_tick",
+        purpose: "verification",
+        tier,
         creator_email: email,
       },
       subscription_data: {
         metadata: {
-          purpose: "blue_tick",
+          purpose: "verification",
+          tier,
           creator_email: email,
         },
       },

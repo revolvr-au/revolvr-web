@@ -24,9 +24,15 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, whsec);
   } catch (err: any) {
-    console.error("[stripe/blue-tick] signature verify failed", err?.message);
+    console.error("[stripe/verification] signature verify failed", err?.message);
     return NextResponse.json({ error: "bad signature" }, { status: 400 });
   }
+
+  // helper: treat both legacy + new metadata
+  const isVerificationPurpose = (purpose?: string | null) => {
+    const p = String(purpose || "").toLowerCase();
+    return p === "verification" || p === "blue_tick";
+  };
 
   try {
     switch (event.type) {
@@ -34,8 +40,7 @@ export async function POST(req: Request) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
 
-        const purpose = session.metadata?.purpose;
-        if (purpose !== "blue_tick") break;
+        if (!isVerificationPurpose(session.metadata?.purpose)) break;
 
         const email = session.metadata?.creator_email?.toLowerCase();
         const subscriptionId =
@@ -50,19 +55,25 @@ export async function POST(req: Request) {
 
         const subResp = await stripe.subscriptions.retrieve(subscriptionId);
         const sub: StripeTypes.Subscription = (subResp as any).data ?? (subResp as any);
-const currentPeriodEnd = (sub as any).current_period_end
+
+        const currentPeriodEnd = (sub as any).current_period_end
           ? new Date(((sub as any).current_period_end as number) * 1000)
           : null;
-await prisma.creatorProfile.upsert({
+
+        const verificationPriceId =
+          (sub.items?.data?.[0]?.price?.id as string) || null;
+
+        // Upsert entitlement
+        await prisma.creatorProfile.upsert({
           where: { email },
           update: {
             isVerified: true,
             verifiedSince: new Date(),
-            stripeCustomerId: customerId ?? undefined,
+            stripeCustomerId: (customerId ?? undefined) as any,
             stripeSubscriptionId: subscriptionId,
-            verificationPriceId: (sub.items.data[0]?.price?.id as string) || null,
-            verificationStatus: sub.status || "active",
-            verificationCurrentPeriodEnd: currentPeriodEnd,
+            verificationPriceId,
+            verificationStatus: (sub.status || "active") as any,
+            verificationCurrentPeriodEnd: currentPeriodEnd as any,
           },
           create: {
             email,
@@ -71,11 +82,11 @@ await prisma.creatorProfile.upsert({
             status: "ACTIVE",
             isVerified: true,
             verifiedSince: new Date(),
-            stripeCustomerId: customerId ?? null,
+            stripeCustomerId: (customerId ?? null) as any,
             stripeSubscriptionId: subscriptionId,
-            verificationPriceId: (sub.items.data[0]?.price?.id as string) || null,
-            verificationStatus: sub.status || "active",
-            verificationCurrentPeriodEnd: currentPeriodEnd,
+            verificationPriceId,
+            verificationStatus: (sub.status || "active") as any,
+            verificationCurrentPeriodEnd: currentPeriodEnd as any,
           },
         });
 
@@ -93,21 +104,28 @@ await prisma.creatorProfile.upsert({
 
         if (!subId) break;
 
-        const sub = await stripe.subscriptions.retrieve(subId);
-        const email = sub.metadata?.creator_email?.toLowerCase();
+        const subResp = await stripe.subscriptions.retrieve(subId);
+        const sub: StripeTypes.Subscription = (subResp as any).data ?? (subResp as any);
 
+        if (!isVerificationPurpose(sub.metadata?.purpose)) break;
+
+        const email = sub.metadata?.creator_email?.toLowerCase();
         if (!email) break;
 
         const currentPeriodEnd = (sub as any).current_period_end
-          ? new Date((sub as any).current_period_end * 1000)
+          ? new Date(((sub as any).current_period_end as number) * 1000)
           : null;
+
+        const verificationPriceId =
+          (sub.items?.data?.[0]?.price?.id as string) || null;
 
         await prisma.creatorProfile.updateMany({
           where: { email },
           data: {
             isVerified: true,
-            verificationStatus: sub.status || "active",
-            verificationCurrentPeriodEnd: currentPeriodEnd,
+            verificationPriceId,
+            verificationStatus: (sub.status || "active") as any,
+            verificationCurrentPeriodEnd: currentPeriodEnd as any,
           },
         });
 
@@ -118,9 +136,7 @@ await prisma.creatorProfile.upsert({
       case "customer.subscription.deleted":
       case "customer.subscription.updated": {
         const sub = event.data.object as StripeTypes.Subscription;
-        const purpose = sub.metadata?.purpose;
-
-        if (purpose !== "blue_tick") break;
+        if (!isVerificationPurpose(sub.metadata?.purpose)) break;
 
         const email = sub.metadata?.creator_email?.toLowerCase();
         if (!email) break;
@@ -128,15 +144,19 @@ await prisma.creatorProfile.upsert({
         const isActive = ["active", "trialing"].includes(sub.status);
 
         const currentPeriodEnd = (sub as any).current_period_end
-          ? new Date((sub as any).current_period_end * 1000)
+          ? new Date(((sub as any).current_period_end as number) * 1000)
           : null;
+
+        const verificationPriceId =
+          ((sub as any).items?.data?.[0]?.price?.id as string) || null;
 
         await prisma.creatorProfile.updateMany({
           where: { email },
           data: {
             isVerified: isActive,
-            verificationStatus: sub.status || "inactive",
-            verificationCurrentPeriodEnd: currentPeriodEnd,
+            verificationPriceId,
+            verificationStatus: (sub.status || "inactive") as any,
+            verificationCurrentPeriodEnd: currentPeriodEnd as any,
           },
         });
 
@@ -146,7 +166,7 @@ await prisma.creatorProfile.upsert({
 
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (e: any) {
-    console.error("[stripe/blue-tick] handler error", e);
+    console.error("[stripe/verification] handler error", e);
     return NextResponse.json({ error: "handler error" }, { status: 500 });
   }
 }
