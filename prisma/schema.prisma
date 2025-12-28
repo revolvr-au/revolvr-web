@@ -109,6 +109,16 @@ model CreatorProfile {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
+  
+  // Blue tick verification (recurring entitlement)
+  isVerified                    Boolean   @default(false) @map("is_verified")
+  verifiedSince                 DateTime? @map("verified_since")
+  stripeCustomerId              String?   @map("stripe_customer_id")
+  stripeSubscriptionId          String?   @unique @map("stripe_subscription_id")
+  verificationPriceId           String?   @map("verification_price_id")
+  verificationStatus            String    @default("inactive") @map("verification_status")
+  verificationCurrentPeriodEnd  DateTime? @map("verification_current_period_end")
+
   @@schema("public")
 }
 
