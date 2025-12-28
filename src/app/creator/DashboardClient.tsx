@@ -173,7 +173,8 @@ export default function DashboardClient() {
     loadCredits(userEmail);
   
 
-    loadCreatorMe();}, [ready, userEmail, loadPosts, loadSpins, loadCredits]);
+    loadCreatorMe();
+  }, [ready, userEmail, loadPosts, loadSpins, loadCredits, loadCreatorMe]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
