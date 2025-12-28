@@ -225,12 +225,16 @@ export default function DashboardClient() {
     router.replace("/public-feed");
   };
 
-  const handleStartBlueTick = async () => {
+  const handleStartBlueTick = async (tier: "blue" | "gold" = "blue") => {
     try {
       setIsLoadingVerify(true);
       setError(null);
 
-      const res = await fetch("/api/creator/verify/start", { method: "POST" });
+      const res = await fetch("/api/creator/verify/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier }),
+      });
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
@@ -473,15 +477,27 @@ export default function DashboardClient() {
                   Blue Tick active
                 </span>
               ) : (
-                <button
+                
+                <div className="flex items-center gap-2">
+<button
                   type="button"
                   disabled={isLoadingVerify}
-                  onClick={handleStartBlueTick}
+                  onClick={() => handleStartBlueTick("blue")}
                   className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                 >
                   {isLoadingVerify ? "Starting…" : "Get Blue Tick (Recurring)"}
                 </button>
-              )}
+                <button
+                  type="button"
+                  disabled={isLoadingVerify}
+                  onClick={() => handleStartBlueTick("gold")}
+                  className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
+                >
+                  {isLoadingVerify ? "Starting…" : "Get Gold Tick (Recurring)"}
+                </button>
+
+                              </div>
+)}
             </div>
 
             <div className="flex flex-col gap-2">
