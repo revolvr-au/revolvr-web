@@ -66,6 +66,7 @@ export default function DashboardClient() {
   const [error, setError] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
   const [isLoadingVerify, setIsLoadingVerify] = useState(false);
+  const [verifiedMap, setVerifiedMap] = useState<Record<string, boolean>>({});
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [caption, setCaption] = useState("");
@@ -105,6 +106,38 @@ export default function DashboardClient() {
       setError("Revolvr glitched out while loading the feed 😵‍💫");
     } finally {
       setIsLoadingPosts(false);
+    }
+  }, []);
+
+
+  const loadVerifiedAuthors = useCallback(async (emails: string[]) => {
+    try {
+      const uniq = Array.from(
+        new Set(
+          (emails || [])
+            .map((e) => String(e || "").trim().toLowerCase())
+            .filter(Boolean)
+        )
+      );
+
+      if (uniq.length === 0) {
+        setVerifiedMap({});
+        return;
+      }
+
+      const res = await fetch(`/api/creator/verified?emails=${encodeURIComponent(uniq.join(","))}`, {
+        cache: "no-store",
+      });
+
+      const json = await res.json().catch(() => null);
+      const verified: string[] = Array.isArray(json?.verified) ? json.verified : [];
+
+      const m: Record<string, boolean> = {};
+      for (const em of verified) m[String(em).toLowerCase()] = true;
+      setVerifiedMap(m);
+    } catch (e) {
+      // non-critical
+      console.warn("[creator/dashboard] failed to load verified authors", e);
     }
   }, []);
 
@@ -176,6 +209,16 @@ export default function DashboardClient() {
     loadCreatorMe();
   }, [ready, userEmail, loadPosts, loadSpins, loadCredits, loadCreatorMe]);
 
+
+  // Load verified status for authors in the current post list (feed marketing)
+  useEffect(() => {
+    if (!posts || posts.length === 0) {
+      setVerifiedMap({});
+      return;
+    }
+    const emails = posts.map((p) => p.userEmail).filter(Boolean) as string[];
+    loadVerifiedAuthors(emails);
+  }, [posts, loadVerifiedAuthors]);
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/public-feed");
@@ -518,7 +561,7 @@ export default function DashboardClient() {
                         <div className="flex flex-col">
                           <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
                             {displayName}
-                          </span>
+                          {verifiedMap[String(post.userEmail || "").toLowerCase()] ? <span className="ml-1 inline-flex align-middle"><VerifiedBadge /></span> : null}</span>
                           <span className="text-[11px] text-white/40">
                             {new Date(post.createdAt).toLocaleString()}
                           </span>
