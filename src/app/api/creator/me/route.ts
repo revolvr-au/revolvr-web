@@ -36,6 +36,7 @@ export async function GET() {
       creator: {
         isActive: false,
         handle: null,
+        isVerified: false,
       },
     },
     { status: 200 }
@@ -49,6 +50,12 @@ export async function GET() {
       ? await prisma.creatorProfile.findUnique({ where: { email } })
       : null;
 
+    // Blue Tick (recurring) — normalize a single boolean for UI
+    const isVerified =
+      (profile as any)?.blueTickStatus === "active" ||
+      (profile as any)?.isVerified === true ||
+      (profile as any)?.verified === true;
+
     const balance = email
       ? await prisma.creatorBalance.findUnique({ where: { creatorEmail: email } })
       : null;
@@ -58,9 +65,10 @@ export async function GET() {
         loggedIn: true,
         user: { id: user.id, email: email || null },
         creator: {
-  isActive: profile?.status === "ACTIVE",
-  handle: profile?.handle ?? null,
-},
+          isActive: profile?.status === "ACTIVE",
+          handle: profile?.handle ?? null,
+          isVerified,
+        },
         profile,
         balance:
           balance ??
