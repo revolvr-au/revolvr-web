@@ -113,6 +113,7 @@ model CreatorProfile {
   // Blue tick verification (recurring entitlement)
   isVerified                    Boolean   @default(false) @map("is_verified")
   verifiedSince                 DateTime? @map("verified_since")
+  verificationTier              String?   @map("verification_tier")
   stripeCustomerId              String?   @map("stripe_customer_id")
   stripeSubscriptionId          String?   @unique @map("stripe_subscription_id")
   verificationPriceId           String?   @map("verification_price_id")
