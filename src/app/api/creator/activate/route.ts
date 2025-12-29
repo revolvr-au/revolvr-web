@@ -74,9 +74,12 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, profile });
   } catch (e: any) {
-    console.error("[creator/activate]", e);
+    console.error("[api/creator/activate] error", e);
     return NextResponse.json(
-      { error: e.code || e.message || "Server error" },
+      {
+        error: e?.code || e?.message || "Server error",
+        prisma: { code: e?.code || null, cause: e?.meta?.cause || null },
+      },
       { status: 500 }
     );
   }
