@@ -65,6 +65,7 @@ export default function DashboardClient() {
 
   const [error, setError] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
+  const [verificationTier, setVerificationTier] = useState<"blue" | "gold" | null>(null);
   const [isLoadingVerify, setIsLoadingVerify] = useState(false);
   const [verifiedEmails, setVerifiedEmails] = useState<Record<string, boolean>>({});
   const [verifiedMap, setVerifiedMap] = useState<Record<string, boolean>>({});
@@ -226,40 +227,55 @@ export default function DashboardClient() {
   };
 
   const handleStartBlueTick = async (tier: "blue" | "gold" = "blue") => {
-    try {
-      setIsLoadingVerify(true);
-      setError(null);
+  try {
+    setIsLoadingVerify(true);
+    setError(null);
 
-      const res = await fetch("/api/creator/verify/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier }),
-      });
-      const data = await res.json().catch(() => null);
+    // IMPORTANT: attach Supabase access token so /api/creator/verify/start can auth
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
 
-      if (!res.ok) {
-        setError(data?.error || "Could not start Blue Tick checkout.");
-        return;
-      }
-
-      if (data?.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      setError("Stripe did not return a checkout URL.");
-    } catch (e) {
-      console.error("[creator/dashboard] start blue tick error", e);
-      setError("Revolvr glitched out starting Blue Tick 😵‍💫");
-    } finally {
-      setIsLoadingVerify(false);
+    if (!token) {
+      setError("You need to be signed in to start verification.");
+      return;
     }
-  };
 
+    const res = await fetch("/api/creator/verify/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ tier }),
+    });
+
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      setError(json?.error || "Could not start verification checkout.");
+      return;
+    }
+
+    if (json?.url) {
+      window.location.href = json.url;
+      return;
+    }
+
+    setError("Stripe did not return a checkout URL.");
+  } catch (e) {
+    console.error("[creator/dashboard] start verify error", e);
+    setError("Revolvr glitched out starting verification.");
+  } finally {
+    setIsLoadingVerify(false);
+  }
+};
+
+  // inside DashboardClient.tsx
 
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!userEmail) return;
+
     if (!file) {
       setError("Please add an image or short video before posting.");
       return;
@@ -269,7 +285,7 @@ export default function DashboardClient() {
       setIsPosting(true);
       setError(null);
 
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split(".").pop() || "bin";
       const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
       const { data: storageData, error: storageError } = await supabase.storage
@@ -280,14 +296,14 @@ export default function DashboardClient() {
         throw storageError ?? new Error("Upload failed");
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("posts").getPublicUrl(storageData.path);
+      const { data: { publicUrl } } = supabase.storage
+        .from("posts")
+        .getPublicUrl(storageData.path);
 
       const { data: inserted, error: insertError } = await supabase
         .from(POSTS_TABLE)
         .insert({
-          userEmail: userEmail,
+          userEmail,
           imageUrl: publicUrl,
           caption: caption.trim(),
         })
@@ -296,7 +312,7 @@ export default function DashboardClient() {
 
       if (insertError) throw insertError;
 
-      setPosts((prev) => (inserted ? [inserted as Post, ...prev] : prev));
+      setPosts((prev) => (inserted ? [inserted as any, ...prev] : prev));
       setCaption("");
       setFile(null);
       setIsComposerOpen(false);
@@ -307,6 +323,10 @@ export default function DashboardClient() {
       setIsPosting(false);
     }
   };
+
+
+
+
 
   const handleDeletePost = async (id: string) => {
     try {
@@ -476,7 +496,7 @@ export default function DashboardClient() {
               {isVerified ? (
                 <span className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200">
                   <span className="h-2 w-2 rounded-full bg-blue-400" />
-                  Verified active
+                  {verificationTier === "gold" ? "Gold Tick active" : "Blue Tick active"}
                 </span>
               ) : (
                 <div className="flex items-center gap-2">
