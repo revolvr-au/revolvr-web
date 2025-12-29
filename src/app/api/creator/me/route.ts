@@ -58,6 +58,22 @@ export async function GET() {
     const isVerified = Boolean((profile as any)?.isVerified);
     const verificationStatus = (profile as any)?.verificationStatus ?? null;
     const verificationCurrentPeriodEnd = (profile as any)?.verificationCurrentPeriodEnd ?? null;
+    const verificationPriceId =
+      (profile as any)?.verificationPriceId ??
+      (profile as any)?.verification_price_id ??
+      null;
+
+    const bluePriceId = process.env.STRIPE_BLUE_TICK_PRICE_ID || "";
+    const goldPriceId = process.env.STRIPE_GOLD_TICK_PRICE_ID || "";
+
+    const verificationTier =
+      verificationPriceId && goldPriceId && String(verificationPriceId) === String(goldPriceId)
+        ? "gold"
+        : verificationPriceId && bluePriceId && String(verificationPriceId) === String(bluePriceId)
+          ? "blue"
+          : verificationPriceId
+            ? "blue"
+            : null;
 
     return NextResponse.json(
       {
@@ -69,6 +85,8 @@ export async function GET() {
           isVerified,
           verificationStatus,
           verificationCurrentPeriodEnd,
+          verificationTier,
+          verificationPriceId,
         },
         profile,
         balance:
@@ -81,7 +99,8 @@ export async function GET() {
     );
   } catch (e) {
     console.error("[api/creator/me] error", e);
-    return NextResponse.json(
+
+return NextResponse.json(
       {
         loggedIn: false,
         creator: {
