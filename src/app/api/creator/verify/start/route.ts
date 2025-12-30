@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     );
 
     const me = await meRes.json().catch(() => null);
-    const email = me?.creator?.email?.toLowerCase();
+    const email = me?.user?.email?.toLowerCase();
     if (!email) return jsonError("unauthenticated", 401);
 
     const body = await req.json().catch(() => ({}));
