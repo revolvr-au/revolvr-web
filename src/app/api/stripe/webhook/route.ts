@@ -5,66 +5,126 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-12-15.clover",
 });
+
+function getTierFromPriceId(priceId: string | null) {
+  if (!priceId) return null;
+  const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID || "";
+  const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID || "";
+  if (gold && priceId === gold) return "gold";
+  if (blue && priceId === blue) return "blue";
+  return null;
+}
+
+async function findProfileByCustomer(customerId: string) {
+  // Prefer stored mapping
+  const byId = await prisma.creatorProfile.findFirst({
+    where: { stripeCustomerId: customerId },
+  });
+  if (byId) return byId;
+
+  // Fallback: fetch email from Stripe customer
+  const customer = await stripe.customers.retrieve(customerId);
+  const email =
+    (customer && "email" in customer ? (customer.email ?? "") : "")
+      .trim()
+      .toLowerCase();
+
+  if (!email) return null;
+
+  return prisma.creatorProfile.findUnique({ where: { email } });
+}
 
 export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature");
   if (!sig) {
-    return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Missing signature" },
+      { status: 400 }
+    );
   }
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
-  const rawBody = await req.text();
+  const body = await req.text();
 
-  let event: Stripe.Event;
+  // Support 2 webhook secrets (blue + gold) by attempting both.
+  const secrets = [
+    process.env.STRIPE_WEBHOOK_SECRET_BLUE_TICK,
+    process.env.STRIPE_WEBHOOK_SECRET_GOLD_TICK,
+  ].filter(Boolean) as string[];
 
-  try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-  } catch (err: any) {
+  let event: Stripe.Event | null = null;
+  let lastErr: unknown = null;
+
+  for (const secret of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(body, sig, secret);
+      break;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  if (!event) {
+    console.error("[stripe/webhook] signature verify failed", lastErr);
     return NextResponse.json(
-      { error: `Webhook error: ${err.message}` },
+      { ok: false, error: "Invalid signature" },
       { status: 400 }
     );
   }
 
   try {
-    if (event.type === "account.updated") {
-      const acct = event.data.object as Stripe.Account;
+    if (
+      event.type === "customer.subscription.created" ||
+      event.type === "customer.subscription.updated" ||
+      event.type === "customer.subscription.deleted"
+    ) {
+      const sub = event.data.object as Stripe.Subscription;
 
-      const stripeAccountId = acct.id;
-      const chargesEnabled = !!acct.charges_enabled;
-      const payoutsEnabled = !!acct.payouts_enabled;
+      const customerId = String(sub.customer);
+      const profile = await findProfileByCustomer(customerId);
 
-      const onboardingStatus =
-        chargesEnabled && payoutsEnabled ? "complete" : "pending";
-
-      const data: any = {};
-
-      if ("stripeChargesEnabled" in acct) {
-        data.stripeChargesEnabled = chargesEnabled;
-        data.stripePayoutsEnabled = payoutsEnabled;
-        data.stripeOnboardingStatus = onboardingStatus;
-      } else {
-        data.stripe_charges_enabled = chargesEnabled;
-        data.stripe_payouts_enabled = payoutsEnabled;
-        data.stripe_onboarding_status = onboardingStatus;
+      // No profile yet? Don't fail the webhook; just acknowledge.
+      if (!profile) {
+        return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
       }
 
-      await prisma.creatorProfile.updateMany({
-        where: {
-          OR: [
-            { stripeAccountId: stripeAccountId },
-            { stripe_account_id: stripeAccountId },
-          ] as any,
+      const priceId =
+        sub.items?.data?.[0]?.price?.id != null
+          ? String(sub.items.data[0].price.id)
+          : null;
+
+      const status = String(sub.status); // active | trialing | canceled | etc
+      const isActive = status === "active" || status === "trialing";
+      const currentPeriodEnd =
+        typeof (sub as any).current_period_end === "number"
+          ? new Date((sub as any).current_period_end * 1000)
+          : null;
+
+      await prisma.creatorProfile.update({
+        where: { id: profile.id },
+        data: {
+          stripeCustomerId: customerId,
+          stripeSubscriptionId: sub.id,
+          verificationPriceId: priceId,
+          verificationStatus: isActive ? "active" : "inactive",
+          verificationCurrentPeriodEnd: currentPeriodEnd,
+          isVerified: isActive,
+          verifiedSince: isActive ? new Date() : null,
         },
-        data,
       });
+
+      return NextResponse.json(
+        { ok: true, tier: getTierFromPriceId(priceId), active: isActive },
+        { status: 200 }
+      );
     }
 
-    return NextResponse.json({ received: true }, { status: 200 });
+    return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
-    console.error("[stripe/webhook] handler failed", e);
-    return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
+    console.error("[stripe/webhook] handler error", e);
+    return NextResponse.json(
+      { ok: false, error: "Webhook handler failed" },
+      { status: 500 }
+    );
   }
 }
