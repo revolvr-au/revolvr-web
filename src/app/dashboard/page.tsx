@@ -223,6 +223,9 @@ export default function DashboardPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+          creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
+          source: "FEED",
+          targetId: null,
             email: userEmail,
             kind: "boost",
             postId,

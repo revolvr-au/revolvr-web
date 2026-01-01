@@ -20,58 +20,60 @@ type CheckoutMode =
   | "spin"
   | "tip-pack"
   | "boost-pack"
-  | "spin-pack";
+  | "spin-pack"
+  | "reaction"
+  | "vote";
 
 type SupportSource = "FEED" | "LIVE";
 
 type Body = {
   mode: CheckoutMode;
 
-  // Creator paid out (ledger attribution). If omitted, we fallback to userEmail.
-  creatorEmail?: string | null;
+  // REQUIRED for ledger attribution
+  creatorEmail: string;
 
-  // Viewer/payer
+  // viewer/payer email (optional but recommended)
   userEmail?: string | null;
 
-  // Support context
-  source?: SupportSource | string | null;
-  targetId?: string | null; // postId / sessionId / etc
-
-  // Legacy fields (still accepted)
+  // legacy (kept)
   postId?: string | null;
+
+  // new
+  source?: SupportSource | string | null;
+  targetId?: string | null;
 
   returnPath?: string | null;
 };
+
+function toKind(mode: string) {
+  // normalize to enum-safe: TIP|BOOST|SPIN|REACTION|VOTE or *_PACK
+  const m = String(mode || "").trim().toUpperCase();
+  if (m.endsWith("-PACK")) return m.replace("-PACK", "_PACK");
+  if (m === "TIP" || m === "BOOST" || m === "SPIN" || m === "REACTION" || m === "VOTE") return m;
+  if (m === "TIP-PACK" || m === "BOOST-PACK" || m === "SPIN-PACK") return m.replace("-PACK", "_PACK");
+  // fallback: keep something deterministic
+  return m.replace(/[^A-Z0-9_]/g, "_");
+}
+
+function toSource(src: any): "FEED" | "LIVE" {
+  const s = String(src || "FEED").toUpperCase();
+  return s === "LIVE" ? "LIVE" : "FEED";
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body;
 
-    const mode = body.mode;
-    const userEmail = (body.userEmail ?? "").toString().trim().toLowerCase() || null;
+    const mode = body?.mode;
+    const creatorEmail = (body?.creatorEmail || "").trim().toLowerCase();
+    const userEmail = (body?.userEmail ?? null)?.toString().trim().toLowerCase() || null;
+    const postId = body?.postId ?? null;
 
-    // IMPORTANT:
-    // If client forgot creatorEmail (your current bug), fallback to userEmail so checkout still works.
-    const creatorEmail =
-      (body.creatorEmail ?? userEmail ?? "")
-        .toString()
-        .trim()
-        .toLowerCase() || null;
+    const source = toSource(body?.source);
+    const targetId = (body?.targetId ?? postId ?? null) as string | null;
 
-    const sourceRaw = (body.source ?? "FEED").toString().trim().toUpperCase();
-    const source: SupportSource = sourceRaw === "LIVE" ? "LIVE" : "FEED";
-
-    const targetId =
-      (body.targetId ?? body.postId ?? "").toString().trim() || null;
-
-    if (!mode) {
-      return NextResponse.json({ error: "Missing mode" }, { status: 400 });
-    }
-
-    // If you truly want to require creatorEmail always, remove the fallback above.
-    if (!creatorEmail) {
-      return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
-    }
+    if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
+    if (!creatorEmail) return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
 
     let name = "";
     let amountCents = 0;
@@ -105,12 +107,22 @@ export async function POST(req: NextRequest) {
         amountCents = 2000; // A$20
         break;
 
+      // Future-proofed
+      case "reaction":
+        name = "Reaction";
+        amountCents = 100;
+        break;
+      case "vote":
+        name = "Vote";
+        amountCents = 100;
+        break;
+
       default:
         return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
     }
 
     const safeReturnPath =
-      body.returnPath && body.returnPath.startsWith("/")
+      body?.returnPath && body.returnPath.startsWith("/")
         ? body.returnPath
         : "/public-feed";
 
@@ -132,7 +144,7 @@ export async function POST(req: NextRequest) {
     cancelUrl.pathname = safeReturnPath;
     cancelUrl.search = cancelParams.toString();
 
-    const bundleType = mode.endsWith("-pack") ? "pack" : "single";
+    const kind = toKind(mode);
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -151,19 +163,20 @@ export async function POST(req: NextRequest) {
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
       metadata: {
-        // NEW keys (webhook reads these)
+        // what webhook reads (enum-safe)
         creator_id: creatorEmail,
-        payment_type: mode, // webhook normalises to TIP/BOOST/SPIN etc
-        viewer_email: userEmail ?? "",
-        source, // FEED|LIVE
+        payment_type: kind, // TIP|BOOST|SPIN|TIP_PACK|...
+        source,
         target_id: targetId ?? "",
 
-        // Legacy keys (safe to keep)
-        creatorEmail: creatorEmail,
+        // also store viewer explicitly for ledger
+        viewer_email: userEmail ?? "",
+
+        // legacy
+        creatorEmail,
         userEmail: userEmail ?? "",
-        postId: targetId ?? "",
+        postId: postId ?? "",
         mode,
-        bundleType,
       },
     });
 
