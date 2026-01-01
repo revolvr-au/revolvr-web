@@ -39,6 +39,8 @@ export async function GET() {
             isVerified: false,
             verificationStatus: null,
             verificationCurrentPeriodEnd: null,
+            verificationTier: null,
+            verificationPriceId: null,
           },
         },
         { status: 200 }
@@ -52,28 +54,34 @@ export async function GET() {
       : null;
 
     const balance = email
-      ? await prisma.creatorBalance.findUnique({ where: { creatorEmail: email } })
+      ? await prisma.creatorBalance.findUnique({
+          where: { creatorEmail: email },
+        })
       : null;
 
-    const isVerified = Boolean((profile as any)?.isVerified);
-    const verificationStatus = (profile as any)?.verificationStatus ?? null;
-    const verificationCurrentPeriodEnd = (profile as any)?.verificationCurrentPeriodEnd ?? null;
-    const verificationPriceId =
-      (profile as any)?.verificationPriceId ??
-      (profile as any)?.verification_price_id ??
-      null;
+    const verificationPriceId = profile?.verificationPriceId ?? null;
+    const verificationStatus = profile?.verificationStatus ?? null;
+    const verificationCurrentPeriodEnd =
+      profile?.verificationCurrentPeriodEnd ?? null;
 
     const bluePriceId = process.env.STRIPE_BLUE_TICK_PRICE_ID || "";
     const goldPriceId = process.env.STRIPE_GOLD_TICK_PRICE_ID || "";
 
     const verificationTier =
-      verificationPriceId && goldPriceId && String(verificationPriceId) === String(goldPriceId)
+      verificationPriceId &&
+      goldPriceId &&
+      String(verificationPriceId) === String(goldPriceId)
         ? "gold"
-        : verificationPriceId && bluePriceId && String(verificationPriceId) === String(bluePriceId)
+        : verificationPriceId &&
+            bluePriceId &&
+            String(verificationPriceId) === String(bluePriceId)
           ? "blue"
-          : verificationPriceId
-            ? "blue"
-            : null;
+          : null;
+
+    // Canonical: trust webhook-updated isVerified; fall back to status if needed
+    const isVerified =
+      Boolean(profile?.isVerified) ||
+      (verificationStatus === "active" && !!verificationCurrentPeriodEnd);
 
     return NextResponse.json(
       {
@@ -100,7 +108,7 @@ export async function GET() {
   } catch (e) {
     console.error("[api/creator/me] error", e);
 
-return NextResponse.json(
+    return NextResponse.json(
       {
         loggedIn: false,
         creator: {
@@ -109,6 +117,8 @@ return NextResponse.json(
           isVerified: false,
           verificationStatus: null,
           verificationCurrentPeriodEnd: null,
+          verificationTier: null,
+          verificationPriceId: null,
         },
         error: "Server error",
       },

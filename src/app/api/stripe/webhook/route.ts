@@ -4,8 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function getTierFromPriceId(priceId: string | null) {
   if (!priceId) return null;
@@ -25,10 +24,9 @@ async function findProfileByCustomer(customerId: string) {
 
   // Fallback: fetch email from Stripe customer
   const customer = await stripe.customers.retrieve(customerId);
-  const email =
-    (customer && "email" in customer ? (customer.email ?? "") : "")
-      .trim()
-      .toLowerCase();
+  const email = (customer && "email" in customer ? (customer.email ?? "") : "")
+    .trim()
+    .toLowerCase();
 
   if (!email) return null;
 
@@ -48,9 +46,11 @@ export async function POST(req: Request) {
 
   // Support 2 webhook secrets (blue + gold) by attempting both.
   const secrets = [
-    process.env.STRIPE_WEBHOOK_SECRET_BLUE_TICK,
-    process.env.STRIPE_WEBHOOK_SECRET_GOLD_TICK,
-  ].filter(Boolean) as string[];
+  process.env.STRIPE_WEBHOOK_SECRET,              // ✅ new canonical
+  process.env.STRIPE_WEBHOOK_SECRET_BLUE_TICK,    // legacy fallback
+  process.env.STRIPE_WEBHOOK_SECRET_GOLD_TICK,    // legacy fallback
+].filter(Boolean) as string[];
+
 
   let event: Stripe.Event | null = null;
   let lastErr: unknown = null;
@@ -88,17 +88,18 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
       }
 
-      const priceId =
-        sub.items?.data?.[0]?.price?.id != null
-          ? String(sub.items.data[0].price.id)
+      // ✅ price + period end live on the subscription item in your payload
+      const item = sub.items?.data?.[0];
+
+      const priceId = item?.price?.id != null ? String(item.price.id) : null;
+
+      const currentPeriodEnd =
+        typeof item?.current_period_end === "number"
+          ? new Date(item.current_period_end * 1000)
           : null;
 
       const status = String(sub.status); // active | trialing | canceled | etc
       const isActive = status === "active" || status === "trialing";
-      const currentPeriodEnd =
-        typeof (sub as any).current_period_end === "number"
-          ? new Date((sub as any).current_period_end * 1000)
-          : null;
 
       await prisma.creatorProfile.update({
         where: { id: profile.id },
