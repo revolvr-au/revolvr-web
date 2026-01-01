@@ -14,51 +14,67 @@ const stripe = new Stripe(stripeSecretKey);
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
-/**
- * Checkout supports:
- * - single: tip | boost | spin
- * - packs:  tip-pack | boost-pack | spin-pack
- */
 type CheckoutMode =
   | "tip"
   | "boost"
   | "spin"
+  | "reaction"
+  | "vote"
   | "tip-pack"
   | "boost-pack"
   | "spin-pack";
 
+type SupportSource = "FEED" | "LIVE";
+
 type Body = {
   mode: CheckoutMode;
 
-  // Who receives earnings (creator being supported)
+  // REQUIRED for ledger attribution
   creatorEmail: string;
 
-  // Who is paying (viewer)
+  // viewer/user email
   userEmail?: string | null;
 
-  // Context
-  source?: "FEED" | "LIVE" | string | null;
-  targetId?: string | null; // postId / live session id
+  // For FEED: postId, For LIVE: sessionId (or whatever you use)
+  targetId?: string | null;
+
+  // Optional but recommended
+  source?: SupportSource;
+
+  // Redirect
   returnPath?: string | null;
 };
+
+function toKind(mode: CheckoutMode) {
+  // packs are not support actions
+  if (mode.endsWith("-pack")) return null;
+
+  switch (mode) {
+    case "tip":
+      return "TIP";
+    case "boost":
+      return "BOOST";
+    case "spin":
+      return "SPIN";
+    case "reaction":
+      return "REACTION";
+    case "vote":
+      return "VOTE";
+    default:
+      return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body;
 
-    const mode = (body.mode || "").toString() as CheckoutMode;
+    const mode = body.mode;
+    const creatorEmail = (body.creatorEmail ?? "").trim().toLowerCase();
+    const userEmail = (body.userEmail ?? "").trim().toLowerCase() || null;
 
-    const creatorEmail = (body.creatorEmail || "")
-      .toString()
-      .trim()
-      .toLowerCase();
-
-    const userEmail = (body.userEmail || "").toString().trim().toLowerCase() || null;
-
-    const sourceRaw = (body.source || "FEED").toString().trim().toUpperCase();
-    const source = sourceRaw === "LIVE" ? "LIVE" : "FEED";
-
-    const targetId = (body.targetId || "").toString().trim() || null;
+    const source: SupportSource = body.source ?? "FEED";
+    const targetId = (body.targetId ?? "").trim() || null;
 
     if (!mode) {
       return NextResponse.json({ error: "Missing mode" }, { status: 400 });
@@ -83,6 +99,16 @@ export async function POST(req: NextRequest) {
       case "spin":
         name = "Revolvr spinner spin";
         amountCents = 100; // A$1
+        break;
+
+      // NEW: micro-actions
+      case "reaction":
+        name = "Paid reaction";
+        amountCents = 50; // A$0.50
+        break;
+      case "vote":
+        name = "Pay to vote";
+        amountCents = 50; // A$0.50
         break;
 
       // Packs
@@ -124,7 +150,7 @@ export async function POST(req: NextRequest) {
     cancelUrl.pathname = safeReturnPath;
     cancelUrl.search = cancelParams.toString();
 
-    // For later logic if you need it
+    const kind = toKind(mode); // TIP/BOOST/SPIN/REACTION/VOTE or null for packs
     const bundleType = mode.endsWith("-pack") ? "pack" : "single";
 
     const session = await stripe.checkout.sessions.create({
@@ -143,21 +169,21 @@ export async function POST(req: NextRequest) {
       ],
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
-
-      // IMPORTANT: these are what your webhook/ledger consumes
       metadata: {
+        // Canonical keys for ledger
         creator_id: creatorEmail,
-        payment_type: mode,                // "tip"|"boost"|"spin"|"...-pack"
-        source,                            // "FEED"|"LIVE"
-        target_id: targetId ?? "",         // postId/sessionId
-        viewer_email: userEmail ?? "",     // payer
+        payment_type: kind ?? mode.toUpperCase(), // packs keep their mode, singles become enum-like
+        source,
+        target_id: targetId ?? "",
 
-        // Safe duplicates (older keys)
+        // Viewer attribution
+        viewer_email: userEmail ?? "",
+
+        // Compatibility keys (safe)
         creatorEmail,
         userEmail: userEmail ?? "",
         mode,
         bundleType,
-        targetId: targetId ?? "",
       },
     });
 

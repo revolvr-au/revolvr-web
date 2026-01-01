@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
       .trim()
       .toLowerCase() || null;
 
-  // Normalise payment type to enum-style
   const rawType = (md.payment_type || md.mode || "").toString().trim();
   const paymentType = rawType.toUpperCase();
 
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest) {
       .trim() || null;
 
   const viewerEmail =
-    (md.viewer_email || md.viewerEmail || md.viewer_email || "")
+    (md.viewer_email || md.viewerEmail || md.userEmail || "")
       .toString()
       .trim()
       .toLowerCase() || null;
