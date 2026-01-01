@@ -18,31 +18,69 @@ type CheckoutMode =
   | "tip"
   | "boost"
   | "spin"
+  | "reaction"
+  | "vote"
   | "tip-pack"
   | "boost-pack"
   | "spin-pack";
 
+type SupportSource = "FEED" | "LIVE";
+
 type Body = {
   mode: CheckoutMode;
-  creatorEmail: string; // REQUIRED for ledger attribution
+
+  // REQUIRED for ledger attribution
+  creatorEmail: string;
+
+  // viewer/user email
   userEmail?: string | null;
-  postId?: string | null;
+
+  // For FEED: postId, For LIVE: sessionId (or whatever you use)
+  targetId?: string | null;
+
+  // Optional but recommended
+  source?: SupportSource;
+
+  // Redirect
   returnPath?: string | null;
 };
+
+function toKind(mode: CheckoutMode) {
+  // packs are not support actions
+  if (mode.endsWith("-pack")) return null;
+
+  switch (mode) {
+    case "tip":
+      return "TIP";
+    case "boost":
+      return "BOOST";
+    case "spin":
+      return "SPIN";
+    case "reaction":
+      return "REACTION";
+    case "vote":
+      return "VOTE";
+    default:
+      return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body;
-    const { mode, creatorEmail, postId, userEmail, returnPath } = body;
+
+    const mode = body.mode;
+    const creatorEmail = (body.creatorEmail ?? "").trim().toLowerCase();
+    const userEmail = (body.userEmail ?? "").trim().toLowerCase() || null;
+
+    const source: SupportSource = body.source ?? "FEED";
+    const targetId = (body.targetId ?? "").trim() || null;
 
     if (!mode) {
       return NextResponse.json({ error: "Missing mode" }, { status: 400 });
     }
     if (!creatorEmail) {
-      return NextResponse.json(
-        { error: "Missing creatorEmail" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
     }
 
     let name = "";
@@ -61,6 +99,16 @@ export async function POST(req: NextRequest) {
       case "spin":
         name = "Revolvr spinner spin";
         amountCents = 100; // A$1
+        break;
+
+      // NEW: micro-actions
+      case "reaction":
+        name = "Paid reaction";
+        amountCents = 50; // A$0.50
+        break;
+      case "vote":
+        name = "Pay to vote";
+        amountCents = 50; // A$0.50
         break;
 
       // Packs
@@ -82,19 +130,17 @@ export async function POST(req: NextRequest) {
     }
 
     const safeReturnPath =
-      returnPath && returnPath.startsWith("/") ? returnPath : "/public-feed";
+      body.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");
     successParams.set("mode", mode);
-    if (postId) successParams.set("postId", postId);
+    if (targetId) successParams.set("targetId", targetId);
 
     const cancelParams = new URLSearchParams();
     cancelParams.set("canceled", "1");
     cancelParams.set("mode", mode);
-    if (postId) cancelParams.set("postId", postId);
-
-    const bundleType = mode.endsWith("-pack") ? "pack" : "single";
+    if (targetId) cancelParams.set("targetId", targetId);
 
     const successUrl = new URL(SITE_URL);
     successUrl.pathname = safeReturnPath;
@@ -103,6 +149,9 @@ export async function POST(req: NextRequest) {
     const cancelUrl = new URL(SITE_URL);
     cancelUrl.pathname = safeReturnPath;
     cancelUrl.search = cancelParams.toString();
+
+    const kind = toKind(mode); // TIP/BOOST/SPIN/REACTION/VOTE or null for packs
+    const bundleType = mode.endsWith("-pack") ? "pack" : "single";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
@@ -121,15 +170,18 @@ export async function POST(req: NextRequest) {
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
       metadata: {
-        // NEW keys your ledger expects
+        // Canonical keys for ledger
         creator_id: creatorEmail,
-        payment_type: mode,
-        session_id: postId ?? "",
+        payment_type: kind ?? mode.toUpperCase(), // packs keep their mode, singles become enum-like
+        source,
+        target_id: targetId ?? "",
 
-        // Old/extra keys (safe to keep)
+        // Viewer attribution
+        viewer_email: userEmail ?? "",
+
+        // Compatibility keys (safe)
         creatorEmail,
         userEmail: userEmail ?? "",
-        postId: postId ?? "",
         mode,
         bundleType,
       },
@@ -138,9 +190,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (err) {
     console.error("[payments/checkout] error", err);
-    return NextResponse.json(
-      { error: "Stripe checkout failed" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Stripe checkout failed" }, { status: 500 });
   }
 }

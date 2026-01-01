@@ -6,13 +6,16 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Node runtime, use account default API version
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 const stripe = new Stripe(stripeSecretKey);
 
 // Revenue split (locked)
 const CREATOR_SHARE = 0.45;
+
+// Only these should land in SupportLedger
+const VALID_KINDS = new Set(["TIP", "BOOST", "SPIN", "REACTION", "VOTE"]);
+const VALID_SOURCES = new Set(["FEED", "LIVE"]);
 
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.STRIPE_LEDGER_WEBHOOK_SECRET;
@@ -22,9 +25,7 @@ export async function POST(req: NextRequest) {
   }
 
   const sig = req.headers.get("stripe-signature");
-  if (!sig) {
-    return new NextResponse("Missing stripe-signature header", { status: 400 });
-  }
+  if (!sig) return new NextResponse("Missing stripe-signature header", { status: 400 });
 
   let event: Stripe.Event;
 
@@ -42,26 +43,38 @@ export async function POST(req: NextRequest) {
 
   const session = event.data.object as Stripe.Checkout.Session;
 
-  // --- IDEMPOTENCY (event-level) ---
-  // If Stripe retries the same event, this insert will fail and we no-op safely.
+  // Idempotency (event-level)
   try {
-    await prisma.stripeEvent.create({
-      data: { id: event.id, type: event.type },
-    });
+    await prisma.stripeEvent.create({ data: { id: event.id, type: event.type } });
   } catch {
     return NextResponse.json({ received: true });
   }
 
-  // --- METADATA (support old + new keys) ---
   const md = session.metadata ?? {};
 
   const creatorEmail =
-    md.creator_id || md.creatorEmail || md.creator_email || null;
+    (md.creator_id || md.creatorEmail || md.creator_email || "")
+      .toString()
+      .trim()
+      .toLowerCase() || null;
 
-  const paymentType = md.payment_type || md.mode || null;
+  // Normalise payment type to enum-style
+  const rawType = (md.payment_type || md.mode || "").toString().trim();
+  const paymentType = rawType.toUpperCase();
 
-  // This is your internal "target id" (postId / live session / etc)
-  const internalSessionId = md.session_id || md.postId || null;
+  const sourceRaw = (md.source || md.support_source || "FEED").toString().toUpperCase();
+  const source = VALID_SOURCES.has(sourceRaw) ? sourceRaw : "FEED";
+
+  const targetId =
+    (md.target_id || md.targetId || md.session_id || md.postId || "")
+      .toString()
+      .trim() || null;
+
+  const viewerEmail =
+    (md.viewer_email || md.viewerEmail || md.viewer_email || "")
+      .toString()
+      .trim()
+      .toLowerCase() || null;
 
   if (!creatorEmail || !paymentType) {
     console.warn("[stripe-ledger] missing metadata", {
@@ -73,7 +86,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // --- STRIPE FIELDS ---
+  // Ignore packs here (credit packs should be handled elsewhere)
+  if (paymentType.includes("PACK") || paymentType.endsWith("-PACK")) {
+    return NextResponse.json({ received: true, ignored: "pack" });
+  }
+
+  // Only write SupportLedger for known kinds
+  if (!VALID_KINDS.has(paymentType)) {
+    console.warn("[stripe-ledger] unsupported paymentType", { paymentType, eventId: event.id });
+    return NextResponse.json({ received: true, ignored: "unsupported_kind" });
+  }
+
   const grossCents = session.amount_total ?? 0;
   const currency = (session.currency ?? "aud").toLowerCase();
 
@@ -92,11 +115,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ received: true });
   }
 
-  // --- SPLIT ---
   const creatorCents = Math.round(grossCents * CREATOR_SHARE);
   const platformCents = Math.max(0, grossCents - creatorCents);
 
-  const paymentId = session.id; // Stripe Checkout Session ID (stable)
+  const paymentId = session.id; // stable checkout session id
 
   try {
     await prisma.$transaction([
@@ -109,7 +131,7 @@ export async function POST(req: NextRequest) {
           stripeSessionId: session.id,
 
           creatorId: creatorEmail,
-          ...(internalSessionId ? { sessionId: internalSessionId } : {}),
+          ...(targetId ? { sessionId: targetId } : {}),
 
           type: paymentType,
           amountGross: grossCents,
@@ -119,6 +141,21 @@ export async function POST(req: NextRequest) {
           status: "completed",
         },
         update: {}, // keep existing record if retried
+      }),
+
+      prisma.supportLedger.create({
+        data: {
+          creatorEmail,
+          viewerEmail,
+          kind: paymentType as any, // TIP|BOOST|SPIN|REACTION|VOTE
+          source: source as any, // FEED|LIVE
+          targetId,
+          units: 1,
+          currency: currency.toUpperCase(),
+          grossCents,
+          creatorCents,
+          platformCents,
+        },
       }),
 
       prisma.creatorBalance.upsert({

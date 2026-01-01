@@ -80,6 +80,8 @@ enum SupportKind {
   TIP
   BOOST
   SPIN
+  REACTION
+  VOTE
 
   @@schema("public")
 }

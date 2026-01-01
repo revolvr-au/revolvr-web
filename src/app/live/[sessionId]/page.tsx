@@ -13,13 +13,18 @@ import {
 
 type PendingPurchase = { mode: PurchaseMode };
 
+type LiveMode = PurchaseMode | "reaction" | "vote";
+
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const safeSessionId = params?.sessionId ?? "";
-  const sessionId = useMemo(() => decodeURIComponent(safeSessionId), [safeSessionId]);
+  const sessionId = useMemo(
+    () => decodeURIComponent(safeSessionId),
+    [safeSessionId]
+  );
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +32,20 @@ export default function LiveRoomPage() {
   const [credits, setCredits] = useState<CreditBalances | null>(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(
-    null
-  );
+  const [pendingPurchase, setPendingPurchase] =
+    useState<PendingPurchase | null>(null);
 
   const [supportBusy, setSupportBusy] = useState(false);
+
+  // ---- Live creator attribution (required by your checkout route) ----
+  // Minimal, launch-safe: read from querystring (?creator=email)
+  // Optional fallback: NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL
+  const creatorEmail = useMemo(() => {
+    const qs = searchParams?.get("creator")?.trim().toLowerCase() || "";
+    const fallback =
+      (process.env.NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL || "").trim().toLowerCase();
+    return qs || fallback || null;
+  }, [searchParams]);
 
   /* ---------------------- Load logged-in user ---------------------- */
   useEffect(() => {
@@ -75,7 +89,7 @@ export default function LiveRoomPage() {
   }, [userEmail, searchParams?.toString()]);
 
   /* ---------------------- Auth helper ------------------------------ */
-    const ensureLoggedIn = () => {
+  const ensureLoggedIn = () => {
     if (!userEmail) {
       setError("Not signed in (diagnostic). Click login below.");
       return false;
@@ -83,32 +97,50 @@ export default function LiveRoomPage() {
     return true;
   };
 
+  const ensureCreatorKnown = () => {
+    if (!creatorEmail) {
+      setError(
+        "Missing creator identity for this live room. Add ?creator=EMAIL to the URL."
+      );
+      return false;
+    }
+    return true;
+  };
+
   /* ---------------------- Stripe checkout -------------------------- */
-  const startPayment = async (mode: PurchaseMode, kind: "single" | "pack") => {
+  const startPayment = async (mode: LiveMode, kind: "single" | "pack") => {
     if (!ensureLoggedIn() || !userEmail) return;
+    if (!ensureCreatorKnown() || !creatorEmail) return;
 
     try {
       setError(null);
 
+      // Packs only apply to tip/boost/spin
+      const isCreditMode = mode === "tip" || mode === "boost" || mode === "spin";
       const checkoutMode =
-        kind === "pack"
+        kind === "pack" && isCreditMode
           ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
-          : mode;
+          : (mode as any);
 
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode: checkoutMode,
+          creatorEmail, // REQUIRED
           userEmail,
-          postId: sessionId, // ok for now
-          returnPath: `/live/${encodeURIComponent(sessionId)}`,
+          source: "LIVE",
+          targetId: sessionId,
+          returnPath: `/live/${encodeURIComponent(sessionId)}${
+            creatorEmail ? `?creator=${encodeURIComponent(creatorEmail)}` : ""
+          }`,
         }),
       });
 
       if (!res.ok) {
-        console.error("[live] checkout failed:", await res.text());
-        setError("Revolvr glitched out starting checkout. Try again.");
+        const txt = await res.text();
+        console.error("[live] checkout failed:", txt);
+        setError(txt || "Revolvr glitched out starting checkout. Try again.");
         return;
       }
 
@@ -122,13 +154,20 @@ export default function LiveRoomPage() {
   };
 
   /* ---------------------- Spend / support logic -------------------- */
-  const handleSupportClick = async (mode: PurchaseMode) => {
+  const handleSupportClick = async (mode: LiveMode) => {
     if (!ensureLoggedIn() || !userEmail || supportBusy) return;
 
     setSupportBusy(true);
     try {
       setError(null);
 
+      // New LIVE-only money actions (Stripe-only for simplicity)
+      if (mode === "reaction" || mode === "vote") {
+        await startPayment(mode, "single");
+        return;
+      }
+
+      // Credits apply only to tip/boost/spin
       const available =
         mode === "tip"
           ? credits?.tip ?? 0
@@ -144,7 +183,7 @@ export default function LiveRoomPage() {
         return;
       }
 
-      // Otherwise purchase
+      // Otherwise purchase (shows sheet for tip/boost/spin only)
       setPendingPurchase({ mode });
     } catch (err) {
       console.error("[live] support error", err);
@@ -167,50 +206,67 @@ export default function LiveRoomPage() {
   /* ---------------------- UI helpers ------------------------------- */
   const creditsSummary = useMemo(() => {
     if (!credits) return null;
-    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    const total =
+      (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
     if (total <= 0) return null;
 
     const parts: string[] = [];
-    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
-    if (credits.boost > 0) parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
-    if (credits.spin > 0) parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
+    if (credits.tip > 0)
+      parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.boost > 0)
+      parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
+    if (credits.spin > 0)
+      parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
     return parts.join(" • ");
   }, [credits]);
 
   return (
-     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
-        <main className="flex-1 flex flex-col items-center px-4 py-4 pb-24">
-      {!userEmail && (
-        <div className="w-full max-w-xl mb-3 text-xs text-white/70">
-          <a
-            className="underline"
-            href={`/login?redirectTo=${encodeURIComponent(
-              `/live/${encodeURIComponent(sessionId)}`
-            )}`}
-          >
-            Login to support this stream
-          </a>
-        </div>
-      )}
+    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+      <main className="flex-1 flex flex-col items-center px-4 py-4 pb-24">
+        {!userEmail && (
+          <div className="w-full max-w-xl mb-3 text-xs text-white/70">
+            <a
+              className="underline"
+              href={`/login?redirectTo=${encodeURIComponent(
+                `/live/${encodeURIComponent(sessionId)}${
+                  creatorEmail
+                    ? `?creator=${encodeURIComponent(creatorEmail)}`
+                    : ""
+                }`
+              )}`}
+            >
+              Login to support this stream
+            </a>
+          </div>
+        )}
 
-      {error && (
-        <div className="w-full max-w-xl mb-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
-          <span>{error}</span>
-          <button className="text-xs underline" onClick={() => setError(null)}>
-            Dismiss
-          </button>
-        </div>
-      )}
+        {error && (
+          <div className="w-full max-w-xl mb-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
+            <span>{error}</span>
+            <button
+              className="text-xs underline"
+              onClick={() => setError(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
-      <header className="w-full max-w-xl mb-4 flex items-center justify-between">
-
+        <header className="w-full max-w-xl mb-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
               Live on Revolvr
             </h1>
             <p className="text-xs text-white/50 mt-1">
-              Room: <span className="font-mono text-white/80">{sessionId}</span>
+              Room:{" "}
+              <span className="font-mono text-white/80">{sessionId}</span>
             </p>
+            {!creatorEmail && (
+              <p className="text-[11px] text-amber-200/70 mt-1">
+                Creator not set. Add{" "}
+                <span className="font-mono">?creator=email</span> to URL.
+              </p>
+            )}
           </div>
 
           <button
@@ -235,7 +291,9 @@ export default function LiveRoomPage() {
 
         <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm sm:text-base font-semibold">Support this stream</h2>
+            <h2 className="text-sm sm:text-base font-semibold">
+              Support this stream
+            </h2>
             {userEmail && (
               <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
                 Signed in as {userEmail}
@@ -244,7 +302,8 @@ export default function LiveRoomPage() {
           </div>
 
           <p className="text-xs text-white/60">
-            Use your credits first. If you run out, you’ll be taken straight to Stripe to top up.
+            Use your credits first. If you run out, you’ll be taken straight to
+            Stripe to top up.
           </p>
 
           <p className="text-[11px] text-white/55 mt-1">
@@ -255,7 +314,8 @@ export default function LiveRoomPage() {
               : "No credits yet – your first support will open a quick checkout."}
           </p>
 
-          <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] sm:text-xs">
+          {/* Core 5-action stack for LIVE */}
+          <div className="mt-2 grid grid-cols-5 gap-2 text-[11px] sm:text-xs">
             <button
               type="button"
               disabled={supportBusy}
@@ -285,6 +345,26 @@ export default function LiveRoomPage() {
               <div className="font-semibold">Spin</div>
               <div className="text-pink-200/80 mt-0.5">From A$1</div>
             </button>
+
+            <button
+              type="button"
+              disabled={supportBusy}
+              onClick={() => handleSupportClick("reaction")}
+              className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
+            >
+              <div className="font-semibold">React</div>
+              <div className="text-white/70 mt-0.5">A$0.50</div>
+            </button>
+
+            <button
+              type="button"
+              disabled={supportBusy}
+              onClick={() => handleSupportClick("vote")}
+              className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
+            >
+              <div className="font-semibold">Vote</div>
+              <div className="text-white/70 mt-0.5">A$0.50</div>
+            </button>
           </div>
         </section>
 
@@ -294,6 +374,8 @@ export default function LiveRoomPage() {
           onTip={() => handleSupportClick("tip")}
           onBoost={() => handleSupportClick("boost")}
           onSpin={() => handleSupportClick("spin")}
+          onReaction={() => handleSupportClick("reaction")}
+          onVote={() => handleSupportClick("vote")}
         />
       </main>
 
@@ -329,7 +411,8 @@ function LivePurchaseChoiceSheet({
   const singleAmount = mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
   const packAmount = mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
 
-  const packLabel = mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
+  const packLabel =
+    mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm">
@@ -351,9 +434,7 @@ function LivePurchaseChoiceSheet({
             onClick={onSingle}
             className="flex-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/60 px-3 py-2 text-xs text-left"
           >
-            <div className="font-semibold">
-              Single {modeLabel} ({singleAmount})
-            </div>
+            <div className="font-semibold">Single {modeLabel} ({singleAmount})</div>
             <div className="text-[11px] text-emerald-200/80">Quick one-off support</div>
           </button>
 
@@ -362,9 +443,7 @@ function LivePurchaseChoiceSheet({
             onClick={onPack}
             className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-xs text-left"
           >
-            <div className="font-semibold">
-              Buy {packLabel} ({packAmount})
-            </div>
+            <div className="font-semibold">Buy {packLabel} ({packAmount})</div>
             <div className="text-[11px] text-white/70">Better value, more {modeLabel.toLowerCase()}s</div>
           </button>
         </div>
@@ -389,9 +468,19 @@ type LiveSupportBubbleProps = {
   onTip: () => void;
   onBoost: () => void;
   onSpin: () => void;
+  onReaction: () => void;
+  onVote: () => void;
 };
 
-function LiveSupportBubble({ credits, disabled, onTip, onBoost, onSpin }: LiveSupportBubbleProps) {
+function LiveSupportBubble({
+  credits,
+  disabled,
+  onTip,
+  onBoost,
+  onSpin,
+  onReaction,
+  onVote,
+}: LiveSupportBubbleProps) {
   const [open, setOpen] = useState(false);
 
   const tips = credits?.tip ?? 0;
@@ -408,16 +497,24 @@ function LiveSupportBubble({ credits, disabled, onTip, onBoost, onSpin }: LiveSu
           className="flex items-center gap-3 rounded-full bg-black/70 border border-white/20 px-3 py-2 shadow-lg shadow-black/60 backdrop-blur-lg text-xs sm:text-sm hover:bg-black/85 disabled:opacity-60"
         >
           <span className="font-semibold text-white/90">Your credits</span>
-          <span className="flex items-center gap-1 text-emerald-200">🪙 <span>{tips}</span></span>
-          <span className="flex items-center gap-1 text-sky-200">🚀 <span>{boosts}</span></span>
-          <span className="flex items-center gap-1 text-indigo-200">💧 <span>{spins}</span></span>
+          <span className="flex items-center gap-1 text-emerald-200">
+            🪙 <span>{tips}</span>
+          </span>
+          <span className="flex items-center gap-1 text-sky-200">
+            🚀 <span>{boosts}</span>
+          </span>
+          <span className="flex items-center gap-1 text-indigo-200">
+            💧 <span>{spins}</span>
+          </span>
         </button>
       )}
 
       {open && (
-        <div className="rounded-2xl bg-[#050814]/95 border border-white/15 px-3 py-3 shadow-2xl shadow-black/70 w-64 max-w-[80vw] backdrop-blur">
+        <div className="rounded-2xl bg-[#050814]/95 border border-white/15 px-3 py-3 shadow-2xl shadow-black/70 w-72 max-w-[85vw] backdrop-blur">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-white/80">Support this stream</span>
+            <span className="text-xs font-semibold text-white/80">
+              Support this stream
+            </span>
             <button
               type="button"
               onClick={() => setOpen(false)}
@@ -428,9 +525,15 @@ function LiveSupportBubble({ credits, disabled, onTip, onBoost, onSpin }: LiveSu
           </div>
 
           <div className="flex items-center justify-between text-[11px] mb-2 text-white/60">
-            <span className="flex items-center gap-1">🪙 <span>{tips}</span> tips</span>
-            <span className="flex items-center gap-1">🚀 <span>{boosts}</span> boosts</span>
-            <span className="flex items-center gap-1">💧 <span>{spins}</span> spins</span>
+            <span className="flex items-center gap-1">
+              🪙 <span>{tips}</span> tips
+            </span>
+            <span className="flex items-center gap-1">
+              🚀 <span>{boosts}</span> boosts
+            </span>
+            <span className="flex items-center gap-1">
+              💧 <span>{spins}</span> spins
+            </span>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -441,9 +544,14 @@ function LiveSupportBubble({ credits, disabled, onTip, onBoost, onSpin }: LiveSu
               className="w-full rounded-xl border border-emerald-400/60 bg-emerald-500/15 hover:bg-emerald-500/25 px-3 py-2 text-left text-xs text-emerald-50 disabled:opacity-60"
             >
               <div className="font-semibold">
-                Tip A$2 <span className="ml-1 text-[10px] text-emerald-200/80">({tips} left)</span>
+                Tip A$2{" "}
+                <span className="ml-1 text-[10px] text-emerald-200/80">
+                  ({tips} left)
+                </span>
               </div>
-              <div className="text-[11px] text-emerald-100/80">Quick appreciation</div>
+              <div className="text-[11px] text-emerald-100/80">
+                Quick appreciation
+              </div>
             </button>
 
             <button
@@ -453,9 +561,14 @@ function LiveSupportBubble({ credits, disabled, onTip, onBoost, onSpin }: LiveSu
               className="w-full rounded-xl border border-sky-400/60 bg-sky-500/15 hover:bg-sky-500/25 px-3 py-2 text-left text-xs text-sky-50 disabled:opacity-60"
             >
               <div className="font-semibold">
-                Boost A$5 <span className="ml-1 text-[10px] text-sky-200/80">({boosts} left)</span>
+                Boost A$5{" "}
+                <span className="ml-1 text-[10px] text-sky-200/80">
+                  ({boosts} left)
+                </span>
               </div>
-              <div className="text-[11px] text-sky-100/80">Push this stream up</div>
+              <div className="text-[11px] text-sky-100/80">
+                Push this stream up
+              </div>
             </button>
 
             <button
@@ -465,9 +578,34 @@ function LiveSupportBubble({ credits, disabled, onTip, onBoost, onSpin }: LiveSu
               className="w-full rounded-xl border border-fuchsia-400/70 bg-fuchsia-500/15 hover:bg-fuchsia-500/25 px-3 py-2 text-left text-xs text-fuchsia-50 disabled:opacity-60"
             >
               <div className="font-semibold">
-                Spin A$1 <span className="ml-1 text-[10px] text-fuchsia-200/80">({spins} left)</span>
+                Spin A$1{" "}
+                <span className="ml-1 text-[10px] text-fuchsia-200/80">
+                  ({spins} left)
+                </span>
               </div>
-              <div className="text-[11px] text-fuchsia-100/80">Light-touch support</div>
+              <div className="text-[11px] text-fuchsia-100/80">
+                Light-touch support
+              </div>
+            </button>
+
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onReaction}
+              className="w-full rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 px-3 py-2 text-left text-xs text-white disabled:opacity-60"
+            >
+              <div className="font-semibold">React A$0.50</div>
+              <div className="text-[11px] text-white/70">Impulse support</div>
+            </button>
+
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={onVote}
+              className="w-full rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 px-3 py-2 text-left text-xs text-white disabled:opacity-60"
+            >
+              <div className="font-semibold">Vote A$0.50</div>
+              <div className="text-[11px] text-white/70">Influence the stream</div>
             </button>
           </div>
         </div>
