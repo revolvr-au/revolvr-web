@@ -266,6 +266,9 @@ export default function DashboardPage() {
           userEmail,
           amountCents: boostAmountCents,
           postId,
+          creatorEmail: userEmail,
+          source: "FEED",
+          targetId: null,
         }),
       });
 

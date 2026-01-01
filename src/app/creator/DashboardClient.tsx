@@ -399,6 +399,9 @@ export default function DashboardClient() {
           userEmail,
           amountCents: boostAmountCents,
           postId,
+          creatorEmail: userEmail, // self-pay, at least it won’t 400
+          source: "FEED",
+          targetId: null,
         }),
       });
 

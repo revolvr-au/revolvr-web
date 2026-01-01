@@ -50,6 +50,9 @@ export default function CreditsPage() {
         body: JSON.stringify({
           mode,      // "tip-pack" | "boost-pack" | "spin-pack"
           userEmail, // for Stripe receipt
+          creatorEmail: userEmail,    // credits belong to this user
+          source: "FEED",
+          targetId: null,
         }),
       });
 
