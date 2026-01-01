@@ -14,11 +14,6 @@ const stripe = new Stripe(stripeSecretKey);
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
-/**
- * Checkout supports:
- * - single: tip | boost | spin
- * - packs:  tip-pack | boost-pack | spin-pack
- */
 type CheckoutMode =
   | "tip"
   | "boost"
@@ -27,18 +22,24 @@ type CheckoutMode =
   | "boost-pack"
   | "spin-pack";
 
+type SupportSource = "FEED" | "LIVE";
+
 type Body = {
   mode: CheckoutMode;
 
-  // Who receives earnings (creator being supported)
-  creatorEmail: string;
+  // Creator paid out (ledger attribution). If omitted, we fallback to userEmail.
+  creatorEmail?: string | null;
 
-  // Who is paying (viewer)
+  // Viewer/payer
   userEmail?: string | null;
 
-  // Context
-  source?: "FEED" | "LIVE" | string | null;
-  targetId?: string | null; // postId / live session id
+  // Support context
+  source?: SupportSource | string | null;
+  targetId?: string | null; // postId / sessionId / etc
+
+  // Legacy fields (still accepted)
+  postId?: string | null;
+
   returnPath?: string | null;
 };
 
@@ -46,23 +47,28 @@ export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as Body;
 
-    const mode = (body.mode || "").toString() as CheckoutMode;
+    const mode = body.mode;
+    const userEmail = (body.userEmail ?? "").toString().trim().toLowerCase() || null;
 
-    const creatorEmail = (body.creatorEmail || "")
-      .toString()
-      .trim()
-      .toLowerCase();
+    // IMPORTANT:
+    // If client forgot creatorEmail (your current bug), fallback to userEmail so checkout still works.
+    const creatorEmail =
+      (body.creatorEmail ?? userEmail ?? "")
+        .toString()
+        .trim()
+        .toLowerCase() || null;
 
-    const userEmail = (body.userEmail || "").toString().trim().toLowerCase() || null;
+    const sourceRaw = (body.source ?? "FEED").toString().trim().toUpperCase();
+    const source: SupportSource = sourceRaw === "LIVE" ? "LIVE" : "FEED";
 
-    const sourceRaw = (body.source || "FEED").toString().trim().toUpperCase();
-    const source = sourceRaw === "LIVE" ? "LIVE" : "FEED";
-
-    const targetId = (body.targetId || "").toString().trim() || null;
+    const targetId =
+      (body.targetId ?? body.postId ?? "").toString().trim() || null;
 
     if (!mode) {
       return NextResponse.json({ error: "Missing mode" }, { status: 400 });
     }
+
+    // If you truly want to require creatorEmail always, remove the fallback above.
     if (!creatorEmail) {
       return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
     }
@@ -104,7 +110,9 @@ export async function POST(req: NextRequest) {
     }
 
     const safeReturnPath =
-      body.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
+      body.returnPath && body.returnPath.startsWith("/")
+        ? body.returnPath
+        : "/public-feed";
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");
@@ -124,7 +132,6 @@ export async function POST(req: NextRequest) {
     cancelUrl.pathname = safeReturnPath;
     cancelUrl.search = cancelParams.toString();
 
-    // For later logic if you need it
     const bundleType = mode.endsWith("-pack") ? "pack" : "single";
 
     const session = await stripe.checkout.sessions.create({
@@ -143,21 +150,20 @@ export async function POST(req: NextRequest) {
       ],
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
-
-      // IMPORTANT: these are what your webhook/ledger consumes
       metadata: {
+        // NEW keys (webhook reads these)
         creator_id: creatorEmail,
-        payment_type: mode,                // "tip"|"boost"|"spin"|"...-pack"
-        source,                            // "FEED"|"LIVE"
-        target_id: targetId ?? "",         // postId/sessionId
-        viewer_email: userEmail ?? "",     // payer
+        payment_type: mode, // webhook normalises to TIP/BOOST/SPIN etc
+        viewer_email: userEmail ?? "",
+        source, // FEED|LIVE
+        target_id: targetId ?? "",
 
-        // Safe duplicates (older keys)
-        creatorEmail,
+        // Legacy keys (safe to keep)
+        creatorEmail: creatorEmail,
         userEmail: userEmail ?? "",
+        postId: targetId ?? "",
         mode,
         bundleType,
-        targetId: targetId ?? "",
       },
     });
 
