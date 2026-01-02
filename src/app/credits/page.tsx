@@ -41,15 +41,18 @@ export default function CreditsPage() {
   const startPackCheckout = async (mode: PackMode) => {
     if (!ensureLoggedIn()) return;
 
-    try {
+    
+    const email = userEmail;
+    if (!email) return;
+try {
       setIsLoading(true);
       setError(null);
 
       
       await startCheckout({
         mode,
-        creatorEmail: userEmail, // pack credits belong to purchaser
-        userEmail,
+        creatorEmail: email, // pack credits belong to purchaser
+        userEmail: email,
         source: "FEED",
         targetId: null,
         returnPath: "/credits",
