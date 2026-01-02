@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClients";
+import { startCheckout } from "@/lib/purchase";
 
 type PackMode = "tip-pack" | "boost-pack" | "spin-pack";
 
@@ -44,30 +45,16 @@ export default function CreditsPage() {
       setIsLoading(true);
       setError(null);
 
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-mode,      // "tip-pack" | "boost-pack" | "spin-pack"
-          userEmail, // for Stripe receipt
-          creatorEmail: userEmail,    // credits belong to this user
-          source: "FEED",
-          targetId: null,
-}),
+      
+      await startCheckout({
+        mode,
+        creatorEmail: userEmail, // pack credits belong to purchaser
+        userEmail,
+        source: "FEED",
+        targetId: null,
+        returnPath: "/credits",
       });
 
-      if (!res.ok) {
-        console.error("Pack checkout failed:", await res.text());
-        setError("Revolvr glitched out starting checkout 😵‍💫 Try again.");
-        return;
-      }
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Stripe did not return a checkout URL.");
-      }
     } catch (e) {
       console.error("[credits] startPackCheckout error", e);
       setError("Revolvr glitched out talking to Stripe 😵‍💫");

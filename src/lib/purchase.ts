@@ -5,76 +5,59 @@ export type CheckoutMode =
   | "spin"
   | "tip-pack"
   | "boost-pack"
-  | "spin-pack";
+  | "spin-pack"
+  | "reaction"
+  | "vote";
 
-type SupportSource = "FEED" | "LIVE";
+export type SupportSource = "FEED" | "LIVE";
 
-type PurchaseOptions = {
-  kind: "tip" | "boost" | "spin";
-  isPack?: boolean;
+export type StartCheckoutOptions = {
+  mode: CheckoutMode;
 
-  // REQUIRED by /api/payments/checkout
+  // REQUIRED for ledger attribution
   creatorEmail: string;
 
-  // viewer/payer email (optional)
+  // viewer/payer email (recommended)
   userEmail?: string | null;
 
-  // new target
+  // optional context
+  source?: SupportSource;
   targetId?: string | null;
 
-  // legacy
+  // legacy/back-compat (server can still accept it)
   postId?: string | null;
 
-  source?: SupportSource;
+  // REQUIRED for predictable redirect flow
   returnPath?: string | null;
 };
 
-export async function startCheckout(options: PurchaseOptions) {
-  const {
-    kind,
-    isPack,
-    creatorEmail,
-    userEmail,
-    targetId,
-    postId,
-    source = "FEED",
-    returnPath = "/public-feed",
-  } = options;
-
-  const modeMap = {
-    tip: isPack ? "tip-pack" : "tip",
-    boost: isPack ? "boost-pack" : "boost",
-    spin: isPack ? "spin-pack" : "spin",
-  } as const;
-
-  const mode: CheckoutMode = modeMap[kind];
-
-  if (!creatorEmail) {
-    console.error("[purchase] missing creatorEmail");
-    return;
-  }
+export async function startCheckout(opts: StartCheckoutOptions) {
+  const payload = {
+    mode: opts.mode,
+    creatorEmail: String(opts.creatorEmail || "").trim().toLowerCase(),
+    userEmail: (opts.userEmail ?? null)?.toString().trim().toLowerCase() || null,
+    source: (opts.source ?? "FEED") as SupportSource,
+    targetId: opts.targetId ?? null,
+    postId: opts.postId ?? null,
+    returnPath: opts.returnPath ?? "/public-feed",
+  };
 
   const res = await fetch("/api/payments/checkout", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      mode,
-      creatorEmail,
-      userEmail,
-      source,
-      targetId: targetId ?? postId ?? null,
-      postId: postId ?? null,
-      returnPath,
-    }),
+    body: JSON.stringify(payload),
   });
 
-  const data = await res.json().catch(() => null);
-
   if (!res.ok) {
-    console.error("Stripe checkout error:", data);
+    const text = await res.text().catch(() => "");
+    throw new Error(`checkout failed (${res.status}): ${text}`);
+  }
+
+  const data = await res.json().catch(() => ({} as any));
+  if (data?.url) {
+    window.location.href = data.url;
     return;
   }
 
-  if (data?.url) window.location.href = data.url;
-  else console.error("Stripe checkout missing url:", data);
+  throw new Error("Stripe did not return a checkout URL.");
 }

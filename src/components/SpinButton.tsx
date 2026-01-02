@@ -1,29 +1,22 @@
 "use client";
 
+import { startCheckout } from "@/lib/purchase";
+
 export default function SpinButton({ userEmail }: { userEmail: string }) {
   async function startSpin() {
-    const res = await fetch("/api/payments/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      await startCheckout({
         mode: "spin",
-        creatorEmail: userEmail,           // TEMP self attribution
+        creatorEmail: userEmail, // TEMP self attribution (swap later to actual creator)
         userEmail,
         source: "FEED",
         targetId: null,
-        returnPath: "/creator/dashboard",  // important so you come back
-      }),
-    });
-
-    if (!res.ok) {
-      console.error("Spin checkout failed:", await res.text());
+        returnPath: "/creator/dashboard",
+      });
+    } catch (e) {
+      console.error("[SpinButton] checkout failed", e);
       alert("Could not start spinner payment");
-      return;
     }
-
-    const data = await res.json().catch(() => null);
-    if (data?.url) window.location.href = data.url;
-    else alert("Stripe did not return a checkout URL");
   }
 
   return (
