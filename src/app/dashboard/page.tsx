@@ -176,7 +176,6 @@ export default function DashboardPage() {
       const { data: inserted, error: insertError } = await supabase
         .from(POSTS_TABLE)
         .insert({
-          userEmail: userEmail,
           imageUrl: publicUrl,
           caption: caption.trim(),
         })
@@ -223,13 +222,13 @@ export default function DashboardPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-          creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
+creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
           source: "FEED",
           targetId: null,
             email: userEmail,
             kind: "boost",
             postId,
-          }),
+}),
         });
 
         const data = await res.json();
@@ -265,14 +264,14 @@ export default function DashboardPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode: "boost",
+mode: "boost",
           userEmail,
           amountCents: boostAmountCents,
           postId,
           creatorEmail: userEmail,
           source: "FEED",
           targetId: null,
-        }),
+}),
       });
 
       if (!res.ok) {

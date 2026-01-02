@@ -48,12 +48,12 @@ export default function CreditsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode,      // "tip-pack" | "boost-pack" | "spin-pack"
+mode,      // "tip-pack" | "boost-pack" | "spin-pack"
           userEmail, // for Stripe receipt
           creatorEmail: userEmail,    // credits belong to this user
           source: "FEED",
           targetId: null,
-        }),
+}),
       });
 
       if (!res.ok) {

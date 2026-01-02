@@ -246,7 +246,13 @@ export default function DashboardClient() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ tier }),
+      body: JSON.stringify({
+creatorEmail: userEmail,
+userEmail,
+source: "FEED",
+targetId: null,
+tier
+}),
     });
 
     const json = await res.json().catch(() => null);
@@ -355,13 +361,14 @@ export default function DashboardClient() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-          creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
+creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
+userEmail,
           source: "FEED",
           targetId: null,
             email: userEmail,
             kind: "boost",
             postId,
-          }),
+}),
         });
 
         const data = await res.json();
@@ -398,14 +405,14 @@ export default function DashboardClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode: "boost",
+mode: "boost",
           userEmail,
           amountCents: boostAmountCents,
           postId,
           creatorEmail: userEmail, // self-pay, at least it won’t 400
           source: "FEED",
           targetId: null,
-        }),
+}),
       });
 
       if (!res.ok) {

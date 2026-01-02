@@ -127,7 +127,6 @@ export default function LiveRoomPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
 mode: checkoutMode,
-          creatorEmail, // REQUIRED
           userEmail,
           source: "LIVE",
           targetId: sessionId,
