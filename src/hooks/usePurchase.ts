@@ -19,6 +19,7 @@ export function usePurchase(defaultEmail?: string | null) {
       try {
         await startCheckout({
           kind,
+          creatorEmail: (opts.userEmail ?? defaultEmail ?? ""),
           isPack: opts.isPack,
           postId: opts.postId,
           userEmail: opts.userEmail ?? defaultEmail ?? undefined,

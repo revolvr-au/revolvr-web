@@ -7,10 +7,11 @@ export default function SpinButton({ userEmail }: { userEmail: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: "spin",
-        creatorEmail: userEmail, // TEMP: self attribution so it won’t 400
+        creatorEmail: userEmail, // TEMP self attribution so it won’t 400
         userEmail,
         source: "FEED",
         targetId: null,
+        returnPath: "/creator/dashboard",
       }),
     });
 
@@ -20,7 +21,7 @@ export default function SpinButton({ userEmail }: { userEmail: string }) {
     }
 
     const data = await res.json();
-    if (data.url) window.location.href = data.url;
+    if (data?.url) window.location.href = data.url;
   }
 
   return (

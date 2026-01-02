@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
-// Node runtime, use account default API version
 const stripe = new Stripe(stripeSecretKey);
 
 const SITE_URL =
@@ -28,14 +27,10 @@ type SupportSource = "FEED" | "LIVE";
 
 type Body = {
   mode: CheckoutMode;
-
-  // REQUIRED for ledger attribution
-  creatorEmail: string;
-
-  // viewer/payer email (optional but recommended)
+  creatorEmail: string; // REQUIRED
   userEmail?: string | null;
 
-  // legacy (kept)
+  // legacy
   postId?: string | null;
 
   // new
@@ -46,16 +41,13 @@ type Body = {
 };
 
 function toKind(mode: string) {
-  // normalize to enum-safe: TIP|BOOST|SPIN|REACTION|VOTE or *_PACK
   const m = String(mode || "").trim().toUpperCase();
-  if (m.endsWith("-PACK")) return m.replace("-PACK", "_PACK");
   if (m === "TIP" || m === "BOOST" || m === "SPIN" || m === "REACTION" || m === "VOTE") return m;
   if (m === "TIP-PACK" || m === "BOOST-PACK" || m === "SPIN-PACK") return m.replace("-PACK", "_PACK");
-  // fallback: keep something deterministic
   return m.replace(/[^A-Z0-9_]/g, "_");
 }
 
-function toSource(src: any): "FEED" | "LIVE" {
+function toSource(src: unknown): "FEED" | "LIVE" {
   const s = String(src || "FEED").toUpperCase();
   return s === "LIVE" ? "LIVE" : "FEED";
 }
@@ -66,9 +58,10 @@ export async function POST(req: NextRequest) {
 
     const mode = body?.mode;
     const creatorEmail = (body?.creatorEmail || "").trim().toLowerCase();
-    const userEmail = (body?.userEmail ?? null)?.toString().trim().toLowerCase() || null;
-    const postId = body?.postId ?? null;
+    const userEmail =
+      (body?.userEmail ?? null)?.toString().trim().toLowerCase() || null;
 
+    const postId = body?.postId ?? null;
     const source = toSource(body?.source);
     const targetId = (body?.targetId ?? postId ?? null) as string | null;
 
@@ -79,35 +72,32 @@ export async function POST(req: NextRequest) {
     let amountCents = 0;
 
     switch (mode) {
-      // Single actions
       case "tip":
         name = "Creator tip";
-        amountCents = 200; // A$2
+        amountCents = 200;
         break;
       case "boost":
         name = "Post boost";
-        amountCents = 500; // A$5
+        amountCents = 500;
         break;
       case "spin":
         name = "Revolvr spinner spin";
-        amountCents = 100; // A$1
+        amountCents = 100;
         break;
 
-      // Packs
       case "tip-pack":
         name = "Tip pack (10× A$2 tips)";
-        amountCents = 2000; // A$20
+        amountCents = 2000;
         break;
       case "boost-pack":
         name = "Boost pack (10× A$5 boosts)";
-        amountCents = 5000; // A$50
+        amountCents = 5000;
         break;
       case "spin-pack":
         name = "Spin pack (20× A$1 spins)";
-        amountCents = 2000; // A$20
+        amountCents = 2000;
         break;
 
-      // Future-proofed
       case "reaction":
         name = "Reaction";
         amountCents = 100;
@@ -163,13 +153,10 @@ export async function POST(req: NextRequest) {
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
       metadata: {
-        // what webhook reads (enum-safe)
         creator_id: creatorEmail,
-        payment_type: kind, // TIP|BOOST|SPIN|TIP_PACK|...
+        payment_type: kind,
         source,
         target_id: targetId ?? "",
-
-        // also store viewer explicitly for ledger
         viewer_email: userEmail ?? "",
 
         // legacy
