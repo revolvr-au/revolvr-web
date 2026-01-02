@@ -10,8 +10,7 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"
@@ -27,27 +26,23 @@ type SupportSource = "FEED" | "LIVE";
 
 type Body = {
   mode: CheckoutMode;
-  creatorEmail: string; // REQUIRED
+  creatorEmail: string; // required for attribution
   userEmail?: string | null;
-
-  // legacy
-  postId?: string | null;
-
-  // new
+  postId?: string | null; // legacy
   source?: SupportSource | string | null;
   targetId?: string | null;
-
   returnPath?: string | null;
 };
 
 function toKind(mode: string) {
   const m = String(mode || "").trim().toUpperCase();
+  if (m.endsWith("-PACK")) return m.replace("-PACK", "_PACK");
   if (m === "TIP" || m === "BOOST" || m === "SPIN" || m === "REACTION" || m === "VOTE") return m;
   if (m === "TIP-PACK" || m === "BOOST-PACK" || m === "SPIN-PACK") return m.replace("-PACK", "_PACK");
   return m.replace(/[^A-Z0-9_]/g, "_");
 }
 
-function toSource(src: unknown): "FEED" | "LIVE" {
+function toSource(src: any): "FEED" | "LIVE" {
   const s = String(src || "FEED").toUpperCase();
   return s === "LIVE" ? "LIVE" : "FEED";
 }
@@ -58,10 +53,9 @@ export async function POST(req: NextRequest) {
 
     const mode = body?.mode;
     const creatorEmail = (body?.creatorEmail || "").trim().toLowerCase();
-    const userEmail =
-      (body?.userEmail ?? null)?.toString().trim().toLowerCase() || null;
-
+    const userEmail = (body?.userEmail ?? null)?.toString().trim().toLowerCase() || null;
     const postId = body?.postId ?? null;
+
     const source = toSource(body?.source);
     const targetId = (body?.targetId ?? postId ?? null) as string | null;
 
@@ -112,9 +106,7 @@ export async function POST(req: NextRequest) {
     }
 
     const safeReturnPath =
-      body?.returnPath && body.returnPath.startsWith("/")
-        ? body.returnPath
-        : "/public-feed";
+      body?.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");

@@ -7,21 +7,23 @@ export default function SpinButton({ userEmail }: { userEmail: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: "spin",
-        creatorEmail: userEmail, // TEMP self attribution so it won’t 400
+        creatorEmail: userEmail,           // TEMP self attribution
         userEmail,
         source: "FEED",
         targetId: null,
-        returnPath: "/creator/dashboard",
+        returnPath: "/creator/dashboard",  // important so you come back
       }),
     });
 
     if (!res.ok) {
+      console.error("Spin checkout failed:", await res.text());
       alert("Could not start spinner payment");
       return;
     }
 
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     if (data?.url) window.location.href = data.url;
+    else alert("Stripe did not return a checkout URL");
   }
 
   return (
