@@ -126,7 +126,7 @@ export default function LiveRoomPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-                    mode: checkoutMode,
+mode: checkoutMode,
           creatorEmail, // REQUIRED
           userEmail,
           source: "LIVE",
@@ -134,7 +134,7 @@ export default function LiveRoomPage() {
           returnPath: `/live/${encodeURIComponent(sessionId)}${
             creatorEmail ? `?creator=${encodeURIComponent(creatorEmail)}` : ""
           }`,
-        }),
+}),
       });
 
       if (!res.ok) {
