@@ -7,8 +7,10 @@ export default function SpinButton({ userEmail }: { userEmail: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         mode: "spin",
+        creatorEmail: userEmail, // TEMP: self attribution so it won’t 400
         userEmail,
-        amountCents: 100, // A$1.00 per spin
+        source: "FEED",
+        targetId: null,
       }),
     });
 
