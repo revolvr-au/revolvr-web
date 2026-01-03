@@ -1,15 +1,20 @@
-import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
+// If you set a Stripe API version in dashboard, it’s fine to omit apiVersion here.
+// If you want to pin it, add: { apiVersion: "2025-03-31.basil" as any }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function getTierFromPriceId(priceId: string | null) {
   if (!priceId) return null;
-  const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID || "";
-  const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID || "";
+
+  const blue = (process.env.STRIPE_BLUE_TICK_PRICE_ID || "").trim();
+  const gold = (process.env.STRIPE_GOLD_TICK_PRICE_ID || "").trim();
+
   if (gold && priceId === gold) return "gold";
   if (blue && priceId === blue) return "blue";
   return null;
@@ -24,33 +29,47 @@ async function findProfileByCustomer(customerId: string) {
 
   // Fallback: fetch email from Stripe customer
   const customer = await stripe.customers.retrieve(customerId);
-  const email = (customer && "email" in customer ? (customer.email ?? "") : "")
-    .trim()
-    .toLowerCase();
+  const email =
+    (customer && "email" in customer ? (customer.email ?? "") : "")
+      .trim()
+      .toLowerCase();
 
   if (!email) return null;
 
   return prisma.creatorProfile.findUnique({ where: { email } });
 }
 
+function getWebhookSecrets(): string[] {
+  // Canonical secret (current)
+  const primary = (process.env.STRIPE_WEBHOOK_SECRET || "").trim();
+
+  // Legacy / optional fallbacks (only if you still have multiple Stripe destinations hitting different endpoints/secrets)
+  const blueLegacy = (process.env.STRIPE_WEBHOOK_SECRET_BLUE_TICK || "").trim();
+  const goldLegacy = (process.env.STRIPE_WEBHOOK_SECRET_GOLD_TICK || "").trim();
+
+  return [primary, blueLegacy, goldLegacy].filter(Boolean);
+}
+
 export async function POST(req: Request) {
   const sig = req.headers.get("stripe-signature");
   if (!sig) {
     return NextResponse.json(
-      { ok: false, error: "Missing signature" },
+      { ok: false, error: "Missing stripe-signature header" },
       { status: 400 }
     );
   }
 
+  // IMPORTANT: must be the raw payload string Stripe sent
   const body = await req.text();
 
-  // Support 2 webhook secrets (blue + gold) by attempting both.
-  const secrets = [
-  process.env.STRIPE_WEBHOOK_SECRET,              // ✅ new canonical
-  process.env.STRIPE_WEBHOOK_SECRET_BLUE_TICK,    // legacy fallback
-  process.env.STRIPE_WEBHOOK_SECRET_GOLD_TICK,    // legacy fallback
-].filter(Boolean) as string[];
-
+  const secrets = getWebhookSecrets();
+  console.log("[stripe/webhook] secrets_count", secrets.length);
+  if (secrets.length === 0) {
+    return NextResponse.json(
+      { ok: false, error: "Missing STRIPE_WEBHOOK_SECRET env var(s)" },
+      { status: 500 }
+    );
+  }
 
   let event: Stripe.Event | null = null;
   let lastErr: unknown = null;
@@ -73,6 +92,7 @@ export async function POST(req: Request) {
   }
 
   try {
+    // --- Verification subscription lifecycle ---
     if (
       event.type === "customer.subscription.created" ||
       event.type === "customer.subscription.updated" ||
@@ -88,14 +108,14 @@ export async function POST(req: Request) {
         return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
       }
 
-      // ✅ price + period end live on the subscription item in your payload
       const item = sub.items?.data?.[0];
-
       const priceId = item?.price?.id != null ? String(item.price.id) : null;
 
+      // On subscriptions, current_period_end is on the subscription itself (most common),
+      // but some payloads may differ depending on expansions.
       const currentPeriodEnd =
-        typeof item?.current_period_end === "number"
-          ? new Date(item.current_period_end * 1000)
+        typeof (sub as any).current_period_end === "number"
+          ? new Date(((sub as any).current_period_end as number) * 1000)
           : null;
 
       const status = String(sub.status); // active | trialing | canceled | etc
@@ -120,6 +140,14 @@ export async function POST(req: Request) {
       );
     }
 
+    // --- Checkout session completed (if you need it for credits/spins/etc) ---
+    // If you don't need this, you can remove this block safely.
+    if (event.type === "checkout.session.completed") {
+      // const session = event.data.object as Stripe.Checkout.Session;
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
+
+    // Everything else: acknowledge
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
     console.error("[stripe/webhook] handler error", e);
