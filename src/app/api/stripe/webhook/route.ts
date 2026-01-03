@@ -5,8 +5,6 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// If you set a Stripe API version in dashboard, it’s fine to omit apiVersion here.
-// If you want to pin it, add: { apiVersion: "2025-03-31.basil" as any }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 function getTierFromPriceId(priceId: string | null) {
@@ -40,10 +38,9 @@ async function findProfileByCustomer(customerId: string) {
 }
 
 function getWebhookSecrets(): string[] {
-  // Canonical secret (current)
   const primary = (process.env.STRIPE_WEBHOOK_SECRET || "").trim();
 
-  // Legacy / optional fallbacks (only if you still have multiple Stripe destinations hitting different endpoints/secrets)
+  // Optional legacy fallbacks (only if still present in env)
   const blueLegacy = (process.env.STRIPE_WEBHOOK_SECRET_BLUE_TICK || "").trim();
   const goldLegacy = (process.env.STRIPE_WEBHOOK_SECRET_GOLD_TICK || "").trim();
 
@@ -59,11 +56,12 @@ export async function POST(req: Request) {
     );
   }
 
-  // IMPORTANT: must be the raw payload string Stripe sent
+  // IMPORTANT: must be the raw payload exactly as received
   const body = await req.text();
 
   const secrets = getWebhookSecrets();
   console.log("[stripe/webhook] secrets_count", secrets.length);
+
   if (secrets.length === 0) {
     return NextResponse.json(
       { ok: false, error: "Missing STRIPE_WEBHOOK_SECRET env var(s)" },
@@ -91,6 +89,14 @@ export async function POST(req: Request) {
     );
   }
 
+  // Always log what arrived so you can confirm routing
+  console.log("[stripe/webhook] event", {
+    id: event.id,
+    type: event.type,
+    livemode: event.livemode,
+    created: event.created,
+  });
+
   try {
     // --- Verification subscription lifecycle ---
     if (
@@ -103,22 +109,22 @@ export async function POST(req: Request) {
       const customerId = String(sub.customer);
       const profile = await findProfileByCustomer(customerId);
 
-      // No profile yet? Don't fail the webhook; just acknowledge.
       if (!profile) {
+        console.log("[stripe/webhook] no profile for customer; ignoring", {
+          customerId,
+        });
         return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
       }
 
       const item = sub.items?.data?.[0];
       const priceId = item?.price?.id != null ? String(item.price.id) : null;
 
-      // On subscriptions, current_period_end is on the subscription itself (most common),
-      // but some payloads may differ depending on expansions.
       const currentPeriodEnd =
         typeof (sub as any).current_period_end === "number"
           ? new Date(((sub as any).current_period_end as number) * 1000)
           : null;
 
-      const status = String(sub.status); // active | trialing | canceled | etc
+      const status = String(sub.status);
       const isActive = status === "active" || status === "trialing";
 
       await prisma.creatorProfile.update({
@@ -134,20 +140,45 @@ export async function POST(req: Request) {
         },
       });
 
+      console.log("[stripe/webhook] subscription processed", {
+        customerId,
+        profileId: profile.id,
+        priceId,
+        tier: getTierFromPriceId(priceId),
+        isActive,
+      });
+
       return NextResponse.json(
         { ok: true, tier: getTierFromPriceId(priceId), active: isActive },
         { status: 200 }
       );
     }
 
-    // --- Checkout session completed (if you need it for credits/spins/etc) ---
-    // If you don't need this, you can remove this block safely.
+    // --- Checkout session completed (credits/spins/etc) ---
+    // Right now your app returns 200 OK but does NOT update anything.
+    // This log shows whether the metadata you expect is present.
     if (event.type === "checkout.session.completed") {
-      // const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object as Stripe.Checkout.Session;
+
+      console.log("[stripe/webhook] checkout.session.completed", {
+        id: session.id,
+        mode: session.mode,
+        payment_status: session.payment_status,
+        customer: session.customer,
+        client_reference_id: session.client_reference_id,
+        metadata: session.metadata,
+      });
+
+      // TODO: Wire this to your credits/ledger logic (or move these events to /api/payments/webhook)
+      // Example patterns:
+      // - Look up the user by session.customer_email or metadata.userEmail/viewer_email
+      // - Insert a ledger row
+      // - Increment credits/spins
+      //
+      // For now, acknowledge to Stripe.
       return NextResponse.json({ ok: true }, { status: 200 });
     }
 
-    // Everything else: acknowledge
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (e) {
     console.error("[stripe/webhook] handler error", e);
