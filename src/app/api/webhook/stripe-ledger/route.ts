@@ -1,0 +1,40 @@
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(req: Request) {
+  const sig = req.headers.get("stripe-signature");
+  if (!sig) {
+    return NextResponse.json(
+      { ok: false, error: "Missing stripe-signature header" },
+      { status: 400 }
+    );
+  }
+
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  const key = process.env.STRIPE_SECRET_KEY;
+
+  if (!secret || !key) {
+    return NextResponse.json(
+      { ok: false, error: "Missing Stripe env" },
+      { status: 500 }
+    );
+  }
+
+  const stripe = new Stripe(key);
+
+  // raw body required for Stripe signature verification
+  const body = await req.text();
+
+  try {
+    stripe.webhooks.constructEvent(body, sig, secret);
+  } catch (err: any) {
+    console.error("[webhook/stripe-ledger] signature verify failed", err?.message);
+    return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 400 });
+  }
+
+  // Legacy endpoint: acknowledge so Stripe doesn't retry.
+  return NextResponse.json({ ok: true }, { status: 200 });
+}
