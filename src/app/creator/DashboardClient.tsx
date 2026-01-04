@@ -33,6 +33,7 @@ type Spin = {
   post_id: string | null;
   created_at: string;
 };
+
 const VerifiedBadge = () => (
   <span
     title="Verified creator"
@@ -44,11 +45,8 @@ const VerifiedBadge = () => (
 
 export default function DashboardClient() {
   const router = useRouter();
-
-  // Stable auth state (prevents bounce caused by "resolving" being treated as "logged out")
   const { user, ready } = useAuthedUser();
 
-  // Derived user email (normalized)
   const userEmail = useMemo(() => {
     if (!ready) return null;
     const email = user?.email ? String(user.email).trim().toLowerCase() : null;
@@ -64,10 +62,11 @@ export default function DashboardClient() {
   const [isLoadingSpins, setIsLoadingSpins] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
+
   const [isVerified, setIsVerified] = useState(false);
   const [verificationTier, setVerificationTier] = useState<"blue" | "gold" | null>(null);
   const [isLoadingVerify, setIsLoadingVerify] = useState(false);
-  const [verifiedEmails, setVerifiedEmails] = useState<Record<string, boolean>>({});
+
   const [verifiedMap, setVerifiedMap] = useState<Record<string, boolean>>({});
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -79,20 +78,17 @@ export default function DashboardClient() {
 
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
 
-
   // Redirect ONLY after auth is resolved
   useEffect(() => {
-  if (!ready) return;
+    if (!ready) return;
 
-  // DIAGNOSTIC: disable redirect during bounce isolation
-  if (!userEmail) {
-    console.warn("[creator/dashboard] no userEmail after ready (diagnostic)");
-    // router.replace("/login?redirectTo=/creator/onboard");
-  }
-}, [ready, userEmail, router]);
+    // DIAGNOSTIC: keep disabled if you’re still isolating auth bounce
+    if (!userEmail) {
+      console.warn("[creator/dashboard] no userEmail after ready (diagnostic)");
+      // router.replace("/login?redirectTo=/creator/onboard");
+    }
+  }, [ready, userEmail, router]);
 
-
-  // Load posts from Supabase Post table
   const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
@@ -104,7 +100,6 @@ export default function DashboardClient() {
         .order("createdAt", { ascending: false });
 
       if (error) throw error;
-
       setPosts((data as Post[]) ?? []);
     } catch (e) {
       console.error("Error loading posts", e);
@@ -113,7 +108,6 @@ export default function DashboardClient() {
       setIsLoadingPosts(false);
     }
   }, []);
-
 
   const loadVerifiedAuthors = useCallback(async (emails: string[]) => {
     try {
@@ -130,9 +124,10 @@ export default function DashboardClient() {
         return;
       }
 
-      const res = await fetch(`/api/creator/verified?emails=${encodeURIComponent(uniq.join(","))}`, {
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `/api/creator/verified?emails=${encodeURIComponent(uniq.join(","))}`,
+        { cache: "no-store" }
+      );
 
       const json = await res.json().catch(() => null);
       const verified: string[] = Array.isArray(json?.verified) ? json.verified : [];
@@ -141,12 +136,10 @@ export default function DashboardClient() {
       for (const em of verified) m[String(em).toLowerCase()] = true;
       setVerifiedMap(m);
     } catch (e) {
-      // non-critical
       console.warn("[creator/dashboard] failed to load verified authors", e);
     }
   }, []);
 
-  // Load spins
   const loadSpins = useCallback(async (email: string) => {
     try {
       setIsLoadingSpins(true);
@@ -158,7 +151,6 @@ export default function DashboardClient() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-
       setSpins((data as Spin[]) ?? []);
     } catch (e) {
       console.error("Error loading spins", e);
@@ -167,7 +159,6 @@ export default function DashboardClient() {
     }
   }, []);
 
-  // Load credits for user (via API route)
   const loadCredits = useCallback(async (email: string) => {
     try {
       setLoadingCredits(true);
@@ -189,19 +180,21 @@ export default function DashboardClient() {
     }
   }, []);
 
-  
   const loadCreatorMe = useCallback(async () => {
     try {
       const res = await fetch("/api/creator/me", { cache: "no-store" });
       const json = await res.json().catch(() => null);
       const verified = Boolean(json?.creator?.isVerified);
       setIsVerified(verified);
+
+      // Optional: if your API returns tier, set it; otherwise keep null.
+      const tier = json?.creator?.verificationTier;
+      if (tier === "blue" || tier === "gold") setVerificationTier(tier);
     } catch (e) {
       console.warn("[creator/dashboard] failed to load /api/creator/me", e);
     }
   }, []);
 
-// When auth is resolved and we have an email, load posts, spins, credits
   useEffect(() => {
     if (!ready) return;
     if (!userEmail) return;
@@ -209,13 +202,9 @@ export default function DashboardClient() {
     loadPosts();
     loadSpins(userEmail);
     loadCredits(userEmail);
-  
-
     loadCreatorMe();
   }, [ready, userEmail, loadPosts, loadSpins, loadCredits, loadCreatorMe]);
 
-
-  // Load verified status for authors in the current post list (feed marketing)
   useEffect(() => {
     if (!posts || posts.length === 0) {
       setVerifiedMap({});
@@ -224,113 +213,102 @@ export default function DashboardClient() {
     const emails = posts.map((p) => p.userEmail).filter(Boolean) as string[];
     loadVerifiedAuthors(emails);
   }, [posts, loadVerifiedAuthors]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/public-feed");
   };
 
+  const handleConnectStripe = async () => {
+    try {
+      setIsConnectingStripe(true);
+      setError(null);
+
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+
+      if (!token) {
+        setError("You need to be signed in to set up payouts.");
+        return;
+      }
+
+      const res = await fetch("/api/stripe/connect/create", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
+
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setError(json?.error || "Could not start Stripe payouts onboarding.");
+        return;
+      }
+
+      if (json?.url) {
+        window.location.href = json.url;
+        return;
+      }
+
+      setError("Stripe onboarding did not return a redirect URL.");
+    } catch (e) {
+      console.error("[creator/dashboard] connect stripe error", e);
+      setError("Revolvr glitched out starting payouts setup.");
+    } finally {
+      setIsConnectingStripe(false);
+    }
+  };
+
   const handleStartBlueTick = async (tier: "blue" | "gold" = "blue") => {
-  try {
-    setIsLoadingVerify(true);
-    setError(null);
+    try {
+      setIsLoadingVerify(true);
+      setError(null);
 
-    const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
 
-const handleConnectStripe = async () => {
-  try {
-    setIsConnectingStripe(true);
-    setError(null);
+      if (!token) {
+        setError("You need to be signed in to start verification.");
+        return;
+      }
 
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
+      const res = await fetch("/api/creator/verify/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          creatorEmail: userEmail,
+          userEmail,
+          source: "FEED",
+          targetId: null,
+          tier,
+        }),
+      });
 
-    if (!token) {
-      setError("You need to be signed in to set up payouts.");
-      return;
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setError(json?.error || "Could not start verification checkout.");
+        return;
+      }
+
+      if (json?.url) {
+        window.location.href = json.url;
+        return;
+      }
+
+      setError("Stripe did not return a checkout URL.");
+    } catch (e) {
+      console.error("[creator/dashboard] start verify error", e);
+      setError("Revolvr glitched out starting verification.");
+    } finally {
+      setIsLoadingVerify(false);
     }
-
-    const res = await fetch("/api/stripe/connect/create", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const json = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      setError(json?.error || "Could not start Stripe payouts onboarding.");
-      return;
-    }
-
-    // Preferred: API returns onboarding link
-    if (json?.url) {
-      window.location.href = json.url;
-      return;
-    }
-
-    // Accept minimal ok:true for now (but it won’t redirect)
-    if (json?.ok) {
-      // Refresh creator data so UI updates
-      await loadCreatorMe();
-      return;
-    }
-
-    setError("Stripe onboarding did not return a redirect URL.");
-  } catch (e) {
-    console.error("[creator/dashboard] connect stripe error", e);
-    setError("Revolvr glitched out starting payouts setup.");
-  } finally {
-    setIsConnectingStripe(false);
-  }
-};
-
-    // IMPORTANT: attach Supabase access token so /api/creator/verify/start can auth
-    const { data } = await supabase.auth.getSession();
-    const token = data?.session?.access_token;
-
-    if (!token) {
-      setError("You need to be signed in to start verification.");
-      return;
-    }
-
-    const res = await fetch("/api/creator/verify/start", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-creatorEmail: userEmail,
-userEmail,
-source: "FEED",
-targetId: null,
-tier
-}),
-    });
-
-    const json = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      setError(json?.error || "Could not start verification checkout.");
-      return;
-    }
-
-    if (json?.url) {
-      window.location.href = json.url;
-      return;
-    }
-
-    setError("Stripe did not return a checkout URL.");
-  } catch (e) {
-    console.error("[creator/dashboard] start verify error", e);
-    setError("Revolvr glitched out starting verification.");
-  } finally {
-    setIsLoadingVerify(false);
-  }
-};
-
-  // inside DashboardClient.tsx
+  };
 
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
@@ -356,9 +334,9 @@ tier
         throw storageError ?? new Error("Upload failed");
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("posts")
-        .getPublicUrl(storageData.path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
       const { data: inserted, error: insertError } = await supabase
         .from(POSTS_TABLE)
@@ -384,10 +362,6 @@ tier
     }
   };
 
-
-
-
-
   const handleDeletePost = async (id: string) => {
     try {
       const { error } = await supabase.from(POSTS_TABLE).delete().eq("id", id);
@@ -399,7 +373,6 @@ tier
     }
   };
 
-  // Spend boost credit if available, else fallback to Stripe
   const handleBoostPost = async (postId: string, boostAmountCents = 500) => {
     if (!userEmail) {
       setError("You need to be logged in to boost a post.");
@@ -409,20 +382,19 @@ tier
     try {
       setError(null);
 
-      // 1) If user has boost credits, spend one instead of charging via Stripe
       if (credits && credits.boosts > 0) {
         const res = await fetch("/api/credits/spend", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
-userEmail,
-          source: "FEED",
-          targetId: null,
+            creatorEmail: userEmail, // TEMP
+            userEmail,
+            source: "FEED",
+            targetId: null,
             email: userEmail,
             kind: "boost",
             postId,
-}),
+          }),
         });
 
         const data = await res.json();
@@ -433,7 +405,6 @@ userEmail,
           return;
         }
 
-        // Update local credits state
         if (data.credits) {
           setCredits({
             boosts: data.credits.boosts ?? 0,
@@ -441,32 +412,25 @@ userEmail,
             spins: data.credits.spins ?? 0,
           });
         } else {
-          setCredits((prev) =>
-            prev ? { ...prev, boosts: Math.max(0, prev.boosts - 1) } : prev
-          );
+          setCredits((prev) => (prev ? { ...prev, boosts: Math.max(0, prev.boosts - 1) } : prev));
         }
 
-        // Optionally mark the post as boosted locally
-        setPosts((prev) =>
-          prev.map((p) => (p.id === postId ? { ...p, is_boosted: true } : p))
-        );
-
-        return; // done, no Stripe
+        setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, is_boosted: true } : p)));
+        return;
       }
 
-      // 2) No credits left → fall back to Stripe checkout
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-mode: "boost",
+          mode: "boost",
           userEmail,
           amountCents: boostAmountCents,
           postId,
-          creatorEmail: userEmail, // self-pay, at least it won’t 400
+          creatorEmail: userEmail,
           source: "FEED",
           targetId: null,
-}),
+        }),
       });
 
       if (!res.ok) {
@@ -487,7 +451,6 @@ mode: "boost",
     }
   };
 
-  // UI guards (prevents flash/bounce rendering)
   if (!ready) {
     return (
       <div className="min-h-screen bg-[#050816] text-white p-8">
@@ -497,27 +460,22 @@ mode: "boost",
     );
   }
 
-  // ready but not authed -> redirecting
   if (!userEmail) {
-  return (
-    <div className="min-h-screen bg-[#050816] text-white p-8">
-      <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
-      <p className="mt-2 text-white/70">
-        Not signed in (diagnostic). No redirect will happen right now.
-      </p>
-      <a className="underline text-white/80" href="/login?redirectTo=/creator/onboard">
-        Go to login
-      </a>
-    </div>
-  );
-}
-
+    return (
+      <div className="min-h-screen bg-[#050816] text-white p-8">
+        <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
+        <p className="mt-2 text-white/70">Not signed in (diagnostic).</p>
+        <a className="underline text-white/80" href="/login?redirectTo=/creator/onboard">
+          Go to login
+        </a>
+      </div>
+    );
+  }
 
   const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
-      {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
         <div className="flex items-center gap-2">
           <RevolvrIcon name="boost" size={20} className="hidden sm:block" alt="Revolvr" />
@@ -547,9 +505,7 @@ mode: "boost",
         </div>
       </header>
 
-      {/* Main layout */}
       <main className="max-w-6xl mx-auto px-4 py-6 flex gap-6">
-        {/* Left rail – creator summary */}
         <aside className="hidden md:flex w-64 flex-col gap-4">
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 space-y-3">
             <div className="flex items-center gap-2">
@@ -598,6 +554,15 @@ mode: "boost",
               </button>
 
               <SpinButton userEmail={userEmail} />
+
+              <button
+                type="button"
+                onClick={handleConnectStripe}
+                disabled={isConnectingStripe}
+                className="w-full inline-flex items-center justify-center rounded-full px-4 py-2 bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60 text-xs font-medium"
+              >
+                {isConnectingStripe ? "Opening Stripe…" : "Set up payouts (Stripe)"}
+              </button>
             </div>
 
             {credits && (
@@ -623,9 +588,7 @@ mode: "boost",
           </section>
         </aside>
 
-        {/* Center column – feed */}
         <section className="flex-1 space-y-5">
-          {/* Error banner */}
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
               <span>{error}</span>
@@ -635,13 +598,10 @@ mode: "boost",
             </div>
           )}
 
-          {/* Posts */}
           {isLoadingPosts ? (
             <div className="text-sm text-white/70">Loading the feed…</div>
           ) : posts.length === 0 ? (
-            <div className="text-sm text-white/70">
-              No posts yet. Be the first to spin something into existence ✨
-            </div>
+            <div className="text-sm text-white/70">No posts yet. Be the first to spin something into existence ✨</div>
           ) : (
             <div className="space-y-6 pb-12">
               {posts.map((post) => {
@@ -657,7 +617,6 @@ mode: "boost",
                     key={post.id}
                     className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
                   >
-                    {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                       <div className="flex items-center gap-2">
                         <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -666,10 +625,13 @@ mode: "boost",
                         <div className="flex flex-col">
                           <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
                             {displayName}
-                          {verifiedMap[String(post.userEmail || "").toLowerCase()] ? <span className="ml-1 inline-flex align-middle"><VerifiedBadge /></span> : null}</span>
-                          <span className="text-[11px] text-white/40">
-                            {new Date(post.createdAt).toLocaleString()}
+                            {verifiedMap[String(post.userEmail || "").toLowerCase()] ? (
+                              <span className="ml-1 inline-flex align-middle">
+                                <VerifiedBadge />
+                              </span>
+                            ) : null}
                           </span>
+                          <span className="text-[11px] text-white/40">{new Date(post.createdAt).toLocaleString()}</span>
                         </div>
                       </div>
 
@@ -691,12 +653,10 @@ mode: "boost",
                       </div>
                     </div>
 
-                    {/* Media */}
                     <div>
                       <img src={post.imageUrl} alt={post.caption} className="w-full max-h-[480px] object-cover" />
                     </div>
 
-                    {/* Caption */}
                     {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
                   </article>
                 );
@@ -706,7 +666,6 @@ mode: "boost",
         </section>
       </main>
 
-      {/* Composer Modal */}
       {isComposerOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
           <div className="w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
@@ -721,7 +680,6 @@ mode: "boost",
             </div>
 
             <form className="px-4 py-3 space-y-4" onSubmit={handleCreatePost}>
-              {/* Upload Section */}
               <div>
                 <label className="text-xs font-medium text-white/70 block mb-2">Image or short video</label>
 
@@ -747,11 +705,7 @@ mode: "boost",
                       {file.type.startsWith("video") ? (
                         <video src={URL.createObjectURL(file)} controls className="w-full h-full object-cover" />
                       ) : (
-                        <img
-                          src={URL.createObjectURL(file)}
-                          className="w-full h-full object-cover"
-                          alt="preview"
-                        />
+                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
                       )}
                     </div>
                   )}
@@ -766,7 +720,6 @@ mode: "boost",
                 />
               </div>
 
-              {/* Caption */}
               <label className="text-sm font-medium space-y-1">
                 <span>Caption</span>
                 <textarea
