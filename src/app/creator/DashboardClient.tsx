@@ -231,6 +231,57 @@ export default function DashboardClient() {
     setIsLoadingVerify(true);
     setError(null);
 
+    const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+
+const handleConnectStripe = async () => {
+  try {
+    setIsConnectingStripe(true);
+    setError(null);
+
+    const { data } = await supabase.auth.getSession();
+    const token = data?.session?.access_token;
+
+    if (!token) {
+      setError("You need to be signed in to set up payouts.");
+      return;
+    }
+
+    const res = await fetch("/api/stripe/connect/create", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const json = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      setError(json?.error || "Could not start Stripe payouts onboarding.");
+      return;
+    }
+
+    // Preferred: API returns onboarding link
+    if (json?.url) {
+      window.location.href = json.url;
+      return;
+    }
+
+    // Accept minimal ok:true for now (but it won’t redirect)
+    if (json?.ok) {
+      // Refresh creator data so UI updates
+      await loadCreatorMe();
+      return;
+    }
+
+    setError("Stripe onboarding did not return a redirect URL.");
+  } catch (e) {
+    console.error("[creator/dashboard] connect stripe error", e);
+    setError("Revolvr glitched out starting payouts setup.");
+  } finally {
+    setIsConnectingStripe(false);
+  }
+};
+
     // IMPORTANT: attach Supabase access token so /api/creator/verify/start can auth
     const { data } = await supabase.auth.getSession();
     const token = data?.session?.access_token;
