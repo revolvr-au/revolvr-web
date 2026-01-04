@@ -77,6 +77,9 @@ export default function DashboardClient() {
 
   const [isLensOpen, setIsLensOpen] = useState(false);
 
+  const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+
+
   // Redirect ONLY after auth is resolved
   useEffect(() => {
   if (!ready) return;
