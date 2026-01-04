@@ -1,11 +1,20 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+/**
+ * Convert arbitrary values (including Stripe objects) into Prisma JSON-safe values.
+ * Prisma Json fields require plain JSON (no class instances / typed interfaces).
+ */
+function toPrismaJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
 
 function getWebhookSecrets(): string[] {
   return [
@@ -55,70 +64,64 @@ export async function POST(req: Request) {
 
   try {
     // ---- CHECKOUT COMPLETED ----
-if (event.type === "checkout.session.completed") {
-  const session = event.data.object as Stripe.Checkout.Session;
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
 
-  const customerEmail =
-    session.customer_details?.email ??
-    session.customer_email ??
-    session.metadata?.userEmail ??
-    session.metadata?.viewer_email ??
-    null;
+      const customerEmail =
+        session.customer_details?.email ??
+        session.customer_email ??
+        session.metadata?.userEmail ??
+        session.metadata?.viewer_email ??
+        null;
 
-  const paymentIntent =
-    typeof session.payment_intent === "string" ? session.payment_intent : null;
+      const paymentIntent =
+        typeof session.payment_intent === "string" ? session.payment_intent : null;
 
-  await prisma.stripeCheckoutReceipt.upsert({
-    where: { sessionId: session.id },
-    create: {
-      sessionId: session.id,
-      paymentIntent,
-      eventId: event.id,
-      livemode: Boolean(event.livemode),
-      amountTotal: session.amount_total ?? null,
-      currency: session.currency ?? null,
-      status: session.status ?? null,
-      paymentStatus: session.payment_status ?? null,
-      customerEmail: customerEmail?.trim().toLowerCase() ?? null,
-      metadata: session.metadata ?? null,
-      raw: {
+      const raw: Prisma.InputJsonObject = {
         event: {
           id: event.id,
           type: event.type,
           created: event.created,
           livemode: event.livemode,
         },
-        session,
-      },
-    },
-    update: {
-      // keep latest event id for traceability
-      eventId: event.id,
+        // session is a typed Stripe object; convert to plain JSON for Prisma
+        session: toPrismaJson(session),
+      };
 
-      // refresh fields in case Stripe retries with more data
-      paymentIntent,
-      livemode: Boolean(event.livemode),
-      amountTotal: session.amount_total ?? null,
-      currency: session.currency ?? null,
-      status: session.status ?? null,
-      paymentStatus: session.payment_status ?? null,
-      customerEmail: customerEmail?.trim().toLowerCase() ?? null,
-      metadata: session.metadata ?? null,
-      raw: {
-        event: {
-          id: event.id,
-          type: event.type,
-          created: event.created,
-          livemode: event.livemode,
+      await prisma.stripeCheckoutReceipt.upsert({
+        where: { sessionId: session.id },
+        create: {
+          sessionId: session.id,
+          paymentIntent,
+          eventId: event.id,
+          livemode: Boolean(event.livemode),
+          amountTotal: session.amount_total ?? null,
+          currency: session.currency ?? null,
+          status: session.status ?? null,
+          paymentStatus: session.payment_status ?? null,
+          customerEmail: customerEmail?.trim().toLowerCase() ?? null,
+          metadata: session.metadata ? (session.metadata as any) : undefined,
+          raw,
         },
-        session,
-      },
-    },
-  });
+        update: {
+          // keep latest event id for traceability
+          eventId: event.id,
 
-  return NextResponse.json({ ok: true }, { status: 200 });
-}
+          // refresh fields in case Stripe retries with more data
+          paymentIntent,
+          livemode: Boolean(event.livemode),
+          amountTotal: session.amount_total ?? null,
+          currency: session.currency ?? null,
+          status: session.status ?? null,
+          paymentStatus: session.payment_status ?? null,
+          customerEmail: customerEmail?.trim().toLowerCase() ?? null,
+          metadata: session.metadata ? (session.metadata as any) : undefined,
+          raw,
+        },
+      });
 
+      return NextResponse.json({ ok: true }, { status: 200 });
+    }
 
     // ---- EVERYTHING ELSE ----
     return NextResponse.json({ ok: true }, { status: 200 });
