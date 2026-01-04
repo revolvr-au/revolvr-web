@@ -55,47 +55,70 @@ export async function POST(req: Request) {
 
   try {
     // ---- CHECKOUT COMPLETED ----
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
+if (event.type === "checkout.session.completed") {
+  const session = event.data.object as Stripe.Checkout.Session;
 
-      const customerEmail =
-        session.customer_details?.email ??
-        session.customer_email ??
-        session.metadata?.userEmail ??
-        session.metadata?.viewer_email ??
-        null;
+  const customerEmail =
+    session.customer_details?.email ??
+    session.customer_email ??
+    session.metadata?.userEmail ??
+    session.metadata?.viewer_email ??
+    null;
 
-      await prisma.stripeCheckoutReceipt.upsert({
-        where: { sessionId: session.id },
-        create: {
-          sessionId: session.id,
-          paymentIntent:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : null,
-          eventId: event.id,
-          livemode: Boolean(event.livemode),
-          amountTotal: session.amount_total ?? null,
-          currency: session.currency ?? null,
-          status: session.status ?? null,
-          paymentStatus: session.payment_status ?? null,
-          customerEmail: customerEmail?.toLowerCase() ?? null,
-          metadata: session.metadata ?? {},
-          raw: {
-            id: event.id,
-            type: event.type,
-            created: event.created,
-          },
+  const paymentIntent =
+    typeof session.payment_intent === "string" ? session.payment_intent : null;
+
+  await prisma.stripeCheckoutReceipt.upsert({
+    where: { sessionId: session.id },
+    create: {
+      sessionId: session.id,
+      paymentIntent,
+      eventId: event.id,
+      livemode: Boolean(event.livemode),
+      amountTotal: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      status: session.status ?? null,
+      paymentStatus: session.payment_status ?? null,
+      customerEmail: customerEmail?.trim().toLowerCase() ?? null,
+      metadata: session.metadata ?? null,
+      raw: {
+        event: {
+          id: event.id,
+          type: event.type,
+          created: event.created,
+          livemode: event.livemode,
         },
-        update: {
-          eventId: event.id,
-          paymentStatus: session.payment_status ?? null,
-          status: session.status ?? null,
-        },
-      });
+        session,
+      },
+    },
+    update: {
+      // keep latest event id for traceability
+      eventId: event.id,
 
-      return NextResponse.json({ ok: true }, { status: 200 });
-    }
+      // refresh fields in case Stripe retries with more data
+      paymentIntent,
+      livemode: Boolean(event.livemode),
+      amountTotal: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      status: session.status ?? null,
+      paymentStatus: session.payment_status ?? null,
+      customerEmail: customerEmail?.trim().toLowerCase() ?? null,
+      metadata: session.metadata ?? null,
+      raw: {
+        event: {
+          id: event.id,
+          type: event.type,
+          created: event.created,
+          livemode: event.livemode,
+        },
+        session,
+      },
+    },
+  });
+
+  return NextResponse.json({ ok: true }, { status: 200 });
+}
+
 
     // ---- EVERYTHING ELSE ----
     return NextResponse.json({ ok: true }, { status: 200 });

@@ -1,6 +1,6 @@
 datasource db {
   provider = "postgresql"
-  schemas  = ["public"]
+  schemas = ["public", "auth"]
 }
 
 generator client {
@@ -195,3 +195,27 @@ model CreatorPayout {
 
   @@schema("public")
 }
+model StripeCheckoutReceipt {
+  id            String   @id @default(cuid()) @db.Text
+  sessionId     String   @unique @map("session_id") @db.Text
+  paymentIntent String?  @map("payment_intent") @db.Text
+  eventId       String?  @map("event_id") @db.Text
+  livemode      Boolean  @default(false)
+  amountTotal   Int?     @map("amount_total")
+  currency      String?  @db.Text
+  status        String?  @db.Text
+  paymentStatus String?  @map("payment_status") @db.Text
+  customerEmail String?  @map("customer_email") @db.Text
+  metadata      Json?
+  raw           Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([paymentIntent])
+  @@index([customerEmail])
+  @@index([createdAt])
+
+  @@map("stripe_checkout_receipts")
+  @@schema("public")
+}
+
