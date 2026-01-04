@@ -88,7 +88,7 @@ export default async function handler(
         ? `${origin}/live/${encodeURIComponent(postId)}`
         : `${origin}/public-feed`;
 
-    const session = await stripe.checkout.sessions.create({
+        const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       line_items: [
@@ -105,6 +105,13 @@ export default async function handler(
       success_url: successUrl,
       cancel_url: cancelUrl,
       metadata: {
+        // canonical (for webhook)
+        payment_type: isPack ? `${mode.toUpperCase()}_PACK` : mode.toUpperCase(), // TIP/BOOST/SPIN or TIP_PACK...
+        source: isLive ? "LIVE" : "FEED",
+        target_id: postId ?? "",
+        viewer_email: userEmail,
+
+        // legacy (keep)
         userEmail,
         postId: postId ?? "",
         paymentKind: kind ?? "post",
@@ -113,7 +120,7 @@ export default async function handler(
         rawAmountCents: String(cents),
       },
     });
-
+    
     return res.status(200).json({ url: session.url });
   } catch (err: any) {
     console.error("[checkout] Error creating Stripe session:", err);
