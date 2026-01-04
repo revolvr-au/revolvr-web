@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as Body;
 
     const mode = body?.mode;
-    const creatorEmail = (body?.creatorEmail || "").trim().toLowerCase();
+    const creatorEmail = String((body?.creatorEmail ?? body?.userEmail ?? "")).trim().toLowerCase();
     const userEmail = (body?.userEmail ?? null)?.toString().trim().toLowerCase() || null;
     const postId = body?.postId ?? null;
 
