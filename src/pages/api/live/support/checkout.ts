@@ -1,4 +1,16 @@
 // src/pages/api/payments/checkout.ts
+console.log("[CANARY] /api/live/support/checkout hit", {
+  method: req.method,
+  url: req.url,
+  host: req.headers.host,
+  origin: req.headers.origin,
+  referer: req.headers.referer,
+  ua: req.headers["user-agent"],
+  xfh: req.headers["x-forwarded-host"],
+  xfp: req.headers["x-forwarded-proto"],
+  xff: req.headers["x-forwarded-for"],
+});
+
 import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
