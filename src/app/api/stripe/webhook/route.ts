@@ -116,25 +116,26 @@ export async function POST(req: Request) {
       const priceId = item?.price?.id != null ? String(item.price.id) : null;
 
       const currentPeriodEnd =
-        typeof (sub as any).current_period_end === "number"
-          ? new Date(((sub as any).current_period_end as number) * 1000)
-          : null;
+     typeof (sub as any).current_period_end === "number"
+    ? new Date((sub as any).current_period_end * 1000)
+    : null;
 
-      const status = String(sub.status);
-      const isActive = status === "active" || status === "trialing";
+const status = String(sub.status);
+const isActive = status === "active" || status === "trialing";
 
-      await prisma.creatorProfile.update({
-        where: { id: profile.id },
-        data: {
-          stripeCustomerId: customerId,
-          stripeSubscriptionId: sub.id,
-          verificationPriceId: priceId,
-          verificationStatus: isActive ? "active" : "inactive",
-          verificationCurrentPeriodEnd: currentPeriodEnd,
-          isVerified: isActive,
-          verifiedSince: isActive ? new Date() : null,
-        },
-      });
+await prisma.creatorProfile.update({
+  where: { id: profile.id },
+  data: {
+    stripeCustomerId: customerId,
+    stripeSubscriptionId: sub.id,
+    verificationPriceId: priceId,
+    verificationStatus: isActive ? "active" : "inactive",
+    verificationCurrentPeriodEnd: currentPeriodEnd,
+    isVerified: isActive,
+    verifiedSince: isActive ? (profile.verifiedSince ?? new Date()) : null,
+  },
+});
+
 
       return NextResponse.json(
         { ok: true, tier: getTierFromPriceId(priceId), active: isActive },
@@ -142,7 +143,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // --- Checkout session completed (credits/spins/etc.) ---
+       // --- Checkout session completed (credits/spins/etc.) ---
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
@@ -155,16 +156,66 @@ export async function POST(req: Request) {
         metadata: session.metadata ?? {},
       });
 
-      // NOTE: add your business logic here if you want to award credits/spins, etc.
+      // Safest email fallback order
+      const customerEmail =
+        session.customer_details?.email ??
+        session.customer_email ??
+        session.metadata?.userEmail ??
+        session.metadata?.viewer_email ??
+        null;
+
+      // Store the verified event (idempotent on sessionId)
+      await prisma.stripeCheckoutReceipt.upsert({
+        where: { sessionId: session.id },
+        create: {
+          sessionId: session.id,
+          paymentIntent:
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent
+              ? String(session.payment_intent)
+              : null,
+          eventId: event.id,
+          livemode: Boolean(event.livemode),
+          amountTotal: typeof session.amount_total === "number" ? session.amount_total : null,
+          currency: session.currency ?? null,
+          status: session.status ?? null, // usually "complete"
+          paymentStatus: session.payment_status ?? null, // "paid", etc.
+          customerEmail: customerEmail ? String(customerEmail).toLowerCase() : null,
+          metadata: session.metadata ?? {},
+          // Store a minimal raw event snapshot (avoid huge objects)
+          raw: {
+            id: event.id,
+            type: event.type,
+            created: event.created,
+            livemode: event.livemode,
+            data: { object: session },
+          },
+        },
+        update: {
+          paymentIntent:
+            typeof session.payment_intent === "string"
+              ? session.payment_intent
+              : session.payment_intent
+              ? String(session.payment_intent)
+              : null,
+          eventId: event.id,
+          livemode: Boolean(event.livemode),
+          amountTotal: typeof session.amount_total === "number" ? session.amount_total : null,
+          currency: session.currency ?? null,
+          status: session.status ?? null,
+          paymentStatus: session.payment_status ?? null,
+          customerEmail: customerEmail ? String(customerEmail).toLowerCase() : null,
+          metadata: session.metadata ?? {},
+          raw: {
+            id: event.id,
+            type: event.type,
+            created: event.created,
+            livemode: event.livemode,
+            data: { object: session },
+          },
+        },
+      });
+
       return NextResponse.json({ ok: true }, { status: 200 });
     }
-
-    return NextResponse.json({ ok: true }, { status: 200 });
-  } catch (e) {
-    console.error("[stripe/webhook] handler error", e);
-    return NextResponse.json(
-      { ok: false, error: "Webhook handler failed" },
-      { status: 500 }
-    );
-  }
-}
