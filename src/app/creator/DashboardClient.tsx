@@ -45,8 +45,11 @@ const VerifiedBadge = () => (
 
 export default function DashboardClient() {
   const router = useRouter();
+
+  // Stable auth state
   const { user, ready } = useAuthedUser();
 
+  // Normalized email
   const userEmail = useMemo(() => {
     if (!ready) return null;
     const email = user?.email ? String(user.email).trim().toLowerCase() : null;
@@ -66,7 +69,6 @@ export default function DashboardClient() {
   const [isVerified, setIsVerified] = useState(false);
   const [verificationTier, setVerificationTier] = useState<"blue" | "gold" | null>(null);
   const [isLoadingVerify, setIsLoadingVerify] = useState(false);
-
   const [verifiedMap, setVerifiedMap] = useState<Record<string, boolean>>({});
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -78,14 +80,13 @@ export default function DashboardClient() {
 
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
 
-  // Redirect ONLY after auth is resolved
+  // Optional: redirect only AFTER auth resolved
   useEffect(() => {
     if (!ready) return;
-
-    // DIAGNOSTIC: keep disabled if you’re still isolating auth bounce
     if (!userEmail) {
-      console.warn("[creator/dashboard] no userEmail after ready (diagnostic)");
+      // If you want redirect back on, uncomment:
       // router.replace("/login?redirectTo=/creator/onboard");
+      console.warn("[creator/dashboard] no userEmail after ready (diagnostic)");
     }
   }, [ready, userEmail, router]);
 
@@ -112,11 +113,7 @@ export default function DashboardClient() {
   const loadVerifiedAuthors = useCallback(async (emails: string[]) => {
     try {
       const uniq = Array.from(
-        new Set(
-          (emails || [])
-            .map((e) => String(e || "").trim().toLowerCase())
-            .filter(Boolean)
-        )
+        new Set((emails || []).map((e) => String(e || "").trim().toLowerCase()).filter(Boolean))
       );
 
       if (uniq.length === 0) {
@@ -187,9 +184,11 @@ export default function DashboardClient() {
       const verified = Boolean(json?.creator?.isVerified);
       setIsVerified(verified);
 
-      // Optional: if your API returns tier, set it; otherwise keep null.
-      const tier = json?.creator?.verificationTier;
-      if (tier === "blue" || tier === "gold") setVerificationTier(tier);
+      // Optional if your API returns a tier:
+      if (json?.creator?.verificationTier) {
+        const t = String(json.creator.verificationTier);
+        if (t === "blue" || t === "gold") setVerificationTier(t);
+      }
     } catch (e) {
       console.warn("[creator/dashboard] failed to load /api/creator/me", e);
     }
@@ -219,6 +218,7 @@ export default function DashboardClient() {
     router.replace("/public-feed");
   };
 
+  // Stripe Connect onboarding (payouts)
   const handleConnectStripe = async () => {
     try {
       setIsConnectingStripe(true);
@@ -234,9 +234,7 @@ export default function DashboardClient() {
 
       const res = await fetch("/api/stripe/connect/create", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
 
@@ -330,13 +328,9 @@ export default function DashboardClient() {
         .from("posts")
         .upload(filePath, file);
 
-      if (storageError || !storageData) {
-        throw storageError ?? new Error("Upload failed");
-      }
+      if (storageError || !storageData) throw storageError ?? new Error("Upload failed");
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("posts").getPublicUrl(storageData.path);
+      const { data: { publicUrl } } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
       const { data: inserted, error: insertError } = await supabase
         .from(POSTS_TABLE)
@@ -387,7 +381,7 @@ export default function DashboardClient() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            creatorEmail: userEmail, // TEMP
+            creatorEmail: userEmail, // TEMP: replace with actual creator when available
             userEmail,
             source: "FEED",
             targetId: null,
@@ -427,7 +421,7 @@ export default function DashboardClient() {
           userEmail,
           amountCents: boostAmountCents,
           postId,
-          creatorEmail: userEmail,
+          creatorEmail: userEmail, // self-pay fallback
           source: "FEED",
           targetId: null,
         }),
@@ -440,17 +434,15 @@ export default function DashboardClient() {
       }
 
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Stripe did not return a checkout URL for boost.");
-      }
+      if (data.url) window.location.href = data.url;
+      else setError("Stripe did not return a checkout URL for boost.");
     } catch (err) {
       console.error("Error creating boost checkout:", err);
       setError("Revolvr glitched out starting a boost 😵‍💫");
     }
   };
 
+  // UI guards
   if (!ready) {
     return (
       <div className="min-h-screen bg-[#050816] text-white p-8">
@@ -464,7 +456,7 @@ export default function DashboardClient() {
     return (
       <div className="min-h-screen bg-[#050816] text-white p-8">
         <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
-        <p className="mt-2 text-white/70">Not signed in (diagnostic).</p>
+        <p className="mt-2 text-white/70">Not signed in.</p>
         <a className="underline text-white/80" href="/login?redirectTo=/creator/onboard">
           Go to login
         </a>
@@ -476,6 +468,7 @@ export default function DashboardClient() {
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
+      {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
         <div className="flex items-center gap-2">
           <RevolvrIcon name="boost" size={20} className="hidden sm:block" alt="Revolvr" />
@@ -505,7 +498,9 @@ export default function DashboardClient() {
         </div>
       </header>
 
+      {/* Main layout */}
       <main className="max-w-6xl mx-auto px-4 py-6 flex gap-6">
+        {/* Left rail */}
         <aside className="hidden md:flex w-64 flex-col gap-4">
           <section className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 space-y-3">
             <div className="flex items-center gap-2">
@@ -588,6 +583,7 @@ export default function DashboardClient() {
           </section>
         </aside>
 
+        {/* Center column */}
         <section className="flex-1 space-y-5">
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
@@ -666,15 +662,13 @@ export default function DashboardClient() {
         </section>
       </main>
 
+      {/* Composer */}
       {isComposerOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40">
           <div className="w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <h2 className="text-base font-semibold">New post</h2>
-              <button
-                className="text-sm text-white/60 hover:text-white"
-                onClick={() => !isPosting && setIsComposerOpen(false)}
-              >
+              <button className="text-sm text-white/60 hover:text-white" onClick={() => !isPosting && setIsComposerOpen(false)}>
                 Close
               </button>
             </div>
