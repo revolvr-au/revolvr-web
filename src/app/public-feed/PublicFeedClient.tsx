@@ -1,6 +1,8 @@
+// src/app/public-feed/PublicFeedClient.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 
 type Post = {
   id: string;
@@ -9,6 +11,37 @@ type Post = {
   caption: string;
   createdAt: string;
 };
+
+type PostsResponseShape = { posts?: unknown };
+type VerifiedResponseShape = { verified?: unknown };
+type ErrorResponseShape = { error?: unknown };
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function hasPostsArray(v: unknown): v is PostsResponseShape {
+  return isRecord(v) && "posts" in v;
+}
+
+function hasVerifiedArray(v: unknown): v is VerifiedResponseShape {
+  return isRecord(v) && "verified" in v;
+}
+
+function hasErrorMessage(v: unknown): v is ErrorResponseShape {
+  return isRecord(v) && "error" in v;
+}
+
+function normalizePosts(rows: unknown): Post[] {
+  if (!Array.isArray(rows)) return [];
+  // We trust our API contract here; keep the cast localized.
+  return rows as Post[];
+}
+
+function normalizeVerifiedEmails(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => String(x).toLowerCase());
+}
 
 const VerifiedBadge = () => (
   <span
@@ -43,35 +76,50 @@ export default function PublicFeedClient() {
 
   // 1) Load posts
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
+
     async function run() {
       try {
         setLoading(true);
         setErr(null);
 
         const res = await fetch("/api/posts", { cache: "no-store" });
-        const json = await res.json().catch(() => null);
+        const json = (await res.json().catch(() => null)) as unknown;
 
         if (!res.ok) {
-          setErr(json?.error || `Failed to load posts (${res.status})`);
-          setPosts([]);
+          const msg =
+            hasErrorMessage(json) && typeof json.error === "string"
+              ? json.error
+              : `Failed to load posts (${res.status})`;
+
+          if (!cancelled) {
+            setErr(msg);
+            setPosts([]);
+          }
           return;
         }
 
-        // Accept either { posts: [...] } or [...] payload shapes.
-        const rows = Array.isArray(json) ? json : (json?.posts ?? []);
-        setPosts(Array.isArray(rows) ? rows : []);
-      } catch (e) {
+        const rows = Array.isArray(json)
+          ? json
+          : hasPostsArray(json)
+          ? (json.posts ?? [])
+          : [];
+
+        if (!cancelled) setPosts(normalizePosts(rows));
+      } catch (e: unknown) {
         console.error("[public-feed] load posts error", e);
-        setErr("Failed to load public feed.");
-        setPosts([]);
+        if (!cancelled) {
+          setErr("Failed to load public feed.");
+          setPosts([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+
     run();
     return () => {
-      cancelled = true
+      cancelled = true;
     };
   }, []);
 
@@ -82,7 +130,7 @@ export default function PublicFeedClient() {
     async function run() {
       try {
         if (!emails.length) {
-          setVerifiedSet(new Set());
+          if (!cancelled) setVerifiedSet(new Set());
           return;
         }
 
@@ -90,19 +138,26 @@ export default function PublicFeedClient() {
         const batch = emails.slice(0, 200);
         const qs = encodeURIComponent(batch.join(","));
 
-        const res = await fetch(`/api/creator/verified?emails=${qs}`, { cache: "no-store" });
-        const json = await res.json().catch(() => null);
+        const res = await fetch(`/api/creator/verified?emails=${qs}`, {
+          cache: "no-store",
+        });
+
+        const json = (await res.json().catch(() => null)) as unknown;
 
         if (!res.ok) {
           console.warn("[public-feed] verified lookup failed", res.status, json);
           return;
         }
 
-        const verified = Array.isArray(json?.verified) ? json.verified : [];
+        const verifiedRaw =
+          hasVerifiedArray(json) ? (json.verified ?? []) : [];
+
+        const verified = normalizeVerifiedEmails(verifiedRaw);
+
         if (!cancelled) {
-          setVerifiedSet(new Set(verified.map((x: any) => String(x).toLowerCase())));
+          setVerifiedSet(new Set(verified));
         }
-      } catch (e) {
+      } catch (e: unknown) {
         console.warn("[public-feed] verified lookup error", e);
       }
     }
@@ -150,7 +205,7 @@ export default function PublicFeedClient() {
                 <div className="flex flex-col">
                   <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
                     {displayNameFromEmail(email)}
-                    {isVerified && <VerifiedBadge />}
+                    {isVerified ? <VerifiedBadge /> : null}
                   </span>
                   <span className="text-[11px] text-white/40">
                     {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
@@ -167,16 +222,21 @@ export default function PublicFeedClient() {
             </div>
 
             {/* Media */}
-            <div>
-              <img
+            <div className="relative w-full max-h-[520px]">
+              <Image
                 src={post.imageUrl}
                 alt={post.caption || "post"}
+                width={1200}
+                height={800}
+                unoptimized
                 className="w-full max-h-[520px] object-cover"
               />
             </div>
 
             {/* Caption */}
-            {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
+            {post.caption ? (
+              <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>
+            ) : null}
           </article>
         );
       })}

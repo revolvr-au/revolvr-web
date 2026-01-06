@@ -109,3 +109,17 @@
     opacity: 1;
   }
 }
+/* People Rail - revolve ring (slow, premium, non-dizzy) */
+@keyframes revolvr-ring {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.revolvr-ring {
+  animation: revolvr-ring 8s linear infinite;
+  will-change: transform;
+}
