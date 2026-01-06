@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#050814] text-white antialiased">
+      <body className="min-h-screen bg-[#050814] text-white">
         {children}
 
         {/* 🔴 Global floating Go Live button */}
