@@ -1,9 +1,9 @@
 // src/components/PeopleRail.tsx
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import SafeImage from "@/components/SafeImage";
 
 export type PersonRailItem = {
   email: string;
@@ -31,6 +31,13 @@ function Tick({ tick }: { tick: "blue" | "gold" }) {
   );
 }
 
+function isValidImageUrl(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  const u = url.trim();
+  if (!u) return false;
+  return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
+}
+
 export default function PeopleRail({
   items,
   size = 74,
@@ -47,54 +54,58 @@ export default function PeopleRail({
         const email = String(p.email || "").trim().toLowerCase();
         if (!email) return null;
         const name = p.displayName || displayNameFromEmail(email);
-        return { ...p, email, displayName: name };
+        return {
+          ...p,
+          email,
+          displayName: name,
+          imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
+        };
       })
       .filter(Boolean) as Array<PersonRailItem & { email: string; displayName: string }>;
   }, [items]);
 
+  const [broken, setBroken] = useState<Record<string, true>>({});
+
   if (!normalized.length) return null;
 
   return (
-    <div className="w-full">
-      <div
-        className="flex items-center overflow-x-auto no-scrollbar"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <div className="flex gap-3">
+    <div className="px-4">
+      <div className="flex items-center overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
+        <div className="flex gap-3 py-2">
           {normalized.map((p) => {
             const email = p.email;
             const name = p.displayName;
+            const showImage = Boolean(p.imageUrl) && !broken[email];
 
             return (
               <Link
                 key={email}
                 href={`/u/${encodeURIComponent(email)}`}
-                className="relative flex-none"
+                className="relative flex-none rounded-xl overflow-hidden bg-white/5"
                 style={{ width: size, height: size }}
                 aria-label={`View ${name}`}
                 title={name}
               >
                 {p.tick ? <Tick tick={p.tick} /> : null}
 
-                <div
-                  className={`relative w-full h-full overflow-hidden rounded-2xl ${
-                    revolve ? "rv-revolve-tile" : ""
-                  }`}
-                >
-                  {p.imageUrl ? (
-                    <SafeImage
-                      src={p.imageUrl}
+                <div className={`relative w-full h-full ${revolve ? "rv-revolve-tile" : ""}`}>
+                  {showImage ? (
+                    <Image
+                      src={p.imageUrl as string}
                       alt={name}
-                      width={size}
-                      height={size}
-                      className="w-full h-full object-cover"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                      onError={() => setBroken((prev) => ({ ...prev, [email]: true }))}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-white/70 bg-white/5 rounded-2xl">
+                    <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
                       {name.slice(0, 1).toUpperCase()}
                     </div>
                   )}
                 </div>
+
+                <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
               </Link>
             );
           })}
