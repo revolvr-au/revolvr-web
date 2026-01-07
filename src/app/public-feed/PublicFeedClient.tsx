@@ -6,7 +6,6 @@ import Image from "next/image";
 
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
-import SafeImage from "@/components/SafeImage";
 
 type Post = {
   id: string;
@@ -66,7 +65,7 @@ function isValidImageUrl(url: unknown): url is string {
   // allow http(s) and root-relative paths
   return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
 }
-const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
+
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -75,9 +74,7 @@ export default function PublicFeedClient() {
   const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set());
 
   // Track broken post images so we can fall back gracefully
-  const [brokenPostImages, setBrokenPostImages] = useState<Record<string, true>>(
-    {}
-  );
+  const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
   const emails = useMemo(() => {
     const s = new Set<string>();
@@ -228,9 +225,6 @@ export default function PublicFeedClient() {
               const email = String(post.userEmail || "").trim().toLowerCase();
               const isVerified = email ? verifiedSet.has(email) : false;
 
-              const imgOk =
-                isValidImageUrl(post.imageUrl) && !brokenPostImages[post.id];
-
               return (
                 <article
                   key={post.id}
@@ -263,10 +257,9 @@ export default function PublicFeedClient() {
                       View
                     </a>
                   </div>
-
                   {/* Media */}
 <div className="relative w-full max-h-[520px]">
-  {brokenPostImages[post.id] || !post.imageUrl ? (
+  {brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl) ? (
     <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
       <span className="text-xs text-white/50">Image unavailable</span>
     </div>
@@ -288,11 +281,6 @@ export default function PublicFeedClient() {
   )}
 </div>
 
-                      <div className="w-full h-[320px] flex items-center justify-center text-sm text-white/50">
-                        Image unavailable
-                      </div>
-                    )}
-                  </div>
 
                   {/* Caption */}
                   {post.caption ? (
