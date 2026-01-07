@@ -1,7 +1,7 @@
 // src/components/PeopleRail.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import SafeImage from "@/components/SafeImage";
 
@@ -32,14 +32,10 @@ function Tick({ tick }: { tick: "blue" | "gold" }) {
 }
 
 export default function PeopleRail({
-  title = "Featured",
-  hint = "Tap a face to view",
   items,
   size = 74,
   revolve = true,
 }: {
-  title?: string;
-  hint?: string;
   items: PersonRailItem[];
   size?: number;
   revolve?: boolean;
@@ -56,61 +52,54 @@ export default function PeopleRail({
       .filter(Boolean) as Array<PersonRailItem & { email: string; displayName: string }>;
   }, [items]);
 
-  const [broken, setBroken] = useState<Record<string, true>>({});
-
   if (!normalized.length) return null;
 
   return (
-    <section className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
-      <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
-        <div className="text-sm font-semibold">{title}</div>
-        <div className="text-xs text-white/50">{hint}</div>
-      </div>
+    <div className="w-full">
+      <div
+        className="flex items-center overflow-x-auto no-scrollbar"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
+        <div className="flex gap-3">
+          {normalized.map((p) => {
+            const email = p.email;
+            const name = p.displayName;
 
-      <div className="px-4 py-4">
-        <div className="flex items-center overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
-          <div className="flex gap-[1px] bg-white/10 rounded-xl overflow-hidden">
-            {normalized.map((p) => {
-              const email = p.email;
-              const name = p.displayName || displayNameFromEmail(email);
+            return (
+              <Link
+                key={email}
+                href={`/u/${encodeURIComponent(email)}`}
+                className="relative flex-none"
+                style={{ width: size, height: size }}
+                aria-label={`View ${name}`}
+                title={name}
+              >
+                {p.tick ? <Tick tick={p.tick} /> : null}
 
-              const showImage = Boolean(p.imageUrl) && !broken[email];
-
-              return (
-                <Link
-                  key={email}
-                  href={`/u/${encodeURIComponent(email)}`}
-                  className="relative flex-none bg-[#050814]"
-                  style={{ width: size, height: size }}
-                  aria-label={`View ${name}`}
-                  title={name}
+                <div
+                  className={`relative w-full h-full overflow-hidden rounded-2xl ${
+                    revolve ? "rv-revolve-tile" : ""
+                  }`}
                 >
-                  {p.tick ? <Tick tick={p.tick} /> : null}
-
-                  <div className={`relative w-full h-full overflow-hidden ${revolve ? "rv-revolve-tile" : ""}`}>
-                    {showImage ? (
-                      <SafeImage
-                        src={p.imageUrl as string}
-                        alt={name}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                        onError={() => setBroken((prev) => ({ ...prev, [email]: true }))}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-white/60 bg-white/5">
-                        {name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-
-                  <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
-                </Link>
-              );
-            })}
-          </div>
+                  {p.imageUrl ? (
+                    <SafeImage
+                      src={p.imageUrl}
+                      alt={name}
+                      width={size}
+                      height={size}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-white/70 bg-white/5 rounded-2xl">
+                      {name.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
