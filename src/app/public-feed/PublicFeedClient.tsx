@@ -6,6 +6,7 @@ import Image from "next/image";
 
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
+import SafeImage from "@/components/SafeImage";
 
 type Post = {
   id: string;
@@ -265,14 +266,13 @@ export default function PublicFeedClient() {
                   {/* Media */}
                   <div className="relative w-full max-h-[520px] bg-white/5">
                     {imgOk ? (
-                      <Image
-                        src={post.imageUrl}
-                        alt={post.caption || "post"}
-                        width={1200}
-                        height={800}
-                        unoptimized
-                        className="w-full max-h-[520px] object-cover"
-                        onError={() =>
+                      <SafeImage
+  src={post.imageUrl}
+  alt={post.caption || "post"}
+  width={1200}
+  height={800}
+  className="w-full max-h-[520px] object-cover"
+/>
                           setBrokenPostImages((prev) => ({
                             ...prev,
                             [post.id]: true,
