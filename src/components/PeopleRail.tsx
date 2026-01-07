@@ -1,16 +1,14 @@
+// src/components/PeopleRail.tsx
 "use client";
 
 import Image from "next/image";
-import { useMemo } from "react";
-
-export type VerificationTier = "blue" | "gold" | null;
+import Link from "next/link";
 
 export type PersonRailItem = {
   email: string;
-  imageUrl?: string | null; // use post image as avatar for now
-  isVerified?: boolean;
-  verificationTier?: VerificationTier;
-  href?: string; // optional override
+  imageUrl?: string | null;
+  displayName?: string | null;
+  tick?: "blue" | "gold" | null;
 };
 
 function displayNameFromEmail(email: string) {
@@ -19,16 +17,13 @@ function displayNameFromEmail(email: string) {
   return cleaned || email;
 }
 
-function Tick({ tier }: { tier: VerificationTier }) {
-  const isGold = tier === "gold";
-  const bg = isGold ? "bg-amber-400" : "bg-blue-500";
-  const text = isGold ? "text-black" : "text-white";
-
+function Tick({ tick }: { tick: "blue" | "gold" }) {
+  const bg = tick === "gold" ? "bg-amber-400" : "bg-blue-500";
   return (
     <span
-      title={isGold ? "Gold verified creator" : "Verified creator"}
-      className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full ${bg} ${text} text-[10px] font-bold flex items-center justify-center shadow`}
-      aria-label={isGold ? "Gold verified" : "Verified"}
+      title={tick === "gold" ? "Gold tick" : "Blue tick"}
+      className={`absolute right-1 top-1 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full ${bg} text-[10px] font-bold text-black shadow`}
+      aria-label={tick === "gold" ? "Gold tick" : "Blue tick"}
     >
       ✓
     </span>
@@ -37,74 +32,74 @@ function Tick({ tier }: { tier: VerificationTier }) {
 
 export default function PeopleRail({
   title = "Featured creators",
-  people,
+  hint = "Tap a face to view",
+  items,
+  size = 74, // bigger like your screenshot request
+  revolve = true,
 }: {
   title?: string;
-  people: PersonRailItem[];
+  hint?: string;
+  items: PersonRailItem[];
+  size?: number;
+  revolve?: boolean;
 }) {
-  const cleaned = useMemo(() => {
-    const uniq = new Map<string, PersonRailItem>();
-    for (const p of people || []) {
-      const email = String(p.email || "").trim().toLowerCase();
-      if (!email) continue;
-      if (!uniq.has(email)) uniq.set(email, { ...p, email });
-    }
-    return Array.from(uniq.values()).slice(0, 20);
-  }, [people]);
+  if (!items?.length) return null;
 
-  if (!cleaned.length) return null;
-
+  // “Invisible lines” effect: parent provides 1px gaps (gap-[1px]) and background shows through.
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden shadow-lg shadow-black/30">
-      <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+    <section className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+      <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
         <div className="text-sm font-semibold">{title}</div>
-        <div className="text-[11px] text-white/50">
-          Tap a face to view
-        </div>
+        <div className="text-xs text-white/50">{hint}</div>
       </div>
 
-      {/* Joined squares: gap-0 and overflow-hidden prevents borders/lines */}
-      <div className="w-full overflow-x-auto">
-        <div className="flex gap-0">
-          {cleaned.map((p) => {
-            const href = p.href ?? `/u/${encodeURIComponent(p.email)}`;
-            const tier = p.verificationTier ?? (p.isVerified ? "blue" : null);
+      <div className="px-4 py-4">
+        <div
+          className="flex items-center overflow-x-auto no-scrollbar"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="flex gap-[1px] bg-white/10 rounded-xl overflow-hidden">
+            {items.map((p) => {
+              const email = String(p.email || "").trim().toLowerCase();
+              const name = p.displayName || displayNameFromEmail(email);
 
-            return (
-              <a
-                key={p.email}
-                href={href}
-                className="relative flex-none w-[72px] h-[72px] sm:w-[84px] sm:h-[84px] bg-black/30"
-                title={displayNameFromEmail(p.email)}
-                aria-label={`View ${p.email}`}
-              >
-                {/* Avatar image */}
-                {p.imageUrl ? (
-                  <Image
-                    src={p.imageUrl}
-                    alt={p.email}
-                    width={200}
-                    height={200}
-                    unoptimized
-                    className="w-full h-full object-cover block"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-lg font-bold text-white/80">
-                    {(p.email?.[0] ?? "R").toUpperCase()}
+              return (
+                <Link
+                  key={email}
+                  href={`/u/${encodeURIComponent(email)}`}
+                  className="relative flex-none bg-[#050814]"
+                  style={{ width: size, height: size }}
+                  aria-label={`View ${name}`}
+                  title={name}
+                >
+                  {p.tick ? <Tick tick={p.tick} /> : null}
+
+                  <div
+                    className={`relative w-full h-full overflow-hidden ${
+                      revolve ? "rv-revolve-tile" : ""
+                    }`}
+                  >
+                    {p.imageUrl ? (
+                      <Image
+                        src={p.imageUrl}
+                        alt={name}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-white/60 bg-white/5">
+                        {name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {/* Subtle revolving ring overlay */}
-                <span className="pointer-events-none absolute inset-1 rounded-md">
-                  <span className="absolute inset-0 rounded-md rv-revolve-ring opacity-60" />
-                  <span className="absolute inset-0 rounded-md border border-white/10" />
-                </span>
-
-                {/* Verified tick */}
-                {tier ? <Tick tier={tier} /> : null}
-              </a>
-            );
-          })}
+                  {/* subtle hover */}
+                  <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
