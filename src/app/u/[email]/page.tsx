@@ -39,6 +39,8 @@ const PROFILES_TABLE = "profiles";
 const POSTS_TABLE = "Post";
 
 export default function ProfilePage({ params }: PageProps) {
+  const safeEmail = decodeURIComponent(params.email).trim().toLowerCase();
+
   const router = useRouter();
   const profileEmailParam = useMemo(() => decodeURIComponent(params.email), [params.email]);
 
