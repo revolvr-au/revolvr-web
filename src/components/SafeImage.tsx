@@ -1,37 +1,40 @@
 // src/components/SafeImage.tsx
 "use client";
 
-import Image from "next/image";
+import Image, { type ImageProps } from "next/image";
 import { useState } from "react";
 
-type Props = {
-  src: string;
-  alt: string;
-  width: number;
-  height: number;
-  className?: string;
+type Props = ImageProps & {
+  fallbackText?: string;
+  fallbackClassName?: string;
 };
 
-export default function SafeImage({ src, alt, width, height, className }: Props) {
+export default function SafeImage(props: Props) {
+  const {
+    alt,
+    fallbackText,
+    fallbackClassName = "w-full h-full flex items-center justify-center text-xs text-white/60 bg-white/5",
+    onError,
+    ...rest
+  } = props;
+
   const [broken, setBroken] = useState(false);
 
-  if (broken || !src) {
-    return (
-      <div className={`bg-white/5 border border-white/10 flex items-center justify-center ${className ?? ""}`}>
-        <span className="text-xs text-white/50">Image unavailable</span>
-      </div>
-    );
+  if (broken) {
+    const text =
+      fallbackText ?? (typeof alt === "string" && alt.trim() ? alt.trim()[0].toUpperCase() : "?");
+
+    return <div className={fallbackClassName}>{text}</div>;
   }
 
   return (
     <Image
-      src={src}
       alt={alt}
-      width={width}
-      height={height}
-      unoptimized
-      onError={() => setBroken(true)}
-      className={className}
+      {...rest}
+      onError={(e) => {
+        setBroken(true);
+        onError?.(e);
+      }}
     />
   );
 }

@@ -2,8 +2,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import SafeImage from "@/components/SafeImage";
 
 export type PersonRailItem = {
   email: string;
@@ -53,12 +53,9 @@ export default function PeopleRail({
         const name = p.displayName || displayNameFromEmail(email);
         return { ...p, email, displayName: name };
       })
-      .filter(Boolean) as Array<
-      PersonRailItem & { email: string; displayName: string }
-    >;
+      .filter(Boolean) as Array<PersonRailItem & { email: string; displayName: string }>;
   }, [items]);
 
-  // Track images that fail so we can fall back to initials
   const [broken, setBroken] = useState<Record<string, true>>({});
 
   if (!normalized.length) return null;
@@ -71,10 +68,7 @@ export default function PeopleRail({
       </div>
 
       <div className="px-4 py-4">
-        <div
-          className="flex items-center overflow-x-auto no-scrollbar"
-          style={{ WebkitOverflowScrolling: "touch" }}
-        >
+        <div className="flex items-center overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
           <div className="flex gap-[1px] bg-white/10 rounded-xl overflow-hidden">
             {normalized.map((p) => {
               const email = p.email;
@@ -93,21 +87,15 @@ export default function PeopleRail({
                 >
                   {p.tick ? <Tick tick={p.tick} /> : null}
 
-                  <div
-                    className={`relative w-full h-full overflow-hidden ${
-                      revolve ? "rv-revolve-tile" : ""
-                    }`}
-                  >
+                  <div className={`relative w-full h-full overflow-hidden ${revolve ? "rv-revolve-tile" : ""}`}>
                     {showImage ? (
-                      <Image
+                      <SafeImage
                         src={p.imageUrl as string}
                         alt={name}
                         fill
                         unoptimized
                         className="object-cover"
-                        onError={() =>
-                          setBroken((prev) => ({ ...prev, [email]: true }))
-                        }
+                        onError={() => setBroken((prev) => ({ ...prev, [email]: true }))}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs text-white/60 bg-white/5">
