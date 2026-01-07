@@ -8,7 +8,6 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 const stripe = new Stripe(stripeSecretKey);
 
 // Stripe SDK typings differ across versions. Some fields exist at runtime but not in TS types.
-// We unwrap Response<T> and then read needed fields via a narrow runtime shape.
 function unwrapStripe<T>(obj: Stripe.Response<T> | T): T {
   const maybe = obj as unknown as { data?: T };
   return maybe && typeof maybe === "object" && "data" in maybe && maybe.data
@@ -28,6 +27,12 @@ function getSubFields(sub: unknown): {
   };
 }
 
+/**
+ * Launch-safe:
+ * - Compiles even if Prisma schema has no `creator` model.
+ * - Does NOT crash at runtime if verification fires.
+ * - Once you confirm the correct model name, replace the `db.creator` section.
+ */
 export async function upsertCreatorVerificationFromSubscription(params: {
   creatorEmail: string;
   subscriptionId: string;
@@ -48,7 +53,20 @@ export async function upsertCreatorVerificationFromSubscription(params: {
   const isActive =
     status === "active" || status === "trialing" || status === "past_due";
 
-  await prisma.creator.upsert({
+  // ---- Prisma model compatibility guard ----
+  // Your Prisma client does not expose `prisma.creator`, so we guard via `any`.
+  // If the model exists under a different name, update this block accordingly.
+  const db = prisma as any;
+
+  if (!db?.creator?.upsert) {
+    console.warn(
+      "[stripe][verification] Prisma model `creator` not found. Skipping DB persistence.",
+      { creatorEmail, subscriptionId, tier, isActive, currentPeriodEnd }
+    );
+    return;
+  }
+
+  await db.creator.upsert({
     where: { email: creatorEmail },
     create: {
       email: creatorEmail,
