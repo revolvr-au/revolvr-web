@@ -7,18 +7,26 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-// Stripe SDK sometimes returns Stripe.Response<T> (with .data) depending on version/types.
-// Normalize it to the actual object.
+// Stripe SDK typings differ across versions. Some fields exist at runtime but not in TS types.
+// We unwrap Response<T> and then read needed fields via a narrow runtime shape.
 function unwrapStripe<T>(obj: Stripe.Response<T> | T): T {
   const maybe = obj as unknown as { data?: T };
-  return (maybe && typeof maybe === "object" && "data" in maybe && maybe.data)
+  return maybe && typeof maybe === "object" && "data" in maybe && maybe.data
     ? maybe.data
     : (obj as T);
 }
 
-// NOTE: keep your existing exports/signature if referenced elsewhere.
-// If your project imports a different function name from this file,
-// keep that name and replace only the internals.
+function getSubFields(sub: unknown): {
+  status?: string;
+  current_period_end?: number;
+} {
+  const s = sub as any;
+  return {
+    status: typeof s?.status === "string" ? s.status : undefined,
+    current_period_end:
+      typeof s?.current_period_end === "number" ? s.current_period_end : undefined,
+  };
+}
 
 export async function upsertCreatorVerificationFromSubscription(params: {
   creatorEmail: string;
@@ -27,21 +35,19 @@ export async function upsertCreatorVerificationFromSubscription(params: {
 }) {
   const { creatorEmail, subscriptionId, tier } = params;
 
-  // Retrieve subscription
   const subResp = await stripe.subscriptions.retrieve(subscriptionId);
-  const sub = unwrapStripe(subResp);
+  const sub = unwrapStripe(subResp) as unknown;
+
+  const { status, current_period_end } = getSubFields(sub);
 
   const currentPeriodEnd: Date | null =
-    typeof sub.current_period_end === "number"
-      ? new Date(sub.current_period_end * 1000)
+    typeof current_period_end === "number"
+      ? new Date(current_period_end * 1000)
       : null;
 
   const isActive =
-    sub.status === "active" ||
-    sub.status === "trialing" ||
-    sub.status === "past_due";
+    status === "active" || status === "trialing" || status === "past_due";
 
-  // Persist on your Creator row (adjust fields if your schema differs)
   await prisma.creator.upsert({
     where: { email: creatorEmail },
     create: {
