@@ -204,14 +204,7 @@ export default function PublicFeedClient() {
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
       <div className="space-y-6">
-        <PeopleRail
-          title="Featured creators"
-          hint="Tap a face to view"
-          items={railItems}
-          size={84}
-          revolve
-        />
-
+        <PeopleRail items={railItems} size={84} revolve />
         {loading ? (
           <div className="text-sm text-white/70">Loading public feed…</div>
         ) : err ? (
