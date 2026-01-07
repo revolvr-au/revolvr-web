@@ -66,6 +66,7 @@ function isValidImageUrl(url: unknown): url is string {
   // allow http(s) and root-relative paths
   return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
 }
+const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -264,22 +265,29 @@ export default function PublicFeedClient() {
                   </div>
 
                   {/* Media */}
-                  <div className="relative w-full max-h-[520px] bg-white/5">
-                    {imgOk ? (
-                      <SafeImage
-  src={post.imageUrl}
-  alt={post.caption || "post"}
-  width={1200}
-  height={800}
-  className="w-full max-h-[520px] object-cover"
-/>
-                          setBrokenPostImages((prev) => ({
-                            ...prev,
-                            [post.id]: true,
-                          }))
-                        }
-                      />
-                    ) : (
+<div className="relative w-full max-h-[520px]">
+  {brokenPostImages[post.id] || !post.imageUrl ? (
+    <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
+      <span className="text-xs text-white/50">Image unavailable</span>
+    </div>
+  ) : (
+    <Image
+      src={post.imageUrl}
+      alt={post.caption || "post"}
+      width={1200}
+      height={800}
+      unoptimized
+      className="w-full max-h-[520px] object-cover"
+      onError={() =>
+        setBrokenPostImages((prev) => ({
+          ...prev,
+          [post.id]: true,
+        }))
+      }
+    />
+  )}
+</div>
+
                       <div className="w-full h-[320px] flex items-center justify-center text-sm text-white/50">
                         Image unavailable
                       </div>
