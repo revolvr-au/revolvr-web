@@ -10,7 +10,8 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"
@@ -42,22 +43,29 @@ function toKind(mode: string) {
   return m.replace(/[^A-Z0-9_]/g, "_");
 }
 
-function toSource(src: any): "FEED" | "LIVE" {
-  const s = String(src || "FEED").toUpperCase();
+function toSource(src: unknown): SupportSource {
+  const s = String(src ?? "FEED").toUpperCase();
   return s === "LIVE" ? "LIVE" : "FEED";
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as Body;
+    const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 
-    const mode = body?.mode;
-    const creatorEmail = String((body?.creatorEmail ?? body?.userEmail ?? "")).trim().toLowerCase();
-    const userEmail = (body?.userEmail ?? null)?.toString().trim().toLowerCase() || null;
-    const postId = body?.postId ?? null;
+    const mode = body.mode;
+    const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "")
+      .trim()
+      .toLowerCase();
 
-    const source = toSource(body?.source);
-    const targetId = (body?.targetId ?? postId ?? null) as string | null;
+    const userEmail =
+      typeof body.userEmail === "string"
+        ? body.userEmail.trim().toLowerCase()
+        : null;
+
+    const postId = body.postId ?? null;
+
+    const source = toSource(body.source);
+    const targetId = (body.targetId ?? postId ?? null) as string | null;
 
     if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
     if (!creatorEmail) return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
@@ -106,7 +114,9 @@ export async function POST(req: NextRequest) {
     }
 
     const safeReturnPath =
-      body?.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
+      body.returnPath && body.returnPath.startsWith("/")
+        ? body.returnPath
+        : "/public-feed";
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");
@@ -160,7 +170,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ url: session.url }, { status: 200 });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("[payments/checkout] error", err);
     return NextResponse.json({ error: "Stripe checkout failed" }, { status: 500 });
   }

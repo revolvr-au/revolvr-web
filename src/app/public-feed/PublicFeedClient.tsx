@@ -108,9 +108,10 @@ export default function PublicFeedClient() {
 
         if (!res.ok) {
           const msg =
-            hasErrorMessage(json) && typeof (json as any).error === "string"
-              ? String((json as any).error)
-              : `Failed to load posts (${res.status})`;
+  hasErrorMessage(json) && typeof (json as ErrorResponseShape).error === "string"
+    ? String((json as ErrorResponseShape).error)
+    : `Failed to load posts (${res.status})`;
+
 
           if (!cancelled) {
             setErr(msg);

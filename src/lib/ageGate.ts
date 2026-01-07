@@ -8,6 +8,7 @@ export function isAgeOk(): boolean {
   try {
     return localStorage.getItem(KEY_AGE_OK) === "1";
   } catch {
+    // localStorage can throw (privacy mode, blocked storage, etc.)
     return false;
   }
 }
@@ -16,14 +17,18 @@ export function setAgeOk() {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(KEY_AGE_OK, "1");
-  } catch {}
+  } catch {
+    // Non-fatal: if storage is blocked, user will be prompted again next time.
+  }
 }
 
 export function clearAgeOk() {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(KEY_AGE_OK);
-  } catch {}
+  } catch {
+    // Non-fatal: best-effort cleanup.
+  }
 }
 
 export function getStoredCountry(): string | null {
@@ -31,6 +36,7 @@ export function getStoredCountry(): string | null {
   try {
     return localStorage.getItem(KEY_COUNTRY);
   } catch {
+    // localStorage can throw (privacy mode, blocked storage, etc.)
     return null;
   }
 }
@@ -39,7 +45,9 @@ export function setStoredCountry(country: string) {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(KEY_COUNTRY, country);
-  } catch {}
+  } catch {
+    // Non-fatal: if storage is blocked, fallback to locale guessing.
+  }
 }
 
 export function guessCountryFromLocale(): string {

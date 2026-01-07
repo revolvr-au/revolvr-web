@@ -1,13 +1,15 @@
 // src/app/creator/DashboardClient.tsx
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, FormEvent } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import { useAuthedUser } from "@/lib/useAuthedUser";
 import SpinButton from "@/components/SpinButton";
 import IdentityLens from "@/components/IdentityLens";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
+import { PaidReactionBar } from "@/components/PaidReactionBar";
 
 const POSTS_TABLE = "Post"; // Supabase table created by Prisma
 
@@ -33,6 +35,50 @@ type Spin = {
   post_id: string | null;
   created_at: string;
 };
+
+type CreatorMeResponse = {
+  creator?: {
+    isVerified?: boolean;
+    verificationTier?: "blue" | "gold" | null;
+  };
+};
+
+type VerifiedLookupResponse = {
+  verified?: unknown;
+};
+
+type CreditsResponse = {
+  boosts?: unknown;
+  tips?: unknown;
+  spins?: unknown;
+};
+
+function isPost(value: unknown): value is Post {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "string" &&
+    typeof v.userEmail === "string" &&
+    typeof v.imageUrl === "string" &&
+    typeof v.caption === "string" &&
+    typeof v.createdAt === "string"
+  );
+}
+
+function isSpinRow(value: unknown): value is Spin {
+  if (!value || typeof value !== "object") return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.id === "number" &&
+    typeof v.user_email === "string" &&
+    typeof v.created_at === "string" &&
+    (typeof v.post_id === "string" || v.post_id === null)
+  );
+}
+
+function toNumberOrZero(v: unknown): number {
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
 
 const VerifiedBadge = () => (
   <span
@@ -60,9 +106,11 @@ export default function DashboardClient() {
   const [loadingCredits, setLoadingCredits] = useState(false);
 
   const [posts, setPosts] = useState<Post[]>([]);
-  const [spins, setSpins] = useState<Spin[]>([]);
+
+  // Keep these for future UI usage; underscore satisfies lint.
+  const [_spins, setSpins] = useState<Spin[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
-  const [isLoadingSpins, setIsLoadingSpins] = useState(true);
+  const [_isLoadingSpins, setIsLoadingSpins] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -86,7 +134,6 @@ export default function DashboardClient() {
     if (!userEmail) {
       // If you want redirect back on, uncomment:
       // router.replace("/login?redirectTo=/creator/onboard");
-      console.warn("[creator/dashboard] no userEmail after ready (diagnostic)");
     }
   }, [ready, userEmail, router]);
 
@@ -95,13 +142,20 @@ export default function DashboardClient() {
       setIsLoadingPosts(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data, error: sbErr } = await supabase
         .from(POSTS_TABLE)
         .select("*")
         .order("createdAt", { ascending: false });
 
-      if (error) throw error;
-      setPosts((data as Post[]) ?? []);
+      if (sbErr) throw sbErr;
+
+      const rows = Array.isArray(data) ? data : [];
+      // Validate per-row (keeps `any` out and avoids poisoning state)
+      const parsed: Post[] = [];
+      for (const r of rows) {
+        if (isPost(r)) parsed.push(r);
+      }
+      setPosts(parsed);
     } catch (e) {
       console.error("Error loading posts", e);
       setError("Revolvr glitched out while loading the feed 😵‍💫");
@@ -121,16 +175,20 @@ export default function DashboardClient() {
         return;
       }
 
-      const res = await fetch(
-        `/api/creator/verified?emails=${encodeURIComponent(uniq.join(","))}`,
-        { cache: "no-store" }
-      );
+      const res = await fetch(`/api/creator/verified?emails=${encodeURIComponent(uniq.join(","))}`, {
+        cache: "no-store",
+      });
 
-      const json = await res.json().catch(() => null);
-      const verified: string[] = Array.isArray(json?.verified) ? json.verified : [];
+      const json = (await res.json().catch(() => null)) as VerifiedLookupResponse | null;
+
+      const verifiedRaw = json?.verified;
+      const verifiedList: string[] = Array.isArray(verifiedRaw)
+        ? verifiedRaw.map((x) => String(x).trim().toLowerCase()).filter(Boolean)
+        : [];
 
       const m: Record<string, boolean> = {};
-      for (const em of verified) m[String(em).toLowerCase()] = true;
+      for (const em of verifiedList) m[em] = true;
+
       setVerifiedMap(m);
     } catch (e) {
       console.warn("[creator/dashboard] failed to load verified authors", e);
@@ -141,14 +199,20 @@ export default function DashboardClient() {
     try {
       setIsLoadingSpins(true);
 
-      const { data, error } = await supabase
+      const { data, error: sbErr } = await supabase
         .from("spinner_spins")
         .select("*")
         .eq("user_email", email)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setSpins((data as Spin[]) ?? []);
+      if (sbErr) throw sbErr;
+
+      const rows = Array.isArray(data) ? data : [];
+      const parsed: Spin[] = [];
+      for (const r of rows) {
+        if (isSpinRow(r)) parsed.push(r);
+      }
+      setSpins(parsed);
     } catch (e) {
       console.error("Error loading spins", e);
     } finally {
@@ -159,16 +223,19 @@ export default function DashboardClient() {
   const loadCredits = useCallback(async (email: string) => {
     try {
       setLoadingCredits(true);
+
       const res = await fetch(`/api/credits?email=${encodeURIComponent(email)}`);
       if (!res.ok) {
-        console.error("Failed to load credits", await res.text());
+        console.error("Failed to load credits", await res.text().catch(() => ""));
         return;
       }
-      const data = await res.json();
+
+      const data = (await res.json().catch(() => null)) as CreditsResponse | null;
+
       setCredits({
-        boosts: data.boosts ?? 0,
-        tips: data.tips ?? 0,
-        spins: data.spins ?? 0,
+        boosts: toNumberOrZero(data?.boosts),
+        tips: toNumberOrZero(data?.tips),
+        spins: toNumberOrZero(data?.spins),
       });
     } catch (err) {
       console.error("Error fetching credits", err);
@@ -180,15 +247,14 @@ export default function DashboardClient() {
   const loadCreatorMe = useCallback(async () => {
     try {
       const res = await fetch("/api/creator/me", { cache: "no-store" });
-      const json = await res.json().catch(() => null);
+      const json = (await res.json().catch(() => null)) as CreatorMeResponse | null;
+
       const verified = Boolean(json?.creator?.isVerified);
       setIsVerified(verified);
 
-      // Optional if your API returns a tier:
-      if (json?.creator?.verificationTier) {
-        const t = String(json.creator.verificationTier);
-        if (t === "blue" || t === "gold") setVerificationTier(t);
-      }
+      const tier = json?.creator?.verificationTier ?? null;
+      if (tier === "blue" || tier === "gold") setVerificationTier(tier);
+      else setVerificationTier(null);
     } catch (e) {
       console.warn("[creator/dashboard] failed to load /api/creator/me", e);
     }
@@ -205,11 +271,11 @@ export default function DashboardClient() {
   }, [ready, userEmail, loadPosts, loadSpins, loadCredits, loadCreatorMe]);
 
   useEffect(() => {
-    if (!posts || posts.length === 0) {
+    if (!posts.length) {
       setVerifiedMap({});
       return;
     }
-    const emails = posts.map((p) => p.userEmail).filter(Boolean) as string[];
+    const emails = posts.map((p) => p.userEmail).filter(Boolean);
     loadVerifiedAuthors(emails);
   }, [posts, loadVerifiedAuthors]);
 
@@ -238,15 +304,16 @@ export default function DashboardClient() {
         cache: "no-store",
       });
 
-      const json = await res.json().catch(() => null);
+      const json = (await res.json().catch(() => null)) as { url?: unknown; error?: unknown } | null;
 
       if (!res.ok) {
-        setError(json?.error || "Could not start Stripe payouts onboarding.");
+        setError((json?.error ? String(json.error) : null) || "Could not start Stripe payouts onboarding.");
         return;
       }
 
-      if (json?.url) {
-        window.location.href = json.url;
+      const url = typeof json?.url === "string" ? json.url : "";
+      if (url) {
+        window.location.href = url;
         return;
       }
 
@@ -287,15 +354,16 @@ export default function DashboardClient() {
         }),
       });
 
-      const json = await res.json().catch(() => null);
+      const json = (await res.json().catch(() => null)) as { url?: unknown; error?: unknown } | null;
 
       if (!res.ok) {
-        setError(json?.error || "Could not start verification checkout.");
+        setError((json?.error ? String(json.error) : null) || "Could not start verification checkout.");
         return;
       }
 
-      if (json?.url) {
-        window.location.href = json.url;
+      const url = typeof json?.url === "string" ? json.url : "";
+      if (url) {
+        window.location.href = url;
         return;
       }
 
@@ -330,7 +398,9 @@ export default function DashboardClient() {
 
       if (storageError || !storageData) throw storageError ?? new Error("Upload failed");
 
-      const { data: { publicUrl } } = supabase.storage.from("posts").getPublicUrl(storageData.path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("posts").getPublicUrl(storageData.path);
 
       const { data: inserted, error: insertError } = await supabase
         .from(POSTS_TABLE)
@@ -344,7 +414,9 @@ export default function DashboardClient() {
 
       if (insertError) throw insertError;
 
-      setPosts((prev) => (inserted ? [inserted as any, ...prev] : prev));
+      const insertedPost = isPost(inserted) ? inserted : null;
+
+      setPosts((prev) => (insertedPost ? [insertedPost, ...prev] : prev));
       setCaption("");
       setFile(null);
       setIsComposerOpen(false);
@@ -358,8 +430,8 @@ export default function DashboardClient() {
 
   const handleDeletePost = async (id: string) => {
     try {
-      const { error } = await supabase.from(POSTS_TABLE).delete().eq("id", id);
-      if (error) throw error;
+      const { error: sbErr } = await supabase.from(POSTS_TABLE).delete().eq("id", id);
+      if (sbErr) throw sbErr;
       setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
       console.error("Error deleting post", e);
@@ -391,19 +463,21 @@ export default function DashboardClient() {
           }),
         });
 
-        const data = await res.json();
+        const data = (await res.json().catch(() => null)) as
+          | { credits?: { boosts?: unknown; tips?: unknown; spins?: unknown }; error?: unknown }
+          | null;
 
         if (!res.ok) {
           console.error("Failed to spend boost credit:", data);
-          setError(data.error ?? "Could not spend a boost credit.");
+          setError((data?.error ? String(data.error) : null) ?? "Could not spend a boost credit.");
           return;
         }
 
-        if (data.credits) {
+        if (data?.credits) {
           setCredits({
-            boosts: data.credits.boosts ?? 0,
-            tips: data.credits.tips ?? 0,
-            spins: data.credits.spins ?? 0,
+            boosts: toNumberOrZero(data.credits.boosts),
+            tips: toNumberOrZero(data.credits.tips),
+            spins: toNumberOrZero(data.credits.spins),
           });
         } else {
           setCredits((prev) => (prev ? { ...prev, boosts: Math.max(0, prev.boosts - 1) } : prev));
@@ -428,13 +502,14 @@ export default function DashboardClient() {
       });
 
       if (!res.ok) {
-        console.error("Boost checkout failed", await res.text());
+        console.error("Boost checkout failed", await res.text().catch(() => ""));
         setError("Could not start boost payment. Try again.");
         return;
       }
 
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      const data = (await res.json().catch(() => null)) as { url?: unknown } | null;
+      const url = typeof data?.url === "string" ? data.url : "";
+      if (url) window.location.href = url;
       else setError("Stripe did not return a checkout URL for boost.");
     } catch (err) {
       console.error("Error creating boost checkout:", err);
@@ -464,7 +539,7 @@ export default function DashboardClient() {
     );
   }
 
-  const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
+  const avatarInitial = userEmail[0]?.toUpperCase() ?? "R";
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
@@ -608,6 +683,8 @@ export default function DashboardClient() {
                   return cleaned || post.userEmail;
                 })();
 
+                const isAuthorVerified = verifiedMap[String(post.userEmail || "").toLowerCase()] === true;
+
                 return (
                   <article
                     key={post.id}
@@ -621,7 +698,7 @@ export default function DashboardClient() {
                         <div className="flex flex-col">
                           <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
                             {displayName}
-                            {verifiedMap[String(post.userEmail || "").toLowerCase()] ? (
+                            {isAuthorVerified ? (
                               <span className="ml-1 inline-flex align-middle">
                                 <VerifiedBadge />
                               </span>
@@ -649,11 +726,27 @@ export default function DashboardClient() {
                       </div>
                     </div>
 
-                    <div>
-                      <img src={post.imageUrl} alt={post.caption} className="w-full max-h-[480px] object-cover" />
+                    <div className="relative w-full max-h-[480px]">
+                      <Image
+                        src={post.imageUrl}
+                        alt={post.caption || "Post media"}
+                        width={1200}
+                        height={800}
+                        unoptimized
+                        className="w-full max-h-[480px] object-cover"
+                      />
                     </div>
 
                     {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
+
+                    <PaidReactionBar
+                      postId={post.id}
+                      viewerEmail={userEmail}
+                      disabled={credits ? credits.tips <= 0 : false}
+                      onSuccess={() => {
+                        setCredits((prev) => (prev ? { ...prev, tips: Math.max(0, prev.tips - 1) } : prev));
+                      }}
+                    />
                   </article>
                 );
               })}
@@ -668,7 +761,10 @@ export default function DashboardClient() {
           <div className="w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <h2 className="text-base font-semibold">New post</h2>
-              <button className="text-sm text-white/60 hover:text-white" onClick={() => !isPosting && setIsComposerOpen(false)}>
+              <button
+                className="text-sm text-white/60 hover:text-white"
+                onClick={() => !isPosting && setIsComposerOpen(false)}
+              >
                 Close
               </button>
             </div>
@@ -681,7 +777,7 @@ export default function DashboardClient() {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => {
                     e.preventDefault();
-                    const dropped = e.dataTransfer.files?.[0];
+                    const dropped = e.dataTransfer.files?.[0] ?? null;
                     if (dropped) setFile(dropped);
                   }}
                   className="w-full h-64 rounded-xl border border-white/15 bg-black/20 flex flex-col items-center justify-center cursor-pointer hover:bg-black/30 transition"
@@ -695,11 +791,18 @@ export default function DashboardClient() {
                       <span className="text-xs">Click or drop to upload</span>
                     </div>
                   ) : (
-                    <div className="w-full h-full overflow-hidden rounded-lg">
+                    <div className="w-full h-full overflow-hidden rounded-lg relative">
                       {file.type.startsWith("video") ? (
                         <video src={URL.createObjectURL(file)} controls className="w-full h-full object-cover" />
                       ) : (
-                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
+                        <Image
+                          src={URL.createObjectURL(file)}
+                          alt="preview"
+                          width={900}
+                          height={600}
+                          unoptimized
+                          className="w-full h-full object-cover"
+                        />
                       )}
                     </div>
                   )}

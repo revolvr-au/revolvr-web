@@ -1,0 +1,52 @@
+// eslint.config.js
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import js from "@eslint/js";
+import tseslint from "typescript-eslint";
+import nextPlugin from "@next/eslint-plugin-next";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default [
+  // Only lint src/
+  {
+    ignores: ["**/*"],
+  },
+  {
+    files: ["src/**/*.{js,jsx,ts,tsx}"],
+  },
+
+  // Base recommended
+  js.configs.recommended,
+
+  // TypeScript recommended (non-type-checked)
+  ...tseslint.configs.recommended,
+
+  // Next.js plugin + rules
+  {
+    plugins: {
+      "@next/next": nextPlugin,
+    },
+    rules: {
+      // Next core web vitals rule set (approximate equivalent)
+      ...nextPlugin.configs["core-web-vitals"].rules,
+
+      // Your desired overrides:
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
+
+  // Ensure parser can find tsconfig if needed later
+  {
+    languageOptions: {
+      parserOptions: {
+        tsconfigRootDir: __dirname,
+      },
+    },
+  },
+];

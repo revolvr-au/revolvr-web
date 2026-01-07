@@ -3,11 +3,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClients";
+import type { User } from "@supabase/supabase-js";
 
-type AuthedUser = {
-  id: string;
-  email?: string | null;
-} | null;
+type AuthedUser = Pick<User, "id" | "email"> | null;
 
 export function useAuthedUser() {
   // undefined = resolving, null = confirmed no user, object = user
@@ -30,8 +28,8 @@ export function useAuthedUser() {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
 
-      // If we get a session event, that's definitive
-      setUser((session?.user as any) ?? null);
+      const u = session?.user ?? null;
+      setUser(u ? { id: u.id, email: u.email } : null);
       settle();
     });
 
@@ -49,7 +47,7 @@ export function useAuthedUser() {
 
         // If session exists, settle immediately.
         if (sessUser) {
-          setUser(sessUser as any);
+          setUser({ id: sessUser.id, email: sessUser.email });
           settle();
           return;
         }
@@ -62,7 +60,7 @@ export function useAuthedUser() {
           // If no auth event arrived within the settle window, accept "no session"
           settle();
         }, 400);
-      } catch (e) {
+      } catch (e: unknown) {
         console.error("[useAuthedUser] unexpected", e);
         setUser(null);
         setTimeout(() => settle(), 400);

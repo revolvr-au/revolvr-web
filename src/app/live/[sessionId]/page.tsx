@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
+import type { CheckoutMode } from "@/lib/purchase";
 import {
   CreditBalances,
   loadCreditsForUser,
@@ -14,6 +15,8 @@ import {
 type PendingPurchase = { mode: PurchaseMode };
 
 type LiveMode = PurchaseMode | "reaction" | "vote";
+
+type CheckoutResponse = { url?: string; error?: string };
 
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
@@ -117,35 +120,40 @@ export default function LiveRoomPage() {
 
       // Packs only apply to tip/boost/spin
       const isCreditMode = mode === "tip" || mode === "boost" || mode === "spin";
-      const checkoutMode =
-        kind === "pack" && isCreditMode
-          ? (`${mode}-pack` as "tip-pack" | "boost-pack" | "spin-pack")
-          : (mode as any);
+
+      const checkoutMode: CheckoutMode =
+        kind === "pack" && isCreditMode ? `${mode}-pack` : mode;
 
       const res = await fetch("/api/payments/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-mode: checkoutMode,
+          mode: checkoutMode,
+          creatorEmail, // REQUIRED for ledger attribution
           userEmail,
           source: "LIVE",
           targetId: sessionId,
           returnPath: `/live/${encodeURIComponent(sessionId)}${
             creatorEmail ? `?creator=${encodeURIComponent(creatorEmail)}` : ""
           }`,
-}),
+        }),
       });
 
       if (!res.ok) {
-        const txt = await res.text();
+        const txt = await res.text().catch(() => "");
         console.error("[live] checkout failed:", txt);
         setError(txt || "Revolvr glitched out starting checkout. Try again.");
         return;
       }
 
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else setError("Stripe did not return a checkout URL.");
+      const data = (await res.json().catch(() => ({}))) as CheckoutResponse;
+
+      if (typeof data.url === "string" && data.url.length > 0) {
+        window.location.href = data.url;
+        return;
+      }
+
+      setError(data.error || "Stripe did not return a checkout URL.");
     } catch (err) {
       console.error("[live] error starting payment", err);
       setError("Revolvr glitched out talking to Stripe.");
@@ -313,7 +321,6 @@ mode: checkoutMode,
               : "No credits yet – your first support will open a quick checkout."}
           </p>
 
-          {/* Core 5-action stack for LIVE */}
           <div className="mt-2 grid grid-cols-5 gap-2 text-[11px] sm:text-xs">
             <button
               type="button"
@@ -408,7 +415,8 @@ function LivePurchaseChoiceSheet({
   const modeLabel = mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
 
   const singleAmount = mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
-  const packAmount = mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
+  const packAmount =
+    mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
 
   const packLabel =
     mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
@@ -418,13 +426,17 @@ function LivePurchaseChoiceSheet({
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Support with a {modeLabel}</h2>
-          <button onClick={onClose} className="text-xs text-white/50 hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-xs text-white/50 hover:text-white"
+          >
             Close
           </button>
         </div>
 
         <p className="text-xs text-white/60">
-          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to avoid checking out each time.
+          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to
+          avoid checking out each time.
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -433,8 +445,12 @@ function LivePurchaseChoiceSheet({
             onClick={onSingle}
             className="flex-1 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/60 px-3 py-2 text-xs text-left"
           >
-            <div className="font-semibold">Single {modeLabel} ({singleAmount})</div>
-            <div className="text-[11px] text-emerald-200/80">Quick one-off support</div>
+            <div className="font-semibold">
+              Single {modeLabel} ({singleAmount})
+            </div>
+            <div className="text-[11px] text-emerald-200/80">
+              Quick one-off support
+            </div>
           </button>
 
           <button
@@ -442,8 +458,12 @@ function LivePurchaseChoiceSheet({
             onClick={onPack}
             className="flex-1 rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-xs text-left"
           >
-            <div className="font-semibold">Buy {packLabel} ({packAmount})</div>
-            <div className="text-[11px] text-white/70">Better value, more {modeLabel.toLowerCase()}s</div>
+            <div className="font-semibold">
+              Buy {packLabel} ({packAmount})
+            </div>
+            <div className="text-[11px] text-white/70">
+              Better value, more {modeLabel.toLowerCase()}s
+            </div>
           </button>
         </div>
 

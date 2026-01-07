@@ -1,7 +1,6 @@
 // src/app/api/posts/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { pickSpinnerOutcome } from "@/lib/spinner"; // for the spinner route
 
 // GET /api/posts  -> list all posts with like counts
 export async function GET() {
