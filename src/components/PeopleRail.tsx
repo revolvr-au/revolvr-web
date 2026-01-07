@@ -1,6 +1,7 @@
 // src/components/PeopleRail.tsx
 "use client";
 
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -31,10 +32,10 @@ function Tick({ tick }: { tick: "blue" | "gold" }) {
 }
 
 export default function PeopleRail({
-  title = "Featured creators",
+  title = "Featured",
   hint = "Tap a face to view",
   items,
-  size = 74, // bigger like your screenshot request
+  size = 74,
   revolve = true,
 }: {
   title?: string;
@@ -43,9 +44,25 @@ export default function PeopleRail({
   size?: number;
   revolve?: boolean;
 }) {
-  if (!items?.length) return null;
+  const normalized = useMemo(() => {
+    if (!items?.length) return [];
+    return items
+      .map((p) => {
+        const email = String(p.email || "").trim().toLowerCase();
+        if (!email) return null;
+        const name = p.displayName || displayNameFromEmail(email);
+        return { ...p, email, displayName: name };
+      })
+      .filter(Boolean) as Array<
+      PersonRailItem & { email: string; displayName: string }
+    >;
+  }, [items]);
 
-  // “Invisible lines” effect: parent provides 1px gaps (gap-[1px]) and background shows through.
+  // Track images that fail so we can fall back to initials
+  const [broken, setBroken] = useState<Record<string, true>>({});
+
+  if (!normalized.length) return null;
+
   return (
     <section className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
       <div className="px-4 py-3 flex items-center justify-between border-b border-white/10">
@@ -59,9 +76,11 @@ export default function PeopleRail({
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <div className="flex gap-[1px] bg-white/10 rounded-xl overflow-hidden">
-            {items.map((p) => {
-              const email = String(p.email || "").trim().toLowerCase();
+            {normalized.map((p) => {
+              const email = p.email;
               const name = p.displayName || displayNameFromEmail(email);
+
+              const showImage = Boolean(p.imageUrl) && !broken[email];
 
               return (
                 <Link
@@ -79,13 +98,16 @@ export default function PeopleRail({
                       revolve ? "rv-revolve-tile" : ""
                     }`}
                   >
-                    {p.imageUrl ? (
+                    {showImage ? (
                       <Image
-                        src={p.imageUrl}
+                        src={p.imageUrl as string}
                         alt={name}
                         fill
                         unoptimized
                         className="object-cover"
+                        onError={() =>
+                          setBroken((prev) => ({ ...prev, [email]: true }))
+                        }
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs text-white/60 bg-white/5">
@@ -94,7 +116,6 @@ export default function PeopleRail({
                     )}
                   </div>
 
-                  {/* subtle hover */}
                   <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
                 </Link>
               );
