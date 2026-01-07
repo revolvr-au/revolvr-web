@@ -66,7 +66,6 @@ function isValidImageUrl(url: unknown): url is string {
   return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
 }
 
-
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +73,9 @@ export default function PublicFeedClient() {
   const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set());
 
   // Track broken post images so we can fall back gracefully
-  const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
+  const [brokenPostImages, setBrokenPostImages] = useState<
+    Record<string, boolean>
+  >({});
 
   const emails = useMemo(() => {
     const s = new Set<string>();
@@ -85,8 +86,7 @@ export default function PublicFeedClient() {
     return Array.from(s);
   }, [posts]);
 
-  // Featured creators rail (Step 1 confirmed)
-  // Uses latest post image as square tile. Verified = blue tick.
+  // Featured creators rail: unique authors from newest posts
   const railItems: PersonRailItem[] = useMemo(() => {
     const seen = new Set<string>();
     const out: PersonRailItem[] = [];
@@ -123,12 +123,12 @@ export default function PublicFeedClient() {
 
         if (!res.ok) {
           const msg =
-            hasErrorMessage(json) && typeof json.error === "string"
-              ? json.error
+            hasErrorMessage(json) && typeof (json as ErrorResponseShape).error === "string"
+              ? String((json as ErrorResponseShape).error)
               : `Failed to load posts (${res.status})`;
 
           if (!cancelled) {
-            setErr(String(msg));
+            setErr(msg);
             setPosts([]);
           }
           return;
@@ -137,7 +137,7 @@ export default function PublicFeedClient() {
         const rows = Array.isArray(json)
           ? json
           : hasPostsArray(json)
-          ? (json.posts ?? [])
+          ? (json as PostsResponseShape).posts ?? []
           : [];
 
         if (!cancelled) setPosts(normalizePosts(rows));
@@ -183,7 +183,10 @@ export default function PublicFeedClient() {
           return;
         }
 
-        const verifiedRaw = hasVerifiedArray(json) ? json.verified ?? [] : [];
+        const verifiedRaw = hasVerifiedArray(json)
+          ? (json as VerifiedResponseShape).verified ?? []
+          : [];
+
         const verified = normalizeVerifiedEmails(verifiedRaw);
 
         if (!cancelled) setVerifiedSet(new Set(verified));
@@ -200,7 +203,6 @@ export default function PublicFeedClient() {
 
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
-      {/* People rail */}
       <div className="space-y-6">
         <PeopleRail
           title="Featured creators"
@@ -210,7 +212,6 @@ export default function PublicFeedClient() {
           revolve
         />
 
-        {/* Feed body */}
         {loading ? (
           <div className="text-sm text-white/70">Loading public feed…</div>
         ) : err ? (
@@ -224,6 +225,9 @@ export default function PublicFeedClient() {
             {posts.map((post) => {
               const email = String(post.userEmail || "").trim().toLowerCase();
               const isVerified = email ? verifiedSet.has(email) : false;
+
+              const showFallback =
+                brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
               return (
                 <article
@@ -257,30 +261,32 @@ export default function PublicFeedClient() {
                       View
                     </a>
                   </div>
-                  {/* Media */}
-<div className="relative w-full max-h-[520px]">
-  {brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl) ? (
-    <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
-      <span className="text-xs text-white/50">Image unavailable</span>
-    </div>
-  ) : (
-    <Image
-      src={post.imageUrl}
-      alt={post.caption || "post"}
-      width={1200}
-      height={800}
-      unoptimized
-      className="w-full max-h-[520px] object-cover"
-      onError={() =>
-        setBrokenPostImages((prev) => ({
-          ...prev,
-          [post.id]: true,
-        }))
-      }
-    />
-  )}
-</div>
 
+                  {/* Media */}
+                  <div className="relative w-full max-h-[520px]">
+                    {showFallback ? (
+                      <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
+                        <span className="text-xs text-white/50">
+                          Image unavailable
+                        </span>
+                      </div>
+                    ) : (
+                      <Image
+                        src={post.imageUrl}
+                        alt={post.caption || "post"}
+                        width={1200}
+                        height={800}
+                        unoptimized
+                        className="w-full max-h-[520px] object-cover"
+                        onError={() =>
+                          setBrokenPostImages((prev) => ({
+                            ...prev,
+                            [post.id]: true,
+                          }))
+                        }
+                      />
+                    )}
+                  </div>
 
                   {/* Caption */}
                   {post.caption ? (
