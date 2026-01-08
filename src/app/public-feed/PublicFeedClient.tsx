@@ -69,22 +69,14 @@ function isValidImageUrl(url: unknown): url is string {
   );
 }
 
-function FooterAction({
-  icon,
-  label,
-}: {
-  icon: string;
-  label: string;
-}) {
+function FooterAction({ icon, label }: { icon: string; label: string }) {
   return (
     <button
       type="button"
       className={[
-        // layout / hit area
-        "inline-flex items-center gap-2 rounded-lg px-2 py-2",
-        // typography
+        "flex-none inline-flex items-center gap-2 whitespace-nowrap",
+        "rounded-lg px-2 py-2",
         "text-xs text-white/60",
-        // interaction
         "transition-all duration-150",
         "hover:text-white hover:bg-white/5",
         "active:scale-[0.97] active:bg-white/10",
@@ -97,6 +89,7 @@ function FooterAction({
     </button>
   );
 }
+
 
 
 export default function PublicFeedClient() {
@@ -318,7 +311,7 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+  <div className="flex items-center gap-6 text-xs text-white/60 overflow-x-auto no-scrollbar py-1">
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
@@ -326,8 +319,6 @@ export default function PublicFeedClient() {
     <FooterAction label="Vote" icon="🗳" />
   </div>
 </div>
-
-
                   {/* Caption */}
                   {post.caption ? (
                     <p className="px-4 py-3 text-sm text-white/90">
