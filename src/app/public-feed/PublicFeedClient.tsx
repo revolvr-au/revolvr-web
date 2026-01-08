@@ -69,19 +69,18 @@ function isValidImageUrl(url: unknown): url is string {
   );
 }
 
-function FooterAction({
-  icon,
-  label,
-}: {
-  icon: string;
-  label: string;
-}) {
+function FooterAction({ icon, label }: { icon: string; label: string }) {
   return (
     <button
       type="button"
       className={[
-        "flex-none inline-flex items-center gap-2 rounded-lg px-2 py-2",
-        "text-xs text-white/60",
+        // mobile: vertical (icon over label) so 5 fit cleanly
+        "inline-flex flex-col sm:flex-row items-center justify-center",
+        "gap-1 sm:gap-2",
+        "rounded-lg px-2 py-2",
+        // typography
+        "text-[11px] sm:text-xs text-white/60",
+        // interaction
         "transition-all duration-150",
         "hover:text-white hover:bg-white/5",
         "active:scale-[0.97] active:bg-white/10",
@@ -89,12 +88,11 @@ function FooterAction({
       ].join(" ")}
       aria-label={label}
     >
-      <span className="text-[13px] leading-none">{icon}</span>
+      <span className="text-[14px] sm:text-[13px] leading-none">{icon}</span>
       <span className="leading-none">{label}</span>
     </button>
   );
 }
-
 
 
 export default function PublicFeedClient() {
@@ -316,25 +314,19 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  {/* Desktop: spread evenly */}
-  <div className="hidden sm:flex items-center justify-between">
+  <div
+    className={[
+      // mobile: 5-up grid (uniform, always shows Vote)
+      "grid grid-cols-5 gap-2",
+      // desktop: spread evenly
+      "sm:flex sm:items-center sm:justify-between sm:gap-0",
+    ].join(" ")}
+  >
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
     <FooterAction label="React" icon="😊" />
     <FooterAction label="Vote" icon="🗳" />
-  </div>
-
-  {/* Mobile: 4-up row + centered Vote */}
-  <div className="grid sm:hidden grid-cols-4 gap-x-3 gap-y-2">
-    <FooterAction label="Tip" icon="💰" />
-    <FooterAction label="Boost" icon="⚡" />
-    <FooterAction label="Spin" icon="🌀" />
-    <FooterAction label="React" icon="😊" />
-
-    <div className="col-span-4 flex justify-center">
-      <FooterAction label="Vote" icon="🗳" />
-    </div>
   </div>
 </div>
 
