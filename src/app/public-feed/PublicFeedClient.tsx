@@ -309,8 +309,8 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  {/* Desktop / tablet: single row */}
-  <div className="hidden sm:flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
+  {/* Desktop */}
+  <div className="hidden sm:flex items-center justify-between text-xs text-white/60">
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
@@ -319,18 +319,20 @@ export default function PublicFeedClient() {
   </div>
 
   {/* Mobile: 4-up row + centered Vote */}
-<div className="grid sm:hidden grid-cols-4 gap-x-3 gap-y-2 pt-1">
-  <FooterAction label="Tip" icon="💰" />
-  <FooterAction label="Boost" icon="⚡" />
-  <FooterAction label="Spin" icon="🌀" />
-  <FooterAction label="React" icon="😊" />
+  <div className="grid sm:hidden grid-cols-4 gap-x-3 gap-y-2 pt-1">
+    <FooterAction label="Tip" icon="💰" />
+    <FooterAction label="Boost" icon="⚡" />
+    <FooterAction label="Spin" icon="🌀" />
+    <FooterAction label="React" icon="😊" />
 
-  <div className="col-span-4 flex justify-center">
-    <div className="w-1/2">
-      <FooterAction label="Vote" icon="🗳" />
+    <div className="col-span-4 flex justify-center">
+      <div className="w-1/2">
+        <FooterAction label="Vote" icon="🗳" />
+      </div>
     </div>
   </div>
 </div>
+
 
 
                   {/* Caption */}
