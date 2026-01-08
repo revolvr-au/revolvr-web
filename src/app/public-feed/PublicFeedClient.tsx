@@ -69,12 +69,18 @@ function isValidImageUrl(url: unknown): url is string {
   );
 }
 
-function FooterAction({ icon, label }: { icon: string; label: string }) {
+function FooterAction({
+  icon,
+  label,
+}: {
+  icon: string;
+  label: string;
+}) {
   return (
     <button
       type="button"
       className={[
-        "inline-flex w-full items-center justify-center gap-2 rounded-lg px-2 py-2",
+        "flex-none inline-flex items-center gap-2 rounded-lg px-2 py-2",
         "text-xs text-white/60",
         "transition-all duration-150",
         "hover:text-white hover:bg-white/5",
@@ -88,6 +94,7 @@ function FooterAction({ icon, label }: { icon: string; label: string }) {
     </button>
   );
 }
+
 
 
 export default function PublicFeedClient() {
@@ -309,8 +316,8 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  {/* Desktop */}
-  <div className="hidden sm:flex items-center justify-between text-xs text-white/60">
+  {/* Desktop: spread evenly */}
+  <div className="hidden sm:flex items-center justify-between">
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
@@ -319,21 +326,17 @@ export default function PublicFeedClient() {
   </div>
 
   {/* Mobile: 4-up row + centered Vote */}
-  <div className="grid sm:hidden grid-cols-4 gap-x-3 gap-y-2 pt-1">
+  <div className="grid sm:hidden grid-cols-4 gap-x-3 gap-y-2">
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
     <FooterAction label="React" icon="😊" />
 
     <div className="col-span-4 flex justify-center">
-      <div className="w-1/2">
-        <FooterAction label="Vote" icon="🗳" />
-      </div>
+      <FooterAction label="Vote" icon="🗳" />
     </div>
   </div>
 </div>
-
-
 
                   {/* Caption */}
                   {post.caption ? (
