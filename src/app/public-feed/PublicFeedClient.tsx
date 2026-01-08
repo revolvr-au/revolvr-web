@@ -311,7 +311,7 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  <div className="flex items-center gap-6 text-xs text-white/60 overflow-x-auto no-scrollbar py-1">
+  <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 text-xs text-white/60 sm:flex-nowrap sm:justify-between">
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
@@ -319,6 +319,7 @@ export default function PublicFeedClient() {
     <FooterAction label="Vote" icon="🗳" />
   </div>
 </div>
+
                   {/* Caption */}
                   {post.caption ? (
                     <p className="px-4 py-3 text-sm text-white/90">
