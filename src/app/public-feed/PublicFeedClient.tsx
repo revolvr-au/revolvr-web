@@ -69,13 +69,18 @@ function isValidImageUrl(url: unknown): url is string {
   );
 }
 
-function FooterAction({ icon, label }: { icon: string; label: string }) {
+function FooterAction({
+  icon,
+  label,
+}: {
+  icon: string;
+  label: string;
+}) {
   return (
     <button
       type="button"
       className={[
-        "flex-none inline-flex items-center gap-2 whitespace-nowrap",
-        "rounded-lg px-2 py-2",
+        "flex-none inline-flex items-center gap-2 rounded-lg px-2 py-2",
         "text-xs text-white/60",
         "transition-all duration-150",
         "hover:text-white hover:bg-white/5",
@@ -89,8 +94,6 @@ function FooterAction({ icon, label }: { icon: string; label: string }) {
     </button>
   );
 }
-
-
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -311,7 +314,7 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  <div className="flex flex-wrap items-center justify-start gap-x-4 gap-y-2 text-xs text-white/60 sm:flex-nowrap sm:justify-between">
+  <div className="flex items-center gap-3 overflow-x-auto no-scrollbar py-1">
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
