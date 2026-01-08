@@ -317,16 +317,17 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  {/* Desktop: shrink-wrap cluster (no full-width spreading) */}
-  <div className="hidden sm:flex justify-center">
-    <div className="inline-flex items-center gap-10">
-      <FooterAction label="Tip" icon="💰" />
-      <FooterAction label="Boost" icon="⚡" />
-      <FooterAction label="Spin" icon="🌀" />
-      <FooterAction label="React" icon="😊" />
-      <FooterAction label="Vote" icon="🗳" />
-    </div>
+  {/* Desktop: left aligned, shrink-wrap cluster */}
+<div className="hidden sm:flex">
+  <div className="inline-flex items-center gap-10">
+    <FooterAction label="Tip" icon="💰" />
+    <FooterAction label="Boost" icon="⚡" />
+    <FooterAction label="Spin" icon="🌀" />
+    <FooterAction label="React" icon="😊" />
+    <FooterAction label="Vote" icon="🗳" />
   </div>
+</div>
+
 
   {/* Mobile: keep your current perfect mobile layout exactly as-is */}
   <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
