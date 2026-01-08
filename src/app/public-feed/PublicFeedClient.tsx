@@ -7,6 +7,8 @@ import Link from "next/link";
 
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
+import PostActionModal from "@/components/PostActionModal";
+import { createTip } from "@/lib/actionsClient";
 
 type Post = {
   id: string;
@@ -72,13 +74,16 @@ function isValidImageUrl(url: unknown): url is string {
 function FooterAction({
   icon,
   label,
+  onClick,
 }: {
   icon: string;
   label: string;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className={[
         "flex-none inline-flex items-center justify-center",
         "flex-col sm:flex-row",
@@ -103,6 +108,9 @@ export default function PublicFeedClient() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set());
+
+  // Tip modal state
+  const [tipOpenForPostId, setTipOpenForPostId] = useState<string | null>(null);
 
   // Track broken post images so we can fall back gracefully
   const [brokenPostImages, setBrokenPostImages] = useState<
@@ -316,28 +324,54 @@ export default function PublicFeedClient() {
                   </div>
 
                   {/* Post footer */}
-<div className="px-4 py-2 border-t border-white/10">
-  {/* Desktop: left aligned, shrink-wrap cluster */}
-<div className="hidden sm:flex">
-  <div className="inline-flex items-center gap-10">
-    <FooterAction label="Tip" icon="💰" />
-    <FooterAction label="Boost" icon="⚡" />
-    <FooterAction label="Spin" icon="🌀" />
-    <FooterAction label="React" icon="😊" />
-    <FooterAction label="Vote" icon="🗳" />
-  </div>
-</div>
+                  <div className="px-4 py-2 border-t border-white/10">
+                    {/* Desktop: left aligned, shrink-wrap cluster */}
+                    <div className="hidden sm:flex">
+                      <div className="inline-flex items-center gap-10">
+                        <FooterAction
+                          label="Tip"
+                          icon="💰"
+                          onClick={() => setTipOpenForPostId(post.id)}
+                        />
+                        <FooterAction label="Boost" icon="⚡" />
+                        <FooterAction label="Spin" icon="🌀" />
+                        <FooterAction label="React" icon="😊" />
+                        <FooterAction label="Vote" icon="🗳" />
+                      </div>
+                    </div>
 
+                    {/* Mobile: keep your current perfect mobile layout exactly as-is */}
+                    <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
+                      <FooterAction
+                        label="Tip"
+                        icon="💰"
+                        onClick={() => setTipOpenForPostId(post.id)}
+                      />
+                      <FooterAction label="Boost" icon="⚡" />
+                      <FooterAction label="Spin" icon="🌀" />
+                      <FooterAction label="React" icon="😊" />
+                      <FooterAction label="Vote" icon="🗳" />
+                    </div>
+                  </div>
 
-  {/* Mobile: keep your current perfect mobile layout exactly as-is */}
-  <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
-    <FooterAction label="Tip" icon="💰" />
-    <FooterAction label="Boost" icon="⚡" />
-    <FooterAction label="Spin" icon="🌀" />
-    <FooterAction label="React" icon="😊" />
-    <FooterAction label="Vote" icon="🗳" />
-  </div>
-</div>
+                  {/* Tip modal (scaffold) */}
+                  <PostActionModal
+                    open={tipOpenForPostId === post.id}
+                    onClose={() => setTipOpenForPostId(null)}
+                    title="Tip creator"
+                    subtitle="Support this creator"
+                    icon="💰"
+                    isAuthed={false} // TODO: wire auth tomorrow
+                    loginHref="/login"
+                    confirmLabel="Send tip"
+                    onConfirm={async (amountCents) => {
+                      await createTip({
+                        postId: post.id,
+                        creatorEmail: email,
+                        amountCents,
+                      });
+                    }}
+                  />
 
                   {/* Caption */}
                   {post.caption ? (
