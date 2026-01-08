@@ -69,18 +69,22 @@ function isValidImageUrl(url: unknown): url is string {
   );
 }
 
-function FooterAction({ icon, label }: { icon: string; label: string }) {
+function FooterAction({
+  icon,
+  label,
+}: {
+  icon: string;
+  label: string;
+}) {
   return (
     <button
       type="button"
       className={[
-        // mobile: vertical (icon over label) so 5 fit cleanly
-        "inline-flex flex-col sm:flex-row items-center justify-center",
+        "flex-none inline-flex items-center justify-center",
+        "flex-col sm:flex-row",
         "gap-1 sm:gap-2",
         "rounded-lg px-2 py-2",
-        // typography
         "text-[11px] sm:text-xs text-white/60",
-        // interaction
         "transition-all duration-150",
         "hover:text-white hover:bg-white/5",
         "active:scale-[0.97] active:bg-white/10",
@@ -88,12 +92,11 @@ function FooterAction({ icon, label }: { icon: string; label: string }) {
       ].join(" ")}
       aria-label={label}
     >
-      <span className="text-[14px] sm:text-[13px] leading-none">{icon}</span>
+      <span className="text-[13px] leading-none">{icon}</span>
       <span className="leading-none">{label}</span>
     </button>
   );
 }
-
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -314,14 +317,17 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
 <div className="px-4 py-2 border-t border-white/10">
-  <div
-    className={[
-      // mobile: 5-up grid (uniform, always shows Vote)
-      "grid grid-cols-5 gap-2",
-      // desktop: spread evenly
-      "sm:flex sm:items-center sm:justify-between sm:gap-0",
-    ].join(" ")}
-  >
+  {/* Desktop: consistent spacing (no justify-between stretching) */}
+  <div className="hidden sm:grid grid-cols-5 items-center justify-items-center gap-x-8">
+    <FooterAction label="Tip" icon="💰" />
+    <FooterAction label="Boost" icon="⚡" />
+    <FooterAction label="Spin" icon="🌀" />
+    <FooterAction label="React" icon="😊" />
+    <FooterAction label="Vote" icon="🗳" />
+  </div>
+
+  {/* Mobile: single row, still evenly spaced */}
+  <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
     <FooterAction label="Tip" icon="💰" />
     <FooterAction label="Boost" icon="⚡" />
     <FooterAction label="Spin" icon="🌀" />
