@@ -3,14 +3,13 @@
 
 export async function createTip(input: {
   postId: string;
-  creatorEmail: string; // later: creatorId
+  creatorEmail: string;
   amountCents: number;
 }) {
   const res = await fetch("/api/actions/tip", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
-    // credentials: "same-origin", // optional; default in browsers is usually fine
   });
 
   const json = await res.json().catch(() => null);

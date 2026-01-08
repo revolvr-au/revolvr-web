@@ -1,3 +1,4 @@
+// src/components/PostActionModal.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -8,21 +9,21 @@ type Props = {
   open: boolean;
   onClose: () => void;
 
-  title: string;           // e.g. "Tip creator"
-  subtitle?: string;       // e.g. "Support creator"
-  icon?: string;           // e.g. "💰"
+  title: string; // e.g. "Tip creator"
+  subtitle?: string; // e.g. "Support creator"
+  icon?: string; // e.g. "💰"
 
   // If user is not authed, we show a login CTA instead of confirm UI.
   isAuthed: boolean;
-  loginHref?: string;      // fallback "/login"
+  loginHref?: string; // fallback "/login"
 
-  presets?: Preset[];      // default amounts
+  presets?: Preset[]; // default amounts
   defaultAmountCents?: number;
 
-  confirmLabel?: string;   // e.g. "Send tip"
+  confirmLabel?: string; // e.g. "Send tip"
   onConfirm: (amountCents: number) => Promise<void>;
 
-  busy?: boolean;          // optional external busy state
+  busy?: boolean; // optional external busy state
 };
 
 export default function PostActionModal({
@@ -90,7 +91,6 @@ export default function PostActionModal({
 
   function applyCustom(v: string) {
     setCustom(v);
-    // allow only digits and optional decimal, then convert to cents
     const cleaned = v.replace(/[^\d.]/g, "");
     const n = Number(cleaned);
     if (!Number.isFinite(n) || n <= 0) return;
@@ -111,14 +111,10 @@ export default function PostActionModal({
       <div className="absolute left-1/2 top-1/2 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0B0F1A]/95 shadow-2xl shadow-black/60 overflow-hidden">
         <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {icon ? (
-              <span className="text-[18px] leading-none">{icon}</span>
-            ) : null}
+            {icon ? <span className="text-[18px] leading-none">{icon}</span> : null}
             <div className="flex flex-col">
               <span className="text-sm font-semibold text-white">{title}</span>
-              {subtitle ? (
-                <span className="text-xs text-white/50">{subtitle}</span>
-              ) : null}
+              {subtitle ? <span className="text-xs text-white/50">{subtitle}</span> : null}
             </div>
           </div>
 
@@ -134,9 +130,7 @@ export default function PostActionModal({
         <div className="px-4 py-4 space-y-3">
           {!isAuthed ? (
             <div className="space-y-3">
-              <div className="text-sm text-white/70">
-                You need to log in to continue.
-              </div>
+              <div className="text-sm text-white/70">You need to log in to continue.</div>
               <a
                 href={loginHref}
                 className="inline-flex items-center justify-center w-full rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-sm font-semibold py-3 transition-colors"
@@ -178,9 +172,7 @@ export default function PostActionModal({
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs text-white/50">
                   Amount:{" "}
-                  <span className="text-white/80">
-                    ${(amountCents / 100).toFixed(2)}
-                  </span>
+                  <span className="text-white/80">${(amountCents / 100).toFixed(2)}</span>
                 </div>
 
                 <button
