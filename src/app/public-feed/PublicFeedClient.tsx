@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
@@ -63,7 +64,28 @@ function isValidImageUrl(url: unknown): url is string {
   const u = url.trim();
   if (!u) return false;
   // allow http(s) and root-relative paths
-  return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
+  return (
+    u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/")
+  );
+}
+
+function FooterAction({
+  icon,
+  label,
+}: {
+  icon: string;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="flex items-center gap-1 hover:text-white transition-colors"
+      aria-label={label}
+    >
+      <span>{icon}</span>
+      <span>{label}</span>
+    </button>
+  );
 }
 
 export default function PublicFeedClient() {
@@ -123,7 +145,8 @@ export default function PublicFeedClient() {
 
         if (!res.ok) {
           const msg =
-            hasErrorMessage(json) && typeof (json as ErrorResponseShape).error === "string"
+            hasErrorMessage(json) &&
+            typeof (json as ErrorResponseShape).error === "string"
               ? String((json as ErrorResponseShape).error)
               : `Failed to load posts (${res.status})`;
 
@@ -205,6 +228,7 @@ export default function PublicFeedClient() {
     <FeedLayout title="Revolvr" subtitle="Public feed">
       <div className="space-y-6">
         <PeopleRail items={railItems} size={84} revolve />
+
         {loading ? (
           <div className="text-sm text-white/70">Loading public feed…</div>
         ) : err ? (
@@ -247,12 +271,12 @@ export default function PublicFeedClient() {
                       </div>
                     </div>
 
-                    <a
+                    <Link
                       href={`/u/${encodeURIComponent(email)}`}
                       className="text-xs text-white/60 hover:text-white underline"
                     >
                       View
-                    </a>
+                    </Link>
                   </div>
 
                   {/* Media */}
@@ -279,6 +303,17 @@ export default function PublicFeedClient() {
                         }
                       />
                     )}
+                  </div>
+
+                  {/* Post footer */}
+                  <div className="px-4 py-2 border-t border-white/10">
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 items-center text-xs text-white/60">
+                      <FooterAction label="Tip" icon="💰" />
+                      <FooterAction label="Boost" icon="⚡" />
+                      <FooterAction label="Spin" icon="🌀" />
+                      <FooterAction label="React" icon="😊" />
+                      <FooterAction label="Vote" icon="🗳" />
+                    </div>
                   </div>
 
                   {/* Caption */}
