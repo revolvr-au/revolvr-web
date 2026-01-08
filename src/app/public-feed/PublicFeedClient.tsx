@@ -69,18 +69,12 @@ function isValidImageUrl(url: unknown): url is string {
   );
 }
 
-function FooterAction({
-  icon,
-  label,
-}: {
-  icon: string;
-  label: string;
-}) {
+function FooterAction({ icon, label }: { icon: string; label: string }) {
   return (
     <button
       type="button"
       className={[
-        "flex-none inline-flex items-center gap-2 rounded-lg px-2 py-2",
+        "inline-flex w-full items-center justify-center gap-2 rounded-lg px-2 py-2",
         "text-xs text-white/60",
         "transition-all duration-150",
         "hover:text-white hover:bg-white/5",
@@ -94,6 +88,7 @@ function FooterAction({
     </button>
   );
 }
+
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -323,13 +318,15 @@ export default function PublicFeedClient() {
     <FooterAction label="Vote" icon="🗳" />
   </div>
 
-  {/* Mobile: 2-row grid so nothing can “vanish” */}
-  <div className="grid sm:hidden grid-cols-4 gap-2 pt-1">
-    <FooterAction label="Tip" icon="💰" />
-    <FooterAction label="Boost" icon="⚡" />
-    <FooterAction label="Spin" icon="🌀" />
-    <FooterAction label="React" icon="😊" />
-    <div className="col-span-2">
+  {/* Mobile: 4-up row + centered Vote */}
+<div className="grid sm:hidden grid-cols-4 gap-x-3 gap-y-2 pt-1">
+  <FooterAction label="Tip" icon="💰" />
+  <FooterAction label="Boost" icon="⚡" />
+  <FooterAction label="Spin" icon="🌀" />
+  <FooterAction label="React" icon="😊" />
+
+  <div className="col-span-4 flex justify-center">
+    <div className="w-1/2">
       <FooterAction label="Vote" icon="🗳" />
     </div>
   </div>
