@@ -1,14 +1,21 @@
 import { SUPPORT_EMAIL } from "@/lib/constants";
 
+type CreatorProfile = {
+  displayName?: string | null;
+  display_name?: string | null;
+  handle?: string | null;
+};
+
 type CreatorMeResponse = {
   ok: boolean;
-  profile: any | null;
+  profile: CreatorProfile | null;
   balance?: {
     creatorEmail: string;
     totalEarnedCents: number;
     availableCents: number;
   } | null;
 };
+
 
 export default function CreatorDashboard({ me }: { me: CreatorMeResponse }) {
   const total = ((me.balance?.totalEarnedCents ?? 0) as number) / 100;

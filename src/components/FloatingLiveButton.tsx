@@ -1,3 +1,4 @@
+// src/components/FloatingLiveButton.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,6 +8,7 @@ import { supabase } from "@/lib/supabaseClients";
 type AuthState = {
   checked: boolean;
   isLoggedIn: boolean;
+  isCreator: boolean;
 };
 
 export function FloatingLiveButton() {
@@ -16,11 +18,13 @@ export function FloatingLiveButton() {
   const [auth, setAuth] = useState<AuthState>({
     checked: false,
     isLoggedIn: false,
+    isCreator: false,
   });
 
-  // ✅ Hooks ALWAYS run
   useEffect(() => {
     if (pathname !== "/public-feed") return;
+
+    let cancelled = false;
 
     const checkUser = async () => {
       try {
@@ -28,43 +32,48 @@ export function FloatingLiveButton() {
           data: { user },
         } = await supabase.auth.getUser();
 
-        setAuth({ checked: true, isLoggedIn: !!user });
+        if (cancelled) return;
+
+        const isLoggedIn = !!user;
+        const isCreator = !!user?.user_metadata?.is_creator;
+
+        setAuth({ checked: true, isLoggedIn, isCreator });
       } catch (e) {
         console.error("[FloatingLiveButton] auth check error", e);
-        setAuth({ checked: true, isLoggedIn: false });
+        if (!cancelled) setAuth({ checked: true, isLoggedIn: false, isCreator: false });
       }
     };
 
     checkUser();
+    return () => {
+      cancelled = true;
+    };
   }, [pathname]);
 
-  // ✅ Conditional return AFTER hooks
-  if (pathname !== "/public-feed") {
-    return null;
-  }
+  if (pathname !== "/public-feed") return null;
+
+  // Don’t flash button before we know auth state
+  if (!auth.checked) return null;
 
   const handleClick = async () => {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  // Not logged in → login → onboarding
-  if (!user) {
-    router.push("/login?redirectTo=/creator/onboard");
-    return;
-  }
+    if (!user) {
+      router.push("/login?redirectTo=/creator/onboard");
+      return;
+    }
 
-  // Logged in but NOT a creator → onboarding
-  if (!user.user_metadata?.is_creator) {
-    router.push("/creator/onboard");
-    return;
-  }
+    if (!user.user_metadata?.is_creator) {
+      router.push("/creator/onboard");
+      return;
+    }
 
-  // Creator → dashboard
-  router.push("/creator");
-};
+    router.push("/creator");
+  };
 
-
+  const label = !auth.isLoggedIn ? "Login to go live" : auth.isCreator ? "Go Live" : "Become a creator";
 
   return (
     <button
@@ -78,9 +87,10 @@ export function FloatingLiveButton() {
         hover:scale-105 active:scale-95
         transition-transform
       "
+      aria-label={label}
     >
       <span className="inline-block h-2 w-2 rounded-full bg-red-300 animate-pulse" />
-      Go Live
+      {label}
     </button>
   );
 }

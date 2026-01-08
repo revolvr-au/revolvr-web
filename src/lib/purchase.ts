@@ -1,4 +1,6 @@
 // src/lib/purchase.ts
+"use client";
+
 export type CheckoutMode =
   | "tip"
   | "boost"
@@ -31,16 +33,33 @@ export type StartCheckoutOptions = {
   returnPath?: string | null;
 };
 
-export async function startCheckout(opts: StartCheckoutOptions) {
-  const payload = {
+type CheckoutPayload = {
+  mode: CheckoutMode;
+  creatorEmail: string;
+  userEmail: string | null;
+  source: SupportSource;
+  targetId: string | null;
+  postId: string | null;
+  returnPath: string;
+};
+
+type CheckoutResponse = { url?: string };
+
+export async function startCheckout(opts: StartCheckoutOptions): Promise<void> {
+  const payload: CheckoutPayload = {
     mode: opts.mode,
     creatorEmail: String(opts.creatorEmail || "").trim().toLowerCase(),
-    userEmail: (opts.userEmail ?? null)?.toString().trim().toLowerCase() || null,
-    source: (opts.source ?? "FEED") as SupportSource,
+    userEmail:
+      (opts.userEmail ?? null)?.toString().trim().toLowerCase() || null,
+    source: opts.source ?? "FEED",
     targetId: opts.targetId ?? null,
     postId: opts.postId ?? null,
     returnPath: opts.returnPath ?? "/public-feed",
   };
+
+  if (!payload.creatorEmail) {
+    throw new Error("Missing creatorEmail");
+  }
 
   const res = await fetch("/api/payments/checkout", {
     method: "POST",
@@ -53,8 +72,9 @@ export async function startCheckout(opts: StartCheckoutOptions) {
     throw new Error(`checkout failed (${res.status}): ${text}`);
   }
 
-  const data = await res.json().catch(() => ({} as any));
-  if (data?.url) {
+  const data = (await res.json().catch(() => ({}))) as CheckoutResponse;
+
+  if (typeof data.url === "string" && data.url.length > 0) {
     window.location.href = data.url;
     return;
   }

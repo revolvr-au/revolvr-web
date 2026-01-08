@@ -2,17 +2,30 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-12-15.clover",
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecret) {
+  throw new Error("Missing STRIPE_SECRET_KEY");
+}
+
+const stripe = new Stripe(stripeSecret, {
+  apiVersion: "2025-12-15.clover" as Stripe.LatestApiVersion,
 });
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
-async function getUserEmailFromBearer(req: Request) {
+type SupabaseUserResponse =
+  | { email?: string | null }
+  | null
+  | undefined;
+
+async function getUserEmailFromBearer(req: Request): Promise<string | null> {
   const auth = req.headers.get("authorization") || "";
-  const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  const token = auth.toLowerCase().startsWith("bearer ")
+    ? auth.slice(7).trim()
+    : "";
+
   if (!token) return null;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -26,8 +39,10 @@ async function getUserEmailFromBearer(req: Request) {
   });
 
   if (!res.ok) return null;
-  const user = await res.json().catch(() => null);
-  return user?.email ? String(user.email).trim().toLowerCase() : null;
+
+  const user = (await res.json().catch(() => null)) as SupabaseUserResponse;
+  const email = user?.email ? String(user.email).trim().toLowerCase() : null;
+  return email || null;
 }
 
 export async function GET(req: Request) {
@@ -50,16 +65,16 @@ export async function GET(req: Request) {
 
     const acct = await stripe.accounts.retrieve(profile.stripeAccountId);
 
-    const chargesEnabled = Boolean((acct as any).charges_enabled);
-    const payoutsEnabled = Boolean((acct as any).payouts_enabled);
+    const chargesEnabled = Boolean(acct.charges_enabled);
+    const payoutsEnabled = Boolean(acct.payouts_enabled);
 
-    // update DB so UI doesn't guess
     await prisma.creatorProfile.update({
       where: { email },
       data: {
         stripeChargesEnabled: chargesEnabled,
         stripePayoutsEnabled: payoutsEnabled,
-        stripeOnboardingStatus: chargesEnabled && payoutsEnabled ? "complete" : "pending",
+        stripeOnboardingStatus:
+          chargesEnabled && payoutsEnabled ? "complete" : "pending",
       },
     });
 
@@ -71,7 +86,7 @@ export async function GET(req: Request) {
       payoutsEnabled,
       stripeAccountId: profile.stripeAccountId,
     });
-  } catch (e) {
+  } catch (e: unknown) {
     console.error("[api/stripe/connect/status] error", e);
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }

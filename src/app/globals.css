@@ -109,3 +109,14 @@
     opacity: 1;
   }
 }
+/* People Rail - slow premium revolve */
+@keyframes revolvr-revolve {
+  from { transform: scale(1.06) rotate(0deg); }
+  to   { transform: scale(1.06) rotate(360deg); }
+}
+
+.rv-revolve-tile {
+  transform-origin: 50% 50%;
+  animation: revolvr-revolve 22s linear infinite;
+  /* keeps it subtle, not dizzy */
+}

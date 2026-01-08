@@ -9,18 +9,19 @@ export type CreditBalances = {
   spin: number;
 };
 
-const TABLE = "UserCredits"; // <- Prisma table
+const TABLE = "UserCredits"; // Prisma table
 
-// Normalise a row from UserCredits into our simple shape
-function normalizeRow(row: any | null): CreditBalances {
-  if (!row) {
-    return { tip: 0, boost: 0, spin: 0 };
-  }
+type UserCreditsRow = {
+  tips: number | null;
+  boosts: number | null;
+  spins: number | null;
+};
 
+function normalizeRow(row: UserCreditsRow | null): CreditBalances {
   return {
-    tip: row.tips ?? 0,
-    boost: row.boosts ?? 0,
-    spin: row.spins ?? 0,
+    tip: row?.tips ?? 0,
+    boost: row?.boosts ?? 0,
+    spin: row?.spins ?? 0,
   };
 }
 
@@ -28,21 +29,19 @@ function normalizeRow(row: any | null): CreditBalances {
  * Load the current credit balances for a user.
  * Reads from public."UserCredits" (Prisma table).
  */
-export async function loadCreditsForUser(
-  email: string
-): Promise<CreditBalances> {
+export async function loadCreditsForUser(email: string): Promise<CreditBalances> {
   const { data, error } = await supabase
     .from(TABLE)
     .select("tips, boosts, spins")
     .eq("email", email)
-    .maybeSingle();
+    .maybeSingle<UserCreditsRow>();
 
   if (error) {
     console.error("[credits] loadCreditsForUser error", error);
     throw error;
   }
 
-  return normalizeRow(data);
+  return normalizeRow(data ?? null);
 }
 
 /**
@@ -53,7 +52,6 @@ export async function spendOneCredit(
   email: string,
   mode: PurchaseMode
 ): Promise<CreditBalances> {
-  // First, get current balances
   const current = await loadCreditsForUser(email);
 
   const canSpend =
@@ -67,29 +65,25 @@ export async function spendOneCredit(
     throw new Error("[credits] No credits available to spend");
   }
 
-  const updates: { tips?: number; boosts?: number; spins?: number } = {};
+  const updates: Partial<UserCreditsRow> = {};
 
-  if (mode === "tip") {
-    updates.tips = current.tip - 1;
-  } else if (mode === "boost") {
-    updates.boosts = current.boost - 1;
-  } else {
-    updates.spins = current.spin - 1;
-  }
+  if (mode === "tip") updates.tips = current.tip - 1;
+  else if (mode === "boost") updates.boosts = current.boost - 1;
+  else updates.spins = current.spin - 1;
 
   const { data, error } = await supabase
     .from(TABLE)
     .update(updates)
     .eq("email", email)
     .select("tips, boosts, spins")
-    .maybeSingle();
+    .maybeSingle<UserCreditsRow>();
 
   if (error) {
     console.error("[credits] spendOneCredit error", error);
     throw error;
   }
 
-  const normalized = normalizeRow(data);
+  const normalized = normalizeRow(data ?? null);
   console.log("[credits] after spendOneCredit", mode, normalized);
   return normalized;
 }

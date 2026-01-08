@@ -1,11 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+type SupabaseUser = {
+  email?: string | null;
+};
+
+type ActivateBody = {
+  handle?: unknown;
+  displayName?: unknown;
+};
+
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
-async function getUserFromBearer(req: Request) {
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+async function getUserFromBearer(req: Request): Promise<SupabaseUser | null> {
   const auth = req.headers.get("authorization") || "";
   const token = auth.toLowerCase().startsWith("bearer ")
     ? auth.slice(7).trim()
@@ -23,10 +36,12 @@ async function getUserFromBearer(req: Request) {
   });
 
   if (!res.ok) return null;
-  return res.json().catch(() => null);
+
+  const user = (await res.json().catch(() => null)) as SupabaseUser | null;
+  return user;
 }
 
-function normalizeHandle(raw: unknown) {
+function normalizeHandle(raw: unknown): string {
   return String(raw ?? "")
     .trim()
     .toLowerCase()
@@ -35,51 +50,40 @@ function normalizeHandle(raw: unknown) {
     .slice(0, 32);
 }
 
+function normalizeDisplayName(raw: unknown, fallback: string): string {
+  const name = String(raw ?? "").trim();
+  return name.length ? name : fallback;
+}
+
 export async function POST(req: Request) {
   try {
     const user = await getUserFromBearer(req);
-    const email = user?.email?.toLowerCase();
-
+    const email = user?.email ? String(user.email).trim().toLowerCase() : null;
     if (!email) return jsonError("unauthenticated", 401);
 
-    const body = await req.json();
+    const body = (await req.json().catch(() => ({}))) as ActivateBody;
+
     const handle = normalizeHandle(body.handle);
-    const displayName = String(body.displayName || handle).trim();
+    if (!handle) return jsonError("Handle required", 400);
 
-    if (!handle) return jsonError("Handle required");
+    const displayName = normalizeDisplayName(body.displayName, handle);
 
-    // Ensure handle is not owned by someone else
-    const existingHandle = await prisma.creatorProfile.findFirst({
-      where: { handle },
-    });
-
+    const existingHandle = await prisma.creatorProfile.findFirst({ where: { handle } });
     if (existingHandle && existingHandle.email !== email) {
       return jsonError("Handle already taken", 409);
     }
 
     const profile = await prisma.creatorProfile.upsert({
       where: { email },
-      update: {
-        handle,
-        displayName,
-        status: "ACTIVE",
-      },
-      create: {
-        email,
-        handle,
-        displayName,
-        status: "ACTIVE",
-      },
+      update: { handle, displayName, status: "ACTIVE" },
+      create: { email, handle, displayName, status: "ACTIVE" },
     });
 
-    return NextResponse.json({ ok: true, profile });
-  } catch (e: any) {
+    return NextResponse.json({ ok: true, profile }, { status: 200 });
+  } catch (e: unknown) {
     console.error("[api/creator/activate] error", e);
     return NextResponse.json(
-      {
-        error: e?.code || e?.message || "Server error",
-        prisma: { code: e?.code || null, cause: e?.meta?.cause || null },
-      },
+      { error: errorMessage(e) || "Server error" },
       { status: 500 }
     );
   }

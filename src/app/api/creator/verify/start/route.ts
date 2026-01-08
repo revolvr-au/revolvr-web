@@ -12,35 +12,50 @@ function normalizeTier(v: unknown): Tier {
   return String(v ?? "").toLowerCase() === "gold" ? "gold" : "blue";
 }
 
+type CreatorMeResponse =
+  | { user?: { email?: string | null } | null }
+  | null
+  | undefined;
+
+function logError(context: string, err: unknown) {
+  if (err instanceof Error) {
+    console.error(context, err.message, err.stack);
+    return;
+  }
+  console.error(context, err);
+}
+
 export async function POST(req: Request) {
   try {
-    // Auth via existing session
-    const meRes = await fetch(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/api/creator/me`,
-      {
-        headers: { cookie: req.headers.get("cookie") ?? "" },
-        cache: "no-store",
-      }
-    );
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
+    if (!siteUrl) return jsonError("missing NEXT_PUBLIC_SITE_URL", 500);
 
-    const me = await meRes.json().catch(() => null);
+    // Auth via existing session cookie -> /api/creator/me
+    const meRes = await fetch(`${siteUrl}/api/creator/me`, {
+      headers: { cookie: req.headers.get("cookie") ?? "" },
+      cache: "no-store",
+    });
+
+    const me = (await meRes.json().catch(() => null)) as CreatorMeResponse;
     const email = me?.user?.email?.toLowerCase();
     if (!email) return jsonError("unauthenticated", 401);
 
-    const body = await req.json().catch(() => ({}));
+    const body = (await req.json().catch(() => ({}))) as { tier?: unknown };
     const tier = normalizeTier(body.tier);
 
     const secret = process.env.STRIPE_SECRET_KEY;
     const bluePriceId = process.env.STRIPE_BLUE_TICK_PRICE_ID;
     const goldPriceId = process.env.STRIPE_GOLD_TICK_PRICE_ID;
-    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
 
     if (!secret || !bluePriceId || !goldPriceId) {
       return jsonError("missing stripe env", 500);
     }
 
     const priceId = tier === "gold" ? goldPriceId : bluePriceId;
-    const stripe = new Stripe(secret, { apiVersion: "2025-01-27.acacia" as any });
+
+    const stripe = new Stripe(secret, {
+      apiVersion: "2025-01-27.acacia" as Stripe.LatestApiVersion,
+    });
 
     const profile = await prisma.creatorProfile.upsert({
       where: { email },
@@ -86,8 +101,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (e: any) {
-    console.error("[creator/verify/start]", e);
+  } catch (e: unknown) {
+    logError("[creator/verify/start]", e);
     return jsonError("server_error", 500);
   }
 }

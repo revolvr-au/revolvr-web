@@ -1,3 +1,4 @@
+// src/app/login/LoginClient.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -31,9 +32,8 @@ export default function LoginClient() {
   const redirectTo = useMemo(() => safeDecode(searchParams?.get("redirectTo") ?? null), [searchParams]);
   const redirect = useMemo(() => {
     const raw = redirectTo ?? null;
-    const isInternal =
-      !!raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("\\");
-    return isInternal ? raw : (safeRedirect(raw) ?? "/public-feed");
+    const isInternal = !!raw && raw.startsWith("/") && !raw.startsWith("//") && !raw.includes("\\");
+    return isInternal ? raw : safeRedirect(raw) ?? "/public-feed";
   }, [redirectTo]);
 
   const [email, setEmail] = useState("");
@@ -48,12 +48,7 @@ export default function LoginClient() {
       setSending(true);
       setError(null);
 
-      // IMPORTANT: force a stable base URL for magic-link callback to avoid preview-origin issues
-      const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.revolvr.net").replace(/\/$/, "");
       const emailRedirectTo = `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
-console.log("[login] redirectTo param (raw)", redirectTo);
-      console.log("[login] redirect (safeRedirect result)", redirect);
-      console.log("[login] emailRedirectTo", emailRedirectTo);
 
       const { error } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
@@ -65,8 +60,6 @@ console.log("[login] redirectTo param (raw)", redirectTo);
         setError("Could not send magic link.");
         return;
       }
-
-      // optional UX: you can show “Check your email”
     } catch (e) {
       console.error("[login] unexpected", e);
       setError("Could not send magic link.");

@@ -1,6 +1,8 @@
+// src/app/creator/DashboardClient.tsx
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState, FormEvent } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import { useAuthedUser } from "@/lib/useAuthedUser";
@@ -33,20 +35,25 @@ type Spin = {
   created_at: string;
 };
 
-export default function DashboardPage() {
+export default function DashboardClient() {
   const router = useRouter();
   const { user, ready } = useAuthedUser();
 
   // Single source of truth for email (prevents “stale state” auth bugs)
-  const userEmail = useMemo(() => user?.email ?? null, [user]);
+  const userEmail = useMemo(() => {
+    const e = user?.email ? String(user.email).trim().toLowerCase() : null;
+    return e || null;
+  }, [user]);
 
   const [credits, setCredits] = useState<UserCredits | null>(null);
   const [loadingCredits, setLoadingCredits] = useState(false);
 
   const [posts, setPosts] = useState<Post[]>([]);
-  const [spins, setSpins] = useState<Spin[]>([]);
+
+  // Keep these loads for future UI; underscore prefix satisfies eslint.
+  const [_spins, setSpins] = useState<Spin[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
-  const [isLoadingSpins, setIsLoadingSpins] = useState(true);
+  const [_isLoadingSpins, setIsLoadingSpins] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -57,7 +64,10 @@ export default function DashboardPage() {
 
   const [isLensOpen, setIsLensOpen] = useState(false);
 
-  // 1) Redirect only AFTER auth is ready (this is the key bounce fix)
+  // Stripe Connect onboarding
+  const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+
+  // Redirect only AFTER auth is ready (bounce fix)
   useEffect(() => {
     if (!ready) return;
     if (!userEmail) {
@@ -71,12 +81,12 @@ export default function DashboardPage() {
       setIsLoadingPosts(true);
       setError(null);
 
-      const { data, error } = await supabase
+      const { data, error: sbErr } = await supabase
         .from(POSTS_TABLE)
         .select("*")
         .order("createdAt", { ascending: false });
 
-      if (error) throw error;
+      if (sbErr) throw sbErr;
 
       setPosts((data as Post[]) ?? []);
     } catch (e) {
@@ -92,15 +102,15 @@ export default function DashboardPage() {
     try {
       setIsLoadingSpins(true);
 
-      const { data, error } = await supabase
+      const { data, error: sbErr } = await supabase
         .from("spinner_spins")
         .select("*")
         .eq("user_email", email)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (sbErr) throw sbErr;
 
-      setSpins(data ?? []);
+      setSpins((data as Spin[]) ?? []);
     } catch (e) {
       console.error("Error loading spins", e);
     } finally {
@@ -117,11 +127,12 @@ export default function DashboardPage() {
         console.error("Failed to load credits", await res.text());
         return;
       }
-      const data = await res.json();
+      const data = (await res.json().catch(() => null)) as Partial<UserCredits> | null;
+
       setCredits({
-        boosts: data.boosts ?? 0,
-        tips: data.tips ?? 0,
-        spins: data.spins ?? 0,
+        boosts: typeof data?.boosts === "number" ? data.boosts : 0,
+        tips: typeof data?.tips === "number" ? data.tips : 0,
+        spins: typeof data?.spins === "number" ? data.spins : 0,
       });
     } catch (err) {
       console.error("Error fetching credits", err);
@@ -130,7 +141,7 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // 2) Only load data AFTER auth is ready AND we have an email
+  // Only load data AFTER auth is ready AND we have an email
   useEffect(() => {
     if (!ready) return;
     if (!userEmail) return;
@@ -143,6 +154,53 @@ export default function DashboardPage() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.replace("/public-feed");
+  };
+
+  // Stripe Connect button behaviour (frontend)
+  const handleConnectStripe = async () => {
+    if (!userEmail) return;
+
+    try {
+      setIsConnectingStripe(true);
+      setError(null);
+
+      const { data } = await supabase.auth.getSession();
+      const token = data?.session?.access_token;
+
+      if (!token) {
+        setError("You need to be signed in to set up payouts.");
+        return;
+      }
+
+      const res = await fetch("/api/stripe/connect/create", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        setError((json as { error?: string } | null)?.error || "Could not start Stripe payouts onboarding.");
+        return;
+      }
+
+      if ((json as { url?: string } | null)?.url) {
+        window.location.href = (json as { url: string }).url;
+        return;
+      }
+
+      if ((json as { ok?: boolean } | null)?.ok) {
+        setError("Stripe payouts created. If you weren’t redirected, the API must return an onboarding url.");
+        return;
+      }
+
+      setError("Stripe did not return an onboarding URL.");
+    } catch (e) {
+      console.error("[creator/dashboard] connect stripe error", e);
+      setError("Revolvr glitched out starting payouts setup.");
+    } finally {
+      setIsConnectingStripe(false);
+    }
   };
 
   const handleCreatePost = async (event: FormEvent) => {
@@ -158,7 +216,7 @@ export default function DashboardPage() {
       setIsPosting(true);
       setError(null);
 
-      const fileExt = file.name.split(".").pop();
+      const fileExt = file.name.split(".").pop() || "bin";
       const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
       const { data: storageData, error: storageError } = await supabase.storage
@@ -169,13 +227,17 @@ export default function DashboardPage() {
         throw storageError ?? new Error("Upload failed");
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("posts").getPublicUrl(storageData.path);
+      const { data: publicData } = supabase.storage.from("posts").getPublicUrl(storageData.path);
+      const publicUrl = publicData?.publicUrl;
+
+      if (!publicUrl) {
+        throw new Error("No public URL returned for uploaded media");
+      }
 
       const { data: inserted, error: insertError } = await supabase
         .from(POSTS_TABLE)
         .insert({
+          userEmail, // IMPORTANT: required for attribution
           imageUrl: publicUrl,
           caption: caption.trim(),
         })
@@ -198,8 +260,8 @@ export default function DashboardPage() {
 
   const handleDeletePost = async (id: string) => {
     try {
-      const { error } = await supabase.from(POSTS_TABLE).delete().eq("id", id);
-      if (error) throw error;
+      const { error: sbErr } = await supabase.from(POSTS_TABLE).delete().eq("id", id);
+      if (sbErr) throw sbErr;
       setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
       console.error("Error deleting post", e);
@@ -222,38 +284,33 @@ export default function DashboardPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
-          source: "FEED",
-          targetId: null,
+            creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when available)
+            source: "FEED",
+            targetId: null,
             email: userEmail,
             kind: "boost",
             postId,
-}),
+          }),
         });
 
-        const data = await res.json();
+        const data = (await res.json().catch(() => null)) as
+          | { error?: string; credits?: Partial<UserCredits> }
+          | null;
 
         if (!res.ok) {
           console.error("Failed to spend boost credit:", data);
-          setError(data.error ?? "Could not spend a boost credit.");
+          setError(data?.error ?? "Could not spend a boost credit.");
           return;
         }
 
-        if (data.credits) {
+        if (data?.credits) {
           setCredits({
-            boosts: data.credits.boosts ?? 0,
-            tips: data.credits.tips ?? 0,
-            spins: data.credits.spins ?? 0,
+            boosts: typeof data.credits.boosts === "number" ? data.credits.boosts : 0,
+            tips: typeof data.credits.tips === "number" ? data.credits.tips : 0,
+            spins: typeof data.credits.spins === "number" ? data.credits.spins : 0,
           });
         } else {
-          setCredits((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  boosts: Math.max(0, prev.boosts - 1),
-                }
-              : prev
-          );
+          setCredits((prev) => (prev ? { ...prev, boosts: Math.max(0, prev.boosts - 1) } : prev));
         }
 
         setPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, is_boosted: true } : p)));
@@ -264,14 +321,15 @@ creatorEmail: userEmail, // TEMP: prevents 400 (swap to actual creator when avai
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-mode: "boost",
+          mode: "boost",
           userEmail,
           amountCents: boostAmountCents,
           postId,
           creatorEmail: userEmail,
           source: "FEED",
           targetId: null,
-}),
+          returnPath: "/creator/onboard",
+        }),
       });
 
       if (!res.ok) {
@@ -280,12 +338,9 @@ mode: "boost",
         return;
       }
 
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError("Stripe did not return a checkout URL for boost.");
-      }
+      const data = (await res.json().catch(() => null)) as { url?: string } | null;
+      if (data?.url) window.location.href = data.url;
+      else setError("Stripe did not return a checkout URL for boost.");
     } catch (err) {
       console.error("Error creating boost checkout:", err);
       setError("Revolvr glitched out starting a boost 😵‍💫");
@@ -294,7 +349,7 @@ mode: "boost",
 
   const avatarInitial = userEmail?.[0]?.toUpperCase() ?? "R";
 
-  // Important: keep UI stable during auth hydration
+  // Keep UI stable during auth hydration
   if (!ready) {
     return <div className="min-h-screen bg-[#050816] text-white p-8">Loading your session…</div>;
   }
@@ -342,8 +397,19 @@ mode: "boost",
               <RevolvrIcon name="analytics" size={18} />
               <h2 className="text-sm font-semibold">Creator dashboard</h2>
             </div>
+
             <p className="text-xs text-white/60">Post from here. Everyone else watches the chaos.</p>
+
             <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleConnectStripe}
+                disabled={isConnectingStripe}
+                className="w-full inline-flex items-center justify-center rounded-full px-4 py-2 bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60 text-xs font-medium"
+              >
+                {isConnectingStripe ? "Opening Stripe…" : "Set up payouts (Stripe)"}
+              </button>
+
               <button
                 onClick={() => setIsComposerOpen(true)}
                 className="w-full inline-flex items-center justify-center rounded-full px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-xs font-medium shadow-lg shadow-emerald-500/25 transition gap-2"
@@ -351,6 +417,7 @@ mode: "boost",
                 <RevolvrIcon name="add" size={14} />
                 <span>New post</span>
               </button>
+
               <SpinButton userEmail={userEmail} />
             </div>
 
@@ -392,9 +459,7 @@ mode: "boost",
           {isLoadingPosts ? (
             <div className="text-sm text-white/70">Loading the feed…</div>
           ) : posts.length === 0 ? (
-            <div className="text-sm text-white/70">
-              No posts yet. Be the first to spin something into existence ✨
-            </div>
+            <div className="text-sm text-white/70">No posts yet.</div>
           ) : (
             <div className="space-y-6 pb-12">
               {posts.map((post) => {
@@ -443,8 +508,15 @@ mode: "boost",
                       </div>
                     </div>
 
-                    <div>
-                      <img src={post.imageUrl} alt={post.caption} className="w-full max-h-[480px] object-cover" />
+                    <div className="relative w-full max-h-[480px]">
+                      <Image
+                        src={post.imageUrl}
+                        alt={post.caption || "Post media"}
+                        width={1200}
+                        height={800}
+                        unoptimized
+                        className="w-full max-h-[480px] object-cover"
+                      />
                     </div>
 
                     {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
@@ -494,11 +566,22 @@ mode: "boost",
                       <span className="text-xs">Click or drop to upload</span>
                     </div>
                   ) : (
-                    <div className="w-full h-full overflow-hidden rounded-lg">
+                    <div className="w-full h-full overflow-hidden rounded-lg relative">
                       {file.type.startsWith("video") ? (
-                        <video src={URL.createObjectURL(file)} controls className="w-full h-full object-cover" />
+                        <video
+                          src={URL.createObjectURL(file)}
+                          controls
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
+                        <Image
+                          src={URL.createObjectURL(file)}
+                          alt="preview"
+                          width={900}
+                          height={600}
+                          unoptimized
+                          className="w-full h-full object-cover"
+                        />
                       )}
                     </div>
                   )}

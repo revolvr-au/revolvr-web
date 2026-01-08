@@ -1,6 +1,7 @@
+// src/components/RevolvrIcon.tsx
 "use client";
 
-import React from "react";
+import Image from "next/image";
 
 export type RevolvrIconName =
   | "home"
@@ -36,15 +37,18 @@ type Props = {
 };
 
 export function RevolvrIcon({ name, size = 24, className, alt }: Props) {
-  const src = `/icons/icon-${name}.png`; // expects public/icons/icon-*.png
+  const src = `/icons/icon-${name}.png`; // public/icons/icon-*.png
 
   return (
-    <img
+    <Image
       src={src}
       width={size}
       height={size}
       alt={alt ?? name}
       className={className}
+      // local static assets -> safe; but keep this to avoid any edge config issues
+      unoptimized
+      priority={false}
     />
   );
 }
