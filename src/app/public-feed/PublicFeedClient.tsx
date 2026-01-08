@@ -79,14 +79,25 @@ function FooterAction({
   return (
     <button
       type="button"
-      className="flex items-center gap-1 hover:text-white transition-colors"
+      className={[
+        // layout / hit area
+        "inline-flex items-center gap-2 rounded-lg px-2 py-2",
+        // typography
+        "text-xs text-white/60",
+        // interaction
+        "transition-all duration-150",
+        "hover:text-white hover:bg-white/5",
+        "active:scale-[0.97] active:bg-white/10",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20",
+      ].join(" ")}
       aria-label={label}
     >
-      <span>{icon}</span>
-      <span>{label}</span>
+      <span className="text-[13px] leading-none">{icon}</span>
+      <span className="leading-none">{label}</span>
     </button>
   );
 }
+
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -306,15 +317,16 @@ export default function PublicFeedClient() {
                   </div>
 
                   {/* Post footer */}
-                  <div className="px-4 py-2 border-t border-white/10">
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 items-center text-xs text-white/60">
-                      <FooterAction label="Tip" icon="💰" />
-                      <FooterAction label="Boost" icon="⚡" />
-                      <FooterAction label="Spin" icon="🌀" />
-                      <FooterAction label="React" icon="😊" />
-                      <FooterAction label="Vote" icon="🗳" />
-                    </div>
-                  </div>
+<div className="px-4 py-2 border-t border-white/10">
+  <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+    <FooterAction label="Tip" icon="💰" />
+    <FooterAction label="Boost" icon="⚡" />
+    <FooterAction label="Spin" icon="🌀" />
+    <FooterAction label="React" icon="😊" />
+    <FooterAction label="Vote" icon="🗳" />
+  </div>
+</div>
+
 
                   {/* Caption */}
                   {post.caption ? (
