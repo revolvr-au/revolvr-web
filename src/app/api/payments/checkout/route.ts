@@ -10,8 +10,7 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"
@@ -33,6 +32,9 @@ type Body = {
   source?: SupportSource | string | null;
   targetId?: string | null;
   returnPath?: string | null;
+
+  // NEW: amount coming from modal (in cents)
+  amountCents?: number | null;
 };
 
 function toKind(mode: string) {
@@ -48,11 +50,60 @@ function toSource(src: unknown): SupportSource {
   return s === "LIVE" ? "LIVE" : "FEED";
 }
 
+function parseAmountCents(v: unknown): number | null {
+  if (v == null) return null;
+
+  // Accept number or numeric string
+  const n =
+    typeof v === "number"
+      ? v
+      : typeof v === "string"
+        ? Number(v)
+        : NaN;
+
+  if (!Number.isFinite(n)) return null;
+
+  // must be an integer number of cents
+  const cents = Math.round(n);
+  if (cents <= 0) return null;
+
+  return cents;
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
+
+// Centralized defaults + limits
+function modeDefaults(mode: CheckoutMode) {
+  switch (mode) {
+    case "tip":
+      return { name: "Creator tip", defaultCents: 200, min: 100, max: 200_000 }; // A$1 .. A$2000
+    case "boost":
+      return { name: "Post boost", defaultCents: 500, min: 100, max: 200_000 };
+    case "spin":
+      return { name: "Revolvr spinner spin", defaultCents: 100, min: 100, max: 200_000 };
+    case "reaction":
+      return { name: "Reaction", defaultCents: 100, min: 100, max: 200_000 };
+    case "vote":
+      return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
+
+    // Packs remain fixed for now
+    case "tip-pack":
+      return { name: "Tip pack (10× A$2 tips)", defaultCents: 2000, min: 2000, max: 2000 };
+    case "boost-pack":
+      return { name: "Boost pack (10× A$5 boosts)", defaultCents: 5000, min: 5000, max: 5000 };
+    case "spin-pack":
+      return { name: "Spin pack (20× A$1 spins)", defaultCents: 2000, min: 2000, max: 2000 };
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 
     const mode = body.mode;
+
     const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "")
       .trim()
       .toLowerCase();
@@ -70,48 +121,17 @@ export async function POST(req: NextRequest) {
     if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
     if (!creatorEmail) return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
 
-    let name = "";
-    let amountCents = 0;
+    const def = modeDefaults(mode);
+    if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
 
-    switch (mode) {
-      case "tip":
-        name = "Creator tip";
-        amountCents = 200;
-        break;
-      case "boost":
-        name = "Post boost";
-        amountCents = 500;
-        break;
-      case "spin":
-        name = "Revolvr spinner spin";
-        amountCents = 100;
-        break;
+    // If the client supplied amountCents, use it (for non-pack modes),
+    // but always clamp to sensible bounds and ensure integer cents.
+    const requested = parseAmountCents((body as any).amountCents);
+    const isPack = mode.endsWith("-pack");
 
-      case "tip-pack":
-        name = "Tip pack (10× A$2 tips)";
-        amountCents = 2000;
-        break;
-      case "boost-pack":
-        name = "Boost pack (10× A$5 boosts)";
-        amountCents = 5000;
-        break;
-      case "spin-pack":
-        name = "Spin pack (20× A$1 spins)";
-        amountCents = 2000;
-        break;
-
-      case "reaction":
-        name = "Reaction";
-        amountCents = 100;
-        break;
-      case "vote":
-        name = "Vote";
-        amountCents = 100;
-        break;
-
-      default:
-        return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
-    }
+    const amountCents = isPack
+      ? def.defaultCents
+      : clamp(requested ?? def.defaultCents, def.min, def.max);
 
     const safeReturnPath =
       body.returnPath && body.returnPath.startsWith("/")
@@ -147,7 +167,7 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency: "aud",
             unit_amount: amountCents,
-            product_data: { name },
+            product_data: { name: def.name },
           },
           quantity: 1,
         },
@@ -160,6 +180,8 @@ export async function POST(req: NextRequest) {
         source,
         target_id: targetId ?? "",
         viewer_email: userEmail ?? "",
+
+        amount_cents: String(amountCents),
 
         // legacy
         creatorEmail,
