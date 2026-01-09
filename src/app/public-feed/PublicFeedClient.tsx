@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
-import PostActionModal from "@/components/PostActionModal";
+import PostActionModal, { Preset } from "@/components/PostActionModal";
 import { createCheckout, CheckoutMode } from "@/lib/actionsClient";
 
 type Post = {
@@ -106,20 +106,97 @@ type ActiveAction = {
   mode: ActionMode;
 };
 
-function actionMeta(mode: ActionMode) {
+type ActionMeta = {
+  title: string;
+  subtitle?: string;
+  icon?: string;
+  allowCustom: boolean;
+  presets: Preset[];
+  defaultAmountCents: number;
+  confirmLabel: string;
+};
+
+function actionMeta(mode: ActionMode): ActionMeta {
   switch (mode) {
     case "tip":
-      return { title: "Tip creator", subtitle: "Support this creator", icon: "💰", amountCents: 200, label: "Pay A$2" };
+      return {
+        title: "Tip creator",
+        subtitle: "Support this creator",
+        icon: "💰",
+        allowCustom: true,
+        presets: [
+          { label: "A$2", amountCents: 200 },
+          { label: "A$5", amountCents: 500 },
+          { label: "A$10", amountCents: 1000 },
+          { label: "A$25", amountCents: 2500 },
+        ],
+        defaultAmountCents: 500,
+        confirmLabel: "Tip",
+      };
+
     case "boost":
-      return { title: "Boost post", subtitle: "Boost this post", icon: "⚡", amountCents: 500, label: "Pay A$5" };
+      return {
+        title: "Boost post",
+        subtitle: "Boost this post",
+        icon: "⚡",
+        allowCustom: true,
+        presets: [
+          { label: "A$5", amountCents: 500 },
+          { label: "A$10", amountCents: 1000 },
+          { label: "A$25", amountCents: 2500 },
+          { label: "A$50", amountCents: 5000 },
+        ],
+        defaultAmountCents: 1000,
+        confirmLabel: "Boost",
+      };
+
     case "spin":
-      return { title: "Spin", subtitle: "Spin the Revolvr", icon: "🌀", amountCents: 100, label: "Pay A$1" };
+      return {
+        title: "Spin",
+        subtitle: "Spin the Revolvr",
+        icon: "🌀",
+        allowCustom: false,
+        presets: [
+          { label: "A$1", amountCents: 100 },
+          { label: "A$2", amountCents: 200 },
+          { label: "A$5", amountCents: 500 },
+          { label: "A$10", amountCents: 1000 },
+        ],
+        defaultAmountCents: 200,
+        confirmLabel: "Spin",
+      };
+
     case "reaction":
-      return { title: "Reaction", subtitle: "Send a paid reaction", icon: "😊", amountCents: 100, label: "Pay A$1" };
+      return {
+        title: "Reaction",
+        subtitle: "Send a paid reaction",
+        icon: "😊",
+        allowCustom: false,
+        presets: [
+          { label: "A$1", amountCents: 100 },
+          { label: "A$2", amountCents: 200 },
+          { label: "A$3", amountCents: 300 },
+          { label: "A$5", amountCents: 500 },
+        ],
+        defaultAmountCents: 100,
+        confirmLabel: "React",
+      };
+
     case "vote":
-      return { title: "Vote", subtitle: "Cast a paid vote", icon: "🗳", amountCents: 100, label: "Pay A$1" };
-    default:
-      return { title: "Action", subtitle: "", icon: "✨", amountCents: 100, label: "Pay" };
+      return {
+        title: "Vote",
+        subtitle: "Cast a paid vote",
+        icon: "🗳",
+        allowCustom: false,
+        presets: [
+          { label: "A$1", amountCents: 100 },
+          { label: "A$2", amountCents: 200 },
+          { label: "A$5", amountCents: 500 },
+          { label: "A$10", amountCents: 1000 },
+        ],
+        defaultAmountCents: 100,
+        confirmLabel: "Vote",
+      };
   }
 }
 
@@ -301,7 +378,12 @@ export default function PublicFeedClient() {
     return actionMeta(activeAction.mode);
   }, [activeAction]);
 
-  async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string) {
+  async function beginCheckout(
+    mode: ActionMode,
+    postId: string,
+    creatorEmail: string,
+    amountCents: number
+  ) {
     const { url } = await createCheckout({
       mode,
       creatorEmail,
@@ -310,7 +392,8 @@ export default function PublicFeedClient() {
       postId, // legacy supported
       source: "FEED",
       returnPath: "/public-feed",
-    });
+      amountCents,
+    } as any);
 
     window.location.href = url;
   }
@@ -487,17 +570,13 @@ export default function PublicFeedClient() {
         icon={activeMeta?.icon ?? "✨"}
         isAuthed={true} // today: Stripe wiring test; wire auth next
         loginHref="/login"
-        allowCustom={false}
-        presets={
-          activeMeta
-            ? [{ label: activeMeta.label.replace("Pay ", ""), amountCents: activeMeta.amountCents }]
-            : [{ label: "A$1", amountCents: 100 }]
-        }
-        defaultAmountCents={activeMeta?.amountCents ?? 100}
-        confirmLabel={activeMeta?.label ?? "Pay"}
-        onConfirm={async () => {
+        allowCustom={activeMeta?.allowCustom ?? true}
+        presets={activeMeta?.presets}
+        defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
+        confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
+        onConfirm={async (amountCents) => {
           if (!activeAction || !activePost || !activeCreatorEmail) return;
-          await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail);
+          await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail, amountCents);
         }}
       />
     </FeedLayout>
