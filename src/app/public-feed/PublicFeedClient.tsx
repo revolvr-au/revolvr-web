@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
-import PostActionModal, { Preset } from "@/components/PostActionModal";
+import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, CheckoutMode } from "@/lib/actionsClient";
 
 type Post = {
@@ -105,6 +105,9 @@ type ActiveAction = {
   postId: string;
   mode: ActionMode;
 };
+
+// Local preset type (avoids needing PostActionModal to export it)
+type Preset = { label: string; amountCents: number };
 
 type ActionMeta = {
   title: string;
@@ -494,61 +497,21 @@ export default function PublicFeedClient() {
                     {/* Desktop */}
                     <div className="hidden sm:flex">
                       <div className="inline-flex items-center gap-10">
-                        <FooterAction
-                          label="Tip"
-                          icon="💰"
-                          onClick={() => setActiveAction({ postId: post.id, mode: "tip" })}
-                        />
-                        <FooterAction
-                          label="Boost"
-                          icon="⚡"
-                          onClick={() => setActiveAction({ postId: post.id, mode: "boost" })}
-                        />
-                        <FooterAction
-                          label="Spin"
-                          icon="🌀"
-                          onClick={() => setActiveAction({ postId: post.id, mode: "spin" })}
-                        />
-                        <FooterAction
-                          label="React"
-                          icon="😊"
-                          onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })}
-                        />
-                        <FooterAction
-                          label="Vote"
-                          icon="🗳"
-                          onClick={() => setActiveAction({ postId: post.id, mode: "vote" })}
-                        />
+                        <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
+                        <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
+                        <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
+                        <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
+                        <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
                       </div>
                     </div>
 
                     {/* Mobile */}
                     <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
-                      <FooterAction
-                        label="Tip"
-                        icon="💰"
-                        onClick={() => setActiveAction({ postId: post.id, mode: "tip" })}
-                      />
-                      <FooterAction
-                        label="Boost"
-                        icon="⚡"
-                        onClick={() => setActiveAction({ postId: post.id, mode: "boost" })}
-                      />
-                      <FooterAction
-                        label="Spin"
-                        icon="🌀"
-                        onClick={() => setActiveAction({ postId: post.id, mode: "spin" })}
-                      />
-                      <FooterAction
-                        label="React"
-                        icon="😊"
-                        onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })}
-                      />
-                      <FooterAction
-                        label="Vote"
-                        icon="🗳"
-                        onClick={() => setActiveAction({ postId: post.id, mode: "vote" })}
-                      />
+                      <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
+                      <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
+                      <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
+                      <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
+                      <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
                     </div>
                   </div>
 
@@ -571,7 +534,7 @@ export default function PublicFeedClient() {
         isAuthed={true} // today: Stripe wiring test; wire auth next
         loginHref="/login"
         allowCustom={activeMeta?.allowCustom ?? true}
-        presets={activeMeta?.presets}
+        presets={activeMeta?.presets ?? [{ label: "A$1", amountCents: 100 }]}
         defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
         confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
         onConfirm={async (amountCents) => {
