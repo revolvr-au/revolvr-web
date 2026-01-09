@@ -1,12 +1,24 @@
 // src/lib/actionsClient.ts
-"use client";
+export type CheckoutMode =
+  | "tip"
+  | "boost"
+  | "spin"
+  | "tip-pack"
+  | "boost-pack"
+  | "spin-pack"
+  | "reaction"
+  | "vote";
 
-export async function createTip(input: {
-  postId: string;
+export async function createCheckout(input: {
+  mode: CheckoutMode;
   creatorEmail: string;
-  amountCents: number;
+  userEmail?: string | null;
+  targetId?: string | null;
+  postId?: string | null;
+  source?: "FEED" | "LIVE";
+  returnPath?: string | null;
 }) {
-  const res = await fetch("/api/actions/tip", {
+  const res = await fetch("/api/payments/checkout", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(input),
@@ -16,11 +28,11 @@ export async function createTip(input: {
 
   if (!res.ok) {
     const msg =
-      json && typeof (json as any).error === "string"
-        ? (json as any).error
-        : "Tip failed.";
+      json && typeof json.error === "string" ? json.error : "Checkout failed.";
     throw new Error(msg);
   }
 
-  return json as { ok: true; tipId: string };
+  const url = json && typeof json.url === "string" ? json.url : "";
+  if (!url) throw new Error("Missing checkout url.");
+  return { url };
 }

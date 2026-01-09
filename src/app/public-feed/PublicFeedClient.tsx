@@ -8,7 +8,9 @@ import Link from "next/link";
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
-import { createTip } from "@/lib/actionsClient";
+import { createCheckout } from "@/lib/actionsClient";
+
+
 
 type Post = {
   id: string;
@@ -354,24 +356,33 @@ export default function PublicFeedClient() {
                     </div>
                   </div>
 
-                  {/* Tip modal (scaffold) */}
                   <PostActionModal
-                    open={tipOpenForPostId === post.id}
-                    onClose={() => setTipOpenForPostId(null)}
-                    title="Tip creator"
-                    subtitle="Support this creator"
-                    icon="💰"
-                    isAuthed={false} // TODO: wire auth tomorrow
-                    loginHref="/login"
-                    confirmLabel="Send tip"
-                    onConfirm={async (amountCents) => {
-                      await createTip({
-                        postId: post.id,
-                        creatorEmail: email,
-                        amountCents,
-                      });
-                    }}
-                  />
+  open={tipOpenForPostId === post.id}
+  onClose={() => setTipOpenForPostId(null)}
+  title="Tip creator"
+  subtitle="Support this creator"
+  icon="💰"
+  isAuthed={true} // for today’s Stripe wiring test; wire auth next
+  loginHref="/login"
+  confirmLabel="Pay A$2"
+  allowCustom={false}
+  presets={[{ label: "A$2", amountCents: 200 }]}
+  defaultAmountCents={200}
+  onConfirm={async () => {
+    const { url } = await createCheckout({
+      mode: "tip",
+      creatorEmail: email,
+      userEmail: null,              // or your authed email later
+      targetId: post.id,            // use targetId consistently
+      postId: post.id,              // legacy field supported
+      source: "FEED",
+      returnPath: "/public-feed",
+    });
+
+    window.location.href = url;
+  }}
+/>
+
 
                   {/* Caption */}
                   {post.caption ? (

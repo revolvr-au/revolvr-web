@@ -20,10 +20,13 @@ type Props = {
   presets?: Preset[]; // default amounts
   defaultAmountCents?: number;
 
-  confirmLabel?: string; // e.g. "Send tip"
+  confirmLabel?: string; // e.g. "Pay A$2"
   onConfirm: (amountCents: number) => Promise<void>;
 
   busy?: boolean; // optional external busy state
+
+  // NEW: allow custom input
+  allowCustom?: boolean;
 };
 
 export default function PostActionModal({
@@ -39,6 +42,7 @@ export default function PostActionModal({
   confirmLabel = "Confirm",
   onConfirm,
   busy,
+  allowCustom = true,
 }: Props) {
   const defaultPresets = useMemo<Preset[]>(
     () =>
@@ -158,21 +162,25 @@ export default function PostActionModal({
                 ))}
               </div>
 
-              <div className="flex items-center gap-2">
-                <div className="text-xs text-white/50 w-14">Custom</div>
-                <input
-                  value={custom}
-                  onChange={(e) => applyCustom(e.target.value)}
-                  placeholder="e.g. 7.50"
-                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/15"
-                  inputMode="decimal"
-                />
-              </div>
+              {allowCustom ? (
+                <div className="flex items-center gap-2">
+                  <div className="text-xs text-white/50 w-14">Custom</div>
+                  <input
+                    value={custom}
+                    onChange={(e) => applyCustom(e.target.value)}
+                    placeholder="e.g. 7.50"
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/15"
+                    inputMode="decimal"
+                  />
+                </div>
+              ) : null}
 
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs text-white/50">
                   Amount:{" "}
-                  <span className="text-white/80">${(amountCents / 100).toFixed(2)}</span>
+                  <span className="text-white/80">
+                    ${(amountCents / 100).toFixed(2)}
+                  </span>
                 </div>
 
                 <button
