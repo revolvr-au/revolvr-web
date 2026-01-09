@@ -8,9 +8,7 @@ import Link from "next/link";
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
-import { createCheckout } from "@/lib/actionsClient";
-
-
+import { createCheckout, CheckoutMode } from "@/lib/actionsClient";
 
 type Post = {
   id: string;
@@ -62,15 +60,11 @@ function displayNameFromEmail(email: string) {
   return cleaned || email;
 }
 
-// Prevent broken images from rendering as “mangled” layout
 function isValidImageUrl(url: unknown): url is string {
   if (typeof url !== "string") return false;
   const u = url.trim();
   if (!u) return false;
-  // allow http(s) and root-relative paths
-  return (
-    u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/")
-  );
+  return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
 }
 
 function FooterAction({
@@ -105,19 +99,46 @@ function FooterAction({
   );
 }
 
+type ActionMode = Extract<CheckoutMode, "tip" | "boost" | "spin" | "reaction" | "vote">;
+
+type ActiveAction = {
+  postId: string;
+  mode: ActionMode;
+};
+
+function actionMeta(mode: ActionMode) {
+  switch (mode) {
+    case "tip":
+      return { title: "Tip creator", subtitle: "Support this creator", icon: "💰", amountCents: 200, label: "Pay A$2" };
+    case "boost":
+      return { title: "Boost post", subtitle: "Boost this post", icon: "⚡", amountCents: 500, label: "Pay A$5" };
+    case "spin":
+      return { title: "Spin", subtitle: "Spin the Revolvr", icon: "🌀", amountCents: 100, label: "Pay A$1" };
+    case "reaction":
+      return { title: "Reaction", subtitle: "Send a paid reaction", icon: "😊", amountCents: 100, label: "Pay A$1" };
+    case "vote":
+      return { title: "Vote", subtitle: "Cast a paid vote", icon: "🗳", amountCents: 100, label: "Pay A$1" };
+    default:
+      return { title: "Action", subtitle: "", icon: "✨", amountCents: 100, label: "Pay" };
+  }
+}
+
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set());
 
-  // Tip modal state
-  const [tipOpenForPostId, setTipOpenForPostId] = useState<string | null>(null);
+  // One global action modal
+  const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
+
+  // Return banner (Stripe success/cancel)
+  const [returnBanner, setReturnBanner] = useState<
+    { type: "success" | "cancel"; mode: string; targetId?: string } | null
+  >(null);
 
   // Track broken post images so we can fall back gracefully
-  const [brokenPostImages, setBrokenPostImages] = useState<
-    Record<string, boolean>
-  >({});
+  const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
   const emails = useMemo(() => {
     const s = new Set<string>();
@@ -151,6 +172,34 @@ export default function PublicFeedClient() {
     return out;
   }, [posts, verifiedSet]);
 
+  // A) Handle return from Stripe (success/cancel) and clear query params
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const success = url.searchParams.get("success") === "1";
+      const canceled = url.searchParams.get("canceled") === "1";
+      const mode = url.searchParams.get("mode") || "";
+      const targetId = url.searchParams.get("targetId") || undefined;
+
+      if (success || canceled) {
+        setReturnBanner({
+          type: success ? "success" : "cancel",
+          mode,
+          targetId,
+        });
+
+        // Clear the query params so refresh doesn't replay the banner
+        url.searchParams.delete("success");
+        url.searchParams.delete("canceled");
+        url.searchParams.delete("mode");
+        url.searchParams.delete("targetId");
+        window.history.replaceState({}, "", url.toString());
+      }
+    } catch {
+      // no-op
+    }
+  }, []);
+
   // 1) Load posts
   useEffect(() => {
     let cancelled = false;
@@ -165,8 +214,7 @@ export default function PublicFeedClient() {
 
         if (!res.ok) {
           const msg =
-            hasErrorMessage(json) &&
-            typeof (json as ErrorResponseShape).error === "string"
+            hasErrorMessage(json) && typeof (json as ErrorResponseShape).error === "string"
               ? String((json as ErrorResponseShape).error)
               : `Failed to load posts (${res.status})`;
 
@@ -180,8 +228,8 @@ export default function PublicFeedClient() {
         const rows = Array.isArray(json)
           ? json
           : hasPostsArray(json)
-          ? (json as PostsResponseShape).posts ?? []
-          : [];
+            ? (json as PostsResponseShape).posts ?? []
+            : [];
 
         if (!cancelled) setPosts(normalizePosts(rows));
       } catch (e: unknown) {
@@ -215,10 +263,7 @@ export default function PublicFeedClient() {
         const batch = emails.slice(0, 200);
         const qs = encodeURIComponent(batch.join(","));
 
-        const res = await fetch(`/api/creator/verified?emails=${qs}`, {
-          cache: "no-store",
-        });
-
+        const res = await fetch(`/api/creator/verified?emails=${qs}`, { cache: "no-store" });
         const json = (await res.json().catch(() => null)) as unknown;
 
         if (!res.ok) {
@@ -226,10 +271,7 @@ export default function PublicFeedClient() {
           return;
         }
 
-        const verifiedRaw = hasVerifiedArray(json)
-          ? (json as VerifiedResponseShape).verified ?? []
-          : [];
-
+        const verifiedRaw = hasVerifiedArray(json) ? (json as VerifiedResponseShape).verified ?? [] : [];
         const verified = normalizeVerifiedEmails(verifiedRaw);
 
         if (!cancelled) setVerifiedSet(new Set(verified));
@@ -244,10 +286,54 @@ export default function PublicFeedClient() {
     };
   }, [emails]);
 
+  const activePost = useMemo(() => {
+    if (!activeAction) return null;
+    return posts.find((p) => p.id === activeAction.postId) ?? null;
+  }, [activeAction, posts]);
+
+  const activeCreatorEmail = useMemo(() => {
+    const email = String(activePost?.userEmail ?? "").trim().toLowerCase();
+    return email;
+  }, [activePost]);
+
+  const activeMeta = useMemo(() => {
+    if (!activeAction) return null;
+    return actionMeta(activeAction.mode);
+  }, [activeAction]);
+
+  async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string) {
+    const { url } = await createCheckout({
+      mode,
+      creatorEmail,
+      userEmail: null, // wire auth later
+      targetId: postId,
+      postId, // legacy supported
+      source: "FEED",
+      returnPath: "/public-feed",
+    });
+
+    window.location.href = url;
+  }
+
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
       <div className="space-y-6">
         <PeopleRail items={railItems} size={84} revolve />
+
+        {returnBanner ? (
+          <div
+            className={[
+              "rounded-xl border px-3 py-2 text-sm",
+              returnBanner.type === "success"
+                ? "bg-emerald-500/10 border-emerald-400/20 text-emerald-200"
+                : "bg-white/5 border-white/10 text-white/70",
+            ].join(" ")}
+          >
+            {returnBanner.type === "success"
+              ? `Payment successful${returnBanner.mode ? ` (${returnBanner.mode})` : ""}.`
+              : `Payment canceled${returnBanner.mode ? ` (${returnBanner.mode})` : ""}.`}
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="text-sm text-white/70">Loading public feed…</div>
@@ -263,8 +349,7 @@ export default function PublicFeedClient() {
               const email = String(post.userEmail || "").trim().toLowerCase();
               const isVerified = email ? verifiedSet.has(email) : false;
 
-              const showFallback =
-                brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
+              const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
               return (
                 <article
@@ -284,9 +369,7 @@ export default function PublicFeedClient() {
                           {isVerified ? <VerifiedBadge /> : null}
                         </span>
                         <span className="text-[11px] text-white/40">
-                          {post.createdAt
-                            ? new Date(post.createdAt).toLocaleString()
-                            : ""}
+                          {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
                         </span>
                       </div>
                     </div>
@@ -303,9 +386,7 @@ export default function PublicFeedClient() {
                   <div className="relative w-full max-h-[520px]">
                     {showFallback ? (
                       <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
-                        <span className="text-xs text-white/50">
-                          Image unavailable
-                        </span>
+                        <span className="text-xs text-white/50">Image unavailable</span>
                       </div>
                     ) : (
                       <Image
@@ -327,75 +408,98 @@ export default function PublicFeedClient() {
 
                   {/* Post footer */}
                   <div className="px-4 py-2 border-t border-white/10">
-                    {/* Desktop: left aligned, shrink-wrap cluster */}
+                    {/* Desktop */}
                     <div className="hidden sm:flex">
                       <div className="inline-flex items-center gap-10">
                         <FooterAction
                           label="Tip"
                           icon="💰"
-                          onClick={() => setTipOpenForPostId(post.id)}
+                          onClick={() => setActiveAction({ postId: post.id, mode: "tip" })}
                         />
-                        <FooterAction label="Boost" icon="⚡" />
-                        <FooterAction label="Spin" icon="🌀" />
-                        <FooterAction label="React" icon="😊" />
-                        <FooterAction label="Vote" icon="🗳" />
+                        <FooterAction
+                          label="Boost"
+                          icon="⚡"
+                          onClick={() => setActiveAction({ postId: post.id, mode: "boost" })}
+                        />
+                        <FooterAction
+                          label="Spin"
+                          icon="🌀"
+                          onClick={() => setActiveAction({ postId: post.id, mode: "spin" })}
+                        />
+                        <FooterAction
+                          label="React"
+                          icon="😊"
+                          onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })}
+                        />
+                        <FooterAction
+                          label="Vote"
+                          icon="🗳"
+                          onClick={() => setActiveAction({ postId: post.id, mode: "vote" })}
+                        />
                       </div>
                     </div>
 
-                    {/* Mobile: keep your current perfect mobile layout exactly as-is */}
+                    {/* Mobile */}
                     <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
                       <FooterAction
                         label="Tip"
                         icon="💰"
-                        onClick={() => setTipOpenForPostId(post.id)}
+                        onClick={() => setActiveAction({ postId: post.id, mode: "tip" })}
                       />
-                      <FooterAction label="Boost" icon="⚡" />
-                      <FooterAction label="Spin" icon="🌀" />
-                      <FooterAction label="React" icon="😊" />
-                      <FooterAction label="Vote" icon="🗳" />
+                      <FooterAction
+                        label="Boost"
+                        icon="⚡"
+                        onClick={() => setActiveAction({ postId: post.id, mode: "boost" })}
+                      />
+                      <FooterAction
+                        label="Spin"
+                        icon="🌀"
+                        onClick={() => setActiveAction({ postId: post.id, mode: "spin" })}
+                      />
+                      <FooterAction
+                        label="React"
+                        icon="😊"
+                        onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })}
+                      />
+                      <FooterAction
+                        label="Vote"
+                        icon="🗳"
+                        onClick={() => setActiveAction({ postId: post.id, mode: "vote" })}
+                      />
                     </div>
                   </div>
 
-                  <PostActionModal
-  open={tipOpenForPostId === post.id}
-  onClose={() => setTipOpenForPostId(null)}
-  title="Tip creator"
-  subtitle="Support this creator"
-  icon="💰"
-  isAuthed={true} // for today’s Stripe wiring test; wire auth next
-  loginHref="/login"
-  confirmLabel="Pay A$2"
-  allowCustom={false}
-  presets={[{ label: "A$2", amountCents: 200 }]}
-  defaultAmountCents={200}
-  onConfirm={async () => {
-    const { url } = await createCheckout({
-      mode: "tip",
-      creatorEmail: email,
-      userEmail: null,              // or your authed email later
-      targetId: post.id,            // use targetId consistently
-      postId: post.id,              // legacy field supported
-      source: "FEED",
-      returnPath: "/public-feed",
-    });
-
-    window.location.href = url;
-  }}
-/>
-
-
                   {/* Caption */}
-                  {post.caption ? (
-                    <p className="px-4 py-3 text-sm text-white/90">
-                      {post.caption}
-                    </p>
-                  ) : null}
+                  {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
                 </article>
               );
             })}
           </div>
         )}
       </div>
+
+      {/* One global modal */}
+      <PostActionModal
+        open={Boolean(activeAction && activePost && activeMeta)}
+        onClose={() => setActiveAction(null)}
+        title={activeMeta?.title ?? "Action"}
+        subtitle={activeMeta?.subtitle ?? ""}
+        icon={activeMeta?.icon ?? "✨"}
+        isAuthed={true} // today: Stripe wiring test; wire auth next
+        loginHref="/login"
+        allowCustom={false}
+        presets={
+          activeMeta
+            ? [{ label: activeMeta.label.replace("Pay ", ""), amountCents: activeMeta.amountCents }]
+            : [{ label: "A$1", amountCents: 100 }]
+        }
+        defaultAmountCents={activeMeta?.amountCents ?? 100}
+        confirmLabel={activeMeta?.label ?? "Pay"}
+        onConfirm={async () => {
+          if (!activeAction || !activePost || !activeCreatorEmail) return;
+          await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail);
+        }}
+      />
     </FeedLayout>
   );
 }
