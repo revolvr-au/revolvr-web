@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const DEFAULT_CURRENCY = "aud";
+
+function normCurrency(v: unknown) {
+  const c = String(v ?? DEFAULT_CURRENCY).trim().toLowerCase();
+  return c || DEFAULT_CURRENCY;
+}
+
 /**
  * GET /api/creator/verified?emails=a@b.com,c@d.com
  * Returns:
@@ -18,7 +25,7 @@ export async function GET(req: Request) {
       .split(",")
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean)
-      .slice(0, 200); // safety cap
+      .slice(0, 200);
 
     if (emails.length === 0) {
       return NextResponse.json({ verified: [], currencies: {} }, { status: 200 });
@@ -40,8 +47,7 @@ export async function GET(req: Request) {
     const currencies: Record<string, string> = {};
     for (const r of rows) {
       const e = String(r.email).toLowerCase();
-      const c = String(r.payoutCurrency ?? "aud").trim().toLowerCase();
-      currencies[e] = c || "aud";
+      currencies[e] = normCurrency(r.payoutCurrency);
     }
 
     return NextResponse.json({ verified, currencies }, { status: 200 });

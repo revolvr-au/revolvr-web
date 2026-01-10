@@ -454,70 +454,97 @@ export default function PublicFeedClient() {
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
               return (
-                <article
-                  key={post.id}
-                  className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
-                >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                    <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-                        {(email || "r")[0].toUpperCase()}
-                      </div>
+  <FeedLayout title="Revolvr" subtitle="Public feed">
+    <div className="space-y-6">
+      <PeopleRail items={railItems} size={84} revolve />
 
-                      <div className="flex flex-col">
-                        <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
-                          {displayNameFromEmail(email)}
-                          {isVerified ? <VerifiedBadge /> : null}
-                        </span>
-                        <span className="text-[11px] text-white/40">
-                          {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
-                        </span>
-                      </div>
+      {returnBanner ? (
+        <div
+          className={[
+            "rounded-xl border px-3 py-2 text-sm",
+            returnBanner.type === "success"
+              ? "bg-emerald-500/10 border-emerald-400/20 text-emerald-200"
+              : "bg-white/5 border-white/10 text-white/70",
+          ].join(" ")}
+        >
+          {returnBanner.type === "success"
+            ? `Payment successful${returnBanner.mode ? ` (${returnBanner.mode})` : ""}.`
+            : `Payment canceled${returnBanner.mode ? ` (${returnBanner.mode})` : ""}.`}
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className="text-sm text-white/70">Loading public feed…</div>
+      ) : err ? (
+        <div className="rounded-xl bg-red-500/10 border border-red-400/20 text-red-200 text-sm px-3 py-2">
+          {err}
+        </div>
+      ) : !posts.length ? (
+        <div className="text-sm text-white/70">No posts yet.</div>
+      ) : (
+        <div className="space-y-6 pb-12">
+          {posts.map((post) => {
+            const email = String(post.userEmail || "").trim().toLowerCase();
+            const isVerified = email ? verifiedSet.has(email) : false;
+
+            const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
+
+            return (
+              <article
+                key={post.id}
+                className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
+              >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+                      {(email || "r")[0].toUpperCase()}
                     </div>
 
-                    <Link
-                      href={`/u/${encodeURIComponent(email)}`}
-                      className="text-xs text-white/60 hover:text-white underline"
-                    >
-                      View
-                    </Link>
-                  </div>
-
-                  <div className="relative w-full max-h-[520px]">
-                    {showFallback ? (
-                      <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
-                        <span className="text-xs text-white/50">Image unavailable</span>
-                      </div>
-                    ) : (
-                      <Image
-                        src={post.imageUrl}
-                        alt={post.caption || "post"}
-                        width={1200}
-                        height={800}
-                        unoptimized
-                        className="w-full max-h-[520px] object-cover"
-                        onError={() =>
-                          setBrokenPostImages((prev) => ({
-                            ...prev,
-                            [post.id]: true,
-                          }))
-                        }
-                      />
-                    )}
-                  </div>
-
-                  <div className="px-4 py-2 border-t border-white/10">
-                    <div className="hidden sm:flex">
-                      <div className="inline-flex items-center gap-10">
-                        <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-                        <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
-                        <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-                        <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
-                        <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
-                      </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
+                        {displayNameFromEmail(email)}
+                        {isVerified ? <VerifiedBadge /> : null}
+                      </span>
+                      <span className="text-[11px] text-white/40">
+                        {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
+                      </span>
                     </div>
+                  </div>
 
-                    <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
+                  <Link
+                    href={`/u/${encodeURIComponent(email)}`}
+                    className="text-xs text-white/60 hover:text-white underline"
+                  >
+                    View
+                  </Link>
+                </div>
+
+                <div className="relative w-full max-h-[520px]">
+                  {showFallback ? (
+                    <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
+                      <span className="text-xs text-white/50">Image unavailable</span>
+                    </div>
+                  ) : (
+                    <Image
+                      src={post.imageUrl}
+                      alt={post.caption || "post"}
+                      width={1200}
+                      height={800}
+                      unoptimized
+                      className="w-full max-h-[520px] object-cover"
+                      onError={() =>
+                        setBrokenPostImages((prev) => ({
+                          ...prev,
+                          [post.id]: true,
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+
+                <div className="px-4 py-2 border-t border-white/10">
+                  <div className="hidden sm:flex">
+                    <div className="inline-flex items-center gap-10">
                       <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
                       <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
                       <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
@@ -526,15 +553,24 @@ export default function PublicFeedClient() {
                     </div>
                   </div>
 
-                  {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                  <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
+                    <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
+                    <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
+                    <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
+                    <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
+                    <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
+                  </div>
+                </div>
 
-                  <PostActionModal
+                {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ✅ Modal must live INSIDE the FeedLayout tree */}
+      <PostActionModal
         open={Boolean(activeAction && activePost && activeMeta)}
         onClose={() => setActiveAction(null)}
         title={activeMeta?.title ?? "Action"}
@@ -546,12 +582,14 @@ export default function PublicFeedClient() {
         presets={activePresets}
         defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
         confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
+        currency={activeCurrency} // ✅ THIS is what fixes the missing currency in the modal
         onConfirm={async (amountCents) => {
           if (!activeAction || !activePost || !activeCreatorEmail) return;
           await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail, amountCents);
         }}
       />
-    </FeedLayout>
-  );
-}
+    </div>
+  </FeedLayout>
+);
+
 
