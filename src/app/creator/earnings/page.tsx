@@ -10,7 +10,18 @@ function formatAudCents(cents: number) {
 
 export default async function CreatorEarningsPage() {
   // TODO: replace with real logged-in email (Supabase auth)
-  const creatorEmail = "creator@example.com";
+  const creatorEmail = ""; // hydrate from authed user
+
+  if (!creatorEmail) {
+    return (
+      <div className="mx-auto max-w-3xl p-6">
+        <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
+        <p className="mt-3 text-sm text-neutral-600">
+          You must be logged in to view earnings.
+        </p>
+      </div>
+    );
+  }
 
   const data = await getCreatorEarnings(creatorEmail);
 
@@ -56,9 +67,7 @@ export default async function CreatorEarningsPage() {
                   </td>
                   <td className="py-2 pr-4">{p.type}</td>
                   <td className="py-2 pr-4">{formatAudCents(p.amountGross)}</td>
-                  <td className="py-2 pr-4">
-                    {formatAudCents(p.amountCreator)}
-                  </td>
+                  <td className="py-2 pr-4">{formatAudCents(p.amountCreator)}</td>
                   <td className="py-2 pr-4 font-mono text-xs text-neutral-600">
                     {p.id.slice(0, 18)}…
                   </td>
