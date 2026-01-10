@@ -401,20 +401,26 @@ export default function PublicFeedClient() {
     }));
   }, [activeMeta, activeCurrency]);
 
-  async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string, amountCents: number) {
-    const { url } = await createCheckout({
-      mode,
-      creatorEmail,
-      userEmail: null, // wire auth later
-      targetId: postId,
-      postId, // legacy supported
-      source: "FEED",
-      returnPath: "/public-feed",
-      amountCents,
-    } as any);
+  async function beginCheckout(
+  mode: ActionMode,
+  postId: string,
+  creatorEmail: string,
+  amountCents: number
+) {
+  const { url } = await createCheckout({
+    mode,
+    creatorEmail,          // ✅ POST AUTHOR EMAIL
+    userEmail: null,       // viewer (optional)
+    targetId: postId,
+    postId,
+    source: "FEED",
+    returnPath: "/public-feed",
+    amountCents,
+  });
 
-    window.location.href = url;
-  }
+  window.location.href = url;
+}
+
 
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
@@ -564,7 +570,13 @@ export default function PublicFeedClient() {
           currency={activeCurrency}
           onConfirm={async (amountCents) => {
             if (!activeAction || !activePost || !activeCreatorEmail) return;
-            await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail, amountCents);
+            await beginCheckout(
+  activeAction.mode,
+  activePost.id,
+  activePost.userEmail, // ✅ creator
+  amountCents
+);
+
           }}
         />
       </div>
