@@ -158,7 +158,7 @@ function actionMeta(mode: ActionMode): ActionMeta {
         title: "Spin",
         subtitle: "Spin the Revolvr",
         icon: "🌀",
-        allowCustom: false,
+        allowCustom: true, // CHANGED
         presets: [
           { label: "A$1", amountCents: 100 },
           { label: "A$2", amountCents: 200 },
@@ -174,7 +174,7 @@ function actionMeta(mode: ActionMode): ActionMeta {
         title: "Reaction",
         subtitle: "Send a paid reaction",
         icon: "😊",
-        allowCustom: false,
+        allowCustom: true, // CHANGED
         presets: [
           { label: "A$1", amountCents: 100 },
           { label: "A$2", amountCents: 200 },
@@ -190,7 +190,7 @@ function actionMeta(mode: ActionMode): ActionMeta {
         title: "Vote",
         subtitle: "Cast a paid vote",
         icon: "🗳",
-        allowCustom: false,
+        allowCustom: true, // CHANGED
         presets: [
           { label: "A$1", amountCents: 100 },
           { label: "A$2", amountCents: 200 },
@@ -202,6 +202,7 @@ function actionMeta(mode: ActionMode): ActionMeta {
       };
   }
 }
+
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
