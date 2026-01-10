@@ -45,6 +45,8 @@ type CreatorMeResponse = {
 
 type VerifiedLookupResponse = {
   verified?: unknown;
+  currencies?: unknown; // returned by endpoint, not required here
+  error?: unknown;
 };
 
 type CreditsResponse = {
@@ -52,6 +54,19 @@ type CreditsResponse = {
   tips?: unknown;
   spins?: unknown;
 };
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
+}
+
+function hasVerifiedArray(v: unknown): v is { verified: unknown } {
+  return isRecord(v) && "verified" in v;
+}
+
+function normalizeVerifiedEmails(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+}
 
 function isPost(value: unknown): value is Post {
   if (!value || typeof value !== "object") return false;
@@ -142,15 +157,13 @@ export default function DashboardClient() {
       setIsLoadingPosts(true);
       setError(null);
 
-      const { data, error: sbErr } = await supabase
-        .from(POSTS_TABLE)
-        .select("*")
-        .order("createdAt", { ascending: false });
+      const { data, error: sbErr } = await supabase.from(POSTS_TABLE).select("*").order("createdAt", {
+        ascending: false,
+      });
 
       if (sbErr) throw sbErr;
 
       const rows = Array.isArray(data) ? data : [];
-      // Validate per-row (keeps `any` out and avoids poisoning state)
       const parsed: Post[] = [];
       for (const r of rows) {
         if (isPost(r)) parsed.push(r);
@@ -168,7 +181,7 @@ export default function DashboardClient() {
     try {
       const uniq = Array.from(
         new Set((emails || []).map((e) => String(e || "").trim().toLowerCase()).filter(Boolean))
-      );
+      ).slice(0, 200);
 
       if (uniq.length === 0) {
         setVerifiedMap({});
@@ -181,10 +194,8 @@ export default function DashboardClient() {
 
       const json = (await res.json().catch(() => null)) as VerifiedLookupResponse | null;
 
-      const verifiedRaw = json?.verified;
-      const verifiedList: string[] = Array.isArray(verifiedRaw)
-        ? verifiedRaw.map((x) => String(x).trim().toLowerCase()).filter(Boolean)
-        : [];
+      const verifiedRaw = hasVerifiedArray(json) ? json?.verified ?? [] : [];
+      const verifiedList = normalizeVerifiedEmails(verifiedRaw);
 
       const m: Record<string, boolean> = {};
       for (const em of verifiedList) m[em] = true;
@@ -392,9 +403,7 @@ export default function DashboardClient() {
       const fileExt = file.name.split(".").pop() || "bin";
       const filePath = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
 
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from("posts")
-        .upload(filePath, file);
+      const { data: storageData, error: storageError } = await supabase.storage.from("posts").upload(filePath, file);
 
       if (storageError || !storageData) throw storageError ?? new Error("Upload failed");
 
