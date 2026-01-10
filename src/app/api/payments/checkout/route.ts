@@ -27,14 +27,19 @@ type SupportSource = "FEED" | "LIVE";
 
 type Body = {
   mode: CheckoutMode;
-  creatorEmail: string;
+  creatorEmail?: string | null;
   userEmail?: string | null;
-  postId?: string | null;
+
+  postId?: string | null; // legacy
   source?: SupportSource | string | null;
   targetId?: string | null;
   returnPath?: string | null;
+
+  // cents chosen in modal
   amountCents?: number | string | null;
-  currency?: string | null; // ignored for safety
+
+  // optional legacy/client override (ignored for safety)
+  currency?: string | null;
 };
 
 function toKind(mode: string) {
@@ -64,6 +69,7 @@ function clamp(n: number, min: number, max: number) {
 }
 
 const ALLOWED_CURRENCIES = new Set(["aud", "usd", "gbp", "eur", "cad", "nzd"]);
+
 function normalizeCurrency(cur: unknown): string {
   const c = String(cur ?? "aud").trim().toLowerCase();
   return ALLOWED_CURRENCIES.has(c) ? c : "aud";
@@ -82,6 +88,7 @@ function modeDefaults(mode: CheckoutMode) {
     case "vote":
       return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
 
+    // Packs fixed for now
     case "tip-pack":
       return { name: "Tip pack (10× tips)", defaultCents: 2000, min: 2000, max: 2000 };
     case "boost-pack":
@@ -93,13 +100,22 @@ function modeDefaults(mode: CheckoutMode) {
 
 export async function POST(req: NextRequest) {
   try {
+    const debug = req.nextUrl.searchParams.get("debug") === "1";
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 
     const mode = body.mode;
-    const creatorEmail = String(body.creatorEmail ?? "").trim().toLowerCase();
-
     if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
-    if (!creatorEmail) return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
+
+    // IMPORTANT:
+    // - creatorEmail should come from body.creatorEmail (primary) OR body.userEmail (legacy callers / debug page)
+    // - userEmail is the *viewer* email (optional)
+    const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "")
+      .trim()
+      .toLowerCase();
+
+    if (!creatorEmail) {
+      return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
+    }
 
     const userEmail =
       typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : null;
@@ -111,15 +127,14 @@ export async function POST(req: NextRequest) {
     const def = modeDefaults(mode);
     if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
 
-    // Fetch creator payout currency
-    const creator = await prisma.creatorProfile.findUnique({
-      where: { email: creatorEmail },
-      select: { payoutCurrency: true },
+    // Case-insensitive creator lookup (prevents accidental AUD fallback due to email casing)
+    const creator = await prisma.creatorProfile.findFirst({
+      where: { email: { equals: creatorEmail, mode: "insensitive" } },
+      select: { email: true, payoutCurrency: true },
     });
 
     if (!creator) {
-      // IMPORTANT: do not silently default to AUD, or you'll never spot data/env issues
-      console.warn("[checkout] creator not found for email:", creatorEmail);
+      console.warn("[checkout] creator not found:", creatorEmail);
       return NextResponse.json(
         { error: "Creator not found", creatorEmail },
         { status: 404 }
@@ -128,12 +143,7 @@ export async function POST(req: NextRequest) {
 
     const currency = normalizeCurrency(creator.payoutCurrency ?? "aud");
 
-    console.log("[checkout] mode=", mode);
-    console.log("[checkout] creatorEmail=", creatorEmail);
-    console.log("[checkout] db payoutCurrency=", creator.payoutCurrency);
-    console.log("[checkout] normalized currency=", currency);
-
-    const isPack = mode.endsWith("-pack");
+    const isPack = String(mode).endsWith("-pack");
     const requested = parseAmountCents(body.amountCents);
 
     const amountCents = isPack
@@ -142,6 +152,23 @@ export async function POST(req: NextRequest) {
 
     const safeReturnPath =
       body.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
+
+    if (debug) {
+      return NextResponse.json(
+        {
+          ok: true,
+          mode,
+          creatorEmailInput: creatorEmail,
+          creatorEmailDb: creator.email?.toLowerCase?.() ?? String(creator.email),
+          payoutCurrencyRaw: creator.payoutCurrency ?? null,
+          currency,
+          amountCents,
+          isPack,
+          safeReturnPath,
+        },
+        { status: 200 }
+      );
+    }
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");
@@ -191,13 +218,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(
-      {
-        url: session.url,
-        debug: { creatorEmail, currency, amountCents },
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (err: unknown) {
     console.error("[payments/checkout] error", err);
     return NextResponse.json({ error: "Stripe checkout failed" }, { status: 500 });
