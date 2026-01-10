@@ -1,6 +1,7 @@
 // src/app/api/payments/checkout/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { prisma } from "@/lib/prisma"; // <-- adjust if your prisma file lives elsewhere
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,8 +34,11 @@ type Body = {
   targetId?: string | null;
   returnPath?: string | null;
 
-  // NEW: amount coming from modal (in cents)
-  amountCents?: number | null;
+  // cents chosen in modal
+  amountCents?: number | string | null;
+
+  // optional legacy/client override (ignored for safety)
+  currency?: string | null;
 };
 
 function toKind(mode: string) {
@@ -52,21 +56,10 @@ function toSource(src: unknown): SupportSource {
 
 function parseAmountCents(v: unknown): number | null {
   if (v == null) return null;
-
-  // Accept number or numeric string
-  const n =
-    typeof v === "number"
-      ? v
-      : typeof v === "string"
-        ? Number(v)
-        : NaN;
-
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
   if (!Number.isFinite(n)) return null;
-
-  // must be an integer number of cents
   const cents = Math.round(n);
   if (cents <= 0) return null;
-
   return cents;
 }
 
@@ -74,11 +67,17 @@ function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
 
-// Centralized defaults + limits
+const ALLOWED_CURRENCIES = new Set(["aud", "usd", "gbp", "eur", "cad", "nzd"]);
+
+function normalizeCurrency(cur: unknown): string {
+  const c = String(cur ?? "aud").trim().toLowerCase();
+  return ALLOWED_CURRENCIES.has(c) ? c : "aud";
+}
+
 function modeDefaults(mode: CheckoutMode) {
   switch (mode) {
     case "tip":
-      return { name: "Creator tip", defaultCents: 200, min: 100, max: 200_000 }; // A$1 .. A$2000
+      return { name: "Creator tip", defaultCents: 200, min: 100, max: 200_000 };
     case "boost":
       return { name: "Post boost", defaultCents: 500, min: 100, max: 200_000 };
     case "spin":
@@ -88,13 +87,13 @@ function modeDefaults(mode: CheckoutMode) {
     case "vote":
       return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
 
-    // Packs remain fixed for now
+    // Packs fixed for now
     case "tip-pack":
-      return { name: "Tip pack (10× A$2 tips)", defaultCents: 2000, min: 2000, max: 2000 };
+      return { name: "Tip pack (10× tips)", defaultCents: 2000, min: 2000, max: 2000 };
     case "boost-pack":
-      return { name: "Boost pack (10× A$5 boosts)", defaultCents: 5000, min: 5000, max: 5000 };
+      return { name: "Boost pack (10× boosts)", defaultCents: 5000, min: 5000, max: 5000 };
     case "spin-pack":
-      return { name: "Spin pack (20× A$1 spins)", defaultCents: 2000, min: 2000, max: 2000 };
+      return { name: "Spin pack (20× spins)", defaultCents: 2000, min: 2000, max: 2000 };
   }
 }
 
@@ -103,18 +102,12 @@ export async function POST(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 
     const mode = body.mode;
-
-    const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "")
-      .trim()
-      .toLowerCase();
+    const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "").trim().toLowerCase();
 
     const userEmail =
-      typeof body.userEmail === "string"
-        ? body.userEmail.trim().toLowerCase()
-        : null;
+      typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : null;
 
     const postId = body.postId ?? null;
-
     const source = toSource(body.source);
     const targetId = (body.targetId ?? postId ?? null) as string | null;
 
@@ -124,19 +117,23 @@ export async function POST(req: NextRequest) {
     const def = modeDefaults(mode);
     if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
 
-    // If the client supplied amountCents, use it (for non-pack modes),
-    // but always clamp to sensible bounds and ensure integer cents.
-    const requested = parseAmountCents((body as any).amountCents);
+    // Pull creator currency from DB (source of truth)
+    const creator = await prisma.creatorProfile.findUnique({
+      where: { email: creatorEmail },
+      select: { payoutCurrency: true },
+    });
+
+    const currency = normalizeCurrency(creator?.payoutCurrency ?? "aud");
+
     const isPack = mode.endsWith("-pack");
+    const requested = parseAmountCents(body.amountCents);
 
     const amountCents = isPack
       ? def.defaultCents
       : clamp(requested ?? def.defaultCents, def.min, def.max);
 
     const safeReturnPath =
-      body.returnPath && body.returnPath.startsWith("/")
-        ? body.returnPath
-        : "/public-feed";
+      body.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");
@@ -165,7 +162,7 @@ export async function POST(req: NextRequest) {
       line_items: [
         {
           price_data: {
-            currency: "aud",
+            currency,
             unit_amount: amountCents,
             product_data: { name: def.name },
           },
@@ -182,6 +179,7 @@ export async function POST(req: NextRequest) {
         viewer_email: userEmail ?? "",
 
         amount_cents: String(amountCents),
+        currency,
 
         // legacy
         creatorEmail,
