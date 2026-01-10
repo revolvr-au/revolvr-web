@@ -1,7 +1,7 @@
 // src/app/api/payments/checkout/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { prisma } from "@/lib/prisma"; // <-- adjust if your prisma file lives elsewhere
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,7 +11,8 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"
@@ -102,7 +103,13 @@ export async function POST(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 
     const mode = body.mode;
-    const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "").trim().toLowerCase();
+    if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
+
+    // IMPORTANT: do NOT fall back to userEmail. If creatorEmail is wrong/empty, we’d silently default currency.
+    const creatorEmail = String(body.creatorEmail ?? "").trim().toLowerCase();
+    if (!creatorEmail) {
+      return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
+    }
 
     const userEmail =
       typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : null;
@@ -110,9 +117,6 @@ export async function POST(req: NextRequest) {
     const postId = body.postId ?? null;
     const source = toSource(body.source);
     const targetId = (body.targetId ?? postId ?? null) as string | null;
-
-    if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
-    if (!creatorEmail) return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
 
     const def = modeDefaults(mode);
     if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
@@ -124,6 +128,10 @@ export async function POST(req: NextRequest) {
     });
 
     const currency = normalizeCurrency(creator?.payoutCurrency ?? "aud");
+
+    console.log("[checkout] creatorEmail=", creatorEmail);
+    console.log("[checkout] db payoutCurrency=", creator?.payoutCurrency);
+    console.log("[checkout] normalized currency=", currency);
 
     const isPack = mode.endsWith("-pack");
     const requested = parseAmountCents(body.amountCents);
@@ -177,7 +185,6 @@ export async function POST(req: NextRequest) {
         source,
         target_id: targetId ?? "",
         viewer_email: userEmail ?? "",
-
         amount_cents: String(amountCents),
         currency,
 
