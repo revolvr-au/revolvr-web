@@ -11,8 +11,7 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"
@@ -28,18 +27,14 @@ type SupportSource = "FEED" | "LIVE";
 
 type Body = {
   mode: CheckoutMode;
-  creatorEmail: string; // required for attribution
+  creatorEmail: string;
   userEmail?: string | null;
-  postId?: string | null; // legacy
+  postId?: string | null;
   source?: SupportSource | string | null;
   targetId?: string | null;
   returnPath?: string | null;
-
-  // cents chosen in modal
   amountCents?: number | string | null;
-
-  // optional legacy/client override (ignored for safety)
-  currency?: string | null;
+  currency?: string | null; // ignored for safety
 };
 
 function toKind(mode: string) {
@@ -69,7 +64,6 @@ function clamp(n: number, min: number, max: number) {
 }
 
 const ALLOWED_CURRENCIES = new Set(["aud", "usd", "gbp", "eur", "cad", "nzd"]);
-
 function normalizeCurrency(cur: unknown): string {
   const c = String(cur ?? "aud").trim().toLowerCase();
   return ALLOWED_CURRENCIES.has(c) ? c : "aud";
@@ -88,7 +82,6 @@ function modeDefaults(mode: CheckoutMode) {
     case "vote":
       return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
 
-    // Packs fixed for now
     case "tip-pack":
       return { name: "Tip pack (10× tips)", defaultCents: 2000, min: 2000, max: 2000 };
     case "boost-pack":
@@ -103,13 +96,10 @@ export async function POST(req: NextRequest) {
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 
     const mode = body.mode;
-    if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
-
-    // IMPORTANT: do NOT fall back to userEmail. If creatorEmail is wrong/empty, we’d silently default currency.
     const creatorEmail = String(body.creatorEmail ?? "").trim().toLowerCase();
-    if (!creatorEmail) {
-      return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
-    }
+
+    if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
+    if (!creatorEmail) return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
 
     const userEmail =
       typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : null;
@@ -121,16 +111,26 @@ export async function POST(req: NextRequest) {
     const def = modeDefaults(mode);
     if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
 
-    // Pull creator currency from DB (source of truth)
+    // Fetch creator payout currency
     const creator = await prisma.creatorProfile.findUnique({
       where: { email: creatorEmail },
       select: { payoutCurrency: true },
     });
 
-    const currency = normalizeCurrency(creator?.payoutCurrency ?? "aud");
+    if (!creator) {
+      // IMPORTANT: do not silently default to AUD, or you'll never spot data/env issues
+      console.warn("[checkout] creator not found for email:", creatorEmail);
+      return NextResponse.json(
+        { error: "Creator not found", creatorEmail },
+        { status: 404 }
+      );
+    }
 
+    const currency = normalizeCurrency(creator.payoutCurrency ?? "aud");
+
+    console.log("[checkout] mode=", mode);
     console.log("[checkout] creatorEmail=", creatorEmail);
-    console.log("[checkout] db payoutCurrency=", creator?.payoutCurrency);
+    console.log("[checkout] db payoutCurrency=", creator.payoutCurrency);
     console.log("[checkout] normalized currency=", currency);
 
     const isPack = mode.endsWith("-pack");
@@ -187,16 +187,17 @@ export async function POST(req: NextRequest) {
         viewer_email: userEmail ?? "",
         amount_cents: String(amountCents),
         currency,
-
-        // legacy
-        creatorEmail,
-        userEmail: userEmail ?? "",
-        postId: postId ?? "",
         mode,
       },
     });
 
-    return NextResponse.json({ url: session.url }, { status: 200 });
+    return NextResponse.json(
+      {
+        url: session.url,
+        debug: { creatorEmail, currency, amountCents },
+      },
+      { status: 200 }
+    );
   } catch (err: unknown) {
     console.error("[payments/checkout] error", err);
     return NextResponse.json({ error: "Stripe checkout failed" }, { status: 500 });
