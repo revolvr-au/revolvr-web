@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 
-// ...keep your existing code...
-
-export async function GET() {
-  return NextResponse.json({ ok: true, route: "/api/actions/tip", method: "GET" });
+export async function OPTIONS() {
+  return NextResponse.json({ ok: true }, { status: 200 });
 }
 
 export async function POST(req: Request) {

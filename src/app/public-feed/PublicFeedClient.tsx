@@ -535,23 +535,21 @@ export default function PublicFeedClient() {
       </div>
 
             <PostActionModal
-        open={Boolean(activeAction && activePost && activeMeta)}
-        onClose={() => setActiveAction(null)}
-        title={activeMeta?.title ?? "Action"}
-        subtitle={activeMeta?.subtitle ?? ""}
-        icon={activeMeta?.icon ?? "✨"}
-        isAuthed={true}
-        loginHref="/login"
-        allowCustom={activeMeta?.allowCustom ?? true}
-        presets={activePresets}
-        defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
-        confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
-        onConfirm={async (amountCents) => {
-          if (!activeAction || !activePost || !activeCreatorEmail) return;
-          await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail, amountCents);
-        }}
-        currency={activeCurrency}
-      />
-    </FeedLayout>
-  );
-}
+  open={Boolean(activeAction && activePost && activeMeta)}
+  onClose={() => setActiveAction(null)}
+  title={activeMeta?.title ?? "Action"}
+  subtitle={activeMeta?.subtitle ?? ""}
+  icon={activeMeta?.icon ?? "✨"}
+  isAuthed={true}
+  loginHref="/login"
+  allowCustom={activeMeta?.allowCustom ?? true}
+  presets={activePresets}
+  defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
+  confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
+  currency={activeCurrency}  // ✅ add this (after PostActionModal supports it)
+  onConfirm={async (amountCents) => {
+    if (!activeAction || !activePost || !activeCreatorEmail) return;
+    await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail, amountCents);
+  }}
+/>
+

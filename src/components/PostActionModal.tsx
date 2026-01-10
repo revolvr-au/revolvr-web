@@ -33,8 +33,14 @@ export type PostActionModalProps = {
   currency?: string;
 };
 
+function normalizeCurrency(currency: unknown) {
+  const cur = String(currency ?? "aud").trim().toUpperCase();
+  // Intl expects ISO 4217 codes (AUD/USD/EUR). If invalid, we'll fall back later.
+  return cur || "AUD";
+}
+
 function formatCents(amountCents: number, currency: string) {
-  const cur = String(currency || "aud").trim().toUpperCase();
+  const cur = normalizeCurrency(currency);
   const value = amountCents / 100;
 
   try {
@@ -46,19 +52,17 @@ function formatCents(amountCents: number, currency: string) {
       maximumFractionDigits: 2,
     }).format(value);
   } catch {
-    // Fallback if Intl rejects currency
     return `${cur} ${value.toFixed(2)}`;
   }
 }
 
 function parseCurrencyToCents(input: string): number | null {
-  // Keep digits and at most one dot; treat as dollars.
+  // Keep digits and at most one dot; treat as major units (dollars).
   const cleaned = input.replace(/[^\d.]/g, "");
   if (!cleaned) return null;
 
   const parts = cleaned.split(".");
-  const normalized =
-    parts.length <= 1 ? cleaned : `${parts[0]}.${parts.slice(1).join("")}`; // collapse extra dots
+  const normalized = parts.length <= 1 ? cleaned : `${parts[0]}.${parts.slice(1).join("")}`;
 
   const n = Number(normalized);
   if (!Number.isFinite(n) || n <= 0) return null;
@@ -82,15 +86,17 @@ export default function PostActionModal({
   allowCustom = true,
   currency = "aud",
 }: PostActionModalProps) {
+  const currencyCode = useMemo(() => normalizeCurrency(currency), [currency]);
+
   const defaultPresets = useMemo<Preset[]>(
     () =>
       presets ?? [
-        { label: formatCents(500, currency), amountCents: 500 },
-        { label: formatCents(1000, currency), amountCents: 1000 },
-        { label: formatCents(2500, currency), amountCents: 2500 },
-        { label: formatCents(5000, currency), amountCents: 5000 },
+        { label: formatCents(500, currencyCode), amountCents: 500 },
+        { label: formatCents(1000, currencyCode), amountCents: 1000 },
+        { label: formatCents(2500, currencyCode), amountCents: 2500 },
+        { label: formatCents(5000, currencyCode), amountCents: 5000 },
       ],
-    [presets, currency]
+    [presets, currencyCode]
   );
 
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -112,12 +118,12 @@ export default function PostActionModal({
     setCustom("");
   }, [open, defaultAmountCents]);
 
-  // If currency changes while open, don't change the numeric amount,
-  // but clear custom input so formatting stays consistent with selected presets.
+  // If currency changes while open, keep numeric amount but clear custom input
+  // so UI doesn't feel like it "typed" a value in a different currency.
   useEffect(() => {
     if (!open) return;
     setCustom("");
-  }, [currency, open]);
+  }, [currencyCode, open]);
 
   // Escape closes
   useEffect(() => {
@@ -159,7 +165,6 @@ export default function PostActionModal({
   }
 
   function onBackdropMouseDown(e: React.MouseEvent<HTMLDivElement>) {
-    // Only close when clicking the backdrop itself (not bubbling from panel)
     if (e.target === e.currentTarget) onClose();
   }
 
@@ -262,7 +267,7 @@ export default function PostActionModal({
 
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs text-white/50">
-                  Amount: <span className="text-white/80">{formatCents(amountCents, currency)}</span>
+                  Amount: <span className="text-white/80">{formatCents(amountCents, currencyCode)}</span>
                 </div>
 
                 <button

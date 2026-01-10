@@ -17,6 +17,7 @@ export async function createCheckout(input: {
   postId?: string | null;
   source?: "FEED" | "LIVE";
   returnPath?: string | null;
+  amountCents?: number | null;
 }) {
   const res = await fetch("/api/payments/checkout", {
     method: "POST",
@@ -27,8 +28,7 @@ export async function createCheckout(input: {
   const json = await res.json().catch(() => null);
 
   if (!res.ok) {
-    const msg =
-      json && typeof json.error === "string" ? json.error : "Checkout failed.";
+    const msg = json && typeof json.error === "string" ? json.error : "Checkout failed.";
     throw new Error(msg);
   }
 
