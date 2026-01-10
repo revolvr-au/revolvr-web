@@ -19,7 +19,7 @@ type Post = {
 };
 
 type PostsResponseShape = { posts?: unknown };
-type VerifiedResponseShape = { verified?: unknown };
+type VerifiedResponseShape = { verified?: unknown; currencies?: unknown };
 type ErrorResponseShape = { error?: unknown };
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -44,6 +44,17 @@ function normalizeVerifiedEmails(v: unknown): string[] {
   return v.map((x) => String(x).toLowerCase());
 }
 
+function normalizeCurrencyMap(v: unknown): Record<string, string> {
+  if (!isRecord(v)) return {};
+  const out: Record<string, string> = {};
+  for (const [k, val] of Object.entries(v)) {
+    const email = String(k).trim().toLowerCase();
+    const cur = String(val ?? "aud").trim().toLowerCase();
+    if (email) out[email] = cur || "aud";
+  }
+  return out;
+}
+
 const VerifiedBadge = () => (
   <span
     title="Verified creator"
@@ -65,6 +76,22 @@ function isValidImageUrl(url: unknown): url is string {
   const u = url.trim();
   if (!u) return false;
   return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
+}
+
+function formatMoneyFromCents(amountCents: number, currency: string) {
+  const cur = String(currency || "aud").toUpperCase();
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: cur,
+      currencyDisplay: "narrowSymbol",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amountCents / 100);
+  } catch {
+    // fallback if Intl rejects currency
+    return `${cur} ${(amountCents / 100).toFixed(2)}`;
+  }
 }
 
 function FooterAction({
@@ -106,7 +133,7 @@ type ActiveAction = {
   mode: ActionMode;
 };
 
-// Local preset type (avoids needing PostActionModal to export it)
+// Local preset type (we do not import it from PostActionModal)
 type Preset = { label: string; amountCents: number };
 
 type ActionMeta = {
@@ -114,7 +141,7 @@ type ActionMeta = {
   subtitle?: string;
   icon?: string;
   allowCustom: boolean;
-  presets: Preset[];
+  presetsCents: number[]; // store as cents only; labels are generated per-currency
   defaultAmountCents: number;
   confirmLabel: string;
 };
@@ -127,12 +154,7 @@ function actionMeta(mode: ActionMode): ActionMeta {
         subtitle: "Support this creator",
         icon: "💰",
         allowCustom: true,
-        presets: [
-          { label: "A$2", amountCents: 200 },
-          { label: "A$5", amountCents: 500 },
-          { label: "A$10", amountCents: 1000 },
-          { label: "A$25", amountCents: 2500 },
-        ],
+        presetsCents: [200, 500, 1000, 2500],
         defaultAmountCents: 500,
         confirmLabel: "Tip",
       };
@@ -143,12 +165,7 @@ function actionMeta(mode: ActionMode): ActionMeta {
         subtitle: "Boost this post",
         icon: "⚡",
         allowCustom: true,
-        presets: [
-          { label: "A$5", amountCents: 500 },
-          { label: "A$10", amountCents: 1000 },
-          { label: "A$25", amountCents: 2500 },
-          { label: "A$50", amountCents: 5000 },
-        ],
+        presetsCents: [500, 1000, 2500, 5000],
         defaultAmountCents: 1000,
         confirmLabel: "Boost",
       };
@@ -158,13 +175,8 @@ function actionMeta(mode: ActionMode): ActionMeta {
         title: "Spin",
         subtitle: "Spin the Revolvr",
         icon: "🌀",
-        allowCustom: true, // CHANGED
-        presets: [
-          { label: "A$1", amountCents: 100 },
-          { label: "A$2", amountCents: 200 },
-          { label: "A$5", amountCents: 500 },
-          { label: "A$10", amountCents: 1000 },
-        ],
+        allowCustom: true,
+        presetsCents: [100, 200, 500, 1000],
         defaultAmountCents: 200,
         confirmLabel: "Spin",
       };
@@ -174,13 +186,8 @@ function actionMeta(mode: ActionMode): ActionMeta {
         title: "Reaction",
         subtitle: "Send a paid reaction",
         icon: "😊",
-        allowCustom: true, // CHANGED
-        presets: [
-          { label: "A$1", amountCents: 100 },
-          { label: "A$2", amountCents: 200 },
-          { label: "A$3", amountCents: 300 },
-          { label: "A$5", amountCents: 500 },
-        ],
+        allowCustom: true,
+        presetsCents: [100, 200, 300, 500],
         defaultAmountCents: 100,
         confirmLabel: "React",
       };
@@ -190,35 +197,28 @@ function actionMeta(mode: ActionMode): ActionMeta {
         title: "Vote",
         subtitle: "Cast a paid vote",
         icon: "🗳",
-        allowCustom: true, // CHANGED
-        presets: [
-          { label: "A$1", amountCents: 100 },
-          { label: "A$2", amountCents: 200 },
-          { label: "A$5", amountCents: 500 },
-          { label: "A$10", amountCents: 1000 },
-        ],
+        allowCustom: true,
+        presetsCents: [100, 200, 500, 1000],
         defaultAmountCents: 100,
         confirmLabel: "Vote",
       };
   }
 }
 
-
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set());
 
-  // One global action modal
+  const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set());
+  const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({});
+
   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 
-  // Return banner (Stripe success/cancel)
   const [returnBanner, setReturnBanner] = useState<
     { type: "success" | "cancel"; mode: string; targetId?: string } | null
   >(null);
 
-  // Track broken post images so we can fall back gracefully
   const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
   const emails = useMemo(() => {
@@ -230,7 +230,6 @@ export default function PublicFeedClient() {
     return Array.from(s);
   }, [posts]);
 
-  // Featured creators rail: unique authors from newest posts
   const railItems: PersonRailItem[] = useMemo(() => {
     const seen = new Set<string>();
     const out: PersonRailItem[] = [];
@@ -253,7 +252,7 @@ export default function PublicFeedClient() {
     return out;
   }, [posts, verifiedSet]);
 
-  // A) Handle return from Stripe (success/cancel) and clear query params
+  // A) Stripe return banner
   useEffect(() => {
     try {
       const url = new URL(window.location.href);
@@ -269,7 +268,6 @@ export default function PublicFeedClient() {
           targetId,
         });
 
-        // Clear the query params so refresh doesn't replay the banner
         url.searchParams.delete("success");
         url.searchParams.delete("canceled");
         url.searchParams.delete("mode");
@@ -330,14 +328,17 @@ export default function PublicFeedClient() {
     };
   }, []);
 
-  // 2) Load verified map for authors (batch call)
+  // 2) Load verified + currency map for authors
   useEffect(() => {
     let cancelled = false;
 
     async function run() {
       try {
         if (!emails.length) {
-          if (!cancelled) setVerifiedSet(new Set());
+          if (!cancelled) {
+            setVerifiedSet(new Set());
+            setCurrencyByEmail({});
+          }
           return;
         }
 
@@ -355,7 +356,14 @@ export default function PublicFeedClient() {
         const verifiedRaw = hasVerifiedArray(json) ? (json as VerifiedResponseShape).verified ?? [] : [];
         const verified = normalizeVerifiedEmails(verifiedRaw);
 
-        if (!cancelled) setVerifiedSet(new Set(verified));
+        const currenciesRaw =
+          isRecord(json) && "currencies" in json ? (json as any).currencies : undefined;
+        const currencies = normalizeCurrencyMap(currenciesRaw);
+
+        if (!cancelled) {
+          setVerifiedSet(new Set(verified));
+          setCurrencyByEmail(currencies);
+        }
       } catch (e: unknown) {
         console.warn("[public-feed] verified lookup error", e);
       }
@@ -373,21 +381,28 @@ export default function PublicFeedClient() {
   }, [activeAction, posts]);
 
   const activeCreatorEmail = useMemo(() => {
-    const email = String(activePost?.userEmail ?? "").trim().toLowerCase();
-    return email;
+    return String(activePost?.userEmail ?? "").trim().toLowerCase();
   }, [activePost]);
+
+  const activeCurrency = useMemo(() => {
+    const e = String(activeCreatorEmail || "").toLowerCase();
+    return currencyByEmail[e] ?? "aud";
+  }, [activeCreatorEmail, currencyByEmail]);
 
   const activeMeta = useMemo(() => {
     if (!activeAction) return null;
     return actionMeta(activeAction.mode);
   }, [activeAction]);
 
-  async function beginCheckout(
-    mode: ActionMode,
-    postId: string,
-    creatorEmail: string,
-    amountCents: number
-  ) {
+  const activePresets: Preset[] = useMemo(() => {
+    if (!activeMeta) return [{ label: formatMoneyFromCents(100, activeCurrency), amountCents: 100 }];
+    return activeMeta.presetsCents.map((c) => ({
+      amountCents: c,
+      label: formatMoneyFromCents(c, activeCurrency),
+    }));
+  }, [activeMeta, activeCurrency]);
+
+  async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string, amountCents: number) {
     const { url } = await createCheckout({
       mode,
       creatorEmail,
@@ -443,7 +458,6 @@ export default function PublicFeedClient() {
                   key={post.id}
                   className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
                 >
-                  {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -469,7 +483,6 @@ export default function PublicFeedClient() {
                     </Link>
                   </div>
 
-                  {/* Media */}
                   <div className="relative w-full max-h-[520px]">
                     {showFallback ? (
                       <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
@@ -493,9 +506,7 @@ export default function PublicFeedClient() {
                     )}
                   </div>
 
-                  {/* Post footer */}
                   <div className="px-4 py-2 border-t border-white/10">
-                    {/* Desktop */}
                     <div className="hidden sm:flex">
                       <div className="inline-flex items-center gap-10">
                         <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
@@ -506,7 +517,6 @@ export default function PublicFeedClient() {
                       </div>
                     </div>
 
-                    {/* Mobile */}
                     <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
                       <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
                       <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
@@ -516,7 +526,6 @@ export default function PublicFeedClient() {
                     </div>
                   </div>
 
-                  {/* Caption */}
                   {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
                 </article>
               );
@@ -525,24 +534,21 @@ export default function PublicFeedClient() {
         )}
       </div>
 
-      {/* One global modal */}
       <PostActionModal
-        open={Boolean(activeAction && activePost && activeMeta)}
-        onClose={() => setActiveAction(null)}
-        title={activeMeta?.title ?? "Action"}
-        subtitle={activeMeta?.subtitle ?? ""}
-        icon={activeMeta?.icon ?? "✨"}
-        isAuthed={true} // today: Stripe wiring test; wire auth next
-        loginHref="/login"
-        allowCustom={activeMeta?.allowCustom ?? true}
-        presets={activeMeta?.presets ?? [{ label: "A$1", amountCents: 100 }]}
-        defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
-        confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
-        onConfirm={async (amountCents) => {
-          if (!activeAction || !activePost || !activeCreatorEmail) return;
-          await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail, amountCents);
-        }}
-      />
-    </FeedLayout>
-  );
-}
+  open={Boolean(activeAction && activePost && activeMeta)}
+  onClose={() => setActiveAction(null)}
+  title={activeMeta?.title ?? "Action"}
+  subtitle={activeMeta?.subtitle ?? ""}
+  icon={activeMeta?.icon ?? "✨"}
+  isAuthed={true}
+  loginHref="/login"
+  allowCustom={activeMeta?.allowCustom ?? true}
+  presets={activePresets}
+  defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
+  confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
+  onConfirm={async (amountCents) => {
+    if (!activeAction || !activePost || !activeCreatorEmail) return;
+    await beginCheckout(activeAction.mode, activePost.id, activeCreatorEmail, amountCents);
+  }}
+  currency={activeCurrency}
+/>

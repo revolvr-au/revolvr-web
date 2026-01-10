@@ -1,33 +1,70 @@
 // src/components/PostActionModal.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
-type Preset = { label: string; amountCents: number };
+export type Preset = { label: string; amountCents: number };
 
-type Props = {
+export type PostActionModalProps = {
   open: boolean;
   onClose: () => void;
 
-  title: string; // e.g. "Tip creator"
-  subtitle?: string; // e.g. "Support creator"
-  icon?: string; // e.g. "💰"
+  title: string;
+  subtitle?: string;
+  icon?: string;
 
-  // If user is not authed, we show a login CTA instead of confirm UI.
+  // If user is not authed, show login CTA instead of confirm UI.
   isAuthed: boolean;
-  loginHref?: string; // fallback "/login"
+  loginHref?: string;
 
-  presets?: Preset[]; // default amounts
+  presets?: Preset[];
   defaultAmountCents?: number;
 
-  confirmLabel?: string; // e.g. "Pay A$2"
+  confirmLabel?: string;
   onConfirm: (amountCents: number) => Promise<void>;
 
-  busy?: boolean; // optional external busy state
+  // Optional external busy state (e.g. parent tracks busy); modal will OR with local busy.
+  busy?: boolean;
 
-  // NEW: allow custom input
+  // Show/hide custom input; default true.
   allowCustom?: boolean;
+
+  // Currency for formatting (e.g. "aud", "usd", "eur"). Defaults to "aud".
+  currency?: string;
 };
+
+function formatCents(amountCents: number, currency: string) {
+  const cur = String(currency || "aud").trim().toUpperCase();
+  const value = amountCents / 100;
+
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: cur,
+      currencyDisplay: "narrowSymbol",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  } catch {
+    // Fallback if Intl rejects currency
+    return `${cur} ${value.toFixed(2)}`;
+  }
+}
+
+function parseCurrencyToCents(input: string): number | null {
+  // Keep digits and at most one dot; treat as dollars.
+  const cleaned = input.replace(/[^\d.]/g, "");
+  if (!cleaned) return null;
+
+  const parts = cleaned.split(".");
+  const normalized =
+    parts.length <= 1 ? cleaned : `${parts[0]}.${parts.slice(1).join("")}`; // collapse extra dots
+
+  const n = Number(normalized);
+  if (!Number.isFinite(n) || n <= 0) return null;
+
+  return Math.round(n * 100);
+}
 
 export default function PostActionModal({
   open,
@@ -43,25 +80,30 @@ export default function PostActionModal({
   onConfirm,
   busy,
   allowCustom = true,
-}: Props) {
+  currency = "aud",
+}: PostActionModalProps) {
   const defaultPresets = useMemo<Preset[]>(
     () =>
       presets ?? [
-        { label: "$5", amountCents: 500 },
-        { label: "$10", amountCents: 1000 },
-        { label: "$25", amountCents: 2500 },
-        { label: "$50", amountCents: 5000 },
+        { label: formatCents(500, currency), amountCents: 500 },
+        { label: formatCents(1000, currency), amountCents: 1000 },
+        { label: formatCents(2500, currency), amountCents: 2500 },
+        { label: formatCents(5000, currency), amountCents: 5000 },
       ],
-    [presets]
+    [presets, currency]
   );
 
-  const [amountCents, setAmountCents] = useState(defaultAmountCents);
-  const [custom, setCustom] = useState("");
-  const [localBusy, setLocalBusy] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const [amountCents, setAmountCents] = useState<number>(defaultAmountCents);
+  const [custom, setCustom] = useState<string>("");
+  const [localBusy, setLocalBusy] = useState<boolean>(false);
   const [err, setErr] = useState<string | null>(null);
 
   const isBusy = Boolean(busy ?? localBusy);
 
+  // Reset state on open
   useEffect(() => {
     if (!open) return;
     setErr(null);
@@ -70,17 +112,40 @@ export default function PostActionModal({
     setCustom("");
   }, [open, defaultAmountCents]);
 
+  // If currency changes while open, don't change the numeric amount,
+  // but clear custom input so formatting stays consistent with selected presets.
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
+    if (!open) return;
+    setCustom("");
+  }, [currency, open]);
+
+  // Escape closes
+  useEffect(() => {
+    if (!open) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
-    }
-    if (open) window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
+
+  // Focus management on open
+  useEffect(() => {
+    if (!open) return;
+    const t = window.setTimeout(() => {
+      if (allowCustom && isAuthed) inputRef.current?.focus();
+      else panelRef.current?.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [open, allowCustom, isAuthed]);
 
   if (!open) return null;
 
   async function handleConfirm() {
+    if (isBusy) return;
+
     try {
       setErr(null);
       setLocalBusy(true);
@@ -93,27 +158,39 @@ export default function PostActionModal({
     }
   }
 
-  function applyCustom(v: string) {
+  function onBackdropMouseDown(e: React.MouseEvent<HTMLDivElement>) {
+    // Only close when clicking the backdrop itself (not bubbling from panel)
+    if (e.target === e.currentTarget) onClose();
+  }
+
+  function onCustomChange(v: string) {
     setCustom(v);
-    const cleaned = v.replace(/[^\d.]/g, "");
-    const n = Number(cleaned);
-    if (!Number.isFinite(n) || n <= 0) return;
-    setAmountCents(Math.round(n * 100));
+    const cents = parseCurrencyToCents(v);
+    if (cents != null) setAmountCents(cents);
   }
 
   return (
     <div className="fixed inset-0 z-[100]">
       {/* backdrop */}
-      <button
-        type="button"
-        aria-label="Close"
+      <div
         className="absolute inset-0 bg-black/70"
-        onClick={onClose}
+        role="button"
+        tabIndex={-1}
+        aria-label="Close modal"
+        onMouseDown={onBackdropMouseDown}
       />
 
       {/* panel */}
-      <div className="absolute left-1/2 top-1/2 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#0B0F1A]/95 shadow-2xl shadow-black/60 overflow-hidden">
-        <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="absolute left-1/2 top-1/2 w-[92vw] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl border border-white/10 bg-[#0B0F1A]/95 shadow-2xl shadow-black/60"
+      >
+        {/* header */}
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <div className="flex items-center gap-2">
             {icon ? <span className="text-[18px] leading-none">{icon}</span> : null}
             <div className="flex flex-col">
@@ -124,20 +201,21 @@ export default function PostActionModal({
 
           <button
             type="button"
-            className="text-white/60 hover:text-white rounded-lg px-2 py-1 hover:bg-white/5"
             onClick={onClose}
+            className="rounded-lg px-2 py-1 text-white/60 hover:bg-white/5 hover:text-white"
           >
             Close
           </button>
         </div>
 
-        <div className="px-4 py-4 space-y-3">
+        {/* body */}
+        <div className="space-y-3 px-4 py-4">
           {!isAuthed ? (
             <div className="space-y-3">
               <div className="text-sm text-white/70">You need to log in to continue.</div>
               <a
                 href={loginHref}
-                className="inline-flex items-center justify-center w-full rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-sm font-semibold py-3 transition-colors"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-pink-600 py-3 text-sm font-semibold text-white transition-colors hover:bg-pink-500"
               >
                 Login
               </a>
@@ -145,42 +223,46 @@ export default function PostActionModal({
           ) : (
             <>
               <div className="grid grid-cols-4 gap-2">
-                {defaultPresets.map((p) => (
-                  <button
-                    key={p.amountCents}
-                    type="button"
-                    onClick={() => setAmountCents(p.amountCents)}
-                    className={[
-                      "rounded-xl border px-2 py-2 text-xs font-semibold transition-all",
-                      amountCents === p.amountCents
-                        ? "border-white/30 bg-white/10 text-white"
-                        : "border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10",
-                    ].join(" ")}
-                  >
-                    {p.label}
-                  </button>
-                ))}
+                {defaultPresets.map((p) => {
+                  const selected = amountCents === p.amountCents && custom === "";
+                  return (
+                    <button
+                      key={`${p.label}-${p.amountCents}`}
+                      type="button"
+                      onClick={() => {
+                        setAmountCents(p.amountCents);
+                        setCustom("");
+                      }}
+                      className={[
+                        "rounded-xl border px-2 py-2 text-xs font-semibold transition-all",
+                        selected
+                          ? "border-white/30 bg-white/10 text-white"
+                          : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white",
+                      ].join(" ")}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {allowCustom ? (
                 <div className="flex items-center gap-2">
-                  <div className="text-xs text-white/50 w-14">Custom</div>
+                  <div className="w-14 text-xs text-white/50">Custom</div>
                   <input
+                    ref={inputRef}
                     value={custom}
-                    onChange={(e) => applyCustom(e.target.value)}
+                    onChange={(e) => onCustomChange(e.target.value)}
                     placeholder="e.g. 7.50"
-                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/15"
                     inputMode="decimal"
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/15"
                   />
                 </div>
               ) : null}
 
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs text-white/50">
-                  Amount:{" "}
-                  <span className="text-white/80">
-                    ${(amountCents / 100).toFixed(2)}
-                  </span>
+                  Amount: <span className="text-white/80">{formatCents(amountCents, currency)}</span>
                 </div>
 
                 <button
@@ -189,8 +271,8 @@ export default function PostActionModal({
                   onClick={handleConfirm}
                   className={[
                     "rounded-xl px-4 py-2 text-sm font-semibold transition-all",
-                    isBusy
-                      ? "bg-white/10 text-white/40 cursor-not-allowed"
+                    isBusy || amountCents <= 0
+                      ? "cursor-not-allowed bg-white/10 text-white/40"
                       : "bg-white/10 text-white hover:bg-white/15",
                   ].join(" ")}
                 >
@@ -199,7 +281,7 @@ export default function PostActionModal({
               </div>
 
               {err ? (
-                <div className="text-xs text-red-200 bg-red-500/10 border border-red-400/20 rounded-xl px-3 py-2">
+                <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
                   {err}
                 </div>
               ) : null}
