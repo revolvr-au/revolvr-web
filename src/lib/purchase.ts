@@ -19,6 +19,9 @@ export type StartCheckoutOptions = {
   // REQUIRED for ledger attribution
   creatorEmail: string;
 
+  // optional cents chosen in UI; if omitted server defaults apply
+  amountCents?: number | null;
+
   // viewer/payer email (recommended)
   userEmail?: string | null;
 
@@ -36,6 +39,7 @@ export type StartCheckoutOptions = {
 type CheckoutPayload = {
   mode: CheckoutMode;
   creatorEmail: string;
+  amountCents?: number | null;
   userEmail: string | null;
   source: SupportSource;
   targetId: string | null;
@@ -49,8 +53,8 @@ export async function startCheckout(opts: StartCheckoutOptions): Promise<void> {
   const payload: CheckoutPayload = {
     mode: opts.mode,
     creatorEmail: String(opts.creatorEmail || "").trim().toLowerCase(),
-    userEmail:
-      (opts.userEmail ?? null)?.toString().trim().toLowerCase() || null,
+    amountCents: typeof opts.amountCents === "number" ? opts.amountCents : null,
+    userEmail: (opts.userEmail ?? null)?.toString().trim().toLowerCase() || null,
     source: opts.source ?? "FEED",
     targetId: opts.targetId ?? null,
     postId: opts.postId ?? null,
