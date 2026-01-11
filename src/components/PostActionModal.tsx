@@ -20,8 +20,6 @@ export type PostActionModalProps = {
   // If provided, we will IGNORE preset.label for display and format from amountCents
   // to avoid rounding/duplicate-label bugs (e.g. $1.50 showing as $2).
   presets?: Preset[];
-
-  // If omitted, modal will default to the first preset for the given currency.
   defaultAmountCents?: number;
 
   confirmLabel?: string;
@@ -55,20 +53,21 @@ function normalizeCurrency(currency: unknown) {
   return cur || "AUD";
 }
 
-function currencyMinorUnit(cur: string): 0 | 2 {
-  return ZERO_DECIMAL_CURRENCIES.has(normalizeCurrency(cur)) ? 0 : 2;
+function currencyMinorUnit(currency: unknown): 0 | 2 {
+  const cur = normalizeCurrency(currency);
+  return ZERO_DECIMAL_CURRENCIES.has(cur) ? 0 : 2;
 }
 
 /**
  * Formats our internal "cents model" consistently.
  * - For 2-decimal currencies: amountCents/100 with 2 decimals
- * - For 0-decimal currencies: amountCents/100 with 0 decimals (we require divisibility elsewhere)
+ * - For 0-decimal currencies: amountCents/100 with 0 decimals
+ *
+ * Note: Our internal model always stores cents-like units (so even JPY amounts are stored * 100).
  */
-function formatCents(amountCents: number, currency: string) {
+function formatCents(amountCents: number, currency: unknown) {
   const cur = normalizeCurrency(currency);
   const mu = currencyMinorUnit(cur);
-
-  // internal cents-model always stores "cents", even for 0-decimal currencies
   const value = amountCents / 100;
 
   try {
@@ -89,7 +88,7 @@ function formatCents(amountCents: number, currency: string) {
  * - 2-decimal currencies: "7.50" -> 750
  * - 0-decimal currencies: "500" -> 50000 (so Stripe unit_amount becomes 500)
  */
-function parseCurrencyInputToCentsModel(input: string, currency: string): number | null {
+function parseCurrencyInputToCentsModel(input: string, currency: unknown): number | null {
   const cur = normalizeCurrency(currency);
   const mu = currencyMinorUnit(cur);
 
@@ -97,16 +96,15 @@ function parseCurrencyInputToCentsModel(input: string, currency: string): number
   if (!cleaned) return null;
 
   if (mu === 0) {
-    // allow only whole units (ignore decimals)
     const whole = cleaned.split(".")[0] ?? "";
     const n = Number(whole);
     if (!Number.isFinite(n) || n <= 0) return null;
-    return Math.round(n) * 100; // convert to cents-model
+    return Math.round(n) * 100;
   }
 
-  // 2-decimal: allow decimals; keep at most one dot
   const parts = cleaned.split(".");
-  const normalized = parts.length <= 1 ? cleaned : `${parts[0]}.${parts.slice(1).join("")}`;
+  const normalized =
+    parts.length <= 1 ? cleaned : `${parts[0]}.${parts.slice(1).join("")}`;
 
   const n = Number(normalized);
   if (!Number.isFinite(n) || n <= 0) return null;
@@ -114,9 +112,9 @@ function parseCurrencyInputToCentsModel(input: string, currency: string): number
   return Math.round(n * 100);
 }
 
-function dedupeByAmountCents<T extends { amountCents: number }>(list: T[]): T[] {
+function dedupeAmountCents(list: { amountCents: number }[]) {
   const seen = new Set<number>();
-  const out: T[] = [];
+  const out: typeof list = [];
   for (const p of list) {
     if (seen.has(p.amountCents)) continue;
     seen.add(p.amountCents);
@@ -125,14 +123,13 @@ function dedupeByAmountCents<T extends { amountCents: number }>(list: T[]): T[] 
   return out;
 }
 
-function defaultTipLikePresetCents(currency: string): number[] {
+function defaultTipLikePresets(currency: unknown): number[] {
   const cur = normalizeCurrency(currency).toLowerCase();
 
-  // amounts are in "cents model"
-  // USD/EUR/GBP: 1.50, 2, 5, 10
+  // USD/EUR/GBP: show 1.50, 2, 5, 10
   if (cur === "usd" || cur === "eur" || cur === "gbp") return [150, 200, 500, 1000];
 
-  // AUD/CAD/NZD default
+  // Everything else: keep sensible defaults (tune as you like)
   return [200, 500, 1000, 2000];
 }
 
@@ -153,23 +150,27 @@ export default function PostActionModal({
   currency = "aud",
 }: PostActionModalProps) {
   const currencyCode = useMemo(() => normalizeCurrency(currency), [currency]);
+  const minorUnit = useMemo(() => currencyMinorUnit(currencyCode), [currencyCode]);
 
-  // IMPORTANT:
-  // - If presets are provided by caller, we intentionally ignore preset.label and format from amountCents
-  //   so $1.50 never gets rendered as $2 due to rounding or mis-formatting upstream.
-  // - We also dedupe by amountCents to prevent duplicate "$2" style buttons.
+  // Build presets:
+  // - If caller provides presets, ignore label and format from amountCents
+  // - If none provided, use our defaults for this currency
+  // - Dedupe to prevent duplicate buttons
   const effectivePresets = useMemo(() => {
     const base = presets?.length
       ? presets.map((p) => ({ amountCents: p.amountCents }))
-      : defaultTipLikePresetCents(currencyCode).map((c) => ({ amountCents: c }));
+      : defaultTipLikePresets(currencyCode).map((c) => ({ amountCents: c }));
 
-    return dedupeByAmountCents(base).map((p) => ({
+    return dedupeAmountCents(base).map((p) => ({
       amountCents: p.amountCents,
       label: formatCents(p.amountCents, currencyCode),
     }));
   }, [presets, currencyCode]);
 
-  // If caller didn't specify a default amount, default to the first preset for the currency.
+  // Initial amount:
+  // - prefer defaultAmountCents if provided and > 0
+  // - else first preset
+  // - else 500
   const initialAmountCents = useMemo(() => {
     if (typeof defaultAmountCents === "number" && defaultAmountCents > 0) return defaultAmountCents;
     return effectivePresets[0]?.amountCents ?? 500;
@@ -185,7 +186,7 @@ export default function PostActionModal({
 
   const isBusy = Boolean(busy ?? localBusy);
 
-  // Reset state on open
+  // Reset on open
   useEffect(() => {
     if (!open) return;
     setErr(null);
@@ -194,7 +195,7 @@ export default function PostActionModal({
     setCustom("");
   }, [open, initialAmountCents]);
 
-  // If currency changes while open, keep numeric amount but clear custom input
+  // Clear custom if currency changes while open
   useEffect(() => {
     if (!open) return;
     setCustom("");
@@ -212,7 +213,7 @@ export default function PostActionModal({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  // Focus management on open
+  // Focus on open
   useEffect(() => {
     if (!open) return;
     const t = window.setTimeout(() => {
@@ -333,7 +334,7 @@ export default function PostActionModal({
                     ref={inputRef}
                     value={custom}
                     onChange={(e) => onCustomChange(e.target.value)}
-                    placeholder={currencyMinorUnit(currencyCode) === 0 ? "e.g. 500" : "e.g. 7.50"}
+                    placeholder={minorUnit === 0 ? "e.g. 500" : "e.g. 7.50"}
                     inputMode="decimal"
                     className="flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-white/15"
                   />
@@ -342,7 +343,8 @@ export default function PostActionModal({
 
               <div className="flex items-center justify-between pt-2">
                 <div className="text-xs text-white/50">
-                  Amount: <span className="text-white/80">{formatCents(amountCents, currencyCode)}</span>
+                  Amount:{" "}
+                  <span className="text-white/80">{formatCents(amountCents, currencyCode)}</span>
                 </div>
 
                 <button
