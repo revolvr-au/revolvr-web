@@ -20,6 +20,8 @@ export type PostActionModalProps = {
   // If provided, we will IGNORE preset.label for display and format from amountCents
   // to avoid rounding/duplicate-label bugs (e.g. $1.50 showing as $2).
   presets?: Preset[];
+
+  // If omitted, modal will default to the first preset for the given currency.
   defaultAmountCents?: number;
 
   confirmLabel?: string;
@@ -112,9 +114,9 @@ function parseCurrencyInputToCentsModel(input: string, currency: string): number
   return Math.round(n * 100);
 }
 
-function dedupeByAmountCents(list: { amountCents: number }[]) {
+function dedupeByAmountCents<T extends { amountCents: number }>(list: T[]): T[] {
   const seen = new Set<number>();
-  const out: typeof list = [];
+  const out: T[] = [];
   for (const p of list) {
     if (seen.has(p.amountCents)) continue;
     seen.add(p.amountCents);
@@ -123,14 +125,14 @@ function dedupeByAmountCents(list: { amountCents: number }[]) {
   return out;
 }
 
-function defaultTipLikePresets(currency: string): number[] {
+function defaultTipLikePresetCents(currency: string): number[] {
   const cur = normalizeCurrency(currency).toLowerCase();
 
-  // You can tune these per currency. The key thing is: amounts are in "cents model".
-  // USD/EUR/GBP: show 1.50, 2, 5, 10
+  // amounts are in "cents model"
+  // USD/EUR/GBP: 1.50, 2, 5, 10
   if (cur === "usd" || cur === "eur" || cur === "gbp") return [150, 200, 500, 1000];
 
-  // AUD/CAD/NZD: show 2, 5, 10, 20 (feel free to change)
+  // AUD/CAD/NZD default
   return [200, 500, 1000, 2000];
 }
 
@@ -143,7 +145,7 @@ export default function PostActionModal({
   isAuthed,
   loginHref = "/login",
   presets,
-  defaultAmountCents = 500,
+  defaultAmountCents,
   confirmLabel = "Confirm",
   onConfirm,
   busy,
@@ -159,17 +161,19 @@ export default function PostActionModal({
   const effectivePresets = useMemo(() => {
     const base = presets?.length
       ? presets.map((p) => ({ amountCents: p.amountCents }))
-      : defaultTipLikePresets(currencyCode).map((c) => ({ amountCents: c }));
-    const initialAmountCents = useMemo(() => {
-  if (typeof defaultAmountCents === "number" && defaultAmountCents > 0) return defaultAmountCents;
-  return effectivePresets[0]?.amountCents ?? 500;
-}, [defaultAmountCents, effectivePresets]);
+      : defaultTipLikePresetCents(currencyCode).map((c) => ({ amountCents: c }));
 
     return dedupeByAmountCents(base).map((p) => ({
       amountCents: p.amountCents,
       label: formatCents(p.amountCents, currencyCode),
     }));
   }, [presets, currencyCode]);
+
+  // If caller didn't specify a default amount, default to the first preset for the currency.
+  const initialAmountCents = useMemo(() => {
+    if (typeof defaultAmountCents === "number" && defaultAmountCents > 0) return defaultAmountCents;
+    return effectivePresets[0]?.amountCents ?? 500;
+  }, [defaultAmountCents, effectivePresets]);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -183,13 +187,12 @@ export default function PostActionModal({
 
   // Reset state on open
   useEffect(() => {
-  if (!open) return;
-  setErr(null);
-  setLocalBusy(false);
-  setAmountCents(initialAmountCents);
-  setCustom("");
-}, [open, initialAmountCents]);
-
+    if (!open) return;
+    setErr(null);
+    setLocalBusy(false);
+    setAmountCents(initialAmountCents);
+    setCustom("");
+  }, [open, initialAmountCents]);
 
   // If currency changes while open, keep numeric amount but clear custom input
   useEffect(() => {
@@ -304,7 +307,7 @@ export default function PostActionModal({
                   const selected = amountCents === p.amountCents && custom === "";
                   return (
                     <button
-                      key={`${p.amountCents}`}
+                      key={p.amountCents}
                       type="button"
                       onClick={() => {
                         setAmountCents(p.amountCents);
