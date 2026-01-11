@@ -407,10 +407,14 @@ export default function PublicFeedClient() {
   creatorEmail: string,
   amountCents: number
 ) {
+  if (!creatorEmail) {
+    throw new Error("Missing creator email");
+  }
+
   const { url } = await createCheckout({
     mode,
-    creatorEmail,          // ✅ POST AUTHOR EMAIL
-    userEmail: null,       // viewer (optional)
+    creatorEmail, // ✅ MUST be the post author's email
+    userEmail: null,
     targetId: postId,
     postId,
     source: "FEED",
@@ -420,6 +424,7 @@ export default function PublicFeedClient() {
 
   window.location.href = url;
 }
+
 
 
   return (
