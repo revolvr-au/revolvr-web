@@ -43,7 +43,6 @@ function normalizeVerifiedEmails(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v.map((x) => String(x).toLowerCase());
 }
-
 function normalizeCurrencyMap(v: unknown): Record<string, string> {
   if (!isRecord(v)) return {};
   const out: Record<string, string> = {};
@@ -152,8 +151,8 @@ function actionMeta(mode: ActionMode): ActionMeta {
         subtitle: "Support this creator",
         icon: "💰",
         allowCustom: true,
-        presetsCents: [200, 500, 1000, 2500],
-        defaultAmountCents: 500,
+        presetsCents: [150, 200, 500, 1000],
+        defaultAmountCents: 150,
         confirmLabel: "Tip",
       };
 
@@ -394,38 +393,29 @@ export default function PublicFeedClient() {
   }, [activeAction]);
 
   const activePresets: Preset[] = useMemo(() => {
-    if (!activeMeta) return [{ label: formatMoneyFromCents(100, activeCurrency), amountCents: 100 }];
+    if (!activeMeta) return [{ label: formatMoneyFromCents(150, activeCurrency), amountCents: 150 }];
     return activeMeta.presetsCents.map((c) => ({
       amountCents: c,
       label: formatMoneyFromCents(c, activeCurrency),
     }));
   }, [activeMeta, activeCurrency]);
 
-  async function beginCheckout(
-  mode: ActionMode,
-  postId: string,
-  creatorEmail: string,
-  amountCents: number
-) {
-  if (!creatorEmail) {
-    throw new Error("Missing creator email");
+  async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string, amountCents: number) {
+    if (!creatorEmail) throw new Error("Missing creator email");
+
+    const { url } = await createCheckout({
+      mode,
+      creatorEmail, // post author
+      userEmail: null, // wire auth later
+      targetId: postId,
+      postId,
+      source: "FEED",
+      returnPath: "/public-feed",
+      amountCents,
+    });
+
+    window.location.href = url;
   }
-
-  const { url } = await createCheckout({
-    mode,
-    creatorEmail, // ✅ MUST be the post author's email
-    userEmail: null,
-    targetId: postId,
-    postId,
-    source: "FEED",
-    returnPath: "/public-feed",
-    amountCents,
-  });
-
-  window.location.href = url;
-}
-
-
 
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
@@ -467,7 +457,6 @@ export default function PublicFeedClient() {
                   key={post.id}
                   className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
                 >
-                  {/* Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                     <div className="flex items-center gap-2">
                       <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -485,12 +474,14 @@ export default function PublicFeedClient() {
                       </div>
                     </div>
 
-                    <Link href={`/u/${encodeURIComponent(email)}`} className="text-xs text-white/60 hover:text-white underline">
+                    <Link
+                      href={`/u/${encodeURIComponent(email)}`}
+                      className="text-xs text-white/60 hover:text-white underline"
+                    >
                       View
                     </Link>
                   </div>
 
-                  {/* Media */}
                   <div className="relative w-full max-h-[520px]">
                     {showFallback ? (
                       <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
@@ -514,44 +505,26 @@ export default function PublicFeedClient() {
                     )}
                   </div>
 
-                  {/* Post footer actions */}
                   <div className="px-4 py-2 border-t border-white/10">
                     <div className="hidden sm:flex">
                       <div className="inline-flex items-center gap-10">
                         <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-                        <FooterAction
-                          label="Boost"
-                          icon="⚡"
-                          onClick={() => setActiveAction({ postId: post.id, mode: "boost" })}
-                        />
+                        <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
                         <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-                        <FooterAction
-                          label="React"
-                          icon="😊"
-                          onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })}
-                        />
+                        <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
                         <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
                       </div>
                     </div>
 
                     <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
                       <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-                      <FooterAction
-                        label="Boost"
-                        icon="⚡"
-                        onClick={() => setActiveAction({ postId: post.id, mode: "boost" })}
-                      />
+                      <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
                       <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-                      <FooterAction
-                        label="React"
-                        icon="😊"
-                        onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })}
-                      />
+                      <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
                       <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
                     </div>
                   </div>
 
-                  {/* Caption */}
                   {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
                 </article>
               );
@@ -559,7 +532,6 @@ export default function PublicFeedClient() {
           </div>
         )}
 
-        {/* One global modal inside FeedLayout */}
         <PostActionModal
           open={Boolean(activeAction && activePost && activeMeta)}
           onClose={() => setActiveAction(null)}
@@ -570,18 +542,12 @@ export default function PublicFeedClient() {
           loginHref="/login"
           allowCustom={activeMeta?.allowCustom ?? true}
           presets={activePresets}
-          defaultAmountCents={activeMeta?.defaultAmountCents ?? 100}
+          defaultAmountCents={activeMeta?.defaultAmountCents ?? 150}
           confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
           currency={activeCurrency}
           onConfirm={async (amountCents) => {
-            if (!activeAction || !activePost || !activeCreatorEmail) return;
-            await beginCheckout(
-  activeAction.mode,
-  activePost.id,
-  activePost.userEmail, // ✅ creator
-  amountCents
-);
-
+            if (!activeAction || !activePost) return;
+            await beginCheckout(activeAction.mode, activePost.id, activePost.userEmail, amountCents);
           }}
         />
       </div>
