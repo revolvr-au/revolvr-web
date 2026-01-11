@@ -31,14 +31,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ verified: [], currencies: {} }, { status: 200 });
     }
 
-    const rows = await prisma.creatorProfile.findMany({
-      where: { email: { in: emails } },
-      select: {
-        email: true,
-        isVerified: true,
-        payoutCurrency: true,
-      },
-    });
+      const rows = await prisma.creatorProfile.findMany({
+  where: {
+    OR: emails.map((e) => ({ email: { equals: e, mode: "insensitive" as const } })),
+  },
+  select: {
+    email: true,
+    isVerified: true,
+    payoutCurrency: true,
+  },
+});
+
 
     const verified = rows
       .filter((r) => Boolean(r.isVerified))
