@@ -100,11 +100,24 @@ function toStripeUnitAmount(amountCents: number, currency: string): number | nul
 function modeDefaults(mode: CheckoutMode, currency: string) {
   const cur = String(currency || "aud").trim().toLowerCase();
 
+  // Helper: simple currency-based pricing in "cents model"
+  // Adjust these numbers to whatever you want.
+  const packPrices = {
+    usd: { tipPack: 1500, boostPack: 3500, spinPack: 1500 }, // $15 / $35 / $15
+    gbp: { tipPack: 1200, boostPack: 3000, spinPack: 1200 }, // £12 / £30 / £12
+    eur: { tipPack: 1400, boostPack: 3200, spinPack: 1400 }, // €14 / €32 / €14
+    cad: { tipPack: 1800, boostPack: 4200, spinPack: 1800 },
+    nzd: { tipPack: 2000, boostPack: 4500, spinPack: 2000 },
+    aud: { tipPack: 2000, boostPack: 5000, spinPack: 2000 }, // A$20 / A$50 / A$20
+  } as const;
+
+  const p = (packPrices as any)[cur] ?? packPrices.aud;
+
   switch (mode) {
     case "tip":
       return {
         name: "Creator tip",
-        // USD default = $1.50, AUD default = $2.00
+        // USD default = $1.50, AUD default = $2.00 (as you already intended)
         defaultCents: cur === "usd" ? 150 : 200,
         min: 100,
         max: 200_000,
@@ -122,16 +135,18 @@ function modeDefaults(mode: CheckoutMode, currency: string) {
     case "vote":
       return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
 
+    // Packs fixed per currency
     case "tip-pack":
-      return { name: "Tip pack (10× tips)", defaultCents: 2000, min: 2000, max: 2000 };
+      return { name: "Tip pack (10× tips)", defaultCents: p.tipPack, min: p.tipPack, max: p.tipPack };
 
     case "boost-pack":
-      return { name: "Boost pack (10× boosts)", defaultCents: 5000, min: 5000, max: 5000 };
+      return { name: "Boost pack (10× boosts)", defaultCents: p.boostPack, min: p.boostPack, max: p.boostPack };
 
     case "spin-pack":
-      return { name: "Spin pack (20× spins)", defaultCents: 2000, min: 2000, max: 2000 };
+      return { name: "Spin pack (20× spins)", defaultCents: p.spinPack, min: p.spinPack, max: p.spinPack };
   }
 }
+
 export async function POST(req: NextRequest) {
   try {
     const debug = req.nextUrl.searchParams.get("debug") === "1";
