@@ -1,3 +1,4 @@
+// app_old/dashboard/page.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -16,8 +17,11 @@ export default function DashboardPage() {
         },
         body: JSON.stringify({
           mode: "tip",
+          creatorEmail: "revolvr.au@gmail.com", // ✅ required for DB currency lookup
           userEmail: "revolvr.au@gmail.com",
-          amountCents: 200, // $2 AUD
+          amountCents: 200,
+          source: "FEED",
+          returnPath: "/public-feed",
         }),
       });
 
@@ -28,10 +32,10 @@ export default function DashboardPage() {
         return;
       }
 
-      const data = await res.json();
+      const data = (await res.json().catch(() => null)) as { url?: string };
       console.log("Checkout response:", data);
 
-      if (data.url) {
+      if (data?.url) {
         setStatus("Redirecting to Stripe Checkout…");
         window.location.href = data.url;
       } else {

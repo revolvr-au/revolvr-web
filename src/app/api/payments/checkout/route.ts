@@ -1,6 +1,7 @@
 // src/app/api/payments/checkout/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,8 +11,7 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"
@@ -27,12 +27,19 @@ type SupportSource = "FEED" | "LIVE";
 
 type Body = {
   mode: CheckoutMode;
-  creatorEmail: string; // required for attribution
+  creatorEmail?: string | null;
   userEmail?: string | null;
+
   postId?: string | null; // legacy
   source?: SupportSource | string | null;
   targetId?: string | null;
   returnPath?: string | null;
+
+  // cents chosen in modal
+  amountCents?: number | string | null;
+
+  // optional legacy/client override (ignored for safety)
+  currency?: string | null;
 };
 
 function toKind(mode: string) {
@@ -48,75 +55,120 @@ function toSource(src: unknown): SupportSource {
   return s === "LIVE" ? "LIVE" : "FEED";
 }
 
+function parseAmountCents(v: unknown): number | null {
+  if (v == null) return null;
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  if (!Number.isFinite(n)) return null;
+  const cents = Math.round(n);
+  if (cents <= 0) return null;
+  return cents;
+}
+
+function clamp(n: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, n));
+}
+
+const ALLOWED_CURRENCIES = new Set(["aud", "usd", "gbp", "eur", "cad", "nzd"]);
+
+function normalizeCurrency(cur: unknown): string {
+  const c = String(cur ?? "aud").trim().toLowerCase();
+  return ALLOWED_CURRENCIES.has(c) ? c : "aud";
+}
+
+function modeDefaults(mode: CheckoutMode) {
+  switch (mode) {
+    case "tip":
+      return { name: "Creator tip", defaultCents: 200, min: 100, max: 200_000 };
+    case "boost":
+      return { name: "Post boost", defaultCents: 500, min: 100, max: 200_000 };
+    case "spin":
+      return { name: "Revolvr spinner spin", defaultCents: 100, min: 100, max: 200_000 };
+    case "reaction":
+      return { name: "Reaction", defaultCents: 100, min: 100, max: 200_000 };
+    case "vote":
+      return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
+
+    // Packs fixed for now
+    case "tip-pack":
+      return { name: "Tip pack (10× tips)", defaultCents: 2000, min: 2000, max: 2000 };
+    case "boost-pack":
+      return { name: "Boost pack (10× boosts)", defaultCents: 5000, min: 5000, max: 5000 };
+    case "spin-pack":
+      return { name: "Spin pack (20× spins)", defaultCents: 2000, min: 2000, max: 2000 };
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const debug = req.nextUrl.searchParams.get("debug") === "1";
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 
     const mode = body.mode;
+    if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
+
+    // IMPORTANT:
+    // - creatorEmail should come from body.creatorEmail (primary) OR body.userEmail (legacy callers / debug page)
+    // - userEmail is the *viewer* email (optional)
     const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "")
       .trim()
       .toLowerCase();
 
+    if (!creatorEmail) {
+      return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
+    }
+
     const userEmail =
-      typeof body.userEmail === "string"
-        ? body.userEmail.trim().toLowerCase()
-        : null;
+      typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : null;
 
     const postId = body.postId ?? null;
-
     const source = toSource(body.source);
     const targetId = (body.targetId ?? postId ?? null) as string | null;
 
-    if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
-    if (!creatorEmail) return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
+    const def = modeDefaults(mode);
+    if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
 
-    let name = "";
-    let amountCents = 0;
+    // Case-insensitive creator lookup (prevents accidental AUD fallback due to email casing)
+    const creator = await prisma.creatorProfile.findFirst({
+      where: { email: { equals: creatorEmail, mode: "insensitive" } },
+      select: { email: true, payoutCurrency: true },
+    });
 
-    switch (mode) {
-      case "tip":
-        name = "Creator tip";
-        amountCents = 200;
-        break;
-      case "boost":
-        name = "Post boost";
-        amountCents = 500;
-        break;
-      case "spin":
-        name = "Revolvr spinner spin";
-        amountCents = 100;
-        break;
-
-      case "tip-pack":
-        name = "Tip pack (10× A$2 tips)";
-        amountCents = 2000;
-        break;
-      case "boost-pack":
-        name = "Boost pack (10× A$5 boosts)";
-        amountCents = 5000;
-        break;
-      case "spin-pack":
-        name = "Spin pack (20× A$1 spins)";
-        amountCents = 2000;
-        break;
-
-      case "reaction":
-        name = "Reaction";
-        amountCents = 100;
-        break;
-      case "vote":
-        name = "Vote";
-        amountCents = 100;
-        break;
-
-      default:
-        return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
+    if (!creator) {
+      console.warn("[checkout] creator not found:", creatorEmail);
+      return NextResponse.json(
+        { error: "Creator not found", creatorEmail },
+        { status: 404 }
+      );
     }
 
+    const currency = normalizeCurrency(creator.payoutCurrency ?? "aud");
+
+    const isPack = String(mode).endsWith("-pack");
+    const requested = parseAmountCents(body.amountCents);
+
+    const amountCents = isPack
+      ? def.defaultCents
+      : clamp(requested ?? def.defaultCents, def.min, def.max);
+
     const safeReturnPath =
-      body.returnPath && body.returnPath.startsWith("/")
-        ? body.returnPath
-        : "/public-feed";
+      body.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
+
+    if (debug) {
+      return NextResponse.json(
+        {
+          ok: true,
+          mode,
+          creatorEmailInput: creatorEmail,
+          creatorEmailDb: creator.email?.toLowerCase?.() ?? String(creator.email),
+          payoutCurrencyRaw: creator.payoutCurrency ?? null,
+          currency,
+          amountCents,
+          isPack,
+          safeReturnPath,
+        },
+        { status: 200 }
+      );
+    }
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");
@@ -145,9 +197,9 @@ export async function POST(req: NextRequest) {
       line_items: [
         {
           price_data: {
-            currency: "aud",
+            currency,
             unit_amount: amountCents,
-            product_data: { name },
+            product_data: { name: def.name },
           },
           quantity: 1,
         },
@@ -160,11 +212,8 @@ export async function POST(req: NextRequest) {
         source,
         target_id: targetId ?? "",
         viewer_email: userEmail ?? "",
-
-        // legacy
-        creatorEmail,
-        userEmail: userEmail ?? "",
-        postId: postId ?? "",
+        amount_cents: String(amountCents),
+        currency,
         mode,
       },
     });

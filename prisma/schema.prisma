@@ -218,4 +218,15 @@ model StripeCheckoutReceipt {
   @@map("stripe_checkout_receipts")
   @@schema("public")
 }
+model Tip {
+  id          String   @id @default(cuid())
+  postId      String
+  fromUserId  String
+  toUserId    String
+  amountCents Int
+  createdAt   DateTime @default(now())
 
+  @@index([postId])
+  @@index([toUserId])
+  @@schema("public") // <-- match whatever schema your other models use
+}

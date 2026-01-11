@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const DEFAULT_CURRENCY = "aud";
+
+function normCurrency(v: unknown) {
+  const c = String(v ?? DEFAULT_CURRENCY).trim().toLowerCase();
+  return c || DEFAULT_CURRENCY;
+}
+
 /**
  * GET /api/creator/verified?emails=a@b.com,c@d.com
- * Returns: { verified: ["a@b.com"] }
+ * Returns:
+ * {
+ *   verified: ["a@b.com"],
+ *   currencies: { "a@b.com": "aud", "c@d.com": "usd" }
+ * }
  */
 export async function GET(req: Request) {
   try {
@@ -14,18 +25,18 @@ export async function GET(req: Request) {
       .split(",")
       .map((s) => s.trim().toLowerCase())
       .filter(Boolean)
-      .slice(0, 200); // safety cap
+      .slice(0, 200);
 
     if (emails.length === 0) {
-      return NextResponse.json({ verified: [] }, { status: 200 });
+      return NextResponse.json({ verified: [], currencies: {} }, { status: 200 });
     }
 
     const rows = await prisma.creatorProfile.findMany({
       where: { email: { in: emails } },
       select: {
         email: true,
-        // these columns exist in your DB screenshots:
         isVerified: true,
+        payoutCurrency: true,
       },
     });
 
@@ -33,9 +44,18 @@ export async function GET(req: Request) {
       .filter((r) => Boolean(r.isVerified))
       .map((r) => String(r.email).toLowerCase());
 
-    return NextResponse.json({ verified }, { status: 200 });
+    const currencies: Record<string, string> = {};
+    for (const r of rows) {
+      const e = String(r.email).toLowerCase();
+      currencies[e] = normCurrency(r.payoutCurrency);
+    }
+
+    return NextResponse.json({ verified, currencies }, { status: 200 });
   } catch (e) {
     console.error("[api/creator/verified] error", e);
-    return NextResponse.json({ verified: [], error: "Server error" }, { status: 500 });
+    return NextResponse.json(
+      { verified: [], currencies: {}, error: "Server error" },
+      { status: 500 }
+    );
   }
 }
