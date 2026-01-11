@@ -74,30 +74,64 @@ function normalizeCurrency(cur: unknown): string {
   const c = String(cur ?? "aud").trim().toLowerCase();
   return ALLOWED_CURRENCIES.has(c) ? c : "aud";
 }
+const ZERO_DECIMAL_CURRENCIES = new Set([
+  "jpy", "krw", "vnd", "clp", "pyg", "rwf", "ugx", "xaf", "xof", "xpf",
+]);
 
-function modeDefaults(mode: CheckoutMode) {
+function currencyMinorUnit(cur: string): 0 | 2 {
+  return ZERO_DECIMAL_CURRENCIES.has(cur) ? 0 : 2;
+}
+
+/**
+ * Convert "cents model" to Stripe's unit_amount:
+ * - For 2-decimal currencies: cents 그대로
+ * - For 0-decimal currencies: cents must be divisible by 100; unit_amount is cents/100
+ */
+function toStripeUnitAmount(amountCents: number, currency: string): number | null {
+  const mu = currencyMinorUnit(currency);
+  if (mu === 2) return amountCents;
+
+  // 0-decimal: require whole units (cents divisible by 100)
+  if (amountCents % 100 !== 0) return null;
+  return Math.round(amountCents / 100);
+}
+
+
+function modeDefaults(mode: CheckoutMode, currency: string) {
+  const cur = String(currency || "aud").trim().toLowerCase();
+
   switch (mode) {
     case "tip":
-      return { name: "Creator tip", defaultCents: 200, min: 100, max: 200_000 };
+      return {
+        name: "Creator tip",
+        // USD default = $1.50, AUD default = $2.00
+        defaultCents: cur === "usd" ? 150 : 200,
+        min: 100,
+        max: 200_000,
+      };
+
     case "boost":
       return { name: "Post boost", defaultCents: 500, min: 100, max: 200_000 };
+
     case "spin":
       return { name: "Revolvr spinner spin", defaultCents: 100, min: 100, max: 200_000 };
+
     case "reaction":
       return { name: "Reaction", defaultCents: 100, min: 100, max: 200_000 };
+
     case "vote":
       return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
 
-    // Packs fixed for now
     case "tip-pack":
       return { name: "Tip pack (10× tips)", defaultCents: 2000, min: 2000, max: 2000 };
+
     case "boost-pack":
       return { name: "Boost pack (10× boosts)", defaultCents: 5000, min: 5000, max: 5000 };
+
     case "spin-pack":
       return { name: "Spin pack (20× spins)", defaultCents: 2000, min: 2000, max: 2000 };
   }
 }
-
 export async function POST(req: NextRequest) {
   try {
     const debug = req.nextUrl.searchParams.get("debug") === "1";
@@ -106,9 +140,7 @@ export async function POST(req: NextRequest) {
     const mode = body.mode;
     if (!mode) return NextResponse.json({ error: "Missing mode" }, { status: 400 });
 
-    // IMPORTANT:
-    // - creatorEmail should come from body.creatorEmail (primary) OR body.userEmail (legacy callers / debug page)
-    // - userEmail is the *viewer* email (optional)
+    // creatorEmail is the post author (primary) or legacy callers fallback
     const creatorEmail = String(body.creatorEmail ?? body.userEmail ?? "")
       .trim()
       .toLowerCase();
@@ -117,6 +149,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing creatorEmail" }, { status: 400 });
     }
 
+    // viewer email (optional)
     const userEmail =
       typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : null;
 
@@ -124,51 +157,68 @@ export async function POST(req: NextRequest) {
     const source = toSource(body.source);
     const targetId = (body.targetId ?? postId ?? null) as string | null;
 
-    const def = modeDefaults(mode);
-    if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
+    // 1) Look up creator (case-insensitive) and get payout currency
+    // 1) lookup creator
+const creator = await prisma.creatorProfile.findFirst({
+  where: { email: { equals: creatorEmail, mode: "insensitive" } },
+  select: { email: true, payoutCurrency: true },
+});
 
-    // Case-insensitive creator lookup (prevents accidental AUD fallback due to email casing)
-    const creator = await prisma.creatorProfile.findFirst({
-      where: { email: { equals: creatorEmail, mode: "insensitive" } },
-      select: { email: true, payoutCurrency: true },
-    });
+if (!creator) {
+  return NextResponse.json({ error: "Creator not found", creatorEmail }, { status: 404 });
+}
 
-    if (!creator) {
-      console.warn("[checkout] creator not found:", creatorEmail);
+// 2) normalize currency
+const currency = normalizeCurrency(creator.payoutCurrency ?? "aud");
+
+// 3) NOW compute defaults
+const def = modeDefaults(mode, currency);
+if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
+
+// 4) compute final amount
+const isPack = String(mode).endsWith("-pack");
+const requested = parseAmountCents(body.amountCents);
+
+const amountCents = isPack
+  ? def.defaultCents
+  : clamp(requested ?? def.defaultCents, def.min, def.max);
+
+
+    // 4) Convert internal "cents model" to Stripe unit_amount (handles 0-decimal)
+    const unitAmount = toStripeUnitAmount(amountCents, currency);
+    if (unitAmount == null) {
       return NextResponse.json(
-        { error: "Creator not found", creatorEmail },
-        { status: 404 }
+        { error: `Invalid amount for currency ${currency}` },
+        { status: 400 }
       );
     }
-
-    const currency = normalizeCurrency(creator.payoutCurrency ?? "aud");
-
-    const isPack = String(mode).endsWith("-pack");
-    const requested = parseAmountCents(body.amountCents);
-
-    const amountCents = isPack
-      ? def.defaultCents
-      : clamp(requested ?? def.defaultCents, def.min, def.max);
 
     const safeReturnPath =
       body.returnPath && body.returnPath.startsWith("/") ? body.returnPath : "/public-feed";
 
+    // DEBUG: return computed values without creating a Stripe session
     if (debug) {
-      return NextResponse.json(
-        {
-          ok: true,
-          mode,
-          creatorEmailInput: creatorEmail,
-          creatorEmailDb: creator.email?.toLowerCase?.() ?? String(creator.email),
-          payoutCurrencyRaw: creator.payoutCurrency ?? null,
-          currency,
-          amountCents,
-          isPack,
-          safeReturnPath,
-        },
-        { status: 200 }
-      );
-    }
+  return NextResponse.json(
+    {
+      ok: true,
+      commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      env: process.env.VERCEL_ENV ?? null,
+
+      mode,
+      creatorEmailInput: creatorEmail,
+      creatorEmailDb: String(creator.email ?? "").toLowerCase(),
+      payoutCurrencyRaw: creator.payoutCurrency ?? null,
+      currency,
+      minorUnit: currencyMinorUnit(currency),
+      amountCents,
+      unitAmount,
+      isPack,
+      safeReturnPath,
+    },
+    { status: 200 }
+  );
+}
+
 
     const successParams = new URLSearchParams();
     successParams.set("success", "1");
@@ -198,7 +248,7 @@ export async function POST(req: NextRequest) {
         {
           price_data: {
             currency,
-            unit_amount: amountCents,
+            unit_amount: unitAmount,
             product_data: { name: def.name },
           },
           quantity: 1,
@@ -213,6 +263,7 @@ export async function POST(req: NextRequest) {
         target_id: targetId ?? "",
         viewer_email: userEmail ?? "",
         amount_cents: String(amountCents),
+        unit_amount: String(unitAmount),
         currency,
         mode,
       },
