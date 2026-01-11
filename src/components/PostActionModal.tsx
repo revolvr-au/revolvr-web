@@ -160,6 +160,10 @@ export default function PostActionModal({
     const base = presets?.length
       ? presets.map((p) => ({ amountCents: p.amountCents }))
       : defaultTipLikePresets(currencyCode).map((c) => ({ amountCents: c }));
+    const initialAmountCents = useMemo(() => {
+  if (typeof defaultAmountCents === "number" && defaultAmountCents > 0) return defaultAmountCents;
+  return effectivePresets[0]?.amountCents ?? 500;
+}, [defaultAmountCents, effectivePresets]);
 
     return dedupeByAmountCents(base).map((p) => ({
       amountCents: p.amountCents,
@@ -170,7 +174,7 @@ export default function PostActionModal({
   const panelRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const [amountCents, setAmountCents] = useState<number>(defaultAmountCents);
+  const [amountCents, setAmountCents] = useState<number>(initialAmountCents);
   const [custom, setCustom] = useState<string>("");
   const [localBusy, setLocalBusy] = useState<boolean>(false);
   const [err, setErr] = useState<string | null>(null);
@@ -179,12 +183,13 @@ export default function PostActionModal({
 
   // Reset state on open
   useEffect(() => {
-    if (!open) return;
-    setErr(null);
-    setLocalBusy(false);
-    setAmountCents(defaultAmountCents);
-    setCustom("");
-  }, [open, defaultAmountCents]);
+  if (!open) return;
+  setErr(null);
+  setLocalBusy(false);
+  setAmountCents(initialAmountCents);
+  setCustom("");
+}, [open, initialAmountCents]);
+
 
   // If currency changes while open, keep numeric amount but clear custom input
   useEffect(() => {
