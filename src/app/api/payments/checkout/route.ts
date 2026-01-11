@@ -98,54 +98,64 @@ function toStripeUnitAmount(amountCents: number, currency: string): number | nul
 
 
 function modeDefaults(mode: CheckoutMode, currency: string) {
-  const cur = String(currency || "aud").trim().toLowerCase();
+  const cur = String(currency || "usd").trim().toLowerCase();
 
-  // Helper: simple currency-based pricing in "cents model"
-  // Adjust these numbers to whatever you want.
-  const packPrices = {
-    usd: { tipPack: 1500, boostPack: 3500, spinPack: 1500 }, // $15 / $35 / $15
-    gbp: { tipPack: 1200, boostPack: 3000, spinPack: 1200 }, // £12 / £30 / £12
-    eur: { tipPack: 1400, boostPack: 3200, spinPack: 1400 }, // €14 / €32 / €14
-    cad: { tipPack: 1800, boostPack: 4200, spinPack: 1800 },
-    nzd: { tipPack: 2000, boostPack: 4500, spinPack: 2000 },
-    aud: { tipPack: 2000, boostPack: 5000, spinPack: 2000 }, // A$20 / A$50 / A$20
-  } as const;
+  // Unit prices (in your internal "cents model" for 2-decimal currencies)
+  // You can tune these later; these are the source of truth.
+  const tipUnit = cur === "usd" ? 150 : 200; // USD $1.50, else 2.00
+  const boostUnit = 500; // 5.00
+  const spinUnit = 100; // 1.00
+  const reactionUnit = 100; // 1.00
+  const voteUnit = 100; // 1.00
 
-  const p = (packPrices as any)[cur] ?? packPrices.aud;
+  // Pack quantities (no discounts)
+  const TIP_PACK_QTY = 10;
+  const BOOST_PACK_QTY = 10;
+  const SPIN_PACK_QTY = 20;
 
   switch (mode) {
     case "tip":
-      return {
-        name: "Creator tip",
-        // USD default = $1.50, AUD default = $2.00 (as you already intended)
-        defaultCents: cur === "usd" ? 150 : 200,
-        min: 100,
-        max: 200_000,
-      };
+      return { name: "Creator tip", defaultCents: tipUnit, min: 100, max: 200_000 };
 
     case "boost":
-      return { name: "Post boost", defaultCents: 500, min: 100, max: 200_000 };
+      return { name: "Post boost", defaultCents: boostUnit, min: 100, max: 200_000 };
 
     case "spin":
-      return { name: "Revolvr spinner spin", defaultCents: 100, min: 100, max: 200_000 };
+      return { name: "Revolvr spinner spin", defaultCents: spinUnit, min: 100, max: 200_000 };
 
     case "reaction":
-      return { name: "Reaction", defaultCents: 100, min: 100, max: 200_000 };
+      return { name: "Reaction", defaultCents: reactionUnit, min: 100, max: 200_000 };
 
     case "vote":
-      return { name: "Vote", defaultCents: 100, min: 100, max: 200_000 };
+      return { name: "Vote", defaultCents: voteUnit, min: 100, max: 200_000 };
 
-    // Packs fixed per currency
+    // Packs = N × unit price (Option A). Custom amount is ignored.
     case "tip-pack":
-      return { name: "Tip pack (10× tips)", defaultCents: p.tipPack, min: p.tipPack, max: p.tipPack };
+      return {
+        name: `Tip pack (${TIP_PACK_QTY}× tips)`,
+        defaultCents: tipUnit * TIP_PACK_QTY,
+        min: tipUnit * TIP_PACK_QTY,
+        max: tipUnit * TIP_PACK_QTY,
+      };
 
     case "boost-pack":
-      return { name: "Boost pack (10× boosts)", defaultCents: p.boostPack, min: p.boostPack, max: p.boostPack };
+      return {
+        name: `Boost pack (${BOOST_PACK_QTY}× boosts)`,
+        defaultCents: boostUnit * BOOST_PACK_QTY,
+        min: boostUnit * BOOST_PACK_QTY,
+        max: boostUnit * BOOST_PACK_QTY,
+      };
 
     case "spin-pack":
-      return { name: "Spin pack (20× spins)", defaultCents: p.spinPack, min: p.spinPack, max: p.spinPack };
+      return {
+        name: `Spin pack (${SPIN_PACK_QTY}× spins)`,
+        defaultCents: spinUnit * SPIN_PACK_QTY,
+        min: spinUnit * SPIN_PACK_QTY,
+        max: spinUnit * SPIN_PACK_QTY,
+      };
   }
 }
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -190,13 +200,17 @@ const currency = normalizeCurrency(creator.payoutCurrency ?? "aud");
 const def = modeDefaults(mode, currency);
 if (!def) return NextResponse.json({ error: "Unknown mode" }, { status: 400 });
 
-// 4) compute final amount
 const isPack = String(mode).endsWith("-pack");
+
 const requested = parseAmountCents(body.amountCents);
 
+// Option A:
+// - packs ALWAYS use their fixed computed price (N × unit)
+// - non-packs can use custom amount (clamped)
 const amountCents = isPack
   ? def.defaultCents
   : clamp(requested ?? def.defaultCents, def.min, def.max);
+
 
 
     // 4) Convert internal "cents model" to Stripe unit_amount (handles 0-decimal)
