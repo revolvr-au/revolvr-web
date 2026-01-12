@@ -79,7 +79,7 @@ export function FloatingLiveButton() {
     <button
       onClick={handleClick}
       className="
-        fixed bottom-6 right-6 z-40
+        fixed right-6 z-40 bottom-[calc(1.5rem+56px+env(safe-area-inset-bottom))]
         rounded-full px-6 py-3
         bg-[#ff0055] text-white text-sm font-semibold
         shadow-[0_0_30px_rgba(255,0,85,0.55)]
