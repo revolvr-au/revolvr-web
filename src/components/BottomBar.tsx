@@ -26,7 +26,6 @@ export type BottomBarProps = {
 
 // IMPORTANT: set this to your actual built profile route if it's not /profile
 const PROFILE_ROUTE = "/creator";
-const PROFILE_ROUTE = "/creator";
 
 const defaultTabs: BottomBarTab[] = [
   {
