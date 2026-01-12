@@ -148,7 +148,7 @@ export default function DashboardClient() {
     if (!ready) return;
     if (!userEmail) {
       // If you want redirect back on, uncomment:
-      // router.replace("/login?redirectTo=/creator/onboard");
+      // router.replace("/login?redirectTo=/creator");
     }
   }, [ready, userEmail, router]);
 
@@ -292,7 +292,7 @@ export default function DashboardClient() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace("/public-feed");
+    router.replace("/creator");
   };
 
   // Stripe Connect onboarding (payouts)
@@ -541,7 +541,7 @@ export default function DashboardClient() {
       <div className="min-h-screen bg-[#050816] text-white p-8">
         <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
         <p className="mt-2 text-white/70">Not signed in.</p>
-        <a className="underline text-white/80" href="/login?redirectTo=/creator/onboard">
+        <a className="underline text-white/80" href="/login?redirectTo=/creator">
           Go to login
         </a>
       </div>

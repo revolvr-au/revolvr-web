@@ -29,7 +29,7 @@ export default function CreatePage() {
     try {
       // v1 stub: wire this to /api/posts when ready.
       await new Promise((r) => setTimeout(r, 300));
-      router.push("/public-feed");
+      router.push("/creator");
     } finally {
       setIsPosting(false);
     }
@@ -50,7 +50,7 @@ export default function CreatePage() {
 
         <button
           type="button"
-          onClick={() => router.push("/public-feed")}
+          onClick={() => router.push("/creator")}
           className="text-white/80 hover:text-white"
         >
           Cancel

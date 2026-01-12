@@ -61,7 +61,7 @@ export function FloatingLiveButton() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/login?redirectTo=/creator/onboard");
+      router.push("/login?redirectTo=/creator");
       return;
     }
 

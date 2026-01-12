@@ -71,7 +71,7 @@ export default function DashboardClient() {
   useEffect(() => {
     if (!ready) return;
     if (!userEmail) {
-      router.replace("/login?redirectTo=/creator/onboard");
+      router.replace("/login?redirectTo=/creator");
     }
   }, [ready, userEmail, router]);
 
@@ -153,7 +153,7 @@ export default function DashboardClient() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace("/public-feed");
+    router.replace("/creator");
   };
 
   // Stripe Connect button behaviour (frontend)
