@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
+import { supabase } from "@/lib/supabaseClients";
 
 /**
  * Keep this in sync with the layout padding-bottom so content never hides behind the bar.
@@ -24,9 +25,6 @@ export type BottomBarProps = {
   safeArea?: boolean;
 };
 
-// IMPORTANT: set this to your actual built profile route if it's not /profile
-const PROFILE_ROUTE = "/creator";
-
 const defaultTabs: BottomBarTab[] = [
   {
     key: "feed",
@@ -37,15 +35,16 @@ const defaultTabs: BottomBarTab[] = [
   {
     key: "create",
     label: "+",
-    // We'll route client-side without a full reload
     onClick: () => {},
-    matchPrefix: "/create",
+    // until /create exists, treat creator routes as the "create area"
+    matchPrefix: "/creator",
   },
   {
     key: "command",
     label: "Command",
-    href: PROFILE_ROUTE,
-    matchPrefix: PROFILE_ROUTE,
+    onClick: () => {},
+    // public profile route
+    matchPrefix: "/u",
   },
 ];
 
@@ -104,7 +103,6 @@ function Icon({
         </svg>
       );
     case "command":
-      // "Command" icon: simple dial/gear-ish mark (neutral, not "profile")
       return (
         <svg {...common}>
           <path
@@ -139,18 +137,42 @@ export default function BottomBar({
 
   if (hidden) return null;
 
-  // Wire the create action client-side
   const resolvedTabs = React.useMemo(() => {
     return tabs.map((t) => {
-      if (t.key !== "create") return t;
-      return {
-        ...t,
-        onClick:
-          t.onClick ??
-          (() => {
-            router.push("/create");
-          }),
-      };
+      if (t.key === "create") {
+        return {
+          ...t,
+          onClick:
+            t.onClick ??
+            (() => {
+              // until /create exists, this is the best "create" entry point you have
+              router.push("/creator");
+            }),
+        };
+      }
+
+      if (t.key === "command") {
+        return {
+          ...t,
+          onClick:
+            t.onClick ??
+            (async () => {
+              const {
+                data: { user },
+              } = await supabase.auth.getUser();
+
+              if (!user?.email) {
+                // force login first; user can then tap Command again
+                router.push("/login?redirectTo=/public-feed");
+                return;
+              }
+
+              router.push(`/u/${encodeURIComponent(user.email)}`);
+            }),
+        };
+      }
+
+      return t;
     });
   }, [tabs, router]);
 
@@ -178,7 +200,14 @@ export default function BottomBar({
             "focus:outline-none focus:ring-2 focus:ring-white/20",
           ].join(" ");
 
-          // Create (action tab)
+          const iconName =
+            tab.key === "feed"
+              ? "feed"
+              : tab.key === "create"
+                ? "create"
+                : "command";
+
+          // Action tabs: + and Command
           if (!tab.href && tab.onClick) {
             return (
               <button
@@ -188,13 +217,13 @@ export default function BottomBar({
                 className={baseClasses}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon name="create" active={active} />
+                <Icon name={iconName} active={active} />
                 <span className="text-[11px] leading-none">{tab.label}</span>
               </button>
             );
           }
 
-          // Normal link tab
+          // Link tabs: Feed
           return (
             <Link
               key={tab.key}
@@ -202,16 +231,7 @@ export default function BottomBar({
               className={baseClasses}
               aria-current={active ? "page" : undefined}
             >
-              <Icon
-                name={
-                  tab.key === "feed"
-                    ? "feed"
-                    : tab.key === "command"
-                      ? "command"
-                      : "feed"
-                }
-                active={active}
-              />
+              <Icon name={iconName} active={active} />
               <span className="text-[11px] leading-none">{tab.label}</span>
             </Link>
           );
