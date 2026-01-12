@@ -57,6 +57,13 @@ export async function POST(req: Request) {
       apiVersion: "2025-01-27.acacia" as Stripe.LatestApiVersion,
     });
 
+
+    // Enforce: verification is MONTHLY SUBSCRIPTION ONLY (no one-time, no lifetime, no yearly)
+    const price = await stripe.prices.retrieve(priceId);
+    if (price.type !== "recurring" || !price.recurring || price.recurring.interval !== "month") {
+      return jsonError("verification is monthly subscription only", 400);
+    }
+
     const profile = await prisma.creatorProfile.upsert({
       where: { email },
       update: {},
