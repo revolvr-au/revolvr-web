@@ -34,16 +34,12 @@ const defaultTabs: BottomBarTab[] = [
   },
   {
     key: "create",
-    label: "+",
-    onClick: () => {},
-    // until /create exists, treat creator routes as the "create area"
+    label: "+",// until /create exists, treat creator routes as the "create area"
     matchPrefix: "/creator",
   },
   {
     key: "command",
-    label: "Command",
-    onClick: () => {},
-    // public profile route
+    label: "Command",// public profile route
     matchPrefix: "/u",
   },
 ];
@@ -163,7 +159,7 @@ export default function BottomBar({
 
               if (!user?.email) {
                 // force login first; user can then tap Command again
-                router.push("/login?redirectTo=/public-feed");
+                router.push("/login?redirectTo=/creator");
                 return;
               }
 
