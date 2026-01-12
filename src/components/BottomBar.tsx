@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
+import { BAR_HEIGHT_PX } from "@/components/bottomBarConstants";
 import { supabase } from "@/lib/supabaseClients";
 
 /**
  * Keep this in sync with the layout padding-bottom so content never hides behind the bar.
  * If you change BAR_HEIGHT, update the layout padding too.
  */
-export const BAR_HEIGHT_PX = 56;
 
 export type BottomBarTab = {
   key: string;
@@ -35,7 +35,7 @@ const defaultTabs: BottomBarTab[] = [
   {
     key: "create",
     label: "+",// until /create exists, treat creator routes as the "create area"
-    matchPrefix: "/creator",
+    matchPrefix: "/create",
   },
   {
     key: "command",
@@ -142,7 +142,7 @@ export default function BottomBar({
             t.onClick ??
             (() => {
               // until /create exists, this is the best "create" entry point you have
-              router.push("/creator");
+              router.push("/create");
             }),
         };
       }

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { FloatingLiveButton } from "@/components/FloatingLiveButton";
-import BottomBar, { BAR_HEIGHT_PX } from "@/components/BottomBar";
+import BottomBar from "@/components/BottomBar";
+import { BAR_HEIGHT_PX } from "@/components/bottomBarConstants";
 
 export const metadata: Metadata = {
   title: "Revolvr",
