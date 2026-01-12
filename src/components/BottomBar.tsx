@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 
 /**
@@ -13,53 +13,51 @@ export const BAR_HEIGHT_PX = 56;
 export type BottomBarTab = {
   key: string;
   label: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
   matchPrefix?: string | string[];
 };
 
-
 export type BottomBarProps = {
-  /**
-   * Use this to hide the bar on modal/fullscreen views.
-   */
   hidden?: boolean;
-
-  /**
-   * Override tabs if needed. Defaults are reasonable placeholders.
-   */
   tabs?: BottomBarTab[];
-
-  /**
-   * If true, the bar renders above the safe area with extra padding.
-   * (We also apply env(safe-area-inset-bottom) regardless; this flag is here if you want to tweak later.)
-   */
   safeArea?: boolean;
 };
 
+// IMPORTANT: set this to your actual built profile route if it's not /profile
+const PROFILE_ROUTE = "/creator";
+const PROFILE_ROUTE = "/creator";
+
 const defaultTabs: BottomBarTab[] = [
-  // /feed redirects to /public-feed; make /public-feed canonical but keep /feed as active too
   {
     key: "feed",
     label: "Feed",
     href: "/public-feed",
     matchPrefix: ["/public-feed", "/feed"],
   },
-
-  // Live should highlight for /live and /live/[sessionId]
-  { key: "live", label: "Live", href: "/live", matchPrefix: "/live" },
-
-  { key: "credits", label: "Credits", href: "/credits", matchPrefix: "/credits" },
+  {
+    key: "create",
+    label: "+",
+    // We'll route client-side without a full reload
+    onClick: () => {},
+    matchPrefix: "/create",
+  },
+  {
+    key: "command",
+    label: "Command",
+    href: PROFILE_ROUTE,
+    matchPrefix: PROFILE_ROUTE,
+  },
 ];
-
-
-
 
 function isActive(pathname: string, tab: BottomBarTab) {
   const prefixes = tab.matchPrefix
     ? Array.isArray(tab.matchPrefix)
       ? tab.matchPrefix
       : [tab.matchPrefix]
-    : [tab.href];
+    : tab.href
+      ? [tab.href]
+      : [];
 
   return prefixes.some((prefix) => {
     if (prefix === "/") return pathname === "/";
@@ -67,15 +65,13 @@ function isActive(pathname: string, tab: BottomBarTab) {
   });
 }
 
-
 function Icon({
   name,
   active,
 }: {
-  name: "feed" | "live" | "create" | "credits" | "profile";
+  name: "feed" | "create" | "command";
   active: boolean;
 }) {
-  // Minimal inline SVGs so you’re not dependent on any icon packages.
   const common = {
     width: 22,
     height: 22,
@@ -97,23 +93,6 @@ function Icon({
           />
         </svg>
       );
-    case "live":
-      return (
-        <svg {...common}>
-          <path
-            d="M10 8l6 4-6 4V8z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M4.5 9.5c-1 1.5-1 3.5 0 5M19.5 9.5c1 1.5 1 3.5 0 5"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
     case "create":
       return (
         <svg {...common}>
@@ -125,27 +104,23 @@ function Icon({
           />
         </svg>
       );
-    case "credits":
+    case "command":
+      // "Command" icon: simple dial/gear-ish mark (neutral, not "profile")
       return (
         <svg {...common}>
           <path
-            d="M12 2v20M17 7H9.5a3.5 3.5 0 0 0 0 7H15a3.5 3.5 0 0 1 0 7H7"
+            d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+            stroke="currentColor"
+            strokeWidth="2"
+          />
+          <path
+            d="M19.4 15a8 8 0 0 0 .1-6M4.5 9a8 8 0 0 0 0 6"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
           />
-        </svg>
-      );
-    case "profile":
-      return (
-        <svg {...common}>
           <path
-            d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-          <path
-            d="M4 21a8 8 0 0 1 16 0"
+            d="M12 2v2M12 20v2M2 12h2M20 12h2"
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
@@ -161,16 +136,32 @@ export default function BottomBar({
   safeArea = true,
 }: BottomBarProps) {
   const pathname = usePathname() || "/";
+  const router = useRouter();
 
   if (hidden) return null;
+
+  // Wire the create action client-side
+  const resolvedTabs = React.useMemo(() => {
+    return tabs.map((t) => {
+      if (t.key !== "create") return t;
+      return {
+        ...t,
+        onClick:
+          t.onClick ??
+          (() => {
+            router.push("/create");
+          }),
+      };
+    });
+  }, [tabs, router]);
 
   return (
     <nav
       aria-label="Bottom navigation"
       className={[
         "fixed inset-x-0 bottom-0 z-50",
-        "border-t border-black/10 dark:border-white/10",
-        "bg-white/90 dark:bg-black/70 backdrop-blur",
+        "border-t border-white/10",
+        "bg-[#050814]/90 backdrop-blur",
       ].join(" ")}
       style={{
         height: BAR_HEIGHT_PX,
@@ -178,41 +169,50 @@ export default function BottomBar({
       }}
     >
       <div className="mx-auto flex h-full max-w-screen-sm items-center justify-around px-2">
-        {tabs.map((tab) => {
+        {resolvedTabs.map((tab) => {
           const active = isActive(pathname, tab);
-          const iconName =
-            tab.key === "feed" ||
-            tab.key === "live" ||
-            tab.key === "create" ||
-            tab.key === "credits" ||
-            tab.key === "profile"
-              ? (tab.key as any)
-              : undefined;
 
+          const baseClasses = [
+            "flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-1",
+            active ? "text-white" : "text-white/70",
+            "hover:text-white",
+            "focus:outline-none focus:ring-2 focus:ring-white/20",
+          ].join(" ");
+
+          // Create (action tab)
+          if (!tab.href && tab.onClick) {
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={tab.onClick}
+                className={baseClasses}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon name="create" active={active} />
+                <span className="text-[11px] leading-none">{tab.label}</span>
+              </button>
+            );
+          }
+
+          // Normal link tab
           return (
             <Link
               key={tab.key}
-              href={tab.href}
-              className={[
-                "flex min-w-[56px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-1",
-                active
-                  ? "text-black dark:text-white"
-                  : "text-black/60 dark:text-white/70",
-                "hover:text-black dark:hover:text-white",
-                "focus:outline-none focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20",
-              ].join(" ")}
+              href={tab.href!}
+              className={baseClasses}
               aria-current={active ? "page" : undefined}
             >
-              {iconName ? (
-                <Icon name={iconName} active={active} />
-              ) : (
-                <span
-                  className={[
-                    "h-[22px] w-[22px] rounded",
-                    active ? "bg-black/10 dark:bg-white/10" : "bg-transparent",
-                  ].join(" ")}
-                />
-              )}
+              <Icon
+                name={
+                  tab.key === "feed"
+                    ? "feed"
+                    : tab.key === "command"
+                      ? "command"
+                      : "feed"
+                }
+                active={active}
+              />
               <span className="text-[11px] leading-none">{tab.label}</span>
             </Link>
           );
