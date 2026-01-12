@@ -3,7 +3,7 @@
 
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import { useAuthedUser } from "@/lib/useAuthedUser";
 import SpinButton from "@/components/SpinButton";
@@ -23,7 +23,7 @@ type Post = {
   id: string;
   userEmail: string;
   imageUrl: string;
-  caption: string;
+  caption: string | null;
   createdAt: string;
   is_boosted?: boolean | null;
   boost_expires_at?: string | null;
@@ -64,20 +64,29 @@ function hasVerifiedArray(v: unknown): v is { verified: unknown } {
 }
 
 function normalizeVerifiedEmails(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
-}
 
-function isPost(value: unknown): value is Post {
+function _isPost(value: unknown): value is Post {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return (
     typeof v.id === "string" &&
     typeof v.userEmail === "string" &&
     typeof v.imageUrl === "string" &&
-    typeof v.caption === "string" &&
+    (typeof v.caption === "string" || v.caption === null) &&
     typeof v.createdAt === "string"
   );
+}
+
+function _isVideoUrl(url: string): boolean {
+  return /.(mp4|webm|mov|m4v)(?|#|$)/i.test(url);
+}
+
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+}
+
+function _isVideoUrl(url: string): boolean {
+  return /.(mp4|webm|mov|m4v)(\?|#|\$\)/i.test(url);
 }
 
 function isSpinRow(value: unknown): value is Spin {
@@ -106,6 +115,8 @@ const VerifiedBadge = () => (
 
 export default function DashboardClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
 
   // Stable auth state
   const { user, ready } = useAuthedUser();
@@ -119,6 +130,8 @@ export default function DashboardClient() {
 
   const [credits, setCredits] = useState<UserCredits | null>(null);
   const [loadingCredits, setLoadingCredits] = useState(false);
+
+  const [notice, setNotice] = useState<string | null>(null);
 
   const [posts, setPosts] = useState<Post[]>([]);
 
@@ -148,7 +161,7 @@ export default function DashboardClient() {
     if (!ready) return;
     if (!userEmail) {
       // If you want redirect back on, uncomment:
-      // router.replace("/login?redirectTo=/creator");
+      // router.replace("/login?redirectTo=/creator/dashboard/dashboard");
     }
   }, [ready, userEmail, router]);
 
@@ -164,11 +177,7 @@ export default function DashboardClient() {
       if (sbErr) throw sbErr;
 
       const rows = Array.isArray(data) ? data : [];
-      const parsed: Post[] = [];
-      for (const r of rows) {
-        if (isPost(r)) parsed.push(r);
-      }
-      setPosts(parsed);
+      setPosts(rows.filter(isPost));
     } catch (e) {
       console.error("Error loading posts", e);
       setError("Revolvr glitched out while loading the feed 😵‍💫");
@@ -292,8 +301,31 @@ export default function DashboardClient() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace("/creator");
+    router.replace("/login?redirectTo=/creator/dashboard/dashboard");
   };
+useEffect(() => {
+  if (!ready || !userEmail) return;
+
+  const stripe = searchParams.get("stripe");
+  const verified = searchParams.get("verified");
+
+  if (!stripe && !verified) return;
+
+  loadCreatorMe();
+  loadCredits(userEmail);
+
+  if (verified === "success") {
+    setNotice("Verification started successfully.");
+  } else if (verified === "cancel") {
+    setNotice("Verification was cancelled.");
+  } else if (stripe === "return") {
+    setNotice("Stripe onboarding complete. Payouts are connected.");
+  } else if (stripe === "refresh") {
+    setNotice("Stripe onboarding refreshed. Please complete setup.");
+  }
+
+  router.replace("/creator/dashboard");
+}, [ready, userEmail, searchParams, loadCreatorMe, loadCredits, router]);
 
   // Stripe Connect onboarding (payouts)
   const handleConnectStripe = async () => {
@@ -541,9 +573,9 @@ export default function DashboardClient() {
       <div className="min-h-screen bg-[#050816] text-white p-8">
         <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
         <p className="mt-2 text-white/70">Not signed in.</p>
-        <a className="underline text-white/80" href="/login?redirectTo=/creator">
-          Go to login
-        </a>
+        <a className="underline text-white/80" href="/login?redirectTo=/creator/dashboard/dashboard">
+  Go to login
+</a>
       </div>
     );
   }
@@ -669,6 +701,15 @@ export default function DashboardClient() {
 
         {/* Center column */}
         <section className="flex-1 space-y-5">
+          {notice && (
+            <div className="rounded-xl bg-white/10 text-white text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-black/20">
+              <span>{notice}</span>
+              <button className="text-xs underline" onClick={() => setNotice(null)}>
+                Dismiss
+              </button>
+            </div>
+          )}
+
           {error && (
             <div className="rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-red-500/20">
               <span>{error}</span>
@@ -736,15 +777,24 @@ export default function DashboardClient() {
                     </div>
 
                     <div className="relative w-full max-h-[480px]">
-                      <Image
-                        src={post.imageUrl}
-                        alt={post.caption || "Post media"}
-                        width={1200}
-                        height={800}
-                        unoptimized
-                        className="w-full max-h-[480px] object-cover"
-                      />
-                    </div>
+  {isVideoUrl(post.imageUrl) ? (
+    <video
+      src={post.imageUrl}
+      controls
+      className="w-full max-h-[480px] object-cover"
+    />
+  ) : (
+    <Image
+      src={post.imageUrl}
+      alt={post.caption || "Post media"}
+      width={1200}
+      height={800}
+      unoptimized
+      className="w-full max-h-[480px] object-cover"
+    />
+  )}
+</div>
+
 
                     {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/stripe/webhook/_verification.ts
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
