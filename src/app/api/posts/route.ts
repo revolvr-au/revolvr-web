@@ -14,7 +14,50 @@ export async function GET() {
       },
     });
 
-    const payload = posts.map((p) => ({
+    
+
+    // Attach verification tier (blue/gold/null) per post author.
+    // We keep this as a separate lookup because posts only store userEmail.
+    const emails = Array.from(
+      new Set(posts.map((p) => p.userEmail).filter(Boolean))
+    ) as string[];
+
+    const profiles = emails.length
+      ? await prisma.creatorProfile.findMany({
+          where: { email: { in: emails } },
+          select: {
+            email: true,
+            verificationPriceId: true,
+            verificationStatus: true,
+            verificationCurrentPeriodEnd: true,
+          },
+        })
+      : [];
+
+    const tierByEmail = new Map<string, "blue" | "gold" | null>();
+
+    const bluePriceId = process.env.STRIPE_BLUE_TICK_PRICE_ID || "";
+    const goldPriceId = process.env.STRIPE_GOLD_TICK_PRICE_ID || "";
+
+    for (const prof of profiles) {
+      const isActive =
+        prof.verificationStatus === "active" &&
+        (!!prof.verificationCurrentPeriodEnd &&
+          new Date(prof.verificationCurrentPeriodEnd).getTime() > Date.now());
+
+      const priceId = prof.verificationPriceId ? String(prof.verificationPriceId) : "";
+
+      const tier =
+        isActive && goldPriceId && priceId === String(goldPriceId)
+          ? "gold"
+          : isActive && bluePriceId && priceId === String(bluePriceId)
+            ? "blue"
+            : null;
+
+      tierByEmail.set(prof.email, tier);
+    }
+
+const payload = posts.map((p) => ({
       id: p.id,
       userEmail: p.userEmail,
       imageUrl: p.imageUrl,
@@ -22,6 +65,7 @@ export async function GET() {
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
       likesCount: p._count.Like, // number of likes
+      verificationTier: tierByEmail.get(p.userEmail) ?? null,
     }));
 
     return NextResponse.json(payload);

@@ -205,10 +205,7 @@ function actionMeta(mode: ActionMode): ActionMeta {
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
-  const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set());
-  const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({});
+  const [err, setErr] = useState<string | null>(null);const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({});
 
   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 
@@ -240,14 +237,14 @@ export default function PublicFeedClient() {
         email,
         imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
         displayName: displayNameFromEmail(email),
-        tick: verifiedSet.has(email) ? "blue" : null,
+        tick: (p as any).verificationTier ?? null,
       });
 
       if (out.length >= 20) break;
     }
 
     return out;
-  }, [posts, verifiedSet]);
+  }, [posts]);
 
   // Stripe return banner
   useEffect(() => {
@@ -333,7 +330,6 @@ export default function PublicFeedClient() {
       try {
         if (!emails.length) {
           if (!cancelled) {
-            setVerifiedSet(new Set());
             setCurrencyByEmail({});
           }
           return;
@@ -359,7 +355,6 @@ export default function PublicFeedClient() {
         const currencies = normalizeCurrencyMap(currenciesRaw);
 
         if (!cancelled) {
-          setVerifiedSet(new Set(verified));
           setCurrencyByEmail(currencies);
         }
       } catch (e: unknown) {
@@ -449,7 +444,8 @@ export default function PublicFeedClient() {
           <div className="space-y-6 pb-12">
             {posts.map((post) => {
               const email = String(post.userEmail || "").trim().toLowerCase();
-              const isVerified = email ? verifiedSet.has(email) : false;
+              const tick = (post as any).verificationTier ?? null;
+              const isVerified = tick === "blue" || tick === "gold";
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
               return (
