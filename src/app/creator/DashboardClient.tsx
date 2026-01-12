@@ -78,16 +78,15 @@ function _isPost(value: unknown): value is Post {
 }
 
 function _isVideoUrl(url: string): boolean {
-  return /.(mp4|webm|mov|m4v)(?|#|$)/i.test(url);
+  return /\.(mp4|webm|mov|m4v)(\?|#|1000 103 986 987 988 989 990 991 992 993 994 995 996 1000 1001/i.test(url);
 }
+
+
 
   if (!Array.isArray(v)) return [];
   return v.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
 }
 
-function _isVideoUrl(url: string): boolean {
-  return /.(mp4|webm|mov|m4v)(\?|#|\$\)/i.test(url);
-}
 
 function isSpinRow(value: unknown): value is Spin {
   if (!value || typeof value !== "object") return false;
