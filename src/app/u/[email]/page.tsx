@@ -38,11 +38,27 @@ const PROFILES_TABLE = "profiles";
 // Align with the rest of your app using Prisma/Supabase: "Post" + "userEmail"
 const POSTS_TABLE = "Post";
 
+function normalizeEmail(raw: string | null | undefined): string | null {
+  const e = (raw ?? "").trim();
+  if (!e || e === "undefined" || e === "null") return null;
+  return e.toLowerCase();
+}
+
 export default function ProfilePage({ params }: PageProps) {
   const router = useRouter();
-  const profileEmailParam = useMemo(() => decodeURIComponent(params.email), [params.email]);
 
+  // URL param email (normalized)
+  const profileEmailParam = useMemo(() => {
+    try {
+      return normalizeEmail(decodeURIComponent(params.email));
+    } catch {
+      return normalizeEmail(params.email);
+    }
+  }, [params.email]);
+
+  // Authed email (normalized)
   const [authEmail, setAuthEmail] = useState<string | null>(null);
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hasProfileRow, setHasProfileRow] = useState(false);
 
@@ -53,15 +69,22 @@ export default function ProfilePage({ params }: PageProps) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Per your comment: if logged in, always treat the authed user’s email as the “real” profile owner.
-  const effectiveEmail = authEmail ?? profileEmailParam;
-const isOwnProfile = !!authEmail && authEmail === profileEmailParam;
+  // Decide which profile we are actually viewing:
+  // - If logged in, show/edit their own profile.
+  // - Otherwise, show the profile from the URL param.
+  const effectiveEmail = useMemo(() => {
+    return authEmail ?? profileEmailParam;
+  }, [authEmail, profileEmailParam]);
 
+  const isOwnProfile = useMemo(() => {
+    return !!authEmail && !!effectiveEmail && authEmail === effectiveEmail;
+  }, [authEmail, effectiveEmail]);
 
+  // Load authed user (and keep it updated)
   useEffect(() => {
     let cancelled = false;
 
@@ -70,18 +93,26 @@ const isOwnProfile = !!authEmail && authEmail === profileEmailParam;
         const {
           data: { user },
         } = await supabase.auth.getUser();
-        if (!cancelled) setAuthEmail(user?.email ?? null);
+        if (!cancelled) setAuthEmail(normalizeEmail(user?.email) ?? null);
       } catch (e) {
         console.error("Error loading auth user in profile page", e);
       }
     };
 
     loadUser();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const next = normalizeEmail(session?.user?.email) ?? null;
+      if (!cancelled) setAuthEmail(next);
+    });
+
     return () => {
       cancelled = true;
+      sub.subscription.unsubscribe();
     };
   }, []);
 
+  // Load profile + stats when effectiveEmail is ready
   useEffect(() => {
     if (!effectiveEmail) return;
 
@@ -94,55 +125,59 @@ const isOwnProfile = !!authEmail && authEmail === profileEmailParam;
 
         // Profile row
         const { data: profileRow, error: profileError } = await supabase
-  .from(PROFILES_TABLE)
-  .select("email, display_name, avatar_url, bio")
-  .eq("email", effectiveEmail)
-  .maybeSingle<ProfileRow>();
+          .from(PROFILES_TABLE)
+          .select("email, display_name, avatar_url, bio")
+          .eq("email", effectiveEmail)
+          .maybeSingle<ProfileRow>();
 
-if (profileError) throw profileError;
+        if (profileError) throw profileError;
 
-let finalProfile = profileRow ?? null;
+        let finalProfile: ProfileRow | null = profileRow ?? null;
 
-// If this is your own profile and it doesn't exist yet, create it silently.
-if (!finalProfile && authEmail && authEmail === effectiveEmail) {
-  const defaultDisplayName =
-    authEmail.split("@")[0]?.replace(/\W+/g, " ").trim() || null;
+        // If this is your own profile and it doesn't exist yet, create it silently.
+        if (!finalProfile && isOwnProfile) {
+          const defaultDisplayName =
+            effectiveEmail.split("@")[0]?.replace(/\W+/g, " ").trim() || null;
 
-  const { data: created, error: createError } = await supabase
-    .from(PROFILES_TABLE)
-    .upsert(
-      {
-        email: authEmail,
-        display_name: defaultDisplayName,
-        avatar_url: null,
-        bio: null,
-      },
-      { onConflict: "email" }
-    )
-    .select("email, display_name, avatar_url, bio")
-    .single<ProfileRow>();
+          const { data: created, error: createError } = await supabase
+            .from(PROFILES_TABLE)
+            .upsert(
+              {
+                email: effectiveEmail,
+                display_name: defaultDisplayName,
+                avatar_url: null,
+                bio: null,
+              },
+              { onConflict: "email" }
+            )
+            .select("email, display_name, avatar_url, bio")
+            .single<ProfileRow>();
 
-  if (createError) throw createError;
-  finalProfile = created;
-}
+          if (createError) throw createError;
+          finalProfile = created;
+        }
 
-if (!cancelled) {
-  if (finalProfile) {
-    setProfile(finalProfile);
-    setDisplayNameInput(finalProfile.display_name ?? "");
-    setBioInput(finalProfile.bio ?? "");
-    setAvatarPreview(finalProfile.avatar_url ?? null);
-    setHasProfileRow(true);
-  } else {
-    // Not your profile, and no row exists yet: normal state, not an error.
-    setProfile({ email: effectiveEmail, display_name: null, avatar_url: null, bio: null });
-    setDisplayNameInput("");
-    setBioInput("");
-    setAvatarPreview(null);
-    setHasProfileRow(false);
-  }
-}
-
+        if (!cancelled) {
+          if (finalProfile) {
+            setProfile(finalProfile);
+            setDisplayNameInput(finalProfile.display_name ?? "");
+            setBioInput(finalProfile.bio ?? "");
+            setAvatarPreview(finalProfile.avatar_url ?? null);
+            setHasProfileRow(true);
+          } else {
+            // Not your profile, and no row exists yet: normal state, not an error.
+            setProfile({
+              email: effectiveEmail,
+              display_name: null,
+              avatar_url: null,
+              bio: null,
+            });
+            setDisplayNameInput("");
+            setBioInput("");
+            setAvatarPreview(null);
+            setHasProfileRow(false);
+          }
+        }
 
         // Stats from posts (counts)
         const { data: postsData, error: postsError } = await supabase
@@ -154,7 +189,6 @@ if (!cancelled) {
 
         const rows = (postsData ?? []) as PostStatsRow[];
         const postsCount = rows.length;
-
         const tipsCount = rows.reduce((sum, p) => sum + (p.tip_count ?? 0), 0);
         const boostsCount = rows.reduce((sum, p) => sum + (p.boost_count ?? 0), 0);
         const spinsCount = rows.reduce((sum, p) => sum + (p.spin_count ?? 0), 0);
@@ -171,20 +205,29 @@ if (!cancelled) {
     };
 
     loadData();
+
     return () => {
       cancelled = true;
     };
-  }, [effectiveEmail]);
+  }, [effectiveEmail, isOwnProfile]);
 
-  const effectiveDisplayName =
-    profile?.display_name ||
-    effectiveEmail.split("@")[0]?.replace(/\W+/g, " ").trim() ||
-    "Someone";
+  const effectiveDisplayName = useMemo(() => {
+    const e = effectiveEmail ?? profileEmailParam ?? "someone@example.com";
+    return (
+      profile?.display_name ||
+      e.split("@")[0]?.replace(/\W+/g, " ").trim() ||
+      "Someone"
+    );
+  }, [profile?.display_name, effectiveEmail, profileEmailParam]);
 
-  const avatarInitial =
-    effectiveDisplayName.trim()[0]?.toUpperCase() ??
-    effectiveEmail[0]?.toUpperCase() ??
-    "R";
+  const avatarInitial = useMemo(() => {
+    const e = effectiveEmail ?? profileEmailParam ?? "r";
+    return (
+      effectiveDisplayName.trim()[0]?.toUpperCase() ??
+      e[0]?.toUpperCase() ??
+      "R"
+    );
+  }, [effectiveDisplayName, effectiveEmail, profileEmailParam]);
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
@@ -308,20 +351,14 @@ if (!cancelled) {
             <div className="flex items-center gap-4">
               <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-lg font-semibold text-emerald-300 uppercase overflow-hidden relative">
                 {avatarPreview ? (
-                  <Image
-                    src={avatarPreview}
-                    alt={effectiveDisplayName}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
+                  <Image src={avatarPreview} alt={effectiveDisplayName} fill unoptimized className="object-cover" />
                 ) : (
                   <span>{avatarInitial}</span>
                 )}
               </div>
               <div className="flex flex-col">
                 <h1 className="text-lg sm:text-xl font-semibold">{effectiveDisplayName}</h1>
-                <span className="text-xs sm:text-sm text-white/50">{effectiveEmail}</span>
+                <span className="text-xs sm:text-sm text-white/50">{effectiveEmail ?? ""}</span>
               </div>
             </div>
 
