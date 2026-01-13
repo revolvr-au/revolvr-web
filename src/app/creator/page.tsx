@@ -1,6 +1,8 @@
 // src/app/creator/page.tsx
-import { redirect } from "next/navigation";
+import DashboardClient from "./DashboardClient";
 
-export default function CreatorIndex() {
-  redirect("/creator/dashboard");
+export const dynamic = "force-dynamic";
+
+export default function CreatorPage() {
+  return <DashboardClient />;
 }
