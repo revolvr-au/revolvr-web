@@ -50,33 +50,38 @@ export default function LoginClient() {
   const [error, setError] = useState<string | null>(null);
 
   const onSend = async () => {
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) return setError("Enter your email address.");
+  const cleanEmail = email.trim().toLowerCase();
+  if (!cleanEmail) return setError("Enter your email address.");
 
-    try {
-      setSending(true);
-      setError(null);
+  try {
+    setSending(true);
+    setError(null);
 
-      const origin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-      const emailRedirectTo = `${origin}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
+    const origin =
+      typeof window !== "undefined" && window.location.hostname === "www.revolvr.net"
+        ? "https://www.revolvr.net"
+        : window.location.origin;
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: { emailRedirectTo },
-      });
+    const emailRedirectTo = `${origin}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
 
-      if (error) {
-        console.error("[login] signInWithOtp error", error);
-        setError("Could not send magic link.");
-        return;
-      }
-    } catch (e) {
-      console.error("[login] unexpected", e);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: cleanEmail,
+      options: { emailRedirectTo },
+    });
+
+    if (error) {
+      console.error("[login] signInWithOtp error", error);
       setError("Could not send magic link.");
-    } finally {
-      setSending(false);
+      return;
     }
-  };
+  } catch (e) {
+    console.error("[login] unexpected", e);
+    setError("Could not send magic link.");
+  } finally {
+    setSending(false);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-[#050814] text-white flex items-center justify-center p-4">
