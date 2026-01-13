@@ -13,6 +13,11 @@ import { PaidReactionBar } from "@/components/PaidReactionBar";
 
 const POSTS_TABLE = "Post"; // Supabase table created by Prisma
 
+function _isVideoUrl(url: string): boolean {
+  return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
+}
+
+
 type UserCredits = {
   boosts: number;
   tips: number;
@@ -64,8 +69,11 @@ function hasVerifiedArray(v: unknown): v is { verified: unknown } {
 }
 
 function normalizeVerifiedEmails(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
+}
 
-function _isPost(value: unknown): value is Post {
+function isPost(value: unknown): value is Post {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
   return (
@@ -76,18 +84,6 @@ function _isPost(value: unknown): value is Post {
     typeof v.createdAt === "string"
   );
 }
-
-function _isVideoUrl(url: string): boolean {
-  return /\.(mp4|webm|mov|m4v)(\?|#|1000 103 986 987 988 989 990 991 992 993 994 995 996 1000 1001/i.test(url);
-}
-
-
-
-  if (!Array.isArray(v)) return [];
-  return v.map((x) => String(x).trim().toLowerCase()).filter(Boolean);
-}
-
-
 function isSpinRow(value: unknown): value is Spin {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
@@ -160,7 +156,7 @@ export default function DashboardClient() {
     if (!ready) return;
     if (!userEmail) {
       // If you want redirect back on, uncomment:
-      // router.replace("/login?redirectTo=/creator/dashboard/dashboard");
+      // router.replace("/login?redirectTo=/creator/dashboard");
     }
   }, [ready, userEmail, router]);
 
@@ -268,8 +264,7 @@ export default function DashboardClient() {
       const res = await fetch("/api/creator/me", { cache: "no-store" });
       const json = (await res.json().catch(() => null)) as CreatorMeResponse | null;
 
-      const verified = Boolean(json?.creator?.isVerified);
-      setIsVerified(verified);
+      setIsVerified(Boolean(json?.creator?.isVerified));
 
       const tier = json?.creator?.verificationTier ?? null;
       if (tier === "blue" || tier === "gold") setVerificationTier(tier);
@@ -300,13 +295,13 @@ export default function DashboardClient() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace("/login?redirectTo=/creator/dashboard/dashboard");
+    router.replace("/login?redirectTo=/creator/dashboard");
   };
 useEffect(() => {
   if (!ready || !userEmail) return;
 
-  const stripe = searchParams.get("stripe");
-  const verified = searchParams.get("verified");
+  const stripe = searchParams ? searchParams.get("stripe") : null;
+  const verified = searchParams ? searchParams.get("verified") : null;
 
   if (!stripe && !verified) return;
 
@@ -572,7 +567,7 @@ useEffect(() => {
       <div className="min-h-screen bg-[#050816] text-white p-8">
         <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
         <p className="mt-2 text-white/70">Not signed in.</p>
-        <a className="underline text-white/80" href="/login?redirectTo=/creator/dashboard/dashboard">
+        <a className="underline text-white/80" href="/login?redirectTo=/creator/dashboard">
   Go to login
 </a>
       </div>
@@ -776,7 +771,7 @@ useEffect(() => {
                     </div>
 
                     <div className="relative w-full max-h-[480px]">
-  {isVideoUrl(post.imageUrl) ? (
+  {_isVideoUrl(post.imageUrl) ? (
     <video
       src={post.imageUrl}
       controls
