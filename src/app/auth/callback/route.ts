@@ -1,18 +1,12 @@
-// src/app/auth/callback/route.ts
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export const dynamic = "force-dynamic";
-
 const safeRedirect = (v: string | null) => {
-  // Pick the *one* page you actually want after login:
-  // If the “right creator profile” is /creator, set it here.
-  const FALLBACK = "/creator";
-
-  if (!v) return FALLBACK;
-  if (!v.startsWith("/")) return FALLBACK;
-  if (v.startsWith("//")) return FALLBACK;
-  if (v.includes("\\")) return FALLBACK;
+  // Default into the creator entrypoint (which will then send you to /u/<email>)
+  if (!v) return "/creator";
+  if (!v.startsWith("/")) return "/creator";
+  if (v.startsWith("//")) return "/creator";
+  if (v.includes("\\")) return "/creator";
   return v;
 };
 
@@ -28,9 +22,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/login?error=missing_env", url.origin));
   }
 
-  // Prepare the final redirect response (cookies attached to this response)
-  const res = NextResponse.redirect(new URL(redirectTo, url.origin), { status: 302 });
-  res.headers.set("Cache-Control", "no-store");
+  // Redirect response we can attach cookies to
+  const res = NextResponse.redirect(new URL(redirectTo, url.origin));
 
   const supabase = createServerClient(supabaseUrl, supabaseAnon, {
     cookies: {
@@ -45,17 +38,14 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  if (!code) {
-    // No code -> just go where we were headed
-    return res;
-  }
-
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) {
-    const back = new URL("/login", url.origin);
-    back.searchParams.set("redirectTo", redirectTo);
-    back.searchParams.set("error", "otp_invalid_or_expired");
-    return NextResponse.redirect(back, { status: 302 });
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      const back = new URL("/login", url.origin);
+      back.searchParams.set("redirectTo", redirectTo);
+      back.searchParams.set("error", "otp_invalid_or_expired");
+      return NextResponse.redirect(back);
+    }
   }
 
   return res;

@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
-export default function Page() {
+export default function CreatorDashboardPage() {
+  // Single entrypoint: /creator decides login vs /u/<email>
   redirect("/creator");
 }
