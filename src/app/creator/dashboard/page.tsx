@@ -1,7 +1,8 @@
-import DashboardClient from "../DashboardClient";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export default function CreatorDashboardPage() {
-  return <DashboardClient />;
+export default function Page() {
+  redirect("/creator");
 }
