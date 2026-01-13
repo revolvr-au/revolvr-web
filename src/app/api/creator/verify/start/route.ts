@@ -87,25 +87,31 @@ export async function POST(req: Request) {
     }
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      allow_promotion_codes: true,
-      success_url: `${siteUrl}/creator/dashboard?verified=success`,
-      cancel_url: `${siteUrl}/creator/dashboard?verified=cancel`,
-      metadata: {
-        purpose: "verification",
-        tier,
-        creator_email: email,
-      },
-      subscription_data: {
-        metadata: {
-          purpose: "verification",
-          tier,
-          creator_email: email,
-        },
-      },
-    });
+  mode: "subscription",
+  customer: customerId,
+  line_items: [{ price: priceId, quantity: 1 }],
+  allow_promotion_codes: true,
+
+  // IMPORTANT: use proper template strings
+  success_url: `${siteUrl}/creator?verified=success`,
+  cancel_url: `${siteUrl}/creator?verified=cancel`,
+  // optional but recommended for Checkout
+  // refresh_url: `${siteUrl}/creator?verified=refresh`,
+
+  metadata: {
+    purpose: "verification",
+    tier,
+    creator_email: email,
+  },
+  subscription_data: {
+    metadata: {
+      purpose: "verification",
+      tier,
+      creator_email: email,
+    },
+  },
+});
+
 
     return NextResponse.json({ url: session.url });
   } catch (e: unknown) {
