@@ -39,7 +39,7 @@ export default function CreatorOnboardPage() {
           router.replace("/creator");
         }
       } catch {
-        // If this guard fails, allow the page to render normally.
+        // allow render
       }
     }
 

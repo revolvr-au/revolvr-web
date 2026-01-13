@@ -50,15 +50,12 @@ export async function POST(req: Request) {
 
   let stripeAccountId = creator.stripeAccountId;
 
-  // Create Stripe account if missing
   if (!stripeAccountId) {
     const account = await stripe.accounts.create({
       type: "express",
       email,
       country: "AU",
-      capabilities: {
-        transfers: { requested: true },
-      },
+      capabilities: { transfers: { requested: true } },
     });
 
     stripeAccountId = account.id;
@@ -72,7 +69,6 @@ export async function POST(req: Request) {
     });
   }
 
-  // Create onboarding link
   const accountLink = await stripe.accountLinks.create({
     account: stripeAccountId,
     type: "account_onboarding",
