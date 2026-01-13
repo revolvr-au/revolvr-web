@@ -14,10 +14,11 @@ type ProfileRow = {
 };
 
 type PostStatsRow = {
-  tip_count: number | null;
-  boost_count: number | null;
-  spin_count: number | null;
+  tipCount: number | null;
+  boostCount: number | null;
+  spinCount: number | null;
 };
+
 
 type Stats = {
   posts: number;
@@ -150,30 +151,34 @@ export default function ProfilePage({ params }: PageProps) {
           }
         }
 
-        // 2) Stats from posts
-        const { data: postsData, error: postsError } = await supabase
-          .from(POSTS_TABLE)
-          .select("tip_count, boost_count, spin_count")
-          .eq("userEmail", effectiveEmail);
+                // 2) Stats from posts (non-fatal)
+        try {
+          const { data: postsData, error: postsError } = await supabase
+            .from(POSTS_TABLE)
+            .select("tipCount, boostCount, spinCount")
+            .eq("userEmail", effectiveEmail);
 
-        if (postsError) throw postsError;
+          if (postsError) throw postsError;
 
-        const rows = (postsData ?? []) as PostStatsRow[];
-        const postsCount = rows.length;
-        const tipsCount = rows.reduce((sum, p) => sum + (p.tip_count ?? 0), 0);
-        const boostsCount = rows.reduce((sum, p) => sum + (p.boost_count ?? 0), 0);
-        const spinsCount = rows.reduce((sum, p) => sum + (p.spin_count ?? 0), 0);
+          const rows = (postsData ?? []) as Array<{
+            tipCount: number | null;
+            boostCount: number | null;
+            spinCount: number | null;
+          }>;
 
-        if (!cancelled) {
-          setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
+          const postsCount = rows.length;
+          const tipsCount = rows.reduce((sum, p) => sum + (p.tipCount ?? 0), 0);
+          const boostsCount = rows.reduce((sum, p) => sum + (p.boostCount ?? 0), 0);
+          const spinsCount = rows.reduce((sum, p) => sum + (p.spinCount ?? 0), 0);
+
+          if (!cancelled) {
+            setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
+          }
+        } catch (err) {
+          console.error("[ProfilePage] stats query failed (non-fatal)", err);
+          if (!cancelled) setStats({ posts: 0, tips: 0, boosts: 0, spins: 0 });
         }
-      } catch (e) {
-        console.error("Error loading profile page data", e);
-        if (!cancelled) setError("Revolvr glitched out loading this profile.");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    };
+
 
     loadData();
     return () => {
