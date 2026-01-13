@@ -94,7 +94,8 @@ export async function POST(req: Request) {
 
   // IMPORTANT: use proper template strings
   success_url: `${siteUrl}/creator?verified=success`,
-  cancel_url: `${siteUrl}/creator?verified=cancel`,
+cancel_url: `${siteUrl}/creator?verified=cancel`,
+
   // optional but recommended for Checkout
   // refresh_url: `${siteUrl}/creator?verified=refresh`,
 

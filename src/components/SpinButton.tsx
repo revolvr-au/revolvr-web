@@ -11,7 +11,7 @@ export default function SpinButton({ userEmail }: { userEmail: string }) {
         userEmail,
         source: "FEED",
         targetId: null,
-        returnPath: "/creator/dashboard",
+        returnPath: "/creator",
       });
     } catch (e) {
       console.error("[SpinButton] checkout failed", e);

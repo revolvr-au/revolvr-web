@@ -13,8 +13,6 @@ type ProfileRow = {
   bio: string | null;
 };
 
-type Profile = ProfileRow;
-
 type PostStatsRow = {
   tip_count: number | null;
   boost_count: number | null;
@@ -29,37 +27,32 @@ type Stats = {
 };
 
 type PageProps = {
-  params: {
-    email: string;
-  };
+  params: { email: string };
 };
 
 const PROFILES_TABLE = "profiles";
-// Align with the rest of your app using Prisma/Supabase: "Post" + "userEmail"
 const POSTS_TABLE = "Post";
 
-function normalizeEmail(raw: string | null | undefined): string | null {
-  const e = (raw ?? "").trim();
-  if (!e || e === "undefined" || e === "null") return null;
+function cleanEmail(v: string | null | undefined) {
+  const e = (v ?? "").trim();
+  if (!e) return null;
+  if (e.toLowerCase() === "undefined") return null;
   return e.toLowerCase();
 }
 
 export default function ProfilePage({ params }: PageProps) {
   const router = useRouter();
 
-  // URL param email (normalized)
   const profileEmailParam = useMemo(() => {
     try {
-      return normalizeEmail(decodeURIComponent(params.email));
+      return cleanEmail(decodeURIComponent(params.email));
     } catch {
-      return normalizeEmail(params.email);
+      return cleanEmail(params.email);
     }
   }, [params.email]);
 
-  // Authed email (normalized)
   const [authEmail, setAuthEmail] = useState<string | null>(null);
-
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [hasProfileRow, setHasProfileRow] = useState(false);
 
   const [stats, setStats] = useState<Stats>({ posts: 0, tips: 0, boosts: 0, spins: 0 });
@@ -69,50 +62,33 @@ export default function ProfilePage({ params }: PageProps) {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Decide which profile we are actually viewing:
-  // - If logged in, show/edit their own profile.
-  // - Otherwise, show the profile from the URL param.
-  const effectiveEmail = useMemo(() => {
-    return authEmail ?? profileEmailParam;
-  }, [authEmail, profileEmailParam]);
+  // If logged in, your app wants to treat the authed email as the “real” profile owner.
+  const effectiveEmail = useMemo(() => cleanEmail(authEmail ?? profileEmailParam), [authEmail, profileEmailParam]);
+  const isOwnProfile = useMemo(() => !!authEmail && !!effectiveEmail && authEmail === effectiveEmail, [authEmail, effectiveEmail]);
 
-  const isOwnProfile = useMemo(() => {
-    return !!authEmail && !!effectiveEmail && authEmail === effectiveEmail;
-  }, [authEmail, effectiveEmail]);
-
-  // Load authed user (and keep it updated)
   useEffect(() => {
     let cancelled = false;
 
     const loadUser = async () => {
       try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
-        if (!cancelled) setAuthEmail(normalizeEmail(user?.email) ?? null);
+        const { data } = await supabase.auth.getUser();
+        const email = cleanEmail(data.user?.email ?? null);
+        if (!cancelled) setAuthEmail(email);
       } catch (e) {
         console.error("Error loading auth user in profile page", e);
       }
     };
 
     loadUser();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      const next = normalizeEmail(session?.user?.email) ?? null;
-      if (!cancelled) setAuthEmail(next);
-    });
-
     return () => {
       cancelled = true;
-      sub.subscription.unsubscribe();
     };
   }, []);
 
-  // Load profile + stats when effectiveEmail is ready
   useEffect(() => {
     if (!effectiveEmail) return;
 
@@ -123,7 +99,7 @@ export default function ProfilePage({ params }: PageProps) {
         setIsLoading(true);
         setError(null);
 
-        // Profile row
+        // 1) Profile row
         const { data: profileRow, error: profileError } = await supabase
           .from(PROFILES_TABLE)
           .select("email, display_name, avatar_url, bio")
@@ -132,9 +108,9 @@ export default function ProfilePage({ params }: PageProps) {
 
         if (profileError) throw profileError;
 
-        let finalProfile: ProfileRow | null = profileRow ?? null;
+        let finalProfile = profileRow ?? null;
 
-        // If this is your own profile and it doesn't exist yet, create it silently.
+        // If it's your own profile and row doesn't exist yet, create it silently.
         if (!finalProfile && isOwnProfile) {
           const defaultDisplayName =
             effectiveEmail.split("@")[0]?.replace(/\W+/g, " ").trim() || null;
@@ -165,13 +141,8 @@ export default function ProfilePage({ params }: PageProps) {
             setAvatarPreview(finalProfile.avatar_url ?? null);
             setHasProfileRow(true);
           } else {
-            // Not your profile, and no row exists yet: normal state, not an error.
-            setProfile({
-              email: effectiveEmail,
-              display_name: null,
-              avatar_url: null,
-              bio: null,
-            });
+            // Viewing someone else and they haven't created a profile yet -> not an error.
+            setProfile({ email: effectiveEmail, display_name: null, avatar_url: null, bio: null });
             setDisplayNameInput("");
             setBioInput("");
             setAvatarPreview(null);
@@ -179,7 +150,7 @@ export default function ProfilePage({ params }: PageProps) {
           }
         }
 
-        // Stats from posts (counts)
+        // 2) Stats from posts
         const { data: postsData, error: postsError } = await supabase
           .from(POSTS_TABLE)
           .select("tip_count, boost_count, spin_count")
@@ -205,29 +176,24 @@ export default function ProfilePage({ params }: PageProps) {
     };
 
     loadData();
-
     return () => {
       cancelled = true;
     };
   }, [effectiveEmail, isOwnProfile]);
 
   const effectiveDisplayName = useMemo(() => {
-    const e = effectiveEmail ?? profileEmailParam ?? "someone@example.com";
+    const email = effectiveEmail ?? "someone@revolvr";
     return (
       profile?.display_name ||
-      e.split("@")[0]?.replace(/\W+/g, " ").trim() ||
+      email.split("@")[0]?.replace(/\W+/g, " ").trim() ||
       "Someone"
     );
-  }, [profile?.display_name, effectiveEmail, profileEmailParam]);
+  }, [profile?.display_name, effectiveEmail]);
 
   const avatarInitial = useMemo(() => {
-    const e = effectiveEmail ?? profileEmailParam ?? "r";
-    return (
-      effectiveDisplayName.trim()[0]?.toUpperCase() ??
-      e[0]?.toUpperCase() ??
-      "R"
-    );
-  }, [effectiveDisplayName, effectiveEmail, profileEmailParam]);
+    const email = effectiveEmail ?? "r@revolvr";
+    return effectiveDisplayName.trim()[0]?.toUpperCase() ?? email[0]?.toUpperCase() ?? "R";
+  }, [effectiveDisplayName, effectiveEmail]);
 
   const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null;
@@ -238,7 +204,7 @@ export default function ProfilePage({ params }: PageProps) {
   const handleProfileSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!authEmail) {
+    if (!isOwnProfile || !effectiveEmail) {
       setError("You need to be signed in to edit your profile.");
       return;
     }
@@ -251,7 +217,7 @@ export default function ProfilePage({ params }: PageProps) {
 
       if (avatarFile) {
         const ext = avatarFile.name.split(".").pop() || "jpg";
-        const filePath = `${authEmail}/${Date.now()}.${ext}`;
+        const filePath = `${effectiveEmail}/${Date.now()}.${ext}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("avatars")
@@ -270,48 +236,28 @@ export default function ProfilePage({ params }: PageProps) {
       const displayNameClean = displayNameInput.trim() === "" ? null : displayNameInput.trim();
       const bioClean = bioInput.trim() === "" ? null : bioInput.trim();
 
-      if (!hasProfileRow) {
-        const { data, error } = await supabase
-          .from(PROFILES_TABLE)
-          .insert({
-            email: authEmail,
+      const { data, error } = await supabase
+        .from(PROFILES_TABLE)
+        .upsert(
+          {
+            email: effectiveEmail,
             display_name: displayNameClean,
             bio: bioClean,
             avatar_url: avatarUrlToSave,
-          })
-          .select("email, display_name, avatar_url, bio")
-          .single<ProfileRow>();
-
-        if (error) {
-          console.error("Profile insert error", error);
-          setError("Revolvr glitched out saving your profile. Try again.");
-          return;
-        }
-
-        setProfile(data);
-        setHasProfileRow(true);
-        setAvatarPreview(data.avatar_url ?? null);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from(PROFILES_TABLE)
-        .update({
-          display_name: displayNameClean,
-          bio: bioClean,
-          avatar_url: avatarUrlToSave,
-        })
-        .eq("email", authEmail)
+          },
+          { onConflict: "email" }
+        )
         .select("email, display_name, avatar_url, bio")
         .single<ProfileRow>();
 
       if (error) {
-        console.error("Profile update error", error);
+        console.error("Profile upsert error", error);
         setError("Revolvr glitched out saving your profile. Try again.");
         return;
       }
 
       setProfile(data);
+      setHasProfileRow(true);
       setAvatarPreview(data.avatar_url ?? null);
     } catch (e) {
       console.error("Unhandled profile save error", e);
@@ -321,6 +267,7 @@ export default function ProfilePage({ params }: PageProps) {
     }
   };
 
+  // --- UI (kept same as your structure) ---
   return (
     <div className="min-h-screen bg-[#050814] text-white flex flex-col">
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-[#050814]/95 backdrop-blur">

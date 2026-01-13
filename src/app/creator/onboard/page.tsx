@@ -29,13 +29,14 @@ export default function CreatorOnboardPage() {
 
         const res = await fetch("/api/creator/me", {
           headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
         });
 
         const json = await res.json().catch(() => null);
         if (cancelled) return;
 
         if (json?.isCreator) {
-          router.replace("/creator/dashboard");
+          router.replace("/creator");
         }
       } catch {
         // If this guard fails, allow the page to render normally.
@@ -51,6 +52,7 @@ export default function CreatorOnboardPage() {
   const onActivate = async () => {
     setErr(null);
     setLoading(true);
+
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -79,7 +81,7 @@ export default function CreatorOnboardPage() {
         return;
       }
 
-      router.push("/creator/dashboard");
+      router.push("/creator");
     } catch (e) {
       console.error("[creator/onboard] activate error", e);
       setErr("Server error");
