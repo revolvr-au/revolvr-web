@@ -21,7 +21,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const run = async () => {
       const code = searchParams?.get("code");
-      const redirectTo = safeRedirect(searchParams?.get("redirectTo"));
+      const redirectTo = safeRedirect(searchParams ? searchParams.get("redirectTo") : null);
 
       try {
         if (code) {
