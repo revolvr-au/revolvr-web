@@ -48,7 +48,9 @@ export default function LoginClient() {
       setSending(true);
       setError(null);
 
-      const emailRedirectTo = `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
+      const origin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+      console.log("[login] origin", origin, "redirect", redirect, "emailRedirectTo", emailRedirectTo);
+      const emailRedirectTo = `${origin}/auth/callback?redirectTo=${encodeURIComponent(redirect)}`;
 
       const { error } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
