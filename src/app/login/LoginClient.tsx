@@ -25,6 +25,15 @@ const safeRedirect = (v: string | null) => {
   return v;
 };
 
+function getAuthCallbackOrigin(): string {
+  // Force production to use canonical host so Supabase cookies land on the correct domain.
+  if (typeof window !== "undefined" && window.location.hostname === "www.revolvr.net") {
+    return "https://www.revolvr.net";
+  }
+
+  return process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+}
+
 export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
