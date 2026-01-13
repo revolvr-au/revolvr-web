@@ -39,8 +39,6 @@ const PROFILES_TABLE = "profiles";
 const POSTS_TABLE = "Post";
 
 export default function ProfilePage({ params }: PageProps) {
-  const safeEmail = decodeURIComponent(params.email).trim().toLowerCase();
-
   const router = useRouter();
   const profileEmailParam = useMemo(() => decodeURIComponent(params.email), [params.email]);
 
@@ -61,7 +59,8 @@ export default function ProfilePage({ params }: PageProps) {
 
   // Per your comment: if logged in, always treat the authed user’s email as the “real” profile owner.
   const effectiveEmail = authEmail ?? profileEmailParam;
-  const isOwnProfile = !!authEmail;
+const isOwnProfile = !!authEmail && authEmail === profileEmailParam;
+
 
   useEffect(() => {
     let cancelled = false;
@@ -95,28 +94,55 @@ export default function ProfilePage({ params }: PageProps) {
 
         // Profile row
         const { data: profileRow, error: profileError } = await supabase
-          .from(PROFILES_TABLE)
-          .select("email, display_name, avatar_url, bio")
-          .eq("email", effectiveEmail)
-          .maybeSingle<ProfileRow>();
+  .from(PROFILES_TABLE)
+  .select("email, display_name, avatar_url, bio")
+  .eq("email", effectiveEmail)
+  .maybeSingle<ProfileRow>();
 
-        if (profileError) throw profileError;
+if (profileError) throw profileError;
 
-        if (!cancelled) {
-          if (profileRow) {
-            setProfile(profileRow);
-            setDisplayNameInput(profileRow.display_name ?? "");
-            setBioInput(profileRow.bio ?? "");
-            setAvatarPreview(profileRow.avatar_url ?? null);
-            setHasProfileRow(true);
-          } else {
-            setProfile({ email: effectiveEmail, display_name: null, avatar_url: null, bio: null });
-            setDisplayNameInput("");
-            setBioInput("");
-            setAvatarPreview(null);
-            setHasProfileRow(false);
-          }
-        }
+let finalProfile = profileRow ?? null;
+
+// If this is your own profile and it doesn't exist yet, create it silently.
+if (!finalProfile && authEmail && authEmail === effectiveEmail) {
+  const defaultDisplayName =
+    authEmail.split("@")[0]?.replace(/\W+/g, " ").trim() || null;
+
+  const { data: created, error: createError } = await supabase
+    .from(PROFILES_TABLE)
+    .upsert(
+      {
+        email: authEmail,
+        display_name: defaultDisplayName,
+        avatar_url: null,
+        bio: null,
+      },
+      { onConflict: "email" }
+    )
+    .select("email, display_name, avatar_url, bio")
+    .single<ProfileRow>();
+
+  if (createError) throw createError;
+  finalProfile = created;
+}
+
+if (!cancelled) {
+  if (finalProfile) {
+    setProfile(finalProfile);
+    setDisplayNameInput(finalProfile.display_name ?? "");
+    setBioInput(finalProfile.bio ?? "");
+    setAvatarPreview(finalProfile.avatar_url ?? null);
+    setHasProfileRow(true);
+  } else {
+    // Not your profile, and no row exists yet: normal state, not an error.
+    setProfile({ email: effectiveEmail, display_name: null, avatar_url: null, bio: null });
+    setDisplayNameInput("");
+    setBioInput("");
+    setAvatarPreview(null);
+    setHasProfileRow(false);
+  }
+}
+
 
         // Stats from posts (counts)
         const { data: postsData, error: postsError } = await supabase
