@@ -51,7 +51,6 @@ type CreatorMeResponse = {
     verificationCurrentPeriodEnd?: string | null;
   };
 };
-};
 
 
 
