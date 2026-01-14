@@ -1,3 +1,4 @@
+cat > src/app/api/creator/verified/route.ts <<'EOF'
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -22,19 +23,16 @@ export async function GET(req: NextRequest) {
 
     const bluePriceId = (process.env.STRIPE_BLUE_TICK_PRICE_ID ?? "").trim();
     const goldPriceId = (process.env.STRIPE_GOLD_TICK_PRICE_ID ?? "").trim();
+
     const priceIds = [bluePriceId, goldPriceId].filter(Boolean);
 
     const rows = await prisma.creatorProfile.findMany({
       where: {
         email: { in: emails },
         OR: [
-          // “correct” state (webhook should set these)
-          { isVerified: true, verificationStatus: { in: ["blue", "gold"] } },
-
-          // fallback: if price id is present, treat as verified for UI purposes
-          ...(priceIds.length
-            ? [{ verificationPriceId: { in: priceIds } }]
-            : []),
+          { isVerified: true },
+          { verificationStatus: { in: ["blue", "gold"] } },
+          ...(priceIds.length ? [{ verificationPriceId: { in: priceIds } }] : []),
         ],
       },
       select: { email: true },
@@ -54,3 +52,4 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+EOF
