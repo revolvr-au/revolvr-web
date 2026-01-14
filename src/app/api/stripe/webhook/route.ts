@@ -36,8 +36,22 @@ function getWebhookSecrets(): string[] {
 }
 
 function getInvoicePriceId(invoice: Stripe.Invoice): string | null {
-  const line = invoice.lines?.data?.[0];
-  return line?.price?.id ?? null;
+  const line: any = invoice.lines?.data?.[0];
+
+  // Stripe typings vary by version; runtime data may include price on different shapes.
+  // Common locations:
+  // - line.price.id (newer)
+  // - line.pricing.price (some SDK typings)
+  // - line.plan.id (older subscription invoices)
+  const direct = line?.price?.id;
+  const pricing = line?.pricing?.price;
+  const plan = line?.plan?.id;
+
+  if (typeof direct === "string" && direct) return direct;
+  if (typeof pricing === "string" && pricing) return pricing;
+  if (typeof plan === "string" && plan) return plan;
+
+  return null;
 }
 
 function getInvoicePeriodEnd(invoice: Stripe.Invoice): Date | null {
@@ -214,7 +228,7 @@ export async function POST(req: Request) {
         const invoice = event.data.object as Stripe.Invoice;
 
         const stripeSubscriptionId =
-          typeof invoice.subscription === "string" ? invoice.subscription : null;
+          typeof (invoice as any).subscription === "string" ? (invoice as any).subscription : null;
 
         const stripeCustomerId =
           typeof invoice.customer === "string" ? invoice.customer : null;
