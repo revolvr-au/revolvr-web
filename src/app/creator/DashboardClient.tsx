@@ -42,11 +42,18 @@ type Spin = {
 };
 
 type CreatorMeResponse = {
+  loggedIn?: boolean;
   creator?: {
     isVerified?: boolean;
     verificationTier?: "blue" | "gold" | null;
+    verificationStatus?: string | null;
+    verificationPriceId?: string | null;
+    verificationCurrentPeriodEnd?: string | null;
   };
 };
+};
+
+
 
 type VerifiedLookupResponse = {
   verified?: unknown;
@@ -264,11 +271,21 @@ export default function DashboardClient() {
       const res = await fetch("/api/creator/me", { cache: "no-store" });
       const json = (await res.json().catch(() => null)) as CreatorMeResponse | null;
 
-      setIsVerified(Boolean(json?.creator?.isVerified));
+      const verified = Boolean(json?.creator?.isVerified);
 
-      const tier = json?.creator?.verificationTier ?? null;
-      if (tier === "blue" || tier === "gold") setVerificationTier(tier);
-      else setVerificationTier(null);
+      // Tier can come from verificationTier OR from verificationStatus ("blue"/"gold")
+      const status = String(json?.creator?.verificationStatus ?? "").toLowerCase();
+      const tier =
+        json?.creator?.verificationTier === "gold" || json?.creator?.verificationTier === "blue"
+          ? json.creator.verificationTier
+          : status === "gold"
+            ? "gold"
+            : status === "blue"
+              ? "blue"
+              : null;
+
+      setIsVerified(verified);
+      setVerificationTier(tier);
     } catch (e) {
       console.warn("[creator/dashboard] failed to load /api/creator/me", e);
     }
