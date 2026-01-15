@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
+import { VerificationTick } from "@/components/VerificationTick";
 
 type ProfileRow = {
   email: string;

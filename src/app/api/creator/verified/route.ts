@@ -17,32 +17,38 @@ export async function GET(req: NextRequest) {
       .slice(0, 200);
 
     if (emails.length === 0) {
-      return NextResponse.json({ verified: [] }, { status: 200 });
+      return NextResponse.json({ verified: [], tiers: {} }, { status: 200 });
     }
-
-    const now = new Date();
 
     const rows = await prisma.creatorProfile.findMany({
       where: {
         email: { in: emails },
-        OR: [
-          { isVerified: true },
-          { verificationStatus: { in: ["blue", "gold"] } },
-          { verificationCurrentPeriodEnd: { gt: now } },
-        ],
+        isVerified: true,
+        verificationStatus: { in: ["blue", "gold"] },
       },
-      select: { email: true },
+      select: { email: true, verificationStatus: true },
     });
 
-    const verified = rows
-      .map((r) => String(r.email || "").trim().toLowerCase())
-      .filter(Boolean);
+    const verified: string[] = [];
+    const tiers: Record<string, "blue" | "gold"> = {};
 
-    return NextResponse.json({ verified }, { status: 200 });
+    for (const r of rows) {
+      const em = String(r.email || "").trim().toLowerCase();
+      const st = String(r.verificationStatus || "").trim().toLowerCase();
+      if (!em) continue;
+
+      if (st === "blue" || st === "gold") {
+        verified.push(em);
+        tiers[em] = st as "blue" | "gold";
+      }
+    }
+
+    return NextResponse.json({ verified, tiers }, { status: 200 });
   } catch (err: any) {
     console.error("[api/creator/verified]", err?.message ?? err);
+    // Fail closed: no verified badges if endpoint errors
     return NextResponse.json(
-      { verified: [], error: "Failed to lookup verified creators" },
+      { verified: [], tiers: {}, error: "Failed to lookup verified creators" },
       { status: 200 }
     );
   }
