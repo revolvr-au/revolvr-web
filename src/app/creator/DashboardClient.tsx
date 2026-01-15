@@ -711,6 +711,41 @@ useEffect(() => {
 
         {/* Center column */}
         <section className="flex-1 space-y-5">
+
+          {/* Mobile verification actions */}
+          <div className="md:hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold">Verification</div>
+              {isVerified ? (
+                <span className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200">
+                  <span className="h-2 w-2 rounded-full bg-blue-400" />
+                  {verificationTier === "gold" ? "Gold Tick active" : "Blue Tick active"}
+                </span>
+              ) : null}
+            </div>
+
+            {!isVerified ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={isLoadingVerify}
+                  onClick={() => handleStartBlueTick("blue")}
+                  className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
+                >
+                  {isLoadingVerify ? "Starting…" : "Get Blue Tick (Recurring)"}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={isLoadingVerify}
+                  onClick={() => handleStartBlueTick("gold")}
+                  className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
+                >
+                  {isLoadingVerify ? "Starting…" : "Get Gold Tick (Recurring)"}
+                </button>
+              </div>
+            ) : null}
+          </div>
           {notice && (
             <div className="rounded-xl bg-white/10 text-white text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-black/20">
               <span>{notice}</span>
