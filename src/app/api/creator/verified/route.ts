@@ -20,10 +20,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ verified: [] }, { status: 200 });
     }
 
-    const bluePriceId = (process.env.STRIPE_BLUE_TICK_PRICE_ID ?? "").trim();
-    const goldPriceId = (process.env.STRIPE_GOLD_TICK_PRICE_ID ?? "").trim();
-
-    const priceIds = [bluePriceId, goldPriceId].filter(Boolean);
+    const now = new Date();
 
     const rows = await prisma.creatorProfile.findMany({
       where: {
@@ -31,7 +28,7 @@ export async function GET(req: NextRequest) {
         OR: [
           { isVerified: true },
           { verificationStatus: { in: ["blue", "gold"] } },
-          ...(priceIds.length ? [{ verificationPriceId: { in: priceIds } }] : []),
+          { verificationCurrentPeriodEnd: { gt: now } },
         ],
       },
       select: { email: true },
@@ -44,7 +41,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ verified }, { status: 200 });
   } catch (err: any) {
     console.error("[api/creator/verified]", err?.message ?? err);
-    // Fail closed: no verified badges if endpoint errors
     return NextResponse.json(
       { verified: [], error: "Failed to lookup verified creators" },
       { status: 200 }
