@@ -32,7 +32,8 @@ type Spin = {
   id: number;
   user_email: string;
   post_id: string | null;
-  created_at: string;
+  createdAt: string;
+
 };
 
 export default function DashboardClient() {
@@ -106,7 +107,8 @@ export default function DashboardClient() {
         .from("spinner_spins")
         .select("*")
         .eq("user_email", email)
-        .order("created_at", { ascending: false });
+        .order("createdAt", { ascending: false });
+
 
       if (sbErr) throw sbErr;
 
