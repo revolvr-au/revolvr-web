@@ -155,22 +155,25 @@ export default function ProfilePage({ params }: PageProps) {
         // 2) Stats from posts (non-fatal)
         try {
           const { data: postsData, error: postsError } = await supabase
-            .from(POSTS_TABLE)
-            .select("tipCount, boostCount, spinCount")
-            .eq("userEmail", effectiveEmail);
+  .from(POSTS_TABLE)
+  .select("tip_count, boost_count, spin_count")
+  .eq("userEmail", effectiveEmail);
 
-          if (postsError) throw postsError;
+if (postsError) throw postsError;
 
-          const rows = (postsData ?? []) as Array<{
-            tipCount: number | null;
-            boostCount: number | null;
-            spinCount: number | null;
-          }>;
+const rows = (postsData ?? []) as Array<{
+  tip_count: number | null;
+  boost_count: number | null;
+  spin_count: number | null;
+}>;
 
-          const postsCount = rows.length;
-          const tipsCount = rows.reduce((sum, p) => sum + (p.tipCount ?? 0), 0);
-          const boostsCount = rows.reduce((sum, p) => sum + (p.boostCount ?? 0), 0);
-          const spinsCount = rows.reduce((sum, p) => sum + (p.spinCount ?? 0), 0);
+const postsCount = rows.length;
+const tipsCount = rows.reduce((sum, p) => sum + (p.tip_count ?? 0), 0);
+const boostsCount = rows.reduce((sum, p) => sum + (p.boost_count ?? 0), 0);
+const spinsCount = rows.reduce((sum, p) => sum + (p.spin_count ?? 0), 0);
+
+setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
+
 
           if (!cancelled) {
             setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
