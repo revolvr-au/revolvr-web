@@ -11,7 +11,7 @@ export default function CreatePage() {
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const [caption, setCaption] = React.useState("");
   const [isPosting, setIsPosting] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [err, setErr] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (!file) {
@@ -25,77 +25,80 @@ export default function CreatePage() {
 
   const canPost = !!file && !isPosting;
 
-  function cleanEmail(v: string | null | undefined) {
-    const e = (v ?? "").trim();
-    if (!e) return null;
-    if (e.toLowerCase() === "undefined") return null;
-    return e.toLowerCase();
+  function guessMediaType(f: File) {
+    return f.type.startsWith("video/") ? "video" : "image";
   }
 
   async function handlePost() {
     if (!file) return;
 
     setIsPosting(true);
-    setError(null);
+    setErr(null);
 
     try {
-      // 1) Must be authed
+      // 1) Require auth email (post ownership)
       const { data: authData, error: authErr } = await supabase.auth.getUser();
       if (authErr) throw authErr;
 
-      const userEmail = cleanEmail(authData.user?.email ?? null);
+      const userEmail = String(authData.user?.email ?? "").trim().toLowerCase();
       if (!userEmail) {
-        setError("You must be signed in to post.");
+        setErr("Please sign in before posting.");
         return;
       }
 
-      // 2) Upload to Supabase Storage bucket: posts
-      const ext = file.name.split(".").pop() || (file.type.startsWith("video/") ? "mp4" : "jpg");
-      const filePath = `${userEmail}/${Date.now()}.${ext}`;
+      const mediaType = guessMediaType(file);
 
-      const { data: storageData, error: storageErr } = await supabase.storage
+      // 2) Upload to Supabase Storage (bucket: "posts")
+      const ext = file.name.split(".").pop() || (mediaType === "video" ? "mp4" : "jpg");
+      const safeExt = ext.toLowerCase().replace(/[^a-z0-9]/g, "") || (mediaType === "video" ? "mp4" : "jpg");
+      const filePath = `${userEmail}/${Date.now()}-${Math.random().toString(16).slice(2)}.${safeExt}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from("posts")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, {
+          upsert: false,
+          contentType: file.type || undefined,
+        });
 
-      if (storageErr || !storageData) {
-        console.error("[create] storage upload failed", storageErr);
-        setError("Upload failed. Check Supabase Storage bucket 'posts' + RLS/policies.");
+      if (uploadError || !uploadData) {
+        console.error("[create] upload error", uploadError);
+        setErr("Upload failed. Check the posts bucket is public + allows uploads.");
         return;
       }
 
-      const { data: publicData } = supabase.storage.from("posts").getPublicUrl(storageData.path);
-      const imageUrl = publicData?.publicUrl ?? null;
+      const { data: publicData } = supabase.storage.from("posts").getPublicUrl(uploadData.path);
+      const publicUrl = publicData?.publicUrl;
 
-      if (!imageUrl) {
-        setError("Upload succeeded but could not resolve public URL.");
+      if (!publicUrl) {
+        setErr("Upload succeeded but public URL could not be created.");
         return;
       }
 
-      // 3) Create DB post via Next API route
+      // 3) Create post in DB via API (Prisma)
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        cache: "no-store",
         body: JSON.stringify({
           userEmail,
-          imageUrl,
-          caption: caption.trim(),
+          caption,
+          imageUrl: publicUrl,
+          mediaType,
         }),
       });
 
+      const json = await res.json().catch(() => null);
+
       if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        console.error("[create] POST /api/posts failed", res.status, text);
-        setError(`Posting failed (${res.status}). Check server logs.`);
+        console.error("[create] /api/posts failed", res.status, json);
+        setErr(`Post failed (${res.status}).`);
         return;
       }
 
-      // 4) Success -> go to feed
+      // 4) Go to feed
       router.push("/public-feed");
-      router.refresh();
     } catch (e: any) {
-      console.error("[create] unhandled post error", e?.message ?? e);
-      setError("Posting failed. Check console/network.");
+      console.error("[create] unhandled error", e);
+      setErr(e?.message ?? "Something went wrong posting.");
     } finally {
       setIsPosting(false);
     }
@@ -115,11 +118,11 @@ export default function CreatePage() {
         </button>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-100">
-          {error}
+      {err ? (
+        <div className="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+          {err}
         </div>
-      )}
+      ) : null}
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <label className="block text-sm font-medium text-white/80">Upload video or image</label>
@@ -131,15 +134,15 @@ export default function CreatePage() {
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
 
-        {previewUrl && (
+        {previewUrl ? (
           <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/20">
             {file?.type.startsWith("video/") ? (
-              <video src={previewUrl} controls className="h-[360px] w-full object-contain" />
+              <video src={previewUrl} controls playsInline className="h-[360px] w-full object-contain" />
             ) : (
               <img src={previewUrl} alt="Preview" className="h-[360px] w-full object-contain" />
             )}
           </div>
-        )}
+        ) : null}
 
         <div className="mt-4">
           <label className="block text-sm font-medium text-white/80">Caption</label>
@@ -164,9 +167,7 @@ export default function CreatePage() {
           {isPosting ? "Posting..." : "Post"}
         </button>
 
-        <p className="mt-3 text-xs text-white/50">
-          Posts should appear on /public-feed once the DB insert succeeds.
-        </p>
+        <p className="mt-3 text-xs text-white/50">Posts should appear on /public-feed once the DB insert succeeds.</p>
       </div>
     </main>
   );

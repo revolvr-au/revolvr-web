@@ -13,10 +13,12 @@ import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 type Post = {
   id: string;
   userEmail: string;
-  imageUrl: string;
+  imageUrl: string;       // this is your media URL
+  mediaType?: "image" | "video";
   caption: string;
   createdAt: string;
 };
+
 
 type PostsResponseShape = { posts?: unknown };
 type VerifiedResponseShape = { verified?: unknown; currencies?: unknown };
@@ -478,28 +480,43 @@ export default function PublicFeedClient() {
                     </Link>
                   </div>
 
-                  <div className="relative w-full max-h-[520px]">
-                    {showFallback ? (
-                      <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
-                        <span className="text-xs text-white/50">Image unavailable</span>
-                      </div>
-                    ) : (
-                      <Image
-                        src={post.imageUrl}
-                        alt={post.caption || "post"}
-                        width={1200}
-                        height={800}
-                        unoptimized
-                        className="w-full max-h-[520px] object-cover"
-                        onError={() =>
-                          setBrokenPostImages((prev) => ({
-                            ...prev,
-                            [post.id]: true,
-                          }))
-                        }
-                      />
-                    )}
-                  </div>
+  <div className="relative w-full max-h-[520px]">
+  {showFallback ? (
+    <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
+      <span className="text-xs text-white/50">Media unavailable</span>
+    </div>
+  ) : post.mediaType === "video" ? (
+    <video
+      src={post.imageUrl}
+      controls
+      playsInline
+      preload="metadata"
+      className="w-full max-h-[520px] object-cover bg-black"
+      onError={() =>
+        setBrokenPostImages((prev) => ({
+          ...prev,
+          [post.id]: true,
+        }))
+      }
+    />
+  ) : (
+    <Image
+      src={post.imageUrl}
+      alt={post.caption || "post"}
+      width={1200}
+      height={800}
+      unoptimized
+      className="w-full max-h-[520px] object-cover"
+      onError={() =>
+        setBrokenPostImages((prev) => ({
+          ...prev,
+          [post.id]: true,
+        }))
+      }
+    />
+  )}
+</div>
+
 
                   <div className="px-4 py-2 border-t border-white/10">
                     <div className="hidden sm:flex">

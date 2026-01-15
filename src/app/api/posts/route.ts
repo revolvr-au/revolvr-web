@@ -58,15 +58,16 @@ export async function GET() {
     }
 
 const payload = posts.map((p) => ({
-      id: p.id,
-      userEmail: p.userEmail,
-      imageUrl: p.imageUrl,
-      caption: p.caption,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-      likesCount: p._count.Like, // number of likes
-      verificationTier: tierByEmail.get(p.userEmail) ?? null,
-    }));
+  id: p.id,
+  userEmail: p.userEmail,
+  imageUrl: p.imageUrl,
+  mediaType: p.mediaType ?? "image",
+  caption: p.caption,
+  createdAt: p.createdAt,
+  updatedAt: p.updatedAt,
+  likesCount: p._count.Like,
+  verificationTier: tierByEmail.get(p.userEmail) ?? null,
+}));
 
     return NextResponse.json(payload);
   } catch (err) {
@@ -82,22 +83,29 @@ const payload = posts.map((p) => ({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { caption, imageUrl, userEmail } = body;
+const { caption, imageUrl, userEmail, mediaType } = body;
 
-    if (!caption || !imageUrl || !userEmail) {
-      return NextResponse.json(
-        { message: "caption, imageUrl and userEmail are required" },
-        { status: 400 }
-      );
-    }
+const mt = mediaType === "video" ? "video" : "image";
 
-    const post = await prisma.post.create({
-      data: {
-        caption,
-        imageUrl,
-        userEmail,
-      },
-    });
+if (!imageUrl || !userEmail) {
+  return NextResponse.json(
+    { message: "imageUrl and userEmail are required" },
+    { status: 400 }
+  );
+}
+
+const post = await prisma.post.create({
+  data: {
+    caption: typeof caption === "string" ? caption : "",
+    imageUrl: String(imageUrl),
+    userEmail: String(userEmail).toLowerCase(),
+    mediaType: mt,
+  },
+});
+
+return NextResponse.json({ ...post, likesCount: 0 }, { status: 201 });
+
+
 
     // new post starts with 0 likes
     const withCount = { ...post, likesCount: 0 };
