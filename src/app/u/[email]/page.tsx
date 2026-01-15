@@ -151,41 +151,43 @@ export default function ProfilePage({ params }: PageProps) {
           }
         }
         
-                  // 2) Stats from posts (non-fatal)
-        try {
-          // Post table uses camelCase: tipCount / boostCount / spinCount
-          const { data: postsData, error: postsError } = await supabase
-  .from(POSTS_TABLE)
-  .select("id, tipCount, boostCount, spinCount")
-  .eq("userEmail", effectiveEmail);
+          // 2) Stats from posts (non-fatal) — use our server API (avoids Supabase PostgREST 400)
+try {
+  const res = await fetch(`/api/posts?limit=500`, { cache: "no-store" });
 
+  if (!res.ok) {
+    throw new Error(`posts api failed: ${res.status}`);
+  }
 
-          if (postsError) throw postsError;
+  const allPosts = (await res.json().catch(() => [])) as Array<{
+    id: string;
+    userEmail?: string | null;
+    tipCount?: number | null;
+    boostCount?: number | null;
+    spinCount?: number | null;
+    // some older rows might have snake_case; tolerate it
+    tip_count?: number | null;
+    boost_count?: number | null;
+    spin_count?: number | null;
+  }>;
 
-          const rows = (postsData ?? []) as Array<{
-            id: string;
-            tipCount: number | null;
-            boostCount: number | null;
-            spinCount: number | null;
-          }>;
+  const rows = (allPosts ?? []).filter(
+    (p) => String(p.userEmail ?? "").toLowerCase() === String(effectiveEmail ?? "").toLowerCase()
+  );
 
-          const postsCount = rows.length;
-          const tipsCount = rows.reduce((sum, p) => sum + (p.tipCount ?? 0), 0);
-          const boostsCount = rows.reduce((sum, p) => sum + (p.boostCount ?? 0), 0);
-          const spinsCount = rows.reduce((sum, p) => sum + (p.spinCount ?? 0), 0);
+  const postsCount = rows.length;
+  const tipsCount = rows.reduce((sum, p) => sum + ((p.tipCount ?? p.tip_count ?? 0) as number), 0);
+  const boostsCount = rows.reduce((sum, p) => sum + ((p.boostCount ?? p.boost_count ?? 0) as number), 0);
+  const spinsCount = rows.reduce((sum, p) => sum + ((p.spinCount ?? p.spin_count ?? 0) as number), 0);
 
-          if (!cancelled) {
-            setStats({
-              posts: postsCount,
-              tips: tipsCount,
-              boosts: boostsCount,
-              spins: spinsCount,
-            });
-          }
-        } catch (err) {
-          console.error("[ProfilePage] stats query failed (non-fatal)", err);
-          if (!cancelled) setStats({ posts: 0, tips: 0, boosts: 0, spins: 0 });
-        }
+  if (!cancelled) {
+    setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
+  }
+} catch (err) {
+  console.error("[ProfilePage] stats query failed (non-fatal)", err);
+  if (!cancelled) setStats({ posts: 0, tips: 0, boosts: 0, spins: 0 });
+}
+
 
       } catch (e) {
         console.error("[ProfilePage] load failed", e);
