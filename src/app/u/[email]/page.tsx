@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import { VerificationTick } from "@/components/VerificationTick";
+import VerifiedName from "./VerifiedName";
 
 type ProfileRow = {
   email: string;
@@ -304,7 +305,7 @@ export default function ProfilePage({ params }: PageProps) {
                 )}
               </div>
               <div className="flex flex-col">
-                <h1 className="text-lg sm:text-xl font-semibold">{effectiveDisplayName}</h1>
+                <h1 className="text-xl font-semibold"><VerifiedName email={decodeURIComponent(String((params as any)?.email ?? ""))} name={effectiveDisplayName} /></h1>
                 <span className="text-xs sm:text-sm text-white/50">{effectiveEmail ?? ""}</span>
               </div>
             </div>
