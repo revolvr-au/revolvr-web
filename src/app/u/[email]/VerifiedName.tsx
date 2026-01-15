@@ -1,19 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { VerificationTick } from "@/components/VerificationTick";
 
-function VerifiedBadge({ tier }: { tier: "blue" | "gold" }) {
-  return (
-    <span
-      title={tier === "gold" ? "Gold verified creator" : "Verified creator"}
-      className={`inline-flex items-center justify-center w-4 h-4 rounded-full text-white text-[10px] ${
-        tier === "gold" ? "bg-yellow-500" : "bg-blue-500"
-      }`}
-    >
-      ✓
-    </span>
-  );
-}
+type Tier = "blue" | "gold";
 
 export default function VerifiedName({
   email,
@@ -29,44 +19,50 @@ export default function VerifiedName({
     [email]
   );
 
-  const [tier, setTier] = useState<"blue" | "gold" | null>(null);
+  const [tier, setTier] = useState<Tier | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function run() {
-      if (!normalizedEmail) return;
-
+    (async () => {
       try {
+        if (!normalizedEmail) {
+          if (!cancelled) setTier(null);
+          return;
+        }
+
         const res = await fetch(
           `/api/creator/verified?emails=${encodeURIComponent(normalizedEmail)}`,
           { cache: "no-store" }
         );
-        const json = await res.json().catch(() => null);
 
-        const tiers = json && typeof json === "object" ? (json as any).tiers : null;
-        const t = tiers && typeof tiers === "object" ? (tiers as any)[normalizedEmail] : null;
+        const json = (await res.json().catch(() => ({}))) as any;
 
-        if (!cancelled) {
-          setTier(t === "gold" || t === "blue" ? t : null);
-        }
-      } catch {
+        const tiers = json?.tiers && typeof json.tiers === "object" ? json.tiers : null;
+        const t = tiers?.[normalizedEmail];
+
+        const nextTier: Tier | null =
+          t === "gold" ? "gold" : t === "blue" ? "blue" : null;
+
+        if (!cancelled) setTier(nextTier);
+      } catch (e) {
+        console.error("[VerifiedName] failed", e);
         if (!cancelled) setTier(null);
       }
-    }
+    })();
 
-    run();
     return () => {
       cancelled = true;
     };
   }, [normalizedEmail]);
 
+  // Avoid TS/signature mismatches if VerificationTick props differ slightly
+  const Tick: any = VerificationTick;
+
   return (
-    <div className={className}>
-      <div className="flex items-center gap-2">
-        <span>{name}</span>
-        {tier ? <VerifiedBadge tier={tier} /> : null}
-      </div>
-    </div>
+    <span className={`inline-flex items-center gap-2 ${className ?? ""}`}>
+      <span>{name}</span>
+      {tier ? <Tick tier={tier} /> : null}
+    </span>
   );
 }
