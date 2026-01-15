@@ -150,37 +150,35 @@ export default function ProfilePage({ params }: PageProps) {
             setHasProfileRow(false);
           }
         }
+try {
+  // IMPORTANT: PostgREST column names are snake_case here
+  const { data: postsData, error: postsError } = await supabase
+    .from(POSTS_TABLE)
+    .select("id, tip_count, boost_count, spin_count")
+    .eq("userEmail", effectiveEmail);
 
-        // 2) Stats from posts (non-fatal)
-        try {
-          // Post table columns (based on your repo grep): created_at, tipCount, boostCount, spinCount
-          const { data: postsData, error: postsError } = await supabase
-            .from(POSTS_TABLE)
-            .select("id, tipCount, boostCount, spinCount, created_at")
-            .eq("userEmail", effectiveEmail);
+  if (postsError) throw postsError;
 
-          if (postsError) throw postsError;
+  const rows = (postsData ?? []) as Array<{
+    id: string;
+    tip_count: number | null;
+    boost_count: number | null;
+    spin_count: number | null;
+  }>;
 
-          const rows = (postsData ?? []) as Array<{
-            id: string;
-            tipCount: number | null;
-            boostCount: number | null;
-            spinCount: number | null;
-            created_at: string | null;
-          }>;
+  const postsCount = rows.length;
+  const tipsCount = rows.reduce((sum, p) => sum + (p.tip_count ?? 0), 0);
+  const boostsCount = rows.reduce((sum, p) => sum + (p.boost_count ?? 0), 0);
+  const spinsCount = rows.reduce((sum, p) => sum + (p.spin_count ?? 0), 0);
 
-          const postsCount = rows.length;
-          const tipsCount = rows.reduce((sum, p) => sum + (p.tipCount ?? 0), 0);
-          const boostsCount = rows.reduce((sum, p) => sum + (p.boostCount ?? 0), 0);
-          const spinsCount = rows.reduce((sum, p) => sum + (p.spinCount ?? 0), 0);
+  if (!cancelled) {
+    setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
+  }
+} catch (err) {
+  console.error("[ProfilePage] stats query failed (non-fatal)", err);
+  if (!cancelled) setStats({ posts: 0, tips: 0, boosts: 0, spins: 0 });
+}
 
-          if (!cancelled) {
-            setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
-          }
-        } catch (err) {
-          console.error("[ProfilePage] stats query failed (non-fatal)", err);
-          if (!cancelled) setStats({ posts: 0, tips: 0, boosts: 0, spins: 0 });
-        }
       } catch (e) {
         console.error("[ProfilePage] load failed", e);
         if (!cancelled) setError("Revolvr glitched out loading this profile.");
