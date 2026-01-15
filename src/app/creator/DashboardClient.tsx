@@ -56,6 +56,7 @@ type CreatorMeResponse = {
 
 type VerifiedLookupResponse = {
   verified?: unknown;
+  tiers?: unknown;
   currencies?: unknown; // returned by endpoint, not required here
   error?: unknown;
 };
@@ -146,7 +147,7 @@ export default function DashboardClient() {
   const [isVerified, setIsVerified] = useState(false);
   const [verificationTier, setVerificationTier] = useState<"blue" | "gold" | null>(null);
   const [isLoadingVerify, setIsLoadingVerify] = useState(false);
-  const [verifiedMap, setVerifiedMap] = useState<Record<string, boolean>>({});
+  const [verifiedTiers, setVerifiedTiers] = useState<Record<string, "blue" | "gold">>({});
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [caption, setCaption] = useState("");
@@ -194,8 +195,8 @@ export default function DashboardClient() {
       ).slice(0, 200);
 
       if (uniq.length === 0) {
-        setVerifiedMap({});
-        return;
+        setVerifiedTiers({});
+return;
       }
 
       const res = await fetch(`/api/creator/verified?emails=${encodeURIComponent(uniq.join(","))}`, {
@@ -207,10 +208,12 @@ export default function DashboardClient() {
       const verifiedRaw = hasVerifiedArray(json) ? json?.verified ?? [] : [];
       const verifiedList = normalizeVerifiedEmails(verifiedRaw);
 
-      const m: Record<string, boolean> = {};
-      for (const em of verifiedList) m[em] = true;
-
-      setVerifiedMap(m);
+      const tiers: Record<string, "blue" | "gold"> = {};
+      for (const em of verifiedList) {
+        const t = (json?.tiers && typeof json.tiers === "object") ? (json.tiers as any)[em] : null;
+        tiers[em] = t === "gold" ? "gold" : "blue";
+      }
+setVerifiedTiers(tiers);
     } catch (e) {
       console.warn("[creator/dashboard] failed to load verified authors", e);
     }
@@ -302,7 +305,7 @@ export default function DashboardClient() {
 
   useEffect(() => {
     if (!posts.length) {
-      setVerifiedMap({});
+      setVerifiedTiers({});
       return;
     }
     const emails = posts.map((p) => p.userEmail).filter(Boolean);
@@ -778,7 +781,12 @@ useEffect(() => {
                   return cleaned || post.userEmail;
                 })();
 
-                const isAuthorVerified = verifiedMap[String(post.userEmail || "").toLowerCase()] === true;
+
+                const authorTier = verifiedTiers[String(post.userEmail || "").toLowerCase()];
+                const isAuthorVerified = authorTier === "blue" || authorTier === "gold";
+
+
+                
 
                 return (
                   <article
@@ -792,7 +800,38 @@ useEffect(() => {
                         </div>
                         <div className="flex flex-col">
                           <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
-                            {displayName}
+                            <span>{displayName}</span>
+                            {(() => {
+                              const tier = authorTier;
+                              if (tier !== "blue" && tier !== "gold") return null;
+                              const isGold = tier === "gold";
+                              return (
+                                <span
+                                  className={[
+                                    "ml-2 inline-flex items-center gap-1",
+                                    "text-[10px] px-2 py-1 rounded-full border",
+                                    isGold
+                                      ? "bg-yellow-500/15 border-yellow-300/30 text-yellow-100"
+                                      : "bg-blue-500/15 border-blue-300/30 text-blue-100",
+                                  ].join(" ")}
+                                  title={isGold ? "Gold verified" : "Blue verified"}
+                                >
+                                  <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path
+                                      d="M20 6L9 17l-5-5"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2.5"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                  <span className="font-semibold">
+                                    {isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}
+                                  </span>
+                                </span>
+                              );
+                            })()}
                             {isAuthorVerified ? (
                               <span className="ml-1 inline-flex align-middle">
                                 <VerifiedBadge />
