@@ -305,10 +305,16 @@ export default function ProfilePage({ params }: PageProps) {
                 )}
               </div>
               <div className="flex flex-col">
-                <h1 className="text-xl font-semibold"><VerifiedName email={decodeURIComponent(String((params as any)?.email ?? ""))} name={effectiveDisplayName} /></h1>
-                <span className="text-xs sm:text-sm text-white/50">{effectiveEmail ?? ""}</span>
-              </div>
-            </div>
+  <h1 className="text-xl font-semibold">
+    {effectiveEmail ? (
+      <VerifiedName email={effectiveEmail} name={effectiveDisplayName} />
+    ) : (
+      <span>{effectiveDisplayName}</span>
+    )}
+  </h1>
+  <span className="text-xs sm:text-sm text-white/50">{effectiveEmail ?? ""}</span>
+</div>
+</div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
