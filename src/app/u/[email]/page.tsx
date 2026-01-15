@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
-import { VerificationTick } from "@/components/VerificationTick";
 import VerifiedName from "./VerifiedName";
 
 type ProfileRow = {
@@ -154,26 +153,26 @@ export default function ProfilePage({ params }: PageProps) {
 
         // 2) Stats from posts (non-fatal)
         try {
+          // Post table columns (based on your repo grep): created_at, tipCount, boostCount, spinCount
           const { data: postsData, error: postsError } = await supabase
-  .from(POSTS_TABLE)
-  .select("tip_count, boost_count, spin_count")
-  .eq("userEmail", effectiveEmail);
+            .from(POSTS_TABLE)
+            .select("id, tipCount, boostCount, spinCount, created_at")
+            .eq("userEmail", effectiveEmail);
 
-if (postsError) throw postsError;
+          if (postsError) throw postsError;
 
-const rows = (postsData ?? []) as Array<{
-  tip_count: number | null;
-  boost_count: number | null;
-  spin_count: number | null;
-}>;
+          const rows = (postsData ?? []) as Array<{
+            id: string;
+            tipCount: number | null;
+            boostCount: number | null;
+            spinCount: number | null;
+            created_at: string | null;
+          }>;
 
-const postsCount = rows.length;
-const tipsCount = rows.reduce((sum, p) => sum + (p.tip_count ?? 0), 0);
-const boostsCount = rows.reduce((sum, p) => sum + (p.boost_count ?? 0), 0);
-const spinsCount = rows.reduce((sum, p) => sum + (p.spin_count ?? 0), 0);
-
-setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
-
+          const postsCount = rows.length;
+          const tipsCount = rows.reduce((sum, p) => sum + (p.tipCount ?? 0), 0);
+          const boostsCount = rows.reduce((sum, p) => sum + (p.boostCount ?? 0), 0);
+          const spinsCount = rows.reduce((sum, p) => sum + (p.spinCount ?? 0), 0);
 
           if (!cancelled) {
             setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spinsCount });
@@ -197,7 +196,11 @@ setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spins
 
   const effectiveDisplayName = useMemo(() => {
     const email = effectiveEmail ?? "someone@revolvr";
-    return profile?.display_name || email.split("@")[0]?.replace(/\W+/g, " ").trim() || "Someone";
+    return (
+      profile?.display_name ||
+      email.split("@")[0]?.replace(/\W+/g, " ").trim() ||
+      "Someone"
+    );
   }, [profile?.display_name, effectiveEmail]);
 
   const avatarInitial = useMemo(() => {
@@ -307,17 +310,18 @@ setStats({ posts: postsCount, tips: tipsCount, boosts: boostsCount, spins: spins
                   <span>{avatarInitial}</span>
                 )}
               </div>
+
               <div className="flex flex-col">
-  <h1 className="text-xl font-semibold">
-    {effectiveEmail ? (
-      <VerifiedName email={effectiveEmail} name={effectiveDisplayName} />
-    ) : (
-      <span>{effectiveDisplayName}</span>
-    )}
-  </h1>
-  <span className="text-xs sm:text-sm text-white/50">{effectiveEmail ?? ""}</span>
-</div>
-</div>
+                <h1 className="text-xl font-semibold">
+                  {effectiveEmail ? (
+                    <VerifiedName email={effectiveEmail} name={effectiveDisplayName} />
+                  ) : (
+                    <span>{effectiveDisplayName}</span>
+                  )}
+                </h1>
+                <span className="text-xs sm:text-sm text-white/50">{effectiveEmail ?? ""}</span>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
               <div className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
