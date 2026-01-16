@@ -205,9 +205,9 @@ export default function DashboardClient() {
   }, [ready, userEmail, router]);
 
   // DEBUG: hydration proof \(if this stays false, client JS is not running\)
-  useEffect\(\(\) => \{
-    setHydrated\(true\);
-  \}, \[\]\);
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   // DEBUG: global pointer logger (captures clicks even if an overlay is present)
   useEffect(() => {
