@@ -163,7 +163,9 @@ const [verifyErr, setVerifyErr] = useState<string | null>(null);
 
 
   async function startVerificationCheckout(tier: "blue" | "gold") {
-  if (!userEmail) {
+    console.log("[verify] startVerificationCheckout", tier);
+  setNotice(`Starting ${tier.toUpperCase()} verification…`);
+if (!userEmail) {
     setVerifyErr("You must be signed in to verify.");
     return;
   }
@@ -620,7 +622,7 @@ useEffect(() => {
           </button>
         </div>
       </header>
-            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+            <section className="relative z-50 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold">Get verified</h2>
