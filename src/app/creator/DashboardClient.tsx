@@ -157,6 +157,7 @@ export default function DashboardClient() {
   // Verification UI state
   const [verifyLoading, setVerifyLoading] = useState<null | "blue" | "gold">(null);
   const [verifyErr, setVerifyErr] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   async function startVerificationCheckout(tier: "blue" | "gold") {
     console.log("[verify] startVerificationCheckout", tier);
@@ -207,6 +208,11 @@ export default function DashboardClient() {
       // router.replace("/login?redirectTo=/creator");
     }
   }, [ready, userEmail, router]);
+
+  // DEBUG: hydration proof (if this stays false, client JS is not running)
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const loadPosts = useCallback(async () => {
     try {
@@ -333,6 +339,7 @@ export default function DashboardClient() {
       console.warn("[creator/dashboard] failed to load /api/creator/me", e);
     }
   }, []);
+useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -562,8 +569,13 @@ export default function DashboardClient() {
       setError("Revolvr glitched out starting a boost 😵‍💫");
     }
   };
+<div className="min-h-screen bg-[#050816] text-white">
 
-  // UI guards
+  
+      <div className="px-4 py-2 text-xs text-white/70 border-b border-white/10 bg-black/30">
+        Debug: Hydrated: <b className="text-white">{hydrated ? "YES" : "NO"}</b> | verifyLoading: <b className="text-white">{String(verifyLoading)}</b>
+      </div>
+// UI guards
   if (!ready) {
     return (
       <div className="min-h-screen bg-[#050816] text-white p-8">
@@ -641,7 +653,7 @@ export default function DashboardClient() {
               onPointerDown={() => { setNotice("BLUE: click detected"); setVerifyErr(null); }}
               onClick={() => startVerificationCheckout("blue")}
               style={{ pointerEvents: "auto" }}
-              disabled={verifyLoading !== null}
+              disabled={false}
               className={[
                 "px-4 py-2 rounded-xl text-sm font-semibold",
                 "border border-white/15 bg-white/5 hover:bg-white/10",
@@ -656,7 +668,7 @@ export default function DashboardClient() {
               onPointerDown={() => { setNotice("GOLD: click detected"); setVerifyErr(null); }}
               onClick={() => startVerificationCheckout("gold")}
               style={{ pointerEvents: "auto" }}
-              disabled={verifyLoading !== null}
+              disabled={false}
               className={[
                 "px-4 py-2 rounded-xl text-sm font-semibold",
                 "bg-amber-300 text-black hover:bg-amber-200",
@@ -691,7 +703,7 @@ export default function DashboardClient() {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={verifyLoading !== null}
+                    disabled={false}
                     onClick={() => startVerificationCheckout("blue")}
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
@@ -700,7 +712,7 @@ export default function DashboardClient() {
 
                   <button
                     type="button"
-                    disabled={verifyLoading !== null}
+                    disabled={false}
                     onClick={() => startVerificationCheckout("gold")}
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
@@ -772,7 +784,7 @@ export default function DashboardClient() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={verifyLoading !== null}
+                  disabled={false}
                   onClick={() => startVerificationCheckout("blue")}
                   className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                 >
@@ -781,7 +793,7 @@ export default function DashboardClient() {
 
                 <button
                   type="button"
-                  disabled={verifyLoading !== null}
+                  disabled={false}
                   onClick={() => startVerificationCheckout("gold")}
                   className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                 >
