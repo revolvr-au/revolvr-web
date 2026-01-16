@@ -594,6 +594,20 @@ export default function DashboardClient() {
         <b className="text-white">{String(verifyLoading)}</b>
       </div>
 
+      <div className="px-4 py-2 border-b border-white/10 bg-black/20">
+        <button
+          type="button"
+          onClick={() => {
+            alert("JS CLICK WORKS");
+            console.log("[debug] js click works");
+            setNotice("JS CLICK WORKS");
+          }}
+          className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs"
+        >
+          JS TEST (must respond)
+        </button>
+      </div>
+
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
         <div className="flex items-center gap-2">
