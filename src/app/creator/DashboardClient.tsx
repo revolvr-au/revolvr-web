@@ -147,7 +147,6 @@ export default function DashboardClient() {
 
   const [isVerified, setIsVerified] = useState(false);
   const [verificationTier, setVerificationTier] = useState<"blue" | "gold" | null>(null);
-  const [isLoadingVerify, setIsLoadingVerify] = useState(false);
   const [verifiedTiers, setVerifiedTiers] = useState<Record<string, "blue" | "gold">>({});
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -158,6 +157,49 @@ export default function DashboardClient() {
   const [isLensOpen, setIsLensOpen] = useState(false);
 
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
+
+  const [verifyLoading, setVerifyLoading] = useState<null | "blue" | "gold">(null);
+const [verifyErr, setVerifyErr] = useState<string | null>(null);
+
+
+  async function startVerificationCheckout(tier: "blue" | "gold") {
+  if (!userEmail) {
+    setVerifyErr("You must be signed in to verify.");
+    return;
+  }
+
+  try {
+    setVerifyErr(null);
+    setVerifyLoading(tier);
+
+    const res = await fetch("/api/payments/verification/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tier,
+        creatorEmail: userEmail,
+      }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(json?.error || `Verification failed (${res.status})`);
+    }
+
+    if (!json?.url) {
+      throw new Error("Stripe did not return a checkout URL.");
+    }
+
+    window.location.href = json.url;
+  } catch (err: any) {
+    console.error("[creator] verification checkout error", err);
+    setVerifyErr(err?.message || "Failed to start verification.");
+  } finally {
+    setVerifyLoading(null);
+  }
+}
+
 
   // Optional: redirect only AFTER auth resolved
   useEffect(() => {
@@ -384,56 +426,6 @@ useEffect(() => {
     }
   };
 
-  const handleStartBlueTick = async (tier: "blue" | "gold" = "blue") => {
-    try {
-      setIsLoadingVerify(true);
-      setError(null);
-
-      const { data } = await supabase.auth.getSession();
-      const token = data?.session?.access_token;
-
-      if (!token) {
-        setError("You need to be signed in to start verification.");
-        return;
-      }
-
-      const res = await fetch("/api/creator/verify/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          creatorEmail: userEmail,
-          userEmail,
-          source: "FEED",
-          targetId: null,
-          tier,
-        }),
-      });
-
-      const json = (await res.json().catch(() => null)) as { url?: unknown; error?: unknown } | null;
-
-      if (!res.ok) {
-        setError((json?.error ? String(json.error) : null) || "Could not start verification checkout.");
-        return;
-      }
-
-      const url = typeof json?.url === "string" ? json.url : "";
-      if (url) {
-        window.location.href = url;
-        return;
-      }
-
-      setError("Stripe did not return a checkout URL.");
-    } catch (e) {
-      console.error("[creator/dashboard] start verify error", e);
-      setError("Revolvr glitched out starting verification.");
-    } finally {
-      setIsLoadingVerify(false);
-    }
-  };
-
   const handleCreatePost = async (event: FormEvent) => {
     event.preventDefault();
     if (!userEmail) return;
@@ -628,6 +620,50 @@ useEffect(() => {
           </button>
         </div>
       </header>
+            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold">Get verified</h2>
+            <p className="text-[11px] text-white/60 mt-1">
+              Choose Blue or Gold. You’ll be redirected to Stripe to complete checkout.
+            </p>
+
+            {verifyErr ? (
+              <div className="mt-3 rounded-xl border border-red-400/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                {verifyErr}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => startVerificationCheckout("blue")}
+              disabled={verifyLoading !== null}
+              className={[
+                "px-4 py-2 rounded-xl text-sm font-semibold",
+                "border border-white/15 bg-white/5 hover:bg-white/10",
+                "disabled:opacity-60 disabled:cursor-not-allowed",
+              ].join(" ")}
+            >
+              {verifyLoading === "blue" ? "Loading…" : "Blue tick"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => startVerificationCheckout("gold")}
+              disabled={verifyLoading !== null}
+              className={[
+                "px-4 py-2 rounded-xl text-sm font-semibold",
+                "bg-amber-300 text-black hover:bg-amber-200",
+                "disabled:opacity-60 disabled:cursor-not-allowed",
+              ].join(" ")}
+            >
+              {verifyLoading === "gold" ? "Loading…" : "Gold tick"}
+            </button>
+          </div>
+        </div>
+      </section>
 
       {/* Main layout */}
       <main className="max-w-6xl mx-auto px-4 py-6 flex gap-6">
@@ -651,20 +687,23 @@ useEffect(() => {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={isLoadingVerify}
-                    onClick={() => handleStartBlueTick("blue")}
+                    disabled={verifyLoading !== null}
+                    onClick={() => startVerificationCheckout("blue")}
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
-                    {isLoadingVerify ? "Starting…" : "Get Blue Tick (Recurring)"}
+                    {verifyLoading === "blue" ? "Loading…" : "Get Blue Tick"}
+
                   </button>
 
                   <button
                     type="button"
-                    disabled={isLoadingVerify}
-                    onClick={() => handleStartBlueTick("gold")}
+                    disabled={verifyLoading !== null}
+                    onClick={() => startVerificationCheckout("gold")}
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
-                    {isLoadingVerify ? "Starting…" : "Get Gold Tick (Recurring)"}
+                    {verifyLoading === "gold" ? "Loading…" : "Get Gold Tick"}
+
+
                   </button>
                 </div>
               )}
@@ -733,20 +772,22 @@ useEffect(() => {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  disabled={isLoadingVerify}
-                  onClick={() => handleStartBlueTick("blue")}
+                  disabled={verifyLoading !== null}
+                  onClick={() => startVerificationCheckout("blue")}
                   className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                 >
-                  {isLoadingVerify ? "Starting…" : "Get Blue Tick (Recurring)"}
+                  {verifyLoading === "blue" ? "Loading…" : "Get Blue Tick"}
+
                 </button>
 
                 <button
                   type="button"
-                  disabled={isLoadingVerify}
-                  onClick={() => handleStartBlueTick("gold")}
+                  disabled={verifyLoading !== null}
+                  onClick={() => startVerificationCheckout("gold")}
                   className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                 >
-                  {isLoadingVerify ? "Starting…" : "Get Gold Tick (Recurring)"}
+                  {verifyLoading === "gold" ? "Loading…" : "Get Gold Tick"}
+
                 </button>
               </div>
             ) : null}
