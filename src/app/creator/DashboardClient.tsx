@@ -204,12 +204,28 @@ export default function DashboardClient() {
     }
   }, [ready, userEmail, router]);
 
-  // DEBUG: hydration proof (if this stays false, client JS is not running)
+  // DEBUG: hydration proof \(if this stays false, client JS is not running\)
+  useEffect\(\(\) => \{
+    setHydrated\(true\);
+  \}, \[\]\);
+
+  // DEBUG: global pointer logger (captures clicks even if an overlay is present)
   useEffect(() => {
-    setHydrated(true);
+    const handler = (e: PointerEvent) => {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName || "unknown";
+      const cls = t?.className ? String(t.className) : "";
+      console.log("[debug] pointerdown", { tag, cls });
+      // quick UI feedback so you don't need console
+      setNotice(`pointerdown: ${tag}`);
+    };
+
+    window.addEventListener("pointerdown", handler, true); // capture phase
+    return () => window.removeEventListener("pointerdown", handler, true);
   }, []);
 
-  const loadPosts = useCallback(async () => {
+  // DEBUG: hydration proof (if this stays false, client JS is not running)
+const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
       setError(null);
