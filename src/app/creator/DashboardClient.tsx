@@ -117,10 +117,8 @@ export default function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Stable auth state
   const { user, ready } = useAuthedUser();
 
-  // Normalized email
   const userEmail = useMemo(() => {
     if (!ready) return null;
     const email = user?.email ? String(user.email).trim().toLowerCase() : null;
@@ -131,10 +129,8 @@ export default function DashboardClient() {
   const [loadingCredits, setLoadingCredits] = useState(false);
 
   const [notice, setNotice] = useState<string | null>(null);
-
   const [posts, setPosts] = useState<Post[]>([]);
 
-  // Keep these for future UI usage; underscore satisfies lint.
   const [_spins, setSpins] = useState<Spin[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [_isLoadingSpins, setIsLoadingSpins] = useState(true);
@@ -151,7 +147,6 @@ export default function DashboardClient() {
   const [isPosting, setIsPosting] = useState(false);
 
   const [isLensOpen, setIsLensOpen] = useState(false);
-
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
 
   // Verification UI state
@@ -339,7 +334,6 @@ export default function DashboardClient() {
       console.warn("[creator/dashboard] failed to load /api/creator/me", e);
     }
   }, []);
-useEffect(() => { setHydrated(true); }, []);
 
   useEffect(() => {
     if (!ready) return;
@@ -389,7 +383,6 @@ useEffect(() => { setHydrated(true); }, []);
     router.replace("/creator");
   }, [ready, userEmail, searchParams, loadCreatorMe, loadCredits, router]);
 
-  // Stripe Connect onboarding (payouts)
   const handleConnectStripe = async () => {
     try {
       setIsConnectingStripe(true);
@@ -569,13 +562,8 @@ useEffect(() => { setHydrated(true); }, []);
       setError("Revolvr glitched out starting a boost 😵‍💫");
     }
   };
-<div className="min-h-screen bg-[#050816] text-white">
 
-  
-      <div className="px-4 py-2 text-xs text-white/70 border-b border-white/10 bg-black/30">
-        Debug: Hydrated: <b className="text-white">{hydrated ? "YES" : "NO"}</b> | verifyLoading: <b className="text-white">{String(verifyLoading)}</b>
-      </div>
-// UI guards
+  // UI guards
   if (!ready) {
     return (
       <div className="min-h-screen bg-[#050816] text-white p-8">
@@ -601,6 +589,11 @@ useEffect(() => { setHydrated(true); }, []);
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
+      <div className="px-4 py-2 text-xs text-white/70 border-b border-white/10 bg-black/30">
+        Debug: Hydrated: <b className="text-white">{hydrated ? "YES" : "NO"}</b> | verifyLoading:{" "}
+        <b className="text-white">{String(verifyLoading)}</b>
+      </div>
+
       {/* Top bar */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/40 backdrop-blur">
         <div className="flex items-center gap-2">
@@ -650,7 +643,10 @@ useEffect(() => { setHydrated(true); }, []);
           <div className="flex flex-col sm:flex-row gap-2 shrink-0">
             <button
               type="button"
-              onPointerDown={() => { setNotice("BLUE: click detected"); setVerifyErr(null); }}
+              onPointerDown={() => {
+                setNotice("BLUE: click detected");
+                setVerifyErr(null);
+              }}
               onClick={() => startVerificationCheckout("blue")}
               style={{ pointerEvents: "auto" }}
               disabled={false}
@@ -665,7 +661,10 @@ useEffect(() => { setHydrated(true); }, []);
 
             <button
               type="button"
-              onPointerDown={() => { setNotice("GOLD: click detected"); setVerifyErr(null); }}
+              onPointerDown={() => {
+                setNotice("GOLD: click detected");
+                setVerifyErr(null);
+              }}
               onClick={() => startVerificationCheckout("gold")}
               style={{ pointerEvents: "auto" }}
               disabled={false}
@@ -949,10 +948,7 @@ useEffect(() => { setHydrated(true); }, []);
           <div className="w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <h2 className="text-base font-semibold">New post</h2>
-              <button
-                className="text-sm text-white/60 hover:text-white"
-                onClick={() => !isPosting && setIsComposerOpen(false)}
-              >
+              <button className="text-sm text-white/60 hover:text-white" onClick={() => !isPosting && setIsComposerOpen(false)}>
                 Close
               </button>
             </div>
