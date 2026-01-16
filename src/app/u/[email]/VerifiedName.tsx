@@ -6,7 +6,6 @@ type Tier = "blue" | "gold";
 
 function MiniTick({ tier }: { tier: Tier }) {
   const isGold = tier === "gold";
-
   return (
     <a
       href="/creator"
@@ -19,7 +18,7 @@ function MiniTick({ tier }: { tier: Tier }) {
           ? "bg-yellow-500/20 border-yellow-300/40 text-yellow-100"
           : "bg-blue-500/20 border-blue-300/40 text-blue-100",
       ].join(" ")}
-      title={isGold ? "Gold verified (open Creator dashboard)" : "Blue verified (open Creator dashboard)"}
+      title={isGold ? "Gold verified" : "Blue verified"}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
         <path
