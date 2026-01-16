@@ -7,33 +7,41 @@ type Tier = "blue" | "gold";
 function MiniTick({ tier }: { tier: Tier }) {
   const isGold = tier === "gold";
   return (
-    <span
-      className={[
-        "inline-flex items-center gap-2",
-        "text-[11px] px-2.5 py-1 rounded-full",
-        "border",
-        isGold
-          ? "bg-yellow-500/20 border-yellow-300/40 text-yellow-100"
-          : "bg-blue-500/20 border-blue-300/40 text-blue-100",
-      ].join(" ")}
+    <a
+      href="/creator"
+      className="inline-block"
       title={isGold ? "Gold verified" : "Blue verified"}
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M20 6L9 17l-5-5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span className="font-semibold">
-        {isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}
+      <span
+        className={[
+          "inline-flex items-center gap-2",
+          "text-[11px] px-2.5 py-1 rounded-full",
+          "border",
+          "cursor-pointer hover:opacity-90",
+          isGold
+            ? "bg-yellow-500/20 border-yellow-300/40 text-yellow-100"
+            : "bg-blue-500/20 border-blue-300/40 text-blue-100",
+        ].join(" ")}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M20 6L9 17l-5-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+        <span className="font-semibold">
+          {isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}
+        </span>
       </span>
-    </span>
+    </a>
   );
 }
+
+
 
 export default function VerifiedName({
   email,
