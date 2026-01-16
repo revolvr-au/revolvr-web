@@ -117,8 +117,10 @@ export default function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  // Stable auth state
   const { user, ready } = useAuthedUser();
 
+  // Normalized email
   const userEmail = useMemo(() => {
     if (!ready) return null;
     const email = user?.email ? String(user.email).trim().toLowerCase() : null;
@@ -131,6 +133,7 @@ export default function DashboardClient() {
   const [notice, setNotice] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
 
+  // Keep these for future UI usage; underscore satisfies lint.
   const [_spins, setSpins] = useState<Spin[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [_isLoadingSpins, setIsLoadingSpins] = useState(true);
@@ -204,28 +207,12 @@ export default function DashboardClient() {
     }
   }, [ready, userEmail, router]);
 
-  // DEBUG: hydration proof \(if this stays false, client JS is not running\)
+  // DEBUG: hydration proof (if this stays false, client JS is not running)
   useEffect(() => {
     setHydrated(true);
   }, []);
 
-  // DEBUG: global pointer logger (captures clicks even if an overlay is present)
-  useEffect(() => {
-    const handler = (e: PointerEvent) => {
-      const t = e.target as HTMLElement | null;
-      const tag = t?.tagName || "unknown";
-      const cls = t?.className ? String(t.className) : "";
-      console.log("[debug] pointerdown", { tag, cls });
-      // quick UI feedback so you don't need console
-      setNotice(`pointerdown: ${tag}`);
-    };
-
-    window.addEventListener("pointerdown", handler, true); // capture phase
-    return () => window.removeEventListener("pointerdown", handler, true);
-  }, []);
-
-  // DEBUG: hydration proof (if this stays false, client JS is not running)
-const loadPosts = useCallback(async () => {
+  const loadPosts = useCallback(async () => {
     try {
       setIsLoadingPosts(true);
       setError(null);
@@ -399,6 +386,7 @@ const loadPosts = useCallback(async () => {
     router.replace("/creator");
   }, [ready, userEmail, searchParams, loadCreatorMe, loadCredits, router]);
 
+  // Stripe Connect onboarding (payouts)
   const handleConnectStripe = async () => {
     try {
       setIsConnectingStripe(true);
@@ -605,23 +593,10 @@ const loadPosts = useCallback(async () => {
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
+      {/* Debug banner */}
       <div className="px-4 py-2 text-xs text-white/70 border-b border-white/10 bg-black/30">
         Debug: Hydrated: <b className="text-white">{hydrated ? "YES" : "NO"}</b> | verifyLoading:{" "}
         <b className="text-white">{String(verifyLoading)}</b>
-      </div>
-
-      <div className="px-4 py-2 border-b border-white/10 bg-black/20">
-        <button
-          type="button"
-          onClick={() => {
-            alert("JS CLICK WORKS");
-            console.log("[debug] js click works");
-            setNotice("JS CLICK WORKS");
-          }}
-          className="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 text-xs"
-        >
-          JS TEST (must respond)
-        </button>
       </div>
 
       {/* Top bar */}
@@ -630,6 +605,7 @@ const loadPosts = useCallback(async () => {
           <RevolvrIcon name="boost" size={20} className="hidden sm:block" alt="Revolvr" />
           <span className="text-lg font-semibold tracking-tight">Revolvr</span>
         </div>
+
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsLensOpen(true)}
@@ -637,7 +613,19 @@ const loadPosts = useCallback(async () => {
           >
             {avatarInitial}
           </button>
-          {isVerified && <VerifiedBadge />}
+
+          {/* IMPORTANT: make the tick clickable (this is what you were clicking) */}
+          <button
+            type="button"
+            onClick={() => startVerificationCheckout("blue")}
+            onPointerDown={() => setNotice("HEADER TICK: click detected")}
+            className="inline-flex items-center justify-center"
+            aria-label="Get verified"
+            style={{ pointerEvents: "auto" }}
+          >
+            <VerifiedBadge />
+          </button>
+
           <a
             href="/public-feed"
             className="px-3 py-1 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 text-xs sm:text-sm transition inline-flex items-center gap-1"
@@ -645,6 +633,7 @@ const loadPosts = useCallback(async () => {
             <RevolvrIcon name="share" size={14} />
             <span>Public feed</span>
           </a>
+
           <button
             className="px-3 py-1 rounded-full border border-white/20 text-xs sm:text-sm hover:bg-white/10 transition"
             onClick={handleSignOut}
@@ -679,7 +668,7 @@ const loadPosts = useCallback(async () => {
               }}
               onClick={() => startVerificationCheckout("blue")}
               style={{ pointerEvents: "auto" }}
-              disabled={false}
+              disabled={verifyLoading !== null}
               className={[
                 "px-4 py-2 rounded-xl text-sm font-semibold",
                 "border border-white/15 bg-white/5 hover:bg-white/10",
@@ -697,7 +686,7 @@ const loadPosts = useCallback(async () => {
               }}
               onClick={() => startVerificationCheckout("gold")}
               style={{ pointerEvents: "auto" }}
-              disabled={false}
+              disabled={verifyLoading !== null}
               className={[
                 "px-4 py-2 rounded-xl text-sm font-semibold",
                 "bg-amber-300 text-black hover:bg-amber-200",
@@ -732,7 +721,7 @@ const loadPosts = useCallback(async () => {
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    disabled={false}
+                    disabled={verifyLoading !== null}
                     onClick={() => startVerificationCheckout("blue")}
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
@@ -741,7 +730,7 @@ const loadPosts = useCallback(async () => {
 
                   <button
                     type="button"
-                    disabled={false}
+                    disabled={verifyLoading !== null}
                     onClick={() => startVerificationCheckout("gold")}
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
@@ -797,41 +786,6 @@ const loadPosts = useCallback(async () => {
 
         {/* Center column */}
         <section className="flex-1 space-y-5">
-          {/* Mobile verification actions */}
-          <div className="md:hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold">Verification</div>
-              {isVerified ? (
-                <span className="inline-flex items-center gap-2 text-xs px-3 py-1 rounded-full bg-blue-500/15 border border-blue-400/30 text-blue-200">
-                  <span className="h-2 w-2 rounded-full bg-blue-400" />
-                  {verificationTier === "gold" ? "Gold Tick active" : "Blue Tick active"}
-                </span>
-              ) : null}
-            </div>
-
-            {!isVerified ? (
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={false}
-                  onClick={() => startVerificationCheckout("blue")}
-                  className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
-                >
-                  {verifyLoading === "blue" ? "Loading…" : "Get Blue Tick"}
-                </button>
-
-                <button
-                  type="button"
-                  disabled={false}
-                  onClick={() => startVerificationCheckout("gold")}
-                  className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
-                >
-                  {verifyLoading === "gold" ? "Loading…" : "Get Gold Tick"}
-                </button>
-              </div>
-            ) : null}
-          </div>
-
           {notice && (
             <div className="rounded-xl bg-white/10 text-white text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-black/20">
               <span>{notice}</span>
@@ -853,7 +807,7 @@ const loadPosts = useCallback(async () => {
           {isLoadingPosts ? (
             <div className="text-sm text-white/70">Loading the feed…</div>
           ) : posts.length === 0 ? (
-            <div className="text-sm text-white/70">No posts yet. Be the first to spin something into existence ✨</div>
+            <div className="text-sm text-white/70">No posts yet. Be the first to spin something into existence.</div>
           ) : (
             <div className="space-y-6 pb-12">
               {posts.map((post) => {
@@ -880,37 +834,6 @@ const loadPosts = useCallback(async () => {
                         <div className="flex flex-col">
                           <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
                             <span>{displayName}</span>
-
-                            {(() => {
-                              const tier = authorTier;
-                              if (tier !== "blue" && tier !== "gold") return null;
-                              const isGold = tier === "gold";
-                              return (
-                                <span
-                                  className={[
-                                    "ml-2 inline-flex items-center gap-1",
-                                    "text-[10px] px-2 py-1 rounded-full border",
-                                    isGold
-                                      ? "bg-yellow-500/15 border-yellow-300/30 text-yellow-100"
-                                      : "bg-blue-500/15 border-blue-300/30 text-blue-100",
-                                  ].join(" ")}
-                                  title={isGold ? "Gold verified" : "Blue verified"}
-                                >
-                                  <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path
-                                      d="M20 6L9 17l-5-5"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                  <span className="font-semibold">{isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}</span>
-                                </span>
-                              );
-                            })()}
-
                             {isAuthorVerified ? (
                               <span className="ml-1 inline-flex align-middle">
                                 <VerifiedBadge />
@@ -978,7 +901,10 @@ const loadPosts = useCallback(async () => {
           <div className="w-full max-w-md rounded-2xl bg-[#050816] border border-white/15 shadow-2xl shadow-black/60">
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
               <h2 className="text-base font-semibold">New post</h2>
-              <button className="text-sm text-white/60 hover:text-white" onClick={() => !isPosting && setIsComposerOpen(false)}>
+              <button
+                className="text-sm text-white/60 hover:text-white"
+                onClick={() => !isPosting && setIsComposerOpen(false)}
+              >
                 Close
               </button>
             </div>
@@ -1037,7 +963,7 @@ const loadPosts = useCallback(async () => {
                   value={caption}
                   onChange={(e) => setCaption(e.target.value)}
                   className="w-full rounded-xl bg-white/5 border border-white/15 px-3 py-2 text-sm outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                  placeholder="Say something wild…"
+                  placeholder="Say something…"
                 />
               </label>
 
