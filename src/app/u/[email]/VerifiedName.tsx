@@ -6,42 +6,35 @@ type Tier = "blue" | "gold";
 
 function MiniTick({ tier }: { tier: Tier }) {
   const isGold = tier === "gold";
+
   return (
     <a
       href="/creator"
-      className="inline-block"
-      title={isGold ? "Gold verified" : "Blue verified"}
+      className={[
+        "inline-flex items-center gap-2",
+        "text-[11px] px-2.5 py-1 rounded-full",
+        "border",
+        "underline underline-offset-2",
+        isGold
+          ? "bg-yellow-500/20 border-yellow-300/40 text-yellow-100"
+          : "bg-blue-500/20 border-blue-300/40 text-blue-100",
+      ].join(" ")}
+      title={isGold ? "Gold verified (open Creator dashboard)" : "Blue verified (open Creator dashboard)"}
     >
-      <span
-        className={[
-          "inline-flex items-center gap-2",
-          "text-[11px] px-2.5 py-1 rounded-full",
-          "border",
-          "cursor-pointer hover:opacity-90",
-          isGold
-            ? "bg-yellow-500/20 border-yellow-300/40 text-yellow-100"
-            : "bg-blue-500/20 border-blue-300/40 text-blue-100",
-        ].join(" ")}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-          <path
-            d="M20 6L9 17l-5-5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <span className="font-semibold">
-          {isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}
-        </span>
-      </span>
+      <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M20 6L9 17l-5-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <span className="font-semibold">{isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}</span>
     </a>
   );
 }
-
-
 
 export default function VerifiedName({
   email,
@@ -52,10 +45,7 @@ export default function VerifiedName({
   name: string;
   className?: string;
 }) {
-  const normalizedEmail = useMemo(
-    () => String(email || "").trim().toLowerCase(),
-    [email]
-  );
+  const normalizedEmail = useMemo(() => String(email || "").trim().toLowerCase(), [email]);
 
   const [tier, setTier] = useState<Tier | null>(null);
   const [debug, setDebug] = useState<string>("init");
@@ -77,7 +67,6 @@ export default function VerifiedName({
         const res = await fetch(url, { cache: "no-store" });
         const json = (await res.json().catch(() => ({}))) as any;
 
-        // Log everything so we can see the mismatch in DevTools
         console.log("[VerifiedName]", {
           inputEmail: email,
           normalizedEmail,
@@ -86,12 +75,10 @@ export default function VerifiedName({
           tierKeys: json?.tiers ? Object.keys(json.tiers) : null,
         });
 
-        const tiers =
-          json?.tiers && typeof json.tiers === "object" ? json.tiers : null;
+        const tiers = json?.tiers && typeof json.tiers === "object" ? json.tiers : null;
 
         const raw = tiers?.[normalizedEmail];
-        const nextTier: Tier | null =
-          raw === "gold" ? "gold" : raw === "blue" ? "blue" : null;
+        const nextTier: Tier | null = raw === "gold" ? "gold" : raw === "blue" ? "blue" : null;
 
         if (!cancelled) {
           setTier(nextTier);
@@ -115,7 +102,6 @@ export default function VerifiedName({
     <span className={`inline-flex items-center gap-2 ${className ?? ""}`}>
       <span>{name}</span>
 
-      {/* Always show something so “no tick” becomes impossible */}
       {tier ? (
         <MiniTick tier={tier} />
       ) : (
