@@ -61,8 +61,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const successUrl = new URL("/creator?verified=1", SITE_URL);
-    const cancelUrl = new URL("/creator?canceled=1", SITE_URL);
+    const successUrl = new URL("/creator?verified=success&tier=" + tier, SITE_URL);
+    const cancelUrl = new URL("/creator?verified=cancel", SITE_URL);
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
