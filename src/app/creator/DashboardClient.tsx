@@ -17,7 +17,6 @@ function _isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
 }
 
-
 type UserCredits = {
   boosts: number;
   tips: number;
@@ -39,7 +38,6 @@ type Spin = {
   user_email: string;
   post_id: string | null;
   createdAt: string;
-
 };
 
 type CreatorMeResponse = {
@@ -53,12 +51,10 @@ type CreatorMeResponse = {
   };
 };
 
-
-
 type VerifiedLookupResponse = {
   verified?: unknown;
   tiers?: unknown;
-  currencies?: unknown; // returned by endpoint, not required here
+  currencies?: unknown;
   error?: unknown;
 };
 
@@ -92,6 +88,7 @@ function isPost(value: unknown): value is Post {
     typeof v.createdAt === "string"
   );
 }
+
 function isSpinRow(value: unknown): value is Spin {
   if (!value || typeof value !== "object") return false;
   const v = value as Record<string, unknown>;
@@ -119,7 +116,6 @@ const VerifiedBadge = () => (
 export default function DashboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-
 
   // Stable auth state
   const { user, ready } = useAuthedUser();
@@ -158,56 +154,56 @@ export default function DashboardClient() {
 
   const [isConnectingStripe, setIsConnectingStripe] = useState(false);
 
+  // Verification UI state
   const [verifyLoading, setVerifyLoading] = useState<null | "blue" | "gold">(null);
-const [verifyErr, setVerifyErr] = useState<string | null>(null);
-
+  const [verifyErr, setVerifyErr] = useState<string | null>(null);
 
   async function startVerificationCheckout(tier: "blue" | "gold") {
     console.log("[verify] startVerificationCheckout", tier);
-  setNotice(`Starting ${tier.toUpperCase()} verification…`);
-if (!userEmail) {
-    setVerifyErr("You must be signed in to verify.");
-    return;
-  }
 
-  try {
-    setVerifyErr(null);
-    setVerifyLoading(tier);
-
-    const res = await fetch("/api/payments/verification/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tier,
-        creatorEmail: userEmail,
-      }),
-    });
-
-    const json = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      throw new Error(json?.error || `Verification failed (${res.status})`);
+    if (!userEmail) {
+      setVerifyErr("You must be signed in to verify.");
+      return;
     }
 
-    if (!json?.url) {
-      throw new Error("Stripe did not return a checkout URL.");
+    try {
+      setVerifyErr(null);
+      setVerifyLoading(tier);
+      setNotice(`Starting ${tier.toUpperCase()} verification…`);
+
+      const res = await fetch("/api/payments/verification/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tier,
+          creatorEmail: userEmail,
+        }),
+      });
+
+      const json = await res.json().catch(() => ({} as any));
+
+      if (!res.ok) {
+        throw new Error(json?.error || `Verification failed (${res.status})`);
+      }
+
+      if (!json?.url) {
+        throw new Error("Stripe did not return a checkout URL.");
+      }
+
+      window.location.href = json.url;
+    } catch (err: any) {
+      console.error("[creator] verification checkout error", err);
+      setVerifyErr(err?.message || "Failed to start verification.");
+      setNotice(null);
+    } finally {
+      setVerifyLoading(null);
     }
-
-    window.location.href = json.url;
-  } catch (err: any) {
-    console.error("[creator] verification checkout error", err);
-    setVerifyErr(err?.message || "Failed to start verification.");
-  } finally {
-    setVerifyLoading(null);
   }
-}
-
 
   // Optional: redirect only AFTER auth resolved
   useEffect(() => {
     if (!ready) return;
     if (!userEmail) {
-      // If you want redirect back on, uncomment:
       // router.replace("/login?redirectTo=/creator");
     }
   }, [ready, userEmail, router]);
@@ -217,9 +213,10 @@ if (!userEmail) {
       setIsLoadingPosts(true);
       setError(null);
 
-      const { data, error: sbErr } = await supabase.from(POSTS_TABLE).select("*").order("createdAt", {
-        ascending: false,
-      });
+      const { data, error: sbErr } = await supabase
+        .from(POSTS_TABLE)
+        .select("*")
+        .order("createdAt", { ascending: false });
 
       if (sbErr) throw sbErr;
 
@@ -241,7 +238,7 @@ if (!userEmail) {
 
       if (uniq.length === 0) {
         setVerifiedTiers({});
-return;
+        return;
       }
 
       const res = await fetch(`/api/creator/verified?emails=${encodeURIComponent(uniq.join(","))}`, {
@@ -255,10 +252,10 @@ return;
 
       const tiers: Record<string, "blue" | "gold"> = {};
       for (const em of verifiedList) {
-        const t = (json?.tiers && typeof json.tiers === "object") ? (json.tiers as any)[em] : null;
+        const t = json?.tiers && typeof json.tiers === "object" ? (json.tiers as any)[em] : null;
         tiers[em] = t === "gold" ? "gold" : "blue";
       }
-setVerifiedTiers(tiers);
+      setVerifiedTiers(tiers);
     } catch (e) {
       console.warn("[creator/dashboard] failed to load verified authors", e);
     }
@@ -273,7 +270,6 @@ setVerifiedTiers(tiers);
         .select("*")
         .eq("user_email", email)
         .order("createdAt", { ascending: false });
-
 
       if (sbErr) throw sbErr;
 
@@ -321,7 +317,6 @@ setVerifiedTiers(tiers);
 
       const verified = Boolean(json?.creator?.isVerified);
 
-      // Tier can come from verificationTier OR from verificationStatus ("blue"/"gold")
       const status = String(json?.creator?.verificationStatus ?? "").toLowerCase();
       const tier =
         json?.creator?.verificationTier === "gold" || json?.creator?.verificationTier === "blue"
@@ -362,29 +357,30 @@ setVerifiedTiers(tiers);
     await supabase.auth.signOut();
     router.replace("/login?redirectTo=/creator");
   };
-useEffect(() => {
-  if (!ready || !userEmail) return;
 
-  const stripe = searchParams ? searchParams.get("stripe") : null;
-  const verified = searchParams ? searchParams.get("verified") : null;
+  useEffect(() => {
+    if (!ready || !userEmail) return;
 
-  if (!stripe && !verified) return;
+    const stripe = searchParams ? searchParams.get("stripe") : null;
+    const verified = searchParams ? searchParams.get("verified") : null;
 
-  loadCreatorMe();
-  loadCredits(userEmail);
+    if (!stripe && !verified) return;
 
-  if (verified === "success") {
-    setNotice("Verification started successfully.");
-  } else if (verified === "cancel") {
-    setNotice("Verification was cancelled.");
-  } else if (stripe === "return") {
-    setNotice("Stripe onboarding complete. Payouts are connected.");
-  } else if (stripe === "refresh") {
-    setNotice("Stripe onboarding refreshed. Please complete setup.");
-  }
+    loadCreatorMe();
+    loadCredits(userEmail);
 
-  router.replace("/creator");
-}, [ready, userEmail, searchParams, loadCreatorMe, loadCredits, router]);
+    if (verified === "success") {
+      setNotice("Verification started successfully.");
+    } else if (verified === "cancel") {
+      setNotice("Verification was cancelled.");
+    } else if (stripe === "return") {
+      setNotice("Stripe onboarding complete. Payouts are connected.");
+    } else if (stripe === "refresh") {
+      setNotice("Stripe onboarding refreshed. Please complete setup.");
+    }
+
+    router.replace("/creator");
+  }, [ready, userEmail, searchParams, loadCreatorMe, loadCredits, router]);
 
   // Stripe Connect onboarding (payouts)
   const handleConnectStripe = async () => {
@@ -503,7 +499,7 @@ useEffect(() => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            creatorEmail: userEmail, // TEMP: replace with actual creator when available
+            creatorEmail: userEmail,
             userEmail,
             source: "FEED",
             targetId: null,
@@ -545,7 +541,7 @@ useEffect(() => {
           userEmail,
           amountCents: boostAmountCents,
           postId,
-          creatorEmail: userEmail, // self-pay fallback
+          creatorEmail: userEmail,
           source: "FEED",
           targetId: null,
         }),
@@ -583,8 +579,8 @@ useEffect(() => {
         <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
         <p className="mt-2 text-white/70">Not signed in.</p>
         <a className="underline text-white/80" href="/login?redirectTo=/creator">
-  Go to login
-</a>
+          Go to login
+        </a>
       </div>
     );
   }
@@ -622,7 +618,9 @@ useEffect(() => {
           </button>
         </div>
       </header>
-            <section className="relative z-50 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+
+      {/* Verification section */}
+      <section className="relative z-50 rounded-2xl border border-white/10 bg-white/[0.03] p-4 mx-4 mt-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="text-sm font-semibold">Get verified</h2>
@@ -694,7 +692,6 @@ useEffect(() => {
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
                     {verifyLoading === "blue" ? "Loading…" : "Get Blue Tick"}
-
                   </button>
 
                   <button
@@ -704,8 +701,6 @@ useEffect(() => {
                     className="inline-flex items-center justify-center text-xs px-3 py-1 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                   >
                     {verifyLoading === "gold" ? "Loading…" : "Get Gold Tick"}
-
-
                   </button>
                 </div>
               )}
@@ -757,7 +752,6 @@ useEffect(() => {
 
         {/* Center column */}
         <section className="flex-1 space-y-5">
-
           {/* Mobile verification actions */}
           <div className="md:hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
             <div className="flex items-center justify-between">
@@ -779,7 +773,6 @@ useEffect(() => {
                   className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                 >
                   {verifyLoading === "blue" ? "Loading…" : "Get Blue Tick"}
-
                 </button>
 
                 <button
@@ -789,11 +782,11 @@ useEffect(() => {
                   className="inline-flex items-center justify-center text-xs px-3 py-2 rounded-full bg-white/5 border border-white/15 hover:bg-white/10 disabled:opacity-60"
                 >
                   {verifyLoading === "gold" ? "Loading…" : "Get Gold Tick"}
-
                 </button>
               </div>
             ) : null}
           </div>
+
           {notice && (
             <div className="rounded-xl bg-white/10 text-white text-sm px-3 py-2 flex justify-between items-center shadow-sm shadow-black/20">
               <span>{notice}</span>
@@ -826,12 +819,8 @@ useEffect(() => {
                   return cleaned || post.userEmail;
                 })();
 
-
                 const authorTier = verifiedTiers[String(post.userEmail || "").toLowerCase()];
                 const isAuthorVerified = authorTier === "blue" || authorTier === "gold";
-
-
-                
 
                 return (
                   <article
@@ -846,6 +835,7 @@ useEffect(() => {
                         <div className="flex flex-col">
                           <span className="text-sm font-medium truncate max-w-[160px] sm:max-w-[220px]">
                             <span>{displayName}</span>
+
                             {(() => {
                               const tier = authorTier;
                               if (tier !== "blue" && tier !== "gold") return null;
@@ -871,12 +861,11 @@ useEffect(() => {
                                       strokeLinejoin="round"
                                     />
                                   </svg>
-                                  <span className="font-semibold">
-                                    {isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}
-                                  </span>
+                                  <span className="font-semibold">{isGold ? "GOLD VERIFIED" : "BLUE VERIFIED"}</span>
                                 </span>
                               );
                             })()}
+
                             {isAuthorVerified ? (
                               <span className="ml-1 inline-flex align-middle">
                                 <VerifiedBadge />
@@ -906,24 +895,19 @@ useEffect(() => {
                     </div>
 
                     <div className="relative w-full max-h-[480px]">
-  {_isVideoUrl(post.imageUrl) ? (
-    <video
-      src={post.imageUrl}
-      controls
-      className="w-full max-h-[480px] object-cover"
-    />
-  ) : (
-    <Image
-      src={post.imageUrl}
-      alt={post.caption || "Post media"}
-      width={1200}
-      height={800}
-      unoptimized
-      className="w-full max-h-[480px] object-cover"
-    />
-  )}
-</div>
-
+                      {_isVideoUrl(post.imageUrl) ? (
+                        <video src={post.imageUrl} controls className="w-full max-h-[480px] object-cover" />
+                      ) : (
+                        <Image
+                          src={post.imageUrl}
+                          alt={post.caption || "Post media"}
+                          width={1200}
+                          height={800}
+                          unoptimized
+                          className="w-full max-h-[480px] object-cover"
+                        />
+                      )}
+                    </div>
 
                     {post.caption && <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p>}
 
