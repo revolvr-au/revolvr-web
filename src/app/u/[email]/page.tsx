@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 import VerifiedName from "./VerifiedName";
+import VerificationCTA from "@/components/VerificationCTA";
 
 type ProfileRow = {
   email: string;
@@ -366,7 +367,9 @@ try {
             {isOwnProfile ? (
               <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 space-y-4">
                 <h2 className="text-sm font-semibold">Edit profile</h2>
-                <p className="text-[11px] text-white/60">This is your public identity across Revolvr.</p>
+                <p className="text-[11px] text-white/60">This is your public identity across Revolvr.
+      <VerificationCTA />
+</p>
 
                 <form onSubmit={handleProfileSubmit} className="space-y-4">
                   <div className="flex items-center gap-3">
