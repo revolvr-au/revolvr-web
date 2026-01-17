@@ -8,36 +8,36 @@ type Status = {
   chargesEnabled: boolean;
   payoutsEnabled: boolean;
   onboardingStatus?: string | null;
+  stripeAccountId?: string | null;
+};
+
+type MeShape = {
+  loggedIn?: boolean;
+  accessToken?: string | null;
+  user?: { email?: string | null } | null;
+  creator?: { isActive?: boolean } | null;
 };
 
 async function getAccessToken(): Promise<string | null> {
-  // Assumes you have a cookie-based session and an endpoint that can reflect auth state.
-  // If not logged in, it will fail closed.
   const res = await fetch("/api/creator/me", { cache: "no-store" });
-  const data = await res.json().catch(() => null);
+  if (!res.ok) return null;
 
-  // We support a couple of shapes to be resilient:
-  // - { access_token: "..." }
-  // - { session: { access_token: "..." } }
-  // - { loggedIn: true, access_token: "..." }
-  const token =
-    data?.access_token ||
-    data?.session?.access_token ||
-    data?.creator?.session?.access_token ||
-    null;
+  const data = (await res.json().catch(() => null)) as MeShape | null;
 
+  // Your /api/creator/me returns { loggedIn, accessToken, ... }
+  const token = data?.accessToken ?? null;
   return token ? String(token) : null;
 }
 
 async function authedFetch(path: string, init?: RequestInit) {
   const token = await getAccessToken();
-  if (!token) throw new Error("Not authenticated");
+  if (!token) throw new Error("Please sign in to connect Stripe.");
 
   return fetch(path, {
     ...init,
     headers: {
       ...(init?.headers || {}),
-      authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     cache: "no-store",
   });
@@ -47,9 +47,20 @@ export default function StripeConnectCTA() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   async function refresh() {
     setMsg(null);
+
+    // First: detect signed-in state (and token availability)
+    const token = await getAccessToken();
+    setSignedIn(Boolean(token));
+
+    if (!token) {
+      setStatus(null);
+      return;
+    }
+
     try {
       const res = await authedFetch("/api/stripe/connect/status");
       const data = (await res.json().catch(() => null)) as Status | null;
@@ -83,20 +94,34 @@ export default function StripeConnectCTA() {
   const connected = Boolean(status?.connected);
   const complete = Boolean(status?.chargesEnabled && status?.payoutsEnabled);
 
+  const subtitle =
+    signedIn === false
+      ? "Sign in to connect Stripe payouts."
+      : status
+        ? complete
+          ? "Connected (charges + payouts enabled)"
+          : connected
+            ? "Connected (onboarding incomplete)"
+            : "Not connected"
+        : signedIn
+          ? "Loading status..."
+          : "Sign in to connect Stripe payouts.";
+
+  const primaryLabel =
+    signedIn === false
+      ? "Sign in required"
+      : complete
+        ? "Manage"
+        : connected
+          ? "Continue setup"
+          : "Connect Stripe";
+
   return (
     <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold">Stripe payouts</div>
-          <div className="text-[11px] text-white/60">
-            {status
-              ? complete
-                ? "Connected (charges + payouts enabled)"
-                : connected
-                  ? "Connected (onboarding incomplete)"
-                  : "Not connected"
-              : "Not connected"}
-          </div>
+          <div className="text-[11px] text-white/60">{subtitle}</div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -112,10 +137,11 @@ export default function StripeConnectCTA() {
           <button
             type="button"
             onClick={startOnboarding}
-            className="rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-black hover:bg-white"
-            disabled={loading}
+            className="rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-black hover:bg-white disabled:opacity-60"
+            disabled={loading || signedIn === false}
+            title={signedIn === false ? "Sign in first" : ""}
           >
-            {complete ? "Manage" : connected ? "Continue setup" : "Connect Stripe"}
+            {primaryLabel}
           </button>
         </div>
       </div>
