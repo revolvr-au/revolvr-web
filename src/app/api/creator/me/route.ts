@@ -28,15 +28,20 @@ export async function GET() {
     );
 
     const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
 
-    if (error || !user) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+if (error || !user) {
       return NextResponse.json(
         {
           loggedIn: false,
-          creator: {
+          accessToken: null,
+            creator: {
             isActive: false,
             handle: null,
             isVerified: false,
@@ -99,7 +104,8 @@ export async function GET() {
     return NextResponse.json(
       {
         loggedIn: true,
-        user: { id: user.id, email: email || null },
+        accessToken: session?.access_token ?? null,
+          user: { id: user.id, email: email || null },
         creator: {
           isActive: profile?.status === "ACTIVE",
           handle: profile?.handle ?? null,
