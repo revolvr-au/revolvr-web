@@ -10,22 +10,18 @@ if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecretKey);
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
 
 type Body = {
   tier: "blue" | "gold";
-  // map entitlement to CreatorProfile
   creatorProfileId?: string | null;
-  // fallback mapping if you prefer
   creatorEmail?: string | null;
 };
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
-
-    const tier = body.tier === "gold" ? "gold" : "blue";
+    const tier: "blue" | "gold" = body.tier === "gold" ? "gold" : "blue";
 
     const priceId =
       tier === "gold"
@@ -40,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Resolve creator profile (prefer ID; fallback to email)
-    let creator = null as null | { id: string; email: string | null };
+    let creator: null | { id: string; email: string | null } = null;
 
     if (body.creatorProfileId) {
       creator = await prisma.creatorProfile.findUnique({
@@ -49,7 +45,12 @@ export async function POST(req: NextRequest) {
       });
     } else if (body.creatorEmail) {
       creator = await prisma.creatorProfile.findFirst({
-        where: { email: { equals: String(body.creatorEmail).trim(), mode: "insensitive" } },
+        where: {
+          email: {
+            equals: String(body.creatorEmail).trim(),
+            mode: "insensitive",
+          },
+        },
         select: { id: true, email: true },
       });
     }
@@ -61,18 +62,26 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const successUrl = new URL("/creator?verified=success&tier=" + tier, SITE_URL);
+    const successUrl = new URL(
+      `/creator?verified=success&tier=${tier}`,
+      SITE_URL
+    );
     const cancelUrl = new URL("/creator?verified=cancel", SITE_URL);
+
+    console.log("[verification/checkout]", {
+      tier,
+      priceId,
+      creatorId: creator.id,
+      creatorEmail: creator.email,
+      siteUrl: SITE_URL,
+    });
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl.toString(),
       cancel_url: cancelUrl.toString(),
-
-      // Optional; helps Stripe receipt UX
       customer_email: creator.email ?? undefined,
-
       metadata: {
         purpose: "verification",
         tier,
@@ -83,7 +92,24 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (err: any) {
-    console.error("[payments/verification/checkout]", err?.message ?? err);
-    return NextResponse.json({ error: "Stripe verification checkout failed" }, { status: 500 });
+    const detail =
+      err?.raw?.message ??
+      err?.message ??
+      (typeof err === "string" ? err : JSON.stringify(err));
+
+    console.error("[payments/verification/checkout]", detail, {
+      type: err?.type,
+      code: err?.code,
+    });
+
+    return NextResponse.json(
+      {
+        error: "Stripe verification checkout failed",
+        detail,
+        type: err?.type ?? null,
+        code: err?.code ?? null,
+      },
+      { status: 500 }
+    );
   }
 }

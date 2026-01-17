@@ -20,16 +20,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ verified: [], tiers: {} }, { status: 200 });
     }
 
+    // SINGLE SOURCE OF TRUTH:
+    // Only treat as verified if verificationStatus is explicitly set to "blue" or "gold".
+    // Do NOT infer tier from isVerified, priceId, subscriptionId, etc.
     const rows = await prisma.creatorProfile.findMany({
       where: {
         email: { in: emails },
-        // Consider verified if isVerified true OR verificationStatus explicitly set
-        OR: [
-          { isVerified: true },
-          { verificationStatus: { in: ["blue", "gold"] } },
-        ],
+        verificationStatus: { in: ["blue", "gold"] },
       },
-      select: { email: true, verificationStatus: true, isVerified: true },
+      select: { email: true, verificationStatus: true },
     });
 
     const tiers: Record<string, "blue" | "gold"> = {};
@@ -39,12 +38,11 @@ export async function GET(req: NextRequest) {
       const email = String(r.email || "").trim().toLowerCase();
       if (!email) continue;
 
-      const s = String(r.verificationStatus ?? "").trim().toLowerCase();
-      const tier = s === "gold" ? "gold" : "blue";
+      const s = r.verificationStatus;
+      if (s !== "blue" && s !== "gold") continue;
 
-      // If the record qualifies, return it (blue default, gold if set)
       verified.push(email);
-      tiers[email] = tier;
+      tiers[email] = s;
     }
 
     return NextResponse.json({ verified, tiers }, { status: 200 });

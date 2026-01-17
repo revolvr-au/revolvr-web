@@ -39,32 +39,30 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { caption, imageUrl, userEmail } = body;
+    const { caption, imageUrl, userEmail, mediaType } = body;
 
-    if (!caption || !imageUrl || !userEmail) {
+    const mt = mediaType === "video" ? "video" : "image";
+
+    if (!imageUrl || !userEmail) {
       return NextResponse.json(
-        { message: "caption, imageUrl and userEmail are required" },
+        { message: "imageUrl and userEmail are required" },
         { status: 400 }
       );
     }
 
     const post = await prisma.post.create({
       data: {
-        caption,
-        imageUrl,
-        userEmail,
+        caption: typeof caption === "string" ? caption : "",
+        imageUrl: String(imageUrl),
+        userEmail: String(userEmail).trim().toLowerCase(),
+        mediaType: mt,
       },
     });
 
-    // new post starts with 0 likes
-    const withCount = { ...post, likesCount: 0 };
-
-    return NextResponse.json(withCount, { status: 201 });
+    return NextResponse.json({ ...post, likesCount: 0 }, { status: 201 });
   } catch (err) {
     console.error("POST /api/posts error:", err);
-    return NextResponse.json(
-      { message: "Failed to create post" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Failed to create post" }, { status: 500 });
   }
 }
+
