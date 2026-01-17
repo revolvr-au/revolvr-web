@@ -228,7 +228,9 @@ export async function POST(req: Request) {
         const invoice = event.data.object as Stripe.Invoice;
 
         const stripeSubscriptionId =
-          typeof (invoice as any).subscription === "string" ? (invoice as any).subscription : null;
+          typeof (invoice as any).subscription === "string"
+            ? (invoice as any).subscription
+            : null;
 
         const stripeCustomerId =
           typeof invoice.customer === "string" ? invoice.customer : null;
@@ -247,70 +249,9 @@ export async function POST(req: Request) {
               : null;
 
         // Always keep these fields current
-        const baseData: Prisma.CreatorProfileUpdateManyMutationInput = {
-          isVerified: true,
-        };
-        if (invoicePriceId) baseData.verificationPriceId = invoicePriceId;
-        if (periodEnd) baseData.verificationCurrentPeriodEnd = periodEnd;
-
-        // Prefer subscription mapping, fallback to customer mapping
-        const whereBase: Prisma.CreatorProfileWhereInput = stripeSubscriptionId
-          ? { stripeSubscriptionId }
-          : stripeCustomerId
-            ? { stripeCustomerId }
-            : {};
-
-        // 1) Persist base fields
-        if (Object.keys(whereBase).length) {
-          await prisma.creatorProfile.updateMany({ where: whereBase, data: baseData });
-        }
-
-        // 2) Upgrade-safe tier persistence:
-        // - Gold can overwrite Blue/NULL (upgrade)
-        // - Blue NEVER overwrites Gold (no downgrade)
-        if (tier === "gold" && Object.keys(whereBase).length) {
-          await prisma.creatorProfile.updateMany({
-            where: { ...whereBase, NOT: { verificationStatus: "gold" } },
-            data: { verificationStatus: "gold" },
-          });
-        } else if (tier === "blue" && Object.keys(whereBase).length) {
-          await prisma.creatorProfile.updateMany({
-            where: { ...whereBase, verificationStatus: null },
-            data: { verificationStatus: "blue" },
-          });
-        }
-        const invoice = event.data.object as Stripe.Invoice;
-
-        const stripeSubscriptionId =
-          typeof (invoice as any).subscription === "string" ? (invoice as any).subscription : null;
-
-        const stripeCustomerId =
-          typeof invoice.customer === "string" ? invoice.customer : null;
-
-        const invoicePriceId = getInvoicePriceId(invoice);
-        const periodEnd = getInvoicePeriodEnd(invoice);
-
-        const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
-        const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
-
-        const tier =
-          gold && invoicePriceId === gold
-            ? "gold"
-            : blue && invoicePriceId === blue
-              ? "blue"
-              : null;
-
         const data: Prisma.CreatorProfileUpdateManyMutationInput = {
           isVerified: true,
         };
-
-        // Keep DB consistent even if checkout metadata was missing
-          // IMPORTANT: do NOT overwrite verificationStatus here.
-          // checkout.session.completed is authoritative for tier.
-          // We still store verificationPriceId/currentPeriodEnd below, and /api/creator/me can derive tier from priceId.
-
-          // if (tier) data.verificationStatus = tier; // <-- CRITICAL
-
         if (invoicePriceId) data.verificationPriceId = invoicePriceId;
         if (periodEnd) data.verificationCurrentPeriodEnd = periodEnd;
 
@@ -320,18 +261,45 @@ export async function POST(req: Request) {
             where: { stripeSubscriptionId },
             data,
           });
+
+          // Upgrade-safe tier persistence:
+          // - Gold can overwrite Blue/NULL (upgrade)
+          // - Blue NEVER overwrites Gold (no downgrade)
+          if (tier === "gold") {
+            await prisma.creatorProfile.updateMany({
+              where: { stripeSubscriptionId, NOT: { verificationStatus: "gold" } },
+              data: { verificationStatus: "gold" },
+            });
+          } else if (tier === "blue") {
+            await prisma.creatorProfile.updateMany({
+              where: { stripeSubscriptionId, verificationStatus: null },
+              data: { verificationStatus: "blue" },
+            });
+          }
         } else if (stripeCustomerId) {
           await prisma.creatorProfile.updateMany({
             where: { stripeCustomerId },
             data,
           });
+
+          if (tier === "gold") {
+            await prisma.creatorProfile.updateMany({
+              where: { stripeCustomerId, NOT: { verificationStatus: "gold" } },
+              data: { verificationStatus: "gold" },
+            });
+          } else if (tier === "blue") {
+            await prisma.creatorProfile.updateMany({
+              where: { stripeCustomerId, verificationStatus: null },
+              data: { verificationStatus: "blue" },
+            });
+          }
+        } else {
+          console.warn("[stripe/webhook] invoice.payment_succeeded missing subscription/customer mapping");
         }
 
         return NextResponse.json({ ok: true }, { status: 200 });
       }
-
-      /* ===================== SUBSCRIPTION CANCELED ===================== */
-      case "customer.subscription.deleted": {
+case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
 
         const stripeSubscriptionId = sub.id;
