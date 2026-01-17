@@ -5,76 +5,106 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const secret = process.env.STRIPE_SECRET_KEY;
-if (!secret) throw new Error("Missing STRIPE_SECRET_KEY");
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecret) throw new Error("Missing STRIPE_SECRET_KEY");
 
-const stripe = new Stripe(secret, {
-  apiVersion: "2025-01-27.acacia" as Stripe.LatestApiVersion,
+const stripe = new Stripe(stripeSecret, {
+  apiVersion: "2025-12-15.clover" as Stripe.LatestApiVersion,
 });
 
-export async function POST(req: Request) {
+function appBaseUrl(req: Request) {
+  const origin = (req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
+  if (!origin) throw new Error("Missing origin / NEXT_PUBLIC_SITE_URL");
+  return origin;
+}
+
+async function getUserEmailFromBearer(req: Request): Promise<string | null> {
   const auth = req.headers.get("authorization") || "";
-  if (!auth.startsWith("Bearer ")) {
-    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-  }
+  const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  if (!token) return null;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnon) {
-    return NextResponse.json({ error: "missing supabase env" }, { status: 500 });
-  }
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
+  if (!apikey) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
-  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      Authorization: auth,
-      apikey: supabaseAnon,
-    },
+  const res = await fetch(`${url}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey },
     cache: "no-store",
   });
+  if (!res.ok) return null;
 
-  if (!userRes.ok) {
-    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
-  }
+  const user = await res.json().catch(() => null);
+  const email = user?.email ? String(user.email).trim().toLowerCase() : null;
+  return email || null;
+}
 
-  const user = await userRes.json();
-  const email = String(user.email || "").trim().toLowerCase();
-  if (!email) return NextResponse.json({ error: "missing email" }, { status: 400 });
+async function ensureConnectedAccount(email: string) {
+  const profile = await prisma.creatorProfile.findUnique({ where: { email } });
+  if (!profile) return { profile: null as any, stripeAccountId: null as string | null };
 
-  const creator = await prisma.creatorProfile.findUnique({ where: { email } });
-  if (!creator) {
-    return NextResponse.json({ error: "not a creator" }, { status: 403 });
-  }
-
-  const origin = (req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
-  if (!origin) return NextResponse.json({ error: "missing origin" }, { status: 500 });
-
-  let stripeAccountId = creator.stripeAccountId;
+  let stripeAccountId = profile.stripeAccountId;
 
   if (!stripeAccountId) {
-    const account = await stripe.accounts.create({
+    const acct = await stripe.accounts.create({
       type: "express",
-      email,
       country: "AU",
-      capabilities: { transfers: { requested: true } },
+      email,
+      capabilities: {
+        transfers: { requested: true },
+      },
+      business_type: "individual",
     });
 
-    stripeAccountId = account.id;
+    stripeAccountId = acct.id;
 
     await prisma.creatorProfile.update({
       where: { email },
       data: {
         stripeAccountId,
-        stripeOnboardingStatus: "started",
+        payoutCurrency: "aud",
+        stripeOnboardingStatus: "pending",
       },
+    });
+  } else {
+    // if user re-opens onboarding
+    await prisma.creatorProfile.update({
+      where: { email },
+      data: { stripeOnboardingStatus: "pending" },
     });
   }
 
-  const accountLink = await stripe.accountLinks.create({
+  return { profile, stripeAccountId };
+}
+
+async function onboardingLink(req: Request, stripeAccountId: string) {
+  const base = appBaseUrl(req);
+  const returnUrl = `${base}/creator/payouts?stripe=return`;
+  const refreshUrl = `${base}/creator/payouts?stripe=refresh`;
+
+  const link = await stripe.accountLinks.create({
     account: stripeAccountId,
     type: "account_onboarding",
-    refresh_url: `${origin}/creator?stripe=refresh`,
-    return_url: `${origin}/creator?stripe=return`,
+    return_url: returnUrl,
+    refresh_url: refreshUrl,
   });
 
-  return NextResponse.json({ url: accountLink.url });
+  return link.url;
+}
+
+export async function POST(req: Request) {
+  try {
+    const email = await getUserEmailFromBearer(req);
+    if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+
+    const { profile, stripeAccountId } = await ensureConnectedAccount(email);
+    if (!profile) return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
+    if (!stripeAccountId) return NextResponse.json({ error: "Failed to create Stripe account" }, { status: 500 });
+
+    const url = await onboardingLink(req, stripeAccountId);
+    return NextResponse.json({ ok: true, url }, { status: 200 });
+  } catch (e: any) {
+    console.error("[api/stripe/connect/create] error", e?.message ?? e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
+  }
 }
