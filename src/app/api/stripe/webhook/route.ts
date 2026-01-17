@@ -251,7 +251,12 @@ export async function POST(req: Request) {
         };
 
         // Keep DB consistent even if checkout metadata was missing
-        if (tier) data.verificationStatus = tier; // <-- CRITICAL
+          // IMPORTANT: do NOT overwrite verificationStatus here.
+          // checkout.session.completed is authoritative for tier.
+          // We still store verificationPriceId/currentPeriodEnd below, and /api/creator/me can derive tier from priceId.
+
+          // if (tier) data.verificationStatus = tier; // <-- CRITICAL
+
         if (invoicePriceId) data.verificationPriceId = invoicePriceId;
         if (periodEnd) data.verificationCurrentPeriodEnd = periodEnd;
 
