@@ -272,7 +272,7 @@ export async function POST(req: Request) {
             });
           } else if (tier === "blue") {
             await prisma.creatorProfile.updateMany({
-              where: { stripeSubscriptionId, verificationStatus: null },
+              where: { stripeSubscriptionId, NOT: { verificationStatus: "gold" } },
               data: { verificationStatus: "blue" },
             });
           }
@@ -289,7 +289,7 @@ export async function POST(req: Request) {
             });
           } else if (tier === "blue") {
             await prisma.creatorProfile.updateMany({
-              where: { stripeCustomerId, verificationStatus: null },
+              where: { stripeCustomerId, NOT: { verificationStatus: "gold" } },
               data: { verificationStatus: "blue" },
             });
           }
