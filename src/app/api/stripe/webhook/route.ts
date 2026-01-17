@@ -246,6 +246,60 @@ export async function POST(req: Request) {
               ? "blue"
               : null;
 
+        // Always keep these fields current
+        const baseData: Prisma.CreatorProfileUpdateManyMutationInput = {
+          isVerified: true,
+        };
+        if (invoicePriceId) baseData.verificationPriceId = invoicePriceId;
+        if (periodEnd) baseData.verificationCurrentPeriodEnd = periodEnd;
+
+        // Prefer subscription mapping, fallback to customer mapping
+        const whereBase: Prisma.CreatorProfileWhereInput = stripeSubscriptionId
+          ? { stripeSubscriptionId }
+          : stripeCustomerId
+            ? { stripeCustomerId }
+            : {};
+
+        // 1) Persist base fields
+        if (Object.keys(whereBase).length) {
+          await prisma.creatorProfile.updateMany({ where: whereBase, data: baseData });
+        }
+
+        // 2) Upgrade-safe tier persistence:
+        // - Gold can overwrite Blue/NULL (upgrade)
+        // - Blue NEVER overwrites Gold (no downgrade)
+        if (tier === "gold" && Object.keys(whereBase).length) {
+          await prisma.creatorProfile.updateMany({
+            where: { ...whereBase, NOT: { verificationStatus: "gold" } },
+            data: { verificationStatus: "gold" },
+          });
+        } else if (tier === "blue" && Object.keys(whereBase).length) {
+          await prisma.creatorProfile.updateMany({
+            where: { ...whereBase, verificationStatus: null },
+            data: { verificationStatus: "blue" },
+          });
+        }
+        const invoice = event.data.object as Stripe.Invoice;
+
+        const stripeSubscriptionId =
+          typeof (invoice as any).subscription === "string" ? (invoice as any).subscription : null;
+
+        const stripeCustomerId =
+          typeof invoice.customer === "string" ? invoice.customer : null;
+
+        const invoicePriceId = getInvoicePriceId(invoice);
+        const periodEnd = getInvoicePeriodEnd(invoice);
+
+        const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
+        const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+
+        const tier =
+          gold && invoicePriceId === gold
+            ? "gold"
+            : blue && invoicePriceId === blue
+              ? "blue"
+              : null;
+
         const data: Prisma.CreatorProfileUpdateManyMutationInput = {
           isVerified: true,
         };
