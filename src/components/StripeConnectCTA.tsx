@@ -2,6 +2,23 @@
 
 import { useEffect, useState } from "react";
 
+async function getCreatorProfileId(): Promise<string | null> {
+  const res = await fetch("/api/creator/me", { cache: "no-store" });
+  const data = await res.json().catch(() => null);
+
+  // Support multiple shapes:
+  // - { creator: { id: "..." } }
+  // - { creatorProfile: { id: "..." } }
+  // - { creatorId: "..." }
+  const id =
+    data?.creator?.id ||
+    data?.creatorProfile?.id ||
+    data?.creatorId ||
+    null;
+
+  return id ? String(id) : null;
+}
+
 type Status = {
   ok: boolean;
   connected: boolean;
@@ -47,6 +64,32 @@ export default function StripeConnectCTA() {
   const [status, setStatus] = useState<Status | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  async function manageBilling() {
+    setLoading(true);
+    setMsg(null);
+    try {
+      const creatorProfileId = await getCreatorProfileId();
+      if (!creatorProfileId) throw new Error("Missing creator profile id");
+
+      const res = await authedFetch("/api/payments/verification/portal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ creatorProfileId }),
+      });
+
+      const data = await res.json().catch(() => null);
+      const url = data?.url;
+      if (!url) throw new Error(data?.error || "Missing billing portal URL");
+
+      window.location.href = url;
+    } catch (e: any) {
+      setMsg(e?.message || "Unable to open billing portal");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
 
   async function refresh() {
@@ -136,7 +179,7 @@ export default function StripeConnectCTA() {
 
           <button
             type="button"
-            onClick={startOnboarding}
+            onClick={complete ? manageBilling : startOnboarding}
             className="rounded-lg bg-white/90 px-3 py-2 text-xs font-semibold text-black hover:bg-white disabled:opacity-60"
             disabled={loading || signedIn === false}
             title={signedIn === false ? "Sign in first" : ""}
