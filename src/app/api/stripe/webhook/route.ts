@@ -341,7 +341,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ ok: true }, { status: 200 });
       }
-case "customer.subscription.deleted": {
+        case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
 
         const stripeSubscriptionId = sub.id;
