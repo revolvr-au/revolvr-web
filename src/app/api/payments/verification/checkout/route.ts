@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
       if (!creator) {
         const created = await prisma.creatorProfile.create({
           data: {
+            displayName: (email.split("@")[0] || "creator"),
             email,
             status: "ACTIVE",
           },
