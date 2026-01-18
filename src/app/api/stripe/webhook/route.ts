@@ -102,22 +102,7 @@ export async function POST(req: Request) {
     try {
       event = stripe.webhooks.constructEvent(body, sig, secret);
 
-    // --- Idempotency guard (Stripe retries webhooks) ------------------------
-    // Record event.id; if already seen, skip side-effects.
-    try {
-      await prisma.stripeEvent.create({
-        data: { id: event.id } as any,
-      });
-    } catch (e: any) {
-      const code = e?.code || e?.cause?.code;
-      if (code === "P2002") {
-        return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
-      }
-      console.error("[stripe/webhook] stripeEvent insert failed", e);
-      // continue to avoid retry storms
-    }
-
-      break;
+        break;
     } catch {
       // try next secret
     }
@@ -130,6 +115,20 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+
+    // --- Idempotency guard (Stripe retries webhooks) ------------------------
+    // Record event.id; if already seen, skip side-effects.
+    try {
+      await prisma.stripeEvent.create({ data: { id: event.id } as any });
+    } catch (e: any) {
+      const code = e?.code || e?.cause?.code;
+      if (code === "P2002") {
+        return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
+      }
+      console.error("[stripe/webhook] stripeEvent insert failed", e);
+      // continue to avoid retry storms
+    }
+
 
   try {
     switch (event.type) {
