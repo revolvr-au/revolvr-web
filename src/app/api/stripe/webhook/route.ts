@@ -85,20 +85,6 @@ export async function POST(req: Request) {
     );
   }
 
-  const eventId = event.id;
-
-const exists = await prisma.stripeEvent.findUnique({
-  where: { id: eventId },
-});
-
-if (exists) {
-  return NextResponse.json({ received: true });
-}
-
-await prisma.stripeEvent.create({
-  data: { id: eventId },
-});
-
   // IMPORTANT: raw body required for Stripe signature verification
   const body = await req.text();
   const secrets = getWebhookSecrets();
