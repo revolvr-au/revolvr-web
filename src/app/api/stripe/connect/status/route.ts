@@ -1,6 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,30 +14,40 @@ const stripe = new Stripe(stripeSecret, {
   apiVersion: "2025-12-15.clover" as Stripe.LatestApiVersion,
 });
 
-async function getUserEmailFromBearer(req: Request): Promise<string | null> {
-  const auth = req.headers.get("authorization") || "";
-  const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-  if (!token) return null;
+async function getUserEmailFromCookies(): Promise<string | null> {
+  const cookieStore = await cookies();
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const apikey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url) throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL");
-  if (!apikey) throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
 
-  const res = await fetch(`${url}/auth/v1/user`, {
-    headers: { Authorization: `Bearer ${token}`, apikey },
-    cache: "no-store",
-  });
-  if (!res.ok) return null;
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
 
-  const user = await res.json().catch(() => null);
-  const email = user?.email ? String(user.email).trim().toLowerCase() : null;
+  if (error || !user) return null;
+
+  const email = (user.email ?? "").trim().toLowerCase();
   return email || null;
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const email = await getUserEmailFromBearer(req);
+    const email = await getUserEmailFromCookies();
     if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 
     const profile = await prisma.creatorProfile.findUnique({ where: { email } });
