@@ -23,7 +23,11 @@ model Post {
   @@schema("public")
 }
 
-
+model StripeEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
+  @@schema("public")
+}
 model Like {
   id        String   @id @default(uuid())
   postId    String
@@ -158,14 +162,6 @@ model SupportLedger {
 
   @@schema("public")
 }
-model StripeEvent {
-  id        String   @id // Stripe event.id
-  type      String
-  createdAt DateTime @default(now())
-
-  @@schema("public")
-}
-
 model Payment {
   // Option B: Use Stripe Checkout Session ID as the primary key (cs_...)
   id                    String   @id
