@@ -36,23 +36,31 @@ export async function POST(req: NextRequest) {
     }
 
     // Resolve creator profile (prefer ID; fallback to email)
-    let creator: null | { id: string; email: string | null } = null;
+    let creator: null | { id: string; email: string | null; verificationStatus: string | null } = null;
 
     if (body.creatorProfileId) {
       creator = await prisma.creatorProfile.findUnique({
         where: { id: String(body.creatorProfileId) },
-        select: { id: true, email: true },
+        select: { id: true, email: true, verificationStatus: true },
       });
     } else if (body.creatorEmail) {
+      const email = String(body.creatorEmail || "").trim().toLowerCase();
       creator = await prisma.creatorProfile.findFirst({
-        where: {
-          email: {
-            equals: String(body.creatorEmail).trim(),
-            mode: "insensitive",
-          },
-        },
-        select: { id: true, email: true },
+        where: { email: { equals: email, mode: "insensitive" } },
+        select: { id: true, email: true, verificationStatus: true },
       });
+
+      // If creator doesn't exist yet, create it (only when an email is provided)
+      if (!creator) {
+        const created = await prisma.creatorProfile.create({
+          data: {
+            email,
+            status: "ACTIVE",
+          },
+          select: { id: true, email: true, verificationStatus: true },
+        });
+        creator = created;
+      }
     }
 
     if (!creator) {
@@ -62,19 +70,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const successUrl = new URL(
-      `/creator?verified=success&tier=${tier}`,
-      SITE_URL
-    );
-    const cancelUrl = new URL("/creator?verified=cancel", SITE_URL);
+    // Prevent Gold -> Blue downgrade
+    const current = String(creator.verificationStatus || "").toLowerCase();
+    if (current === "gold" && tier === "blue") {
+      return NextResponse.json(
+        { error: "Gold users cannot downgrade to Blue." },
+        { status: 400 }
+      );
+    }
 
-    console.log("[verification/checkout]", {
-      tier,
-      priceId,
-      creatorId: creator.id,
-      creatorEmail: creator.email,
-      siteUrl: SITE_URL,
-    });
+    const successUrl = new URL(`/creator?verified=success&tier=${tier}`, SITE_URL);
+    const cancelUrl = new URL("/creator?verified=cancel", SITE_URL);
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
