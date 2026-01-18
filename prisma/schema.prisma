@@ -1,13 +1,11 @@
 datasource db {
   provider = "postgresql"
-  schemas = ["public", "auth"]
+  schemas  = ["public"]
 }
 
 generator client {
   provider = "prisma-client-js"
 }
-
-
 
 model Post {
   id        String   @id @default(uuid())
@@ -26,8 +24,10 @@ model Post {
 model StripeEvent {
   id        String   @id
   createdAt DateTime @default(now())
+
   @@schema("public")
 }
+
 model Like {
   id        String   @id @default(uuid())
   postId    String
@@ -108,24 +108,23 @@ model CreatorProfile {
   status      CreatorStatus @default(ACTIVE)
 
   // Stripe Connect (Express)
-  stripeAccountId        String?  @map("stripe_account_id")
-  stripeOnboardingStatus String   @default("not_started") @map("stripe_onboarding_status")
-  payoutCurrency         String   @default("aud") @map("payout_currency")
-  stripeChargesEnabled   Boolean  @default(false) @map("stripe_charges_enabled")
-  stripePayoutsEnabled   Boolean  @default(false) @map("stripe_payouts_enabled")
+  stripeAccountId        String? @map("stripe_account_id")
+  stripeOnboardingStatus String  @default("not_started") @map("stripe_onboarding_status")
+  payoutCurrency         String  @default("aud") @map("payout_currency")
+  stripeChargesEnabled   Boolean @default(false) @map("stripe_charges_enabled")
+  stripePayoutsEnabled   Boolean @default(false) @map("stripe_payouts_enabled")
 
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  
   // Blue tick verification (recurring entitlement)
-  isVerified                    Boolean   @default(false) @map("is_verified")
-  verifiedSince                 DateTime? @map("verified_since")
-  stripeCustomerId              String?   @map("stripe_customer_id")
-  stripeSubscriptionId          String?   @unique @map("stripe_subscription_id")
-  verificationPriceId           String?   @map("verification_price_id")
-  verificationStatus            String    @default("inactive") @map("verification_status")
-  verificationCurrentPeriodEnd  DateTime? @map("verification_current_period_end")
+  isVerified                   Boolean   @default(false) @map("is_verified")
+  verifiedSince                DateTime? @map("verified_since")
+  stripeCustomerId             String?   @map("stripe_customer_id")
+  stripeSubscriptionId         String?   @unique @map("stripe_subscription_id")
+  verificationPriceId          String?   @map("verification_price_id")
+  verificationStatus           String    @default("inactive") @map("verification_status")
+  verificationCurrentPeriodEnd DateTime? @map("verification_current_period_end")
 
   @@schema("public")
 }
@@ -140,31 +139,31 @@ model CreatorBalance {
 }
 
 model SupportLedger {
-  id            String        @id @default(cuid())
+  id String @id @default(cuid())
 
-  creatorEmail   String
-  viewerEmail    String?
-  kind           SupportKind
-  source         SupportSource
-  targetId       String?
-  units          Int           @default(1)
+  creatorEmail String
+  viewerEmail  String?
+  kind         SupportKind
+  source       SupportSource
+  targetId     String?
+  units        Int           @default(1)
 
-  currency       String        @default("AUD")
-  grossCents     Int           @default(0)
-  creatorCents   Int           @default(0)
-  platformCents  Int           @default(0)
+  currency      String @default("AUD")
+  grossCents    Int    @default(0)
+  creatorCents  Int    @default(0)
+  platformCents Int    @default(0)
 
-  createdAt      DateTime      @default(now())
+  createdAt DateTime @default(now())
 
   @@index([creatorEmail])
   @@index([viewerEmail])
   @@index([targetId])
-
   @@schema("public")
 }
+
 model Payment {
   // Option B: Use Stripe Checkout Session ID as the primary key (cs_...)
-  id                    String   @id
+  id String @id
 
   stripeEventId         String   @unique
   stripePaymentIntentId String
@@ -182,7 +181,6 @@ model Payment {
   @@schema("public")
 }
 
-
 model CreatorPayout {
   id               String   @id @default(uuid())
   creatorId        String
@@ -193,6 +191,7 @@ model CreatorPayout {
 
   @@schema("public")
 }
+
 model StripeCheckoutReceipt {
   id            String   @id @default(cuid()) @db.Text
   sessionId     String   @unique @map("session_id") @db.Text
@@ -212,10 +211,10 @@ model StripeCheckoutReceipt {
   @@index([paymentIntent])
   @@index([customerEmail])
   @@index([createdAt])
-
   @@map("stripe_checkout_receipts")
   @@schema("public")
 }
+
 model Tip {
   id          String   @id @default(cuid())
   postId      String
