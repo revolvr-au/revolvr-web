@@ -1,5 +1,4 @@
-import Stripe from "stripe";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { createServerClient } from "@supabase/ssr";
@@ -7,16 +6,8 @@ import { createServerClient } from "@supabase/ssr";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
-
-const stripe = new Stripe(stripeSecretKey);
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
-
-export async function POST(_req: NextRequest) {
+export async function GET() {
   try {
-    // Supabase SSR auth (matches /api/creator/me)
     const cookieStore = await cookies();
 
     const supabase = createServerClient(
@@ -41,60 +32,121 @@ export async function POST(_req: NextRequest) {
       error,
     } = await supabase.auth.getUser();
 
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (error || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        {
+          loggedIn: false,
+          accessToken: null,
+          creator: {
+            isActive: false,
+            handle: null,
+            isVerified: false,
+            verificationStatus: null,
+            verificationCurrentPeriodEnd: null,
+            verificationTier: null,
+            verificationPriceId: null,
+          },
+        },
+        { status: 200 }
+      );
     }
 
     const email = (user.email ?? "").trim().toLowerCase();
-    if (!email) {
-      return NextResponse.json({ error: "Missing user email" }, { status: 400 });
-    }
 
-    // Resolve creator profile ONLY for logged-in user
-    const creator = await prisma.creatorProfile.findUnique({
-      where: { email },
-      select: { id: true, stripeCustomerId: true },
-    });
+    const profile = email
+      ? await prisma.creatorProfile.findUnique({ where: { email } })
+      : null;
 
-    if (!creator) {
-      return NextResponse.json(
-        { error: "Creator profile not found for authenticated user" },
-        { status: 404 }
-      );
-    }
+    const balance = email
+      ? await prisma.creatorBalance.findUnique({
+          where: { creatorEmail: email },
+        })
+      : null;
 
-    if (!creator.stripeCustomerId) {
-      return NextResponse.json(
-        { error: "No Stripe customer on file yet (complete checkout first)." },
-        { status: 400 }
-      );
-    }
+    const verificationPriceId = profile?.verificationPriceId ?? null;
+    const verificationStatusRaw = profile?.verificationStatus ?? null;
+    const verificationCurrentPeriodEnd =
+      profile?.verificationCurrentPeriodEnd ?? null;
 
-    // Optional: enforce config in production if you want strictness
-    // if (process.env.NODE_ENV === "production" && !process.env.STRIPE_BILLING_PORTAL_CONFIGURATION_ID) {
-    //   return NextResponse.json({ error: "Billing portal not configured" }, { status: 500 });
-    // }
+    const bluePriceId = (process.env.STRIPE_BLUE_TICK_PRICE_ID ?? "").trim();
+    const goldPriceId = (process.env.STRIPE_GOLD_TICK_PRICE_ID ?? "").trim();
 
-    const session = await stripe.billingPortal.sessions.create({
-      customer: creator.stripeCustomerId,
-      return_url: new URL("/creator?billing=return", SITE_URL).toString(),
-      configuration: process.env.STRIPE_BILLING_PORTAL_CONFIGURATION_ID || undefined,
-    });
+    const normalizedStatus = String(verificationStatusRaw ?? "")
+      .trim()
+      .toLowerCase();
 
-    return NextResponse.json({ url: session.url }, { status: 200 });
-  } catch (err: any) {
-    const detail =
-      err?.raw?.message ??
-      err?.message ??
-      (typeof err === "string" ? err : JSON.stringify(err));
+    const statusTier =
+      normalizedStatus === "blue" || normalizedStatus === "gold"
+        ? (normalizedStatus as "blue" | "gold")
+        : null;
 
-    console.error("[payments/verification/portal]", detail);
+    const now = new Date();
+    const hasActivePeriod =
+      verificationCurrentPeriodEnd instanceof Date
+        ? verificationCurrentPeriodEnd > now
+        : verificationCurrentPeriodEnd
+        ? new Date(verificationCurrentPeriodEnd as any) > now
+        : false;
 
-    // Don’t leak Stripe internals to client in production
-    const safeDetail = process.env.NODE_ENV === "production" ? undefined : detail;
+    const verificationTier =
+      statusTier ??
+      (verificationPriceId && verificationPriceId === goldPriceId
+        ? "gold"
+        : verificationPriceId && verificationPriceId === bluePriceId
+        ? "blue"
+        : null);
+
+    const isVerified =
+      Boolean(profile?.isVerified) || statusTier !== null || hasActivePeriod;
 
     return NextResponse.json(
-      { error: "Failed to create billing portal session", detail: safeDetail },
+      {
+        loggedIn: true,
+        accessToken: session?.access_token ?? null,
+        user: { id: user.id, email: email || null },
+        creator: {
+          isActive: profile?.status === "ACTIVE",
+          handle: profile?.handle ?? null,
+          isVerified,
+          verificationStatus: verificationStatusRaw,
+          verificationCurrentPeriodEnd,
+          verificationTier,
+          verificationPriceId,
+        },
+        profile,
+        balance:
+          balance ??
+          (email
+            ? {
+                creatorEmail: email,
+                totalEarnedCents: 0,
+                availableCents: 0,
+              }
+            : null),
+      },
+      { status: 200 }
+    );
+  } catch (e) {
+    console.error("[api/creator/me] error", e);
+
+    return NextResponse.json(
+      {
+        loggedIn: false,
+        creator: {
+          isActive: false,
+          handle: null,
+          isVerified: false,
+          verificationStatus: null,
+          verificationCurrentPeriodEnd: null,
+          verificationTier: null,
+          verificationPriceId: null,
+        },
+        error: "Server error",
+      },
       { status: 500 }
     );
   }
