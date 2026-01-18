@@ -59,6 +59,22 @@ function getInvoicePeriodEnd(invoice: Stripe.Invoice): Date | null {
   return typeof end === "number" ? new Date(end * 1000) : null;
 }
 
+
+
+  function getSubscriptionPriceId(sub: Stripe.Subscription): string | null {
+    const item: any = (sub.items?.data && sub.items.data[0]) || null;
+    const direct = item?.price?.id;
+    const plan = item?.plan?.id;
+    if (typeof direct === "string" && direct) return direct;
+    if (typeof plan === "string" && plan) return plan;
+    return null;
+  }
+
+  function getSubscriptionPeriodEnd(sub: Stripe.Subscription): Date | null {
+    const end = (sub as any).current_period_end;
+    return typeof end === "number" ? new Date(end * 1000) : null;
+  }
+
 /* -------------------------------- Stripe -------------------------------- */
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
@@ -354,6 +370,111 @@ case "customer.subscription.deleted": {
         }
 
         return NextResponse.json({ ok: true }, { status: 200 });
+
+        /* ===================== INVOICE FAILED ===================== */
+        case "invoice.payment_failed": {
+          const invoice = event.data.object as Stripe.Invoice;
+
+          const stripeSubscriptionId =
+            typeof (invoice as any).subscription === "string"
+              ? (invoice as any).subscription
+              : null;
+
+          const stripeCustomerId =
+            typeof invoice.customer === "string" ? invoice.customer : null;
+
+          const invoicePriceId = getInvoicePriceId(invoice);
+          const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
+          const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+
+          const isVerificationInvoice =
+            (Boolean(blue) && invoicePriceId === blue) || (Boolean(gold) && invoicePriceId === gold);
+
+          if (!isVerificationInvoice) {
+            return NextResponse.json({ ok: true, skipped: true }, { status: 200 });
+          }
+
+          // Revoke verification for failed renewals.
+          // Prefer mapping by subscription id; fallback to stripeCustomerId.
+          const where = stripeSubscriptionId
+            ? { stripeSubscriptionId }
+            : stripeCustomerId
+              ? { stripeCustomerId }
+              : null;
+
+          if (!where) {
+            console.warn("[stripe/webhook] invoice.payment_failed missing subscription/customer mapping");
+            return NextResponse.json({ ok: true, missingMapping: true }, { status: 200 });
+          }
+
+          await prisma.creatorProfile.updateMany({
+            where,
+            data: {
+              isVerified: false,
+              verificationStatus: null,
+              verificationTier: null,
+              verificationPriceId: null,
+              verificationCurrentPeriodEnd: null,
+              stripeSubscriptionId: stripeSubscriptionId ?? undefined,
+              stripeCustomerId: stripeCustomerId ?? undefined,
+            } as any,
+          });
+
+          return NextResponse.json({ ok: true }, { status: 200 });
+        }
+
+
+
+        /* ===================== SUBSCRIPTION UPDATED ===================== */
+        case "customer.subscription.updated": {
+          const sub = event.data.object as Stripe.Subscription;
+
+          const stripeSubscriptionId = typeof sub.id === "string" ? sub.id : null;
+          const stripeCustomerId = typeof sub.customer === "string" ? sub.customer : null;
+
+          const priceId = getSubscriptionPriceId(sub);
+          const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
+          const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+
+          const tier =
+            gold && priceId === gold
+              ? "gold"
+              : blue && priceId === blue
+                ? "blue"
+                : null;
+
+          if (!tier) {
+            return NextResponse.json({ ok: true, skipped: true }, { status: 200 });
+          }
+
+          const periodEnd = getSubscriptionPeriodEnd(sub);
+
+          // If cancel_at_period_end is set, we preserve access until period end,
+          // and /api/creator/me will honor verificationCurrentPeriodEnd.
+          if (stripeSubscriptionId) {
+            await prisma.creatorProfile.updateMany({
+              where: { stripeSubscriptionId },
+              data: {
+                verificationStatus: tier,
+                isVerified: true,
+                verificationCurrentPeriodEnd: periodEnd,
+              } as any,
+            });
+          } else if (stripeCustomerId) {
+            await prisma.creatorProfile.updateMany({
+              where: { stripeCustomerId },
+              data: {
+                verificationStatus: tier,
+                isVerified: true,
+                verificationCurrentPeriodEnd: periodEnd,
+              } as any,
+            });
+          }
+
+          return NextResponse.json({ ok: true }, { status: 200 });
+        }
+
+
       }
 
       default:
