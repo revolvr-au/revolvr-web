@@ -371,6 +371,7 @@ case "customer.subscription.deleted": {
 
         return NextResponse.json({ ok: true }, { status: 200 });
 
+        
         /* ===================== INVOICE FAILED ===================== */
         case "invoice.payment_failed": {
           const invoice = event.data.object as Stripe.Invoice;
@@ -388,14 +389,13 @@ case "customer.subscription.deleted": {
           const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
 
           const isVerificationInvoice =
-            (Boolean(blue) && invoicePriceId === blue) || (Boolean(gold) && invoicePriceId === gold);
+            (Boolean(blue) && invoicePriceId === blue) ||
+            (Boolean(gold) && invoicePriceId === gold);
 
           if (!isVerificationInvoice) {
             return NextResponse.json({ ok: true, skipped: true }, { status: 200 });
           }
 
-          // Revoke verification for failed renewals.
-          // Prefer mapping by subscription id; fallback to stripeCustomerId.
           const where = stripeSubscriptionId
             ? { stripeSubscriptionId }
             : stripeCustomerId
@@ -403,7 +403,7 @@ case "customer.subscription.deleted": {
               : null;
 
           if (!where) {
-            console.warn("[stripe/webhook] invoice.payment_failed missing subscription/customer mapping");
+            console.warn("[stripe/webhook] invoice.payment_failed missing mapping");
             return NextResponse.json({ ok: true, missingMapping: true }, { status: 200 });
           }
 
@@ -412,18 +412,13 @@ case "customer.subscription.deleted": {
             data: {
               isVerified: false,
               verificationStatus: null,
-              verificationTier: null,
               verificationPriceId: null,
               verificationCurrentPeriodEnd: null,
-              stripeSubscriptionId: stripeSubscriptionId ?? undefined,
-              stripeCustomerId: stripeCustomerId ?? undefined,
             } as any,
           });
 
           return NextResponse.json({ ok: true }, { status: 200 });
         }
-
-
 
         /* ===================== SUBSCRIPTION UPDATED ===================== */
         case "customer.subscription.updated": {
@@ -449,14 +444,12 @@ case "customer.subscription.deleted": {
 
           const periodEnd = getSubscriptionPeriodEnd(sub);
 
-          // If cancel_at_period_end is set, we preserve access until period end,
-          // and /api/creator/me will honor verificationCurrentPeriodEnd.
           if (stripeSubscriptionId) {
             await prisma.creatorProfile.updateMany({
               where: { stripeSubscriptionId },
               data: {
-                verificationStatus: tier,
                 isVerified: true,
+                verificationStatus: tier,
                 verificationCurrentPeriodEnd: periodEnd,
               } as any,
             });
@@ -464,8 +457,8 @@ case "customer.subscription.deleted": {
             await prisma.creatorProfile.updateMany({
               where: { stripeCustomerId },
               data: {
-                verificationStatus: tier,
                 isVerified: true,
+                verificationStatus: tier,
                 verificationCurrentPeriodEnd: periodEnd,
               } as any,
             });
@@ -474,10 +467,53 @@ case "customer.subscription.deleted": {
           return NextResponse.json({ ok: true }, { status: 200 });
         }
 
+        /* ===================== SUBSCRIPTION CANCELED ===================== */
+        case "customer.subscription.deleted": {
+          const sub = event.data.object as Stripe.Subscription;
 
-      }
+          const stripeSubscriptionId = typeof sub.id === "string" ? sub.id : null;
+          const stripeCustomerId = typeof sub.customer === "string" ? sub.customer : null;
 
-      default:
+          const priceId = getSubscriptionPriceId(sub);
+          const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
+          const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+
+          const tier =
+            gold && priceId === gold
+              ? "gold"
+              : blue && priceId === blue
+                ? "blue"
+                : null;
+
+          if (!tier) {
+            return NextResponse.json({ ok: true, skipped: true }, { status: 200 });
+          }
+
+          const where = stripeSubscriptionId
+            ? { stripeSubscriptionId }
+            : stripeCustomerId
+              ? { stripeCustomerId }
+              : null;
+
+          if (!where) {
+            console.warn("[stripe/webhook] subscription.deleted missing mapping");
+            return NextResponse.json({ ok: true, missingMapping: true }, { status: 200 });
+          }
+
+          await prisma.creatorProfile.updateMany({
+            where,
+            data: {
+              isVerified: false,
+              verificationStatus: null,
+              verificationPriceId: null,
+              verificationCurrentPeriodEnd: null,
+            } as any,
+          });
+
+          return NextResponse.json({ ok: true }, { status: 200 });
+        }
+
+default:
         return NextResponse.json({ ok: true }, { status: 200 });
     }
   } catch (err: unknown) {
