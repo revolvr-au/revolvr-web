@@ -61,7 +61,7 @@ export default function GoLivePage() {
 
     run();
     return () => {
-      cancelled = True
+      cancelled = true
     };
   }, [router]);
 
