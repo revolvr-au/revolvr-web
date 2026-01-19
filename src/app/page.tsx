@@ -9,12 +9,12 @@ export default function FrontGatePage() {
         <div className="absolute bottom-[-160px] left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-emerald-400/12 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 items-center justify-items-center gap-10 px-5 py-10 md:grid-cols-2 md:justify-items-stretch md:py-0">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center gap-10 px-5 py-10 md:py-0">
         {/* LEFT: Atmosphere (desktop only) */}
-        <div className="relative hidden md:block">
+        <div className="hidden">
           <div className="pointer-events-none absolute inset-0 rounded-[36px] bg-black/10 backdrop-blur-[2px]" />
           <div className="relative h-[560px] w-full overflow-hidden rounded-[36px] border border-white/10 bg-white/5">
-            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[680px] w-[420px] -translate-x-1/2 -translate-y-1/2 opacity-30 blur-[3px]">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[680px] w-[420px] -translate-x-1/2 -translate-y-1/2 opacity-42 blur-[2px]">
               <DesktopCard className="absolute left-[-40px] top-[70px] rotate-[-10deg] opacity-35" />
               <DesktopCard className="absolute right-[-30px] top-[40px] rotate-[8deg] opacity-55" />
               <DesktopCard className="absolute left-[10px] top-[160px] rotate-[-3deg] opacity-75" />
@@ -35,7 +35,7 @@ export default function FrontGatePage() {
         </div>
 
         {/* RIGHT: The Door */}
-        <div className="relative w-full max-w-[440px] justify-self-center md:justify-self-end">
+        <div className="relative w-full max-w-[520px]">
           {/* MOBILE STACK */}
           <div className="relative mx-auto mb-4 h-[22vh] w-full max-w-md overflow-hidden md:hidden">
             <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/0 via-black/0 to-[#05070C]" />
