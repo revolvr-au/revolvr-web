@@ -61,7 +61,7 @@ export function FloatingLiveButton() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/login?redirectTo=/creator");
+      router.push("/login?redirectTo=/go-live");
       return;
     }
 
@@ -70,7 +70,7 @@ export function FloatingLiveButton() {
       return;
     }
 
-    router.push("/creator");
+    router.push("/go-live");
   };
 
   const label = !auth.isLoggedIn ? "Login to go live" : auth.isCreator ? "Go Live" : "Become a creator";
