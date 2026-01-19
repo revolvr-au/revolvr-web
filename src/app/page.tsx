@@ -3,7 +3,7 @@ import FrontGateSocialStack from "@/components/FrontGateSocialStack";
 
 export default function FrontGatePage() {
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-[#05070C] text-white">
+    <div className="relative min-h-screen w-full overflow-hidden bg-[#05070C] text-white [padding-left:env(safe-area-inset-left)] [padding-right:env(safe-area-inset-right)]">
       {/* Ambient background */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-black/25 to-black/60" />
@@ -11,7 +11,7 @@ export default function FrontGatePage() {
         <div className="absolute bottom-[-160px] left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-emerald-400/12 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 items-center gap-10 px-5 py-10 md:grid-cols-2 md:py-0">
+      <div className="relative mx-auto grid min-h-screen w-full max-w-6xl grid-cols-1 items-center justify-items-center gap-10 px-5 py-10 md:grid-cols-2 md:justify-items-stretch md:py-0">
         {/* LEFT: Atmosphere (desktop only) */}
         <div className="relative hidden md:block">
           <div className="pointer-events-none absolute inset-0 rounded-[36px] bg-black/10 backdrop-blur-[2px]" />
@@ -37,7 +37,7 @@ export default function FrontGatePage() {
         </div>
 
         {/* RIGHT: The Door */}
-        <div className="relative mx-auto w-full max-w-[440px] md:mx-0 md:justify-self-end">
+        <div className="relative w-full max-w-[440px] justify-self-center md:justify-self-end">
           {/* MOBILE STACK */}
           <div className="relative mx-auto mb-4 h-[22vh] w-full max-w-md overflow-hidden md:hidden">
             <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-b from-black/0 via-black/0 to-[#05070C]" />
