@@ -1,10 +1,10 @@
-/* @import "@livekit/components-styles"; */  /* <-- disable this */
 @import "tailwindcss";
 /* or, if you want the explicit layers:
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 */
+
 
 
 
