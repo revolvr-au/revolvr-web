@@ -1,38 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
-
-type CreateLiveResponse =
-  | { sessionId: string }
-  | { id: string }
-  | { session_id: string }
-  | { error: string };
+import Link from "next/link";
 
 export default function GoLivePage() {
-  const router = useRouter();
-  const [status, setStatus] = useState("Starting live session…");
-  const [error, setError] = useState<string | null>(null);
+  return (
+    <main className="relative min-h-screen w-full bg-[#05070C] text-white flex items-center justify-center px-6">
+      <div className="w-full max-w-md rounded-[28px] border border-white/10 bg-black/30 p-8 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur">
+        <h1 className="text-2xl font-semibold">Go Live</h1>
+        <p className="mt-2 text-white/70">
+          Ready to start a live session.
+        </p>
 
-  // AUTO-START DISABLED: Go Live should land here and not redirect.
-return (
-    <main className="min-h-[70vh] w-full flex items-center justify-center px-6">
-      <div className="max-w-md w-full rounded-2xl bg-black/30 ring-1 ring-white/10 p-6 text-white">
-        <div className="text-lg font-semibold">Go Live</div>
-        <div className="mt-2 text-sm text-white/70">{status}</div>
+        <div className="mt-6 flex flex-col gap-3">
+          <Link
+            href="/login?redirectTo=/go-live"
+            className="rounded-xl bg-emerald-400 px-5 py-3 text-center font-medium text-black hover:bg-emerald-300"
+          >
+            Sign in to go live
+          </Link>
 
-        {error ? (
-          <div className="mt-4">
-            <div className="text-sm text-red-300">{error}</div>
-            <button
-              className="mt-4 w-full rounded-xl bg-white/10 hover:bg-white/15 py-3 text-sm font-medium"
-              onClick={() => router.push("/public-feed")}
-            >
-              Back to feed
-            </button>
-          </div>
-        ) : null}
+          <Link
+            href="/public-feed"
+            className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-center font-medium text-white/90 hover:bg-white/10"
+          >
+            Back to feed
+          </Link>
+        </div>
+
+        <p className="mt-5 text-xs text-white/40">
+          (Broadcast start will be added next — this page is intentionally not auto-starting.)
+        </p>
       </div>
     </main>
   );
