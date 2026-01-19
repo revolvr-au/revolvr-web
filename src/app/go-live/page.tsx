@@ -5,9 +5,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
-type CreateLiveResponse =
-  | { sessionId?: string; id?: string; room?: string; roomId?: string }
-  | any;
+type CreateLiveResponse = {
+  sessionId?: string;
+  id?: string;
+  room?: string;
+  roomId?: string;
+  hostToken?: string;
+  livekitUrl?: string;
+  roomName?: string;
+  hostIdentity?: string;
+  title?: string | null;
+} | any;
 
 export default function GoLivePage() {
   const router = useRouter();
@@ -69,10 +77,23 @@ export default function GoLivePage() {
 
       if (!sessionId) throw new Error("Create live did not return a session id");
 
+      const hostToken = json?.hostToken;
+      const livekitUrl = json?.livekitUrl;
+
+      // Persist host creds for the live room page to pick up.
+      try {
+        if (typeof hostToken === "string" && hostToken.length > 0) {
+          sessionStorage.setItem("lk_host_token", hostToken);
+        }
+        if (typeof livekitUrl === "string" && livekitUrl.length > 0) {
+          sessionStorage.setItem("lk_url", livekitUrl);
+        }
+      } catch {}
+
       router.push(
         `/live/${encodeURIComponent(String(sessionId))}?creator=${encodeURIComponent(
           email.toLowerCase()
-        )}`
+        )}&role=host`
       );
     } catch (e: any) {
       setErr(String(e?.message || e || "Failed to start broadcast"));
