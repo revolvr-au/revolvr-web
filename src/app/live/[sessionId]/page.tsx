@@ -1,6 +1,7 @@
 // src/app/live/[sessionId]/page.tsx
 "use client";
 
+import { LiveKitRoom, VideoConference, RoomAudioRenderer } from "@livekit/components-react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
@@ -22,6 +23,19 @@ export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
+
+    const role = searchParams?.get("role") || "";
+  const isHost = role === "host";
+
+  const hostToken = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem("lk_host_token");
+  }, []);
+
+  const livekitUrl = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    return sessionStorage.getItem("lk_url");
+  }, []);
 
   const safeSessionId = params?.sessionId ?? "";
   const sessionId = useMemo(
@@ -284,6 +298,58 @@ export default function LiveRoomPage() {
             Back to feed
           </button>
         </header>
+              if (isHost) {
+    if (!hostToken || !livekitUrl) {
+      return (
+        <main className="min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/30 p-6">
+            <h1 className="text-xl font-semibold">Go Live</h1>
+            <p className="mt-2 text-white/70">
+              Missing host credentials. Please start again from <span className="font-mono">/go-live</span>.
+            </p>
+            <button
+              className="mt-5 w-full rounded-xl bg-emerald-400 px-5 py-3 text-center font-medium text-black"
+              onClick={() => router.push("/go-live")}
+            >
+              Back to Go Live
+            </button>
+          </div>
+        </main>
+      );
+    }
+
+    return (
+      <main className="min-h-screen bg-[#05070C] text-white">
+        <div className="mx-auto max-w-5xl px-6 py-10">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold">Live on Revolvr</h1>
+              <p className="text-white/60 text-sm">Host mode</p>
+            </div>
+            <button
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white/90 hover:bg-white/10"
+              onClick={() => router.push("/public-feed")}
+            >
+              Back to feed
+            </button>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+            <LiveKitRoom
+              token={hostToken}
+              serverUrl={livekitUrl}
+              connect={true}
+              data-lk-theme="default"
+              style={{ height: 640 }}
+            >
+              <RoomAudioRenderer />
+              <VideoConference />
+            </LiveKitRoom>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
         <section className="w-full max-w-xl rounded-2xl bg-black/40 border border-white/10 aspect-video mb-4 flex items-center justify-center">
           <div className="text-center">
