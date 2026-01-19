@@ -1,6 +1,4 @@
 import Link from "next/link";
-import FrontGateSocialStack from "@/components/FrontGateSocialStack";
-
 export default function FrontGatePage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#05070C] text-white [padding-left:env(safe-area-inset-left)] [padding-right:env(safe-area-inset-right)]">
@@ -57,7 +55,6 @@ export default function FrontGatePage() {
           <div className="relative">
             <div className="pointer-events-none absolute inset-0 -z-10">
               <div className="absolute -top-12 left-1/2 h-[240px] w-[240px] -translate-x-1/2 rounded-full bg-emerald-400/10 blur-3xl" />
-              <FrontGateSocialStack />
               <div className="absolute inset-0 bg-gradient-to-b from-black/0 via-black/10 to-black/35" />
             </div>
 
