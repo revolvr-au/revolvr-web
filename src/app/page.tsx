@@ -81,7 +81,7 @@ export default function FrontGatePage() {
                 </Link>
 
                 <Link
-                  href="/dashboard"
+                  href="/go-live"
                   className="mt-3 block w-full rounded-2xl px-5 py-3 text-center text-[14px] font-medium text-white/70 transition hover:text-white/85 active:scale-[0.99]"
                   aria-label="Go live as a creator"
                 >
