@@ -150,7 +150,26 @@ export default function LiveRoomPage() {
               <RoomAudioRenderer />
               <VideoConference style={{ height: 640 }} />
             </LiveKitRoom>
-          </div>
+          
+
+              {/* Chat (desktop) */}
+              <div className="mt-4 hidden lg:block">
+                <LiveChatPanel
+                  roomId={sessionId}
+                  liveHrefForRedirect={liveHrefForRedirect}
+                  userEmail={userEmail}
+                />
+              </div>
+
+              {/* Chat (mobile) */}
+              <div className="mt-4 lg:hidden">
+                <LiveChatPanel
+                  roomId={sessionId}
+                  liveHrefForRedirect={liveHrefForRedirect}
+                  userEmail={userEmail}
+                />
+              </div>
+</div>
         </div>
       </main>
     );
