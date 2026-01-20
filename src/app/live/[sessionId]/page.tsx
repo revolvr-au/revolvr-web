@@ -96,7 +96,7 @@ export default function LiveRoomPage() {
   if (isHost) {
     if (!hostToken || !livekitUrl) {
       return (
-        <main className="min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
+        <main className="live-room min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/30 p-6">
             <h1 className="text-xl font-semibold">Go Live</h1>
             <p className="mt-2 text-white/70">
@@ -123,7 +123,7 @@ export default function LiveRoomPage() {
     }
 
     return (
-      <main className="min-h-screen bg-[#05070C] text-white">
+      <main className="live-room min-h-screen bg-[#05070C] text-white">
         <div className="mx-auto max-w-5xl px-6 py-10">
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -332,7 +332,7 @@ export default function LiveRoomPage() {
   }, [credits]);
 
   return (
-    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+    <div className="live-room min-h-screen bg-[#050814] text-white flex flex-col">
       <main className="flex-1 w-full px-4 py-4 pb-24">
         <div className="mx-auto w-full max-w-6xl grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
           {/* ================= LEFT: LIVE CONTENT ================= */}
