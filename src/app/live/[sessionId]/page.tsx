@@ -360,17 +360,25 @@ export default function LiveRoomPage() {
               </button>
             </header>
 
-            {/* Viewer placeholder */}
-            <section className="w-full max-w-xl rounded-2xl bg-black/40 border border-white/10 aspect-video flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-sm font-semibold text-white/80">
-                  Stream starting soon
-                </div>
-                <div className="text-[11px] text-white/50 mt-1">
-                  The creator is getting ready
-                </div>
-              </div>
-            </section>
+            {/* Live video (viewer mode) */}
+<section className="w-full max-w-xl rounded-2xl bg-black/40 border border-white/10 overflow-hidden">
+  {!livekitUrl ? (
+    <div className="aspect-video flex items-center justify-center text-white/60 text-sm">
+      Missing LiveKit URL. Please re-open the stream link.
+    </div>
+  ) : (
+    <LiveKitRoom
+      token={sessionStorage.getItem("lk_viewer_token") || ""}
+      serverUrl={livekitUrl}
+      connect={true}
+      data-lk-theme="default"
+      style={{ height: 640 }}
+    >
+      <RoomAudioRenderer />
+      <VideoConference style={{ height: 640 }} />
+    </LiveKitRoom>
+  )}
+</section>
 
             {/* Support UI (keep your existing support UI below if you have it elsewhere) */}
             <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
