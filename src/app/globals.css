@@ -8,20 +8,36 @@
 
 
 /* ---- LiveKit UI cleanup (scoped + minimal) ---- */
-.live-room [data-lk-theme] .lk-control-bar {
-  display: none !important;
-}
 
-/* Keep the Start Audio overlay/button visible */
-.live-room [data-lk-theme] .lk-start-audio {
-  display: flex !important;
-}
-
-/* Ensure conference area can occupy height */
-.live-room [data-lk-theme] .lk-video-conference,
-.live-room [data-lk-theme] .lk-grid-layout {
+/* Keep the conference area stable and able to size within our wrapper */
+.live-room [data-lk-theme] .lk-video-conference {
+  position: relative !important;
   height: 100% !important;
   min-height: 0 !important;
+}
+
+/* Ensure inner layouts can stretch */
+.live-room [data-lk-theme] .lk-grid-layout,
+.live-room [data-lk-theme] .lk-focus-layout,
+.live-room [data-lk-theme] .lk-stage {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+/* Hide control bar without display:none (prevents layout blanking) */
+.live-room [data-lk-theme] .lk-control-bar {
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Keep the Start Audio overlay/button visible (mobile needs it) */
+.live-room [data-lk-theme] .lk-start-audio {
+  display: flex !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
 }
 
 /* Revolvr custom bits - no @apply, just plain CSS */
