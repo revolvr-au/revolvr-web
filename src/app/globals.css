@@ -120,3 +120,202 @@
   animation: revolvr-revolve 22s linear infinite;
   /* keeps it subtle, not dizzy */
 }
+/* ---------------- Live Chat Panel (Phase 1) ---------------- */
+
+.live-chat-panel {
+  height: 100%;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+
+  background: rgba(0, 0, 0, 0.30);
+  backdrop-filter: blur(10px);
+
+  overflow: hidden;
+}
+
+.live-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 14px 14px;
+
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.live-chat-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.live-chat-subtitle {
+  margin-top: 2px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.50);
+}
+
+.live-chat-login {
+  font-size: 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.90);
+  text-decoration: none;
+}
+
+.live-chat-status {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.live-chat-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 12px;
+}
+
+.live-chat-empty {
+  padding: 14px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.live-chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.live-chat-row {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.live-chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.live-chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.live-chat-avatar-fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.live-chat-bubble {
+  padding: 10px 12px;
+  border-radius: 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.live-chat-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.live-chat-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.live-chat-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
+}
+
+.live-chat-text {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.86);
+  word-break: break-word;
+}
+
+.live-chat-error {
+  margin: 10px 12px 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.10);
+  color: rgba(254, 202, 202, 0.95);
+  font-size: 12px;
+}
+
+.live-chat-input {
+  display: grid;
+  grid-template-columns: 1fr 78px;
+  gap: 10px;
+
+  padding: 12px 12px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.20);
+}
+
+.live-chat-input input {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.04);
+
+  color: rgba(255, 255, 255, 0.92);
+  outline: none;
+}
+
+.live-chat-input input::placeholder {
+  color: rgba(255, 255, 255, 0.40);
+}
+
+.live-chat-input button {
+  height: 40px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  background: rgba(16, 185, 129, 0.20);
+
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.live-chat-input button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

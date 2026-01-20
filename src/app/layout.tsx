@@ -1,3 +1,4 @@
+import "@livekit/components-styles";
 import type { Metadata } from "next";
 import "./globals.css";
 import { FloatingLiveButton } from "@/components/FloatingLiveButton";
