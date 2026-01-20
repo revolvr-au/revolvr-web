@@ -8,17 +8,15 @@
 
 
 /* ---- LiveKit UI cleanup (Phase 1 "Clean B") ---- */
-[data-lk-theme] .lk-control-bar,
-[data-lk-theme] .lk-room-controls,
-[data-lk-theme] .lk-focus-toggle,
-[data-lk-theme] .lk-chat-toggle,
-[data-lk-theme] .lk-button-group,
-[data-lk-theme] .lk-participant-metadata {
+/* Hide ONLY the bottom control bar (keep everything else LiveKit needs) */
+[data-lk-theme] .lk-control-bar {
   display: none !important;
 }
 
-/* IMPORTANT: do NOT hide .lk-start-audio (mobile needs it to join audio) */
-
+/* Keep the Start Audio overlay/button visible (mobile needs it) */
+[data-lk-theme] .lk-start-audio {
+  display: flex !important;
+}
 
 /* Keep video area clean and clipped */
 [data-lk-theme] .lk-video-conference,
