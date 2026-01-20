@@ -37,14 +37,19 @@ export default function LiveRoomPage() {
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
 
-  const hostToken = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    return sessionStorage.getItem("lk_host_token");
-  }, []);
+  // ---- LiveKit creds (loaded from sessionStorage; avoids first-render empty values) ----
+  const [lkUrl, setLkUrl] = useState<string>("");
+  const [hostToken, setHostToken] = useState<string>("");
+  const [viewerToken, setViewerToken] = useState<string>("");
 
-  const livekitUrl = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    return sessionStorage.getItem("lk_url");
+  useEffect(() => {
+    try {
+      setLkUrl(sessionStorage.getItem("lk_url") ?? "");
+      setHostToken(sessionStorage.getItem("lk_host_token") ?? "");
+      setViewerToken(sessionStorage.getItem("lk_viewer_token") ?? "");
+    } catch {
+      // no-op
+    }
   }, []);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -92,89 +97,6 @@ export default function LiveRoomPage() {
     loadUser();
   }, []);
 
-  /* ---------------------- HOST MODE EARLY RETURN ------------------- */
-  if (isHost) {
-    if (!hostToken || !livekitUrl) {
-      return (
-        <main className="live-room min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/30 p-6">
-            <h1 className="text-xl font-semibold">Go Live</h1>
-            <p className="mt-2 text-white/70">
-              Missing host credentials. Please start again from{" "}
-              <span className="font-mono">/go-live</span>.
-            </p>
-
-            <button
-              className="mt-5 w-full rounded-xl bg-emerald-400 px-5 py-3 text-center font-medium text-black hover:bg-emerald-300"
-              onClick={() => router.push("/go-live")}
-            >
-              Back to Go Live
-            </button>
-
-            <button
-              className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-center font-medium text-white/90 hover:bg-white/10"
-              onClick={() => router.push("/public-feed")}
-            >
-              Back to feed
-            </button>
-          </div>
-        </main>
-      );
-    }
-
-    return (
-      <main className="live-room min-h-screen bg-[#05070C] text-white">
-        <div className="mx-auto max-w-5xl px-6 py-10">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold">Live on Revolvr</h1>
-              <p className="text-white/60 text-sm">
-                Host mode • Room: <span className="font-mono">{sessionId}</span>
-              </p>
-            </div>
-            <button
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white/90 hover:bg-white/10"
-              onClick={() => router.push("/public-feed")}
-            >
-              Back to feed
-            </button>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-            <LiveKitRoom
-              token={hostToken}
-              serverUrl={livekitUrl}
-              connect={true}
-              data-lk-theme="default"
-            >
-              <RoomAudioRenderer />
-              <VideoConference style={{ height: 640 }} />
-            </LiveKitRoom>
-          
-
-              {/* Chat (desktop) */}
-              <div className="mt-4 hidden lg:block">
-                <LiveChatPanel
-                  roomId={sessionId}
-                  liveHrefForRedirect={liveHrefForRedirect}
-                  userEmail={userEmail}
-                />
-              </div>
-
-              {/* Chat (mobile) */}
-              <div className="mt-4 lg:hidden">
-                <LiveChatPanel
-                  roomId={sessionId}
-                  liveHrefForRedirect={liveHrefForRedirect}
-                  userEmail={userEmail}
-                />
-              </div>
-</div>
-        </div>
-      </main>
-    );
-  }
-
   /* ---------------------- Load credits for user -------------------- */
   useEffect(() => {
     if (!userEmail) {
@@ -201,7 +123,7 @@ export default function LiveRoomPage() {
   /* ---------------------- Auth helper ------------------------------ */
   const ensureLoggedIn = () => {
     if (!userEmail) {
-      setError("Not signed in (diagnostic). Click login below.");
+      setError("Not signed in. Click login below.");
       return false;
     }
     return true;
@@ -249,7 +171,7 @@ export default function LiveRoomPage() {
       if (!res.ok) {
         const txt = await res.text().catch(() => "");
         console.error("[live] checkout failed:", txt);
-        setError(txt || "Revolvr glitched out starting checkout. Try again.");
+        setError(txt || "Checkout failed. Try again.");
         return;
       }
 
@@ -263,7 +185,7 @@ export default function LiveRoomPage() {
       setError(data.error || "Stripe did not return a checkout URL.");
     } catch (err) {
       console.error("[live] error starting payment", err);
-      setError("Revolvr glitched out talking to Stripe.");
+      setError("Error talking to Stripe.");
     }
   };
 
@@ -323,13 +245,43 @@ export default function LiveRoomPage() {
     if (credits.tip > 0)
       parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
     if (credits.boost > 0)
-      parts.push(
-        `${credits.boost} boost${credits.boost === 1 ? "" : "s"}`
-      );
+      parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
     if (credits.spin > 0)
       parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
     return parts.join(" • ");
   }, [credits]);
+
+  // ---- determine token for current mode ----
+  const activeToken = isHost ? hostToken : viewerToken;
+
+  // Missing creds screen (host)
+  if (isHost && (!activeToken || !lkUrl)) {
+    return (
+      <main className="live-room min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/30 p-6">
+          <h1 className="text-xl font-semibold">Go Live</h1>
+          <p className="mt-2 text-white/70">
+            Missing host credentials. Please start again from{" "}
+            <span className="font-mono">/go-live</span>.
+          </p>
+
+          <button
+            className="mt-5 w-full rounded-xl bg-emerald-400 px-5 py-3 text-center font-medium text-black hover:bg-emerald-300"
+            onClick={() => router.push("/go-live")}
+          >
+            Back to Go Live
+          </button>
+
+          <button
+            className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-center font-medium text-white/90 hover:bg-white/10"
+            onClick={() => router.push("/public-feed")}
+          >
+            Back to feed
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <div className="live-room min-h-screen bg-[#050814] text-white flex flex-col">
@@ -338,7 +290,7 @@ export default function LiveRoomPage() {
           {/* ================= LEFT: LIVE CONTENT ================= */}
           <div className="min-w-0 flex flex-col gap-4">
             {!userEmail && (
-              <div className="w-full max-w-xl mb-3 text-xs text-white/70">
+              <div className="w-full max-w-xl mb-1 text-xs text-white/70">
                 <a
                   className="underline"
                   href={`/login?redirectTo=${encodeURIComponent(
@@ -351,7 +303,7 @@ export default function LiveRoomPage() {
             )}
 
             {error && (
-              <div className="w-full max-w-xl mb-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
+              <div className="w-full max-w-xl mb-1 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
                 <span>{error}</span>
                 <button
                   className="text-xs underline"
@@ -362,12 +314,13 @@ export default function LiveRoomPage() {
               </div>
             )}
 
-            <header className="w-full max-w-xl mb-4 flex items-center justify-between">
+            <header className="w-full max-w-xl mb-2 flex items-center justify-between">
               <div>
                 <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
                   Live on Revolvr
                 </h1>
                 <p className="text-xs text-white/50 mt-1">
+                  {isHost ? "Host mode • " : ""}
                   Room: <span className="font-mono">{sessionId}</span>
                 </p>
               </div>
@@ -379,101 +332,89 @@ export default function LiveRoomPage() {
               </button>
             </header>
 
-            {/* Viewer placeholder */}
-            <section className="w-full max-w-xl rounded-2xl border border-white/10 bg-black/30 p-2">
-  <div className="h-[56vh] min-h-[320px] max-h-[640px]">
-    <LiveKitRoom
-      token={sessionStorage.getItem("lk_viewer_token") ?? ""}
-      serverUrl={sessionStorage.getItem("lk_url") ?? ""}
-      connect={true}
-      data-lk-theme="default"
-    >
-      <RoomAudioRenderer />
-      <VideoConference />
-    </LiveKitRoom>
-  </div>
-</section>
+            {/* ================= VIDEO STAGE ================= */}
+            <VideoStage token={activeToken} serverUrl={lkUrl} />
 
+            {/* ================= SUPPORT UI (viewer primarily) ================= */}
+            {!isHost && (
+              <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-sm sm:text-base font-semibold">
+                    Support this stream
+                  </h2>
+                  {userEmail && (
+                    <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
+                      Signed in as {userEmail}
+                    </span>
+                  )}
+                </div>
 
+                <p className="text-xs text-white/60">
+                  Use your credits first. If you run out, you’ll be taken
+                  straight to Stripe to top up.
+                </p>
 
-            {/* Support UI */}
-            <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm sm:text-base font-semibold">
-                  Support this stream
-                </h2>
-                {userEmail && (
-                  <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
-                    Signed in as {userEmail}
-                  </span>
-                )}
-              </div>
+                <p className="text-[11px] text-white/55 mt-1">
+                  {creditsLoading
+                    ? "Checking your credits…"
+                    : creditsSummary
+                    ? `Credits available: ${creditsSummary}.`
+                    : "No credits yet – your first support will open a quick checkout."}
+                </p>
 
-              <p className="text-xs text-white/60">
-                Use your credits first. If you run out, you’ll be taken straight
-                to Stripe to top up.
-              </p>
+                <div className="mt-2 grid grid-cols-5 gap-2 text-[11px] sm:text-xs">
+                  <button
+                    type="button"
+                    disabled={supportBusy}
+                    onClick={() => handleSupportClick("tip")}
+                    className="rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/60 px-3 py-2 text-left transition disabled:opacity-60"
+                  >
+                    <div className="font-semibold">Tip</div>
+                    <div className="text-emerald-200/80 mt-0.5">From A$2</div>
+                  </button>
 
-              <p className="text-[11px] text-white/55 mt-1">
-                {creditsLoading
-                  ? "Checking your credits…"
-                  : creditsSummary
-                  ? `Credits available: ${creditsSummary}.`
-                  : "No credits yet – your first support will open a quick checkout."}
-              </p>
+                  <button
+                    type="button"
+                    disabled={supportBusy}
+                    onClick={() => handleSupportClick("boost")}
+                    className="rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 px-3 py-2 text-left transition disabled:opacity-60"
+                  >
+                    <div className="font-semibold">Boost</div>
+                    <div className="text-indigo-200/80 mt-0.5">From A$5</div>
+                  </button>
 
-              <div className="mt-2 grid grid-cols-5 gap-2 text-[11px] sm:text-xs">
-                <button
-                  type="button"
-                  disabled={supportBusy}
-                  onClick={() => handleSupportClick("tip")}
-                  className="rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/60 px-3 py-2 text-left transition disabled:opacity-60"
-                >
-                  <div className="font-semibold">Tip</div>
-                  <div className="text-emerald-200/80 mt-0.5">From A$2</div>
-                </button>
+                  <button
+                    type="button"
+                    disabled={supportBusy}
+                    onClick={() => handleSupportClick("spin")}
+                    className="rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 px-3 py-2 text-left transition disabled:opacity-60"
+                  >
+                    <div className="font-semibold">Spin</div>
+                    <div className="text-pink-200/80 mt-0.5">From A$1</div>
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={supportBusy}
-                  onClick={() => handleSupportClick("boost")}
-                  className="rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 px-3 py-2 text-left transition disabled:opacity-60"
-                >
-                  <div className="font-semibold">Boost</div>
-                  <div className="text-indigo-200/80 mt-0.5">From A$5</div>
-                </button>
+                  <button
+                    type="button"
+                    disabled={supportBusy}
+                    onClick={() => handleSupportClick("reaction")}
+                    className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
+                  >
+                    <div className="font-semibold">React</div>
+                    <div className="text-white/70 mt-0.5">A$0.50</div>
+                  </button>
 
-                <button
-                  type="button"
-                  disabled={supportBusy}
-                  onClick={() => handleSupportClick("spin")}
-                  className="rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 px-3 py-2 text-left transition disabled:opacity-60"
-                >
-                  <div className="font-semibold">Spin</div>
-                  <div className="text-pink-200/80 mt-0.5">From A$1</div>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={supportBusy}
-                  onClick={() => handleSupportClick("reaction")}
-                  className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
-                >
-                  <div className="font-semibold">React</div>
-                  <div className="text-white/70 mt-0.5">A$0.50</div>
-                </button>
-
-                <button
-                  type="button"
-                  disabled={supportBusy}
-                  onClick={() => handleSupportClick("vote")}
-                  className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
-                >
-                  <div className="font-semibold">Vote</div>
-                  <div className="text-white/70 mt-0.5">A$0.50</div>
-                </button>
-              </div>
-            </section>
+                  <button
+                    type="button"
+                    disabled={supportBusy}
+                    onClick={() => handleSupportClick("vote")}
+                    className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
+                  >
+                    <div className="font-semibold">Vote</div>
+                    <div className="text-white/70 mt-0.5">A$0.50</div>
+                  </button>
+                </div>
+              </section>
+            )}
           </div>
 
           {/* ================= RIGHT: CHAT (DESKTOP) ================= */}
@@ -505,6 +446,44 @@ export default function LiveRoomPage() {
         />
       )}
     </div>
+  );
+}
+
+/* ---------------------- Video Stage ---------------------- */
+
+function VideoStage({
+  token,
+  serverUrl,
+}: {
+  token: string;
+  serverUrl: string;
+}) {
+  // If creds are missing (viewer), show a clean placeholder rather than a broken LK mount.
+  const ready = Boolean(token && serverUrl);
+
+  return (
+    <section className="w-full max-w-xl">
+      <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+        <div className="aspect-video w-full max-h-[72vh] min-h-[320px]">
+          {ready ? (
+            <LiveKitRoom
+              token={token}
+              serverUrl={serverUrl}
+              connect={true}
+              data-lk-theme="default"
+              className="h-full"
+            >
+              <RoomAudioRenderer />
+              <VideoConference className="h-full" />
+            </LiveKitRoom>
+          ) : (
+            <div className="h-full w-full grid place-items-center text-white/50 text-sm">
+              Connecting…
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -556,7 +535,9 @@ function LivePurchaseChoiceSheet({
             <div className="font-semibold">
               Single {modeLabel} ({singleAmount})
             </div>
-            <div className="text-[11px] text-emerald-200/80">Quick one-off support</div>
+            <div className="text-[11px] text-emerald-200/80">
+              Quick one-off support
+            </div>
           </button>
 
           <button
