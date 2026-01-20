@@ -8,14 +8,35 @@
 
 
 /* ---- LiveKit UI cleanup (Phase 1 "Clean B") ---- */
-/* Hide ONLY the bottom control bar (keep everything else LiveKit needs) */
+
+/* Keep LiveKit conference layout stable */
+[data-lk-theme] .lk-video-conference {
+  position: relative !important;
+  min-height: 640px !important;
+}
+
+/* DO NOT display:none the control bar (can blank the whole layout in some builds).
+   Instead, visually hide it and remove interaction. */
 [data-lk-theme] .lk-control-bar {
-  display: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Keep the Start Audio overlay/button visible (mobile needs it) */
 [data-lk-theme] .lk-start-audio {
   display: flex !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+}
+
+/* Ensure the video area actually gets height */
+[data-lk-theme] .lk-grid-layout,
+[data-lk-theme] .lk-focus-layout,
+[data-lk-theme] .lk-stage {
+  min-height: 640px !important;
 }
 
 /* Keep video area clean and clipped */
