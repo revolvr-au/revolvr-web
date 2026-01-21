@@ -42,7 +42,7 @@ export default function LiveRoomPage() {
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
 
-  // ---- LiveKit creds (loaded from sessionStorage; avoids first-render empty values) ----
+  // ---- LiveKit creds (loaded from sessionStorage) ----
   const [lkUrl, setLkUrl] = useState<string>("");
   const [hostToken, setHostToken] = useState<string>("");
   const [viewerToken, setViewerToken] = useState<string>("");
@@ -57,6 +57,16 @@ export default function LiveRoomPage() {
     }
   }, []);
 
+  const activeToken = isHost ? hostToken : viewerToken;
+
+  // Gate host join behind a user gesture for iOS reliability
+  const [joined, setJoined] = useState<boolean>(() => !isHost);
+
+  useEffect(() => {
+    // If role changes (e.g. navigation), reset join gating
+    setJoined(!isHost);
+  }, [isHost]);
+
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,6 +76,17 @@ export default function LiveRoomPage() {
   const [pendingPurchase, setPendingPurchase] =
     useState<PendingPurchase | null>(null);
   const [supportBusy, setSupportBusy] = useState(false);
+
+  // Responsive helper (avoid window usage during render)
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   // ---- Live creator attribution ----
   const creatorEmail = useMemo(() => {
@@ -98,7 +119,6 @@ export default function LiveRoomPage() {
         setUserEmail(null);
       }
     };
-
     loadUser();
   }, []);
 
@@ -152,9 +172,7 @@ export default function LiveRoomPage() {
     try {
       setError(null);
 
-      const isCreditMode =
-        mode === "tip" || mode === "boost" || mode === "spin";
-
+      const isCreditMode = mode === "tip" || mode === "boost" || mode === "spin";
       const checkoutMode: CheckoutMode =
         kind === "pack" && isCreditMode ? `${mode}-pack` : mode;
 
@@ -256,8 +274,7 @@ export default function LiveRoomPage() {
     return parts.join(" • ");
   }, [credits]);
 
-  const activeToken = isHost ? hostToken : viewerToken;
-
+  // Missing creds screen (host)
   if (isHost && (!activeToken || !lkUrl)) {
     return (
       <main className="live-room min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
@@ -288,12 +305,34 @@ export default function LiveRoomPage() {
 
   return (
     <div className="live-room min-h-screen bg-[#050814] text-white flex flex-col">
-      <main className="flex-1 w-full px-4 py-4 pb-24">
+      {/* Mobile chat overlay mount */}
+      <div
+        className={
+          isMobile
+            ? "fixed inset-x-0 bottom-0 z-50 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)]"
+            : "hidden"
+        }
+      >
+        <LiveChatPanel
+          roomId={sessionId}
+          liveHrefForRedirect={liveHrefForRedirect}
+          userEmail={userEmail}
+          variant="overlay"
+        />
+      </div>
+
+      <main
+        className={
+          isMobile
+            ? "flex-1 w-full px-4 py-4 pb-[260px]"
+            : "flex-1 w-full px-4 py-4 pb-24"
+        }
+      >
         <div className="mx-auto w-full max-w-6xl grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
           {/* ================= LEFT: LIVE CONTENT ================= */}
           <div className="min-w-0 flex flex-col gap-4">
             {!userEmail && (
-              <div className="w-full max-w-xl mb-1 text-xs text-white/70">
+              <div className="w-full max-w-xl mb-1 VideoStage text-xs text-white/70">
                 <a
                   className="underline"
                   href={`/login?redirectTo=${encodeURIComponent(
@@ -335,8 +374,29 @@ export default function LiveRoomPage() {
               </button>
             </header>
 
+            {/* Host join button (gesture for camera/mic) */}
+            {isHost && !joined && (
+              <div className="w-full max-w-xl">
+                <button
+                  className="rounded-xl bg-emerald-400 px-4 py-2 text-black font-medium hover:bg-emerald-300"
+                  onClick={() => setJoined(true)}
+                >
+                  Go Live
+                </button>
+                <p className="mt-2 text-xs text-white/60">
+                  Required on mobile to enable camera/microphone permissions.
+                </p>
+              </div>
+            )}
+
             {/* ================= VIDEO STAGE ================= */}
-            <VideoStage token={activeToken} serverUrl={lkUrl} />
+            <VideoStage
+              token={activeToken}
+              serverUrl={lkUrl}
+              isMobile={isMobile}
+              isHost={isHost}
+              joined={joined}
+            />
 
             {/* ================= SUPPORT UI (viewer primarily) ================= */}
             {!isHost && (
@@ -426,54 +486,80 @@ export default function LiveRoomPage() {
               roomId={sessionId}
               liveHrefForRedirect={liveHrefForRedirect}
               userEmail={userEmail}
+              variant="panel"
             />
           </aside>
         </div>
-      </main>
 
-      {pendingPurchase ? (
-        <LivePurchaseChoiceSheet
-          mode={pendingPurchase.mode}
-          onClose={() => setPendingPurchase(null)}
-          onSingle={() => handleSingle(pendingPurchase.mode)}
-          onPack={() => handlePack(pendingPurchase.mode)}
-        />
-      ) : null}
+        {/* Purchase sheet */}
+        {pendingPurchase && (
+          <LivePurchaseChoiceSheet
+            mode={pendingPurchase.mode}
+            onClose={() => setPendingPurchase(null)}
+            onSingle={() => handleSingle(pendingPurchase.mode)}
+            onPack={() => handlePack(pendingPurchase.mode)}
+          />
+        )}
+      </main>
     </div>
   );
 }
 
 /* ---------------------- Video Stage ---------------------- */
 
-function VideoStage({ token, serverUrl }: { token: string; serverUrl: string }) {
+function VideoStage({
+  token,
+  serverUrl,
+  isMobile,
+  isHost,
+  joined,
+}: {
+  token: string;
+  serverUrl: string;
+  isMobile: boolean;
+  isHost: boolean;
+  joined: boolean;
+}) {
   const ready = Boolean(token && serverUrl);
 
-  function StageConference() {
+  function StageConference({
+    isMobile,
+    isHost,
+  }: {
+    isMobile: boolean;
+    isHost: boolean;
+  }) {
     const tracks = useTracks(
       [
-        { source: Track.Source.Camera, withPlaceholder: true },
-        { source: Track.Source.ScreenShare, withPlaceholder: true },
+        { source: Track.Source.ScreenShare, withPlaceholder: false },
+        { source: Track.Source.Camera, withPlaceholder: false },
       ],
-      { onlySubscribed: false }
+      { onlySubscribed: !isHost }
     );
 
-    // Force ONE primary tile:
-    // screenshare (real) > camera (real) > camera placeholder
-    const activeScreen = tracks.find(
-      (t) => t.source === Track.Source.ScreenShare && !!t.publication?.track
-    );
-    const activeCam = tracks.find(
-      (t) => t.source === Track.Source.Camera && !!t.publication?.track
-    );
-    const camAny = tracks.find((t) => t.source === Track.Source.Camera);
+    if (isMobile) {
+      const active =
+        tracks.find((t) => (t as any)?.source === Track.Source.ScreenShare) ||
+        tracks.find((t) => (t as any)?.source === Track.Source.Camera) ||
+        null;
 
-    const primary = activeScreen ?? activeCam ?? camAny ?? tracks[0] ?? null;
-    const single = primary ? [primary] : [];
+      return (
+        <div className="h-full w-full">
+          {active ? (
+            <ParticipantTile trackRef={active as any} className="h-full w-full" />
+          ) : (
+            <div className="h-full w-full grid place-items-center text-white/50 text-sm">
+              Waiting for video…
+            </div>
+          )}
+        </div>
+      );
+    }
 
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 min-h-0">
-          <GridLayout tracks={single} className="h-full">
+          <GridLayout tracks={tracks as any} className="h-full">
             <ParticipantTile />
           </GridLayout>
         </div>
@@ -487,19 +573,25 @@ function VideoStage({ token, serverUrl }: { token: string; serverUrl: string }) 
   return (
     <section className="w-full max-w-xl">
       <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-        <div className="relative aspect-video w-full max-h-[72vh] min-h-[320px]">
+        <div
+          className={
+            isMobile
+              ? "relative w-full h-[62vh] min-h-[420px]"
+              : "relative aspect-video w-full max-h-[72vh] min-h-[320px]"
+          }
+        >
           {ready ? (
             <LiveKitRoom
               token={token}
               serverUrl={serverUrl}
-              connect={true}
+              connect={joined}
+              audio={isHost && joined}
+              video={isHost && joined}
               data-lk-theme="default"
               className="h-full"
             >
               <RoomAudioRenderer />
-              <StageConference />
-
-              {/* Mobile: chat OVERLAY at bottom of the video (single chat instance) */}
+              <StageConference isMobile={isMobile} isHost={isHost} />
             </LiveKitRoom>
           ) : (
             <div className="h-full w-full grid place-items-center text-white/50 text-sm">
@@ -541,10 +633,7 @@ function LivePurchaseChoiceSheet({
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Support with a {modeLabel}</h2>
-          <button
-            onClick={onClose}
-            className="text-xs text-white/50 hover:text-white"
-          >
+          <button onClick={onClose} className="text-xs text-white/50 hover:text-white">
             Close
           </button>
         </div>
