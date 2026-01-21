@@ -2,13 +2,19 @@
 "use client";
 
 import LiveChatPanel from "@/components/live/LiveChatPanel";
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
-  LiveKitRoom,
+  useEffect,
+  useMemo,
+  useState } from "react";import { useParams,
+  useRouter,
+  useSearchParams } from "next/navigation";import {  LiveKitRoom,
   RoomAudioRenderer,
-  VideoConference,
+  GridLayout,
+  ParticipantTile,
+  ControlBar,
+  useTracks
 } from "@livekit/components-react";
+import { Track } from "livekit-client";
 
 import { supabase } from "@/lib/supabaseClients";
 import type { CheckoutMode } from "@/lib/purchase";
@@ -346,6 +352,18 @@ export default function LiveRoomPage() {
                 Back to feed
               </button>
             </header>
+            {/* ================= CHAT (MOBILE - TOP) ================= */}
+            {isMobile && (
+              <div className="w-full max-w-xl">
+                <LiveChatPanel
+                  roomId={sessionId}
+                  liveHrefForRedirect={liveHrefForRedirect}
+                  userEmail={userEmail}
+                />
+              </div>
+            )}
+
+
 
             {/* ================= VIDEO STAGE ================= */}
             <VideoStage
@@ -469,6 +487,30 @@ function VideoStage({
 }) {
   const ready = Boolean(token && serverUrl);
 
+
+  function StageConference() {
+    const tracks = useTracks(
+      [
+        { source: Track.Source.Camera, withPlaceholder: true },
+        { source: Track.Source.ScreenShare, withPlaceholder: true },
+      ],
+      { onlySubscribed: false }
+    );
+
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-1 min-h-0">
+          <GridLayout tracks={tracks} className="h-full">
+            <ParticipantTile />
+          </GridLayout>
+        </div>
+        <div className="shrink-0">
+          <ControlBar />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className="w-full max-w-xl">
       <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
@@ -482,7 +524,7 @@ function VideoStage({
               className="h-full"
             >
               <RoomAudioRenderer />
-              <VideoConference className="h-full" />
+              <StageConference />
             </LiveKitRoom>
           ) : (
             <div className="h-full w-full grid place-items-center text-white/50 text-sm">
@@ -490,7 +532,7 @@ function VideoStage({
             </div>
           )}
 
-          {/* Chat overlay (mobile) */}
+          
         </div>
       </div>
     </section>
