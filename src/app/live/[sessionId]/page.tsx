@@ -491,8 +491,6 @@ function VideoStage({
           )}
 
           {/* Chat overlay (mobile) */}
-          {isMobile ? (
-          ) : null}
         </div>
       </div>
     </section>
