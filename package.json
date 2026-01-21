@@ -10,7 +10,7 @@
     "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix --max-warnings=-1",
     "lint:ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=0",
     "postinstall": "prisma generate",
-    "build:ci": "prisma generate && next build --no-turbo"
+    "build:ci": "prisma generate && next build --webpack"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.17",
