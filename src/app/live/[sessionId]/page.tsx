@@ -492,14 +492,6 @@ function VideoStage({
 
           {/* Chat overlay (mobile) */}
           {isMobile ? (
-            <div className="absolute inset-x-3 bottom-3 z-20">
-              <LiveChatPanel
-                roomId={sessionId}
-                liveHrefForRedirect={liveHrefForRedirect}
-                userEmail={userEmail}
-                variant="overlay"
-              />
-            </div>
           ) : null}
         </div>
       </div>
