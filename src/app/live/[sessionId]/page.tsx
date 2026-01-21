@@ -67,20 +67,6 @@ export default function LiveRoomPage() {
     useState<PendingPurchase | null>(null);
   const [supportBusy, setSupportBusy] = useState(false);
 
-  // Stage UI (prevents jank during first paint)
-  const [stageReady, setStageReady] = useState(false);
-
-  // Responsive helper (avoid window usage during render)
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1023px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
   // ---- Live creator attribution ----
   const creatorEmail = useMemo(() => {
     const qs = searchParams?.get("creator")?.trim().toLowerCase() || "";
@@ -114,7 +100,6 @@ export default function LiveRoomPage() {
     };
 
     loadUser();
-    setStageReady(true);
   }, []);
 
   /* ---------------------- Load credits for user -------------------- */
@@ -307,8 +292,20 @@ export default function LiveRoomPage() {
     <div className="live-room min-h-screen bg-[#050814] text-white flex flex-col">
       <main className="flex-1 w-full px-4 py-4 pb-24">
         <div className="mx-auto w-full max-w-6xl grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
+          {/* ================= CHAT (SINGLE INSTANCE) =================
+              Mobile: top (order-1)
+              Desktop: right column (order-2)
+           */}
+          <aside className="order-1 lg:order-2 h-full">
+            <LiveChatPanel
+              roomId={sessionId}
+              liveHrefForRedirect={liveHrefForRedirect}
+              userEmail={userEmail}
+            />
+          </aside>
+
           {/* ================= LEFT: LIVE CONTENT ================= */}
-          <div className="min-w-0 flex flex-col gap-4">
+          <div className="min-w-0 flex flex-col gap-4 order-2 lg:order-1">
             {!userEmail && (
               <div className="w-full max-w-xl mb-1 text-xs text-white/70">
                 <a
@@ -351,28 +348,9 @@ export default function LiveRoomPage() {
                 Back to feed
               </button>
             </header>
-            {/* ================= CHAT (MOBILE - TOP) ================= */}
-            {isMobile && (
-              <div className="w-full max-w-xl">
-                <LiveChatPanel
-                  roomId={sessionId}
-                  liveHrefForRedirect={liveHrefForRedirect}
-                  userEmail={userEmail}
-                />
-              </div>
-            )}
-
-
 
             {/* ================= VIDEO STAGE ================= */}
-            <VideoStage
-  token={activeToken}
-  serverUrl={lkUrl}
-  isMobile={isMobile}
-  sessionId={sessionId}
-  liveHrefForRedirect={liveHrefForRedirect}
-  userEmail={userEmail}
-/>
+            <VideoStage token={activeToken} serverUrl={lkUrl} />
 
             {/* ================= SUPPORT UI (viewer primarily) ================= */}
             {!isHost && (
@@ -455,60 +433,54 @@ export default function LiveRoomPage() {
               </section>
             )}
           </div>
-
-          {/* ================= RIGHT: CHAT (DESKTOP) ================= */}
-          <aside className="hidden lg:block h-full">
-            <LiveChatPanel
-              roomId={sessionId}
-              liveHrefForRedirect={liveHrefForRedirect}
-              userEmail={userEmail}
-            />
-          </aside>
         </div>
+      </main>
 
+      {pendingPurchase && (
+        <LivePurchaseChoiceSheet
+          mode={pendingPurchase.mode}
+          onClose={() => setPendingPurchase(null)}
+          onSingle={() => handleSingle(pendingPurchase.mode)}
+          onPack={() => handlePack(pendingPurchase.mode)}
+        />
+      )}
+    </div>
+  );
+}
 
 /* ---------------------- Video Stage ---------------------- */
+
+function StageConference() {
+  const tracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: true },
+    ],
+    { onlySubscribed: false }
+  );
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex-1 min-h-0">
+        <GridLayout tracks={tracks} className="h-full">
+          <ParticipantTile />
+        </GridLayout>
+      </div>
+      <div className="shrink-0">
+        <ControlBar />
+      </div>
+    </div>
+  );
+}
 
 function VideoStage({
   token,
   serverUrl,
-  isMobile,
-  sessionId,
-  liveHrefForRedirect,
-  userEmail,
 }: {
   token: string;
   serverUrl: string;
-  isMobile: boolean;
-  sessionId: string;
-  liveHrefForRedirect: string;
-  userEmail: string | null;
 }) {
   const ready = Boolean(token && serverUrl);
-
-
-  function StageConference() {
-    const tracks = useTracks(
-      [
-        { source: Track.Source.Camera, withPlaceholder: true },
-        { source: Track.Source.ScreenShare, withPlaceholder: true },
-      ],
-      { onlySubscribed: false }
-    );
-
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex-1 min-h-0">
-          <GridLayout tracks={tracks} className="h-full">
-            <ParticipantTile />
-          </GridLayout>
-        </div>
-        <div className="shrink-0">
-          <ControlBar />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <section className="w-full max-w-xl">
@@ -530,8 +502,6 @@ function VideoStage({
               Connecting…
             </div>
           )}
-
-          
         </div>
       </div>
     </section>
@@ -567,14 +537,17 @@ function LivePurchaseChoiceSheet({
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Support with a {modeLabel}</h2>
-          <button onClick={onClose} className="text-xs text-white/50 hover:text-white">
+          <button
+            onClick={onClose}
+            className="text-xs text-white/50 hover:text-white"
+          >
             Close
           </button>
         </div>
 
         <p className="text-xs text-white/60">
-          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to avoid
-          checking out each time.
+          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to
+          avoid checking out each time.
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
