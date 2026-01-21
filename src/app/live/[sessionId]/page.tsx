@@ -34,10 +34,7 @@ export default function LiveRoomPage() {
   const searchParams = useSearchParams();
 
   const safeSessionId = params?.sessionId ?? "";
-  const sessionId = useMemo(
-    () => decodeURIComponent(safeSessionId),
-    [safeSessionId]
-  );
+  const sessionId = useMemo(() => decodeURIComponent(safeSessionId), [safeSessionId]);
 
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
@@ -63,16 +60,13 @@ export default function LiveRoomPage() {
   const [credits, setCredits] = useState<CreditBalances | null>(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  const [pendingPurchase, setPendingPurchase] =
-    useState<PendingPurchase | null>(null);
+  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null);
   const [supportBusy, setSupportBusy] = useState(false);
 
   // ---- Live creator attribution ----
   const creatorEmail = useMemo(() => {
     const qs = searchParams?.get("creator")?.trim().toLowerCase() || "";
-    const fallback = (process.env.NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL || "")
-      .trim()
-      .toLowerCase();
+    const fallback = (process.env.NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL || "").trim().toLowerCase();
     return qs || fallback || null;
   }, [searchParams]);
 
@@ -136,9 +130,7 @@ export default function LiveRoomPage() {
 
   const ensureCreatorKnown = () => {
     if (!creatorEmail) {
-      setError(
-        "Missing creator identity for this live room. Add ?creator=EMAIL to the URL."
-      );
+      setError("Missing creator identity for this live room. Add ?creator=EMAIL to the URL.");
       return false;
     }
     return true;
@@ -152,8 +144,7 @@ export default function LiveRoomPage() {
     try {
       setError(null);
 
-      const isCreditMode =
-        mode === "tip" || mode === "boost" || mode === "spin";
+      const isCreditMode = mode === "tip" || mode === "boost" || mode === "spin";
 
       const checkoutMode: CheckoutMode =
         kind === "pack" && isCreditMode ? `${mode}-pack` : mode;
@@ -242,17 +233,13 @@ export default function LiveRoomPage() {
   /* ---------------------- UI helpers ------------------------------- */
   const creditsSummary = useMemo(() => {
     if (!credits) return null;
-    const total =
-      (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
     if (total <= 0) return null;
 
     const parts: string[] = [];
-    if (credits.tip > 0)
-      parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
-    if (credits.boost > 0)
-      parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
-    if (credits.spin > 0)
-      parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
+    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.boost > 0) parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
+    if (credits.spin > 0) parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
     return parts.join(" • ");
   }, [credits]);
 
@@ -292,11 +279,10 @@ export default function LiveRoomPage() {
     <div className="live-room min-h-screen bg-[#050814] text-white flex flex-col">
       <main className="flex-1 w-full px-4 py-4 pb-24">
         <div className="mx-auto w-full max-w-6xl grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-          {/* ================= CHAT (SINGLE INSTANCE) =================
-              Mobile: top (order-1)
-              Desktop: right column (order-2)
-           */}
-          <aside className="order-1 lg:order-2 h-full">
+          {/* Chat mounted ONCE, positioned by order:
+              - mobile: shows first (top)
+              - desktop: shows second (right column) */}
+          <aside className="order-1 lg:order-2">
             <LiveChatPanel
               roomId={sessionId}
               liveHrefForRedirect={liveHrefForRedirect}
@@ -305,14 +291,12 @@ export default function LiveRoomPage() {
           </aside>
 
           {/* ================= LEFT: LIVE CONTENT ================= */}
-          <div className="min-w-0 flex flex-col gap-4 order-2 lg:order-1">
+          <div className="order-2 lg:order-1 min-w-0 flex flex-col gap-4">
             {!userEmail && (
               <div className="w-full max-w-xl mb-1 text-xs text-white/70">
                 <a
                   className="underline"
-                  href={`/login?redirectTo=${encodeURIComponent(
-                    liveHrefForRedirect
-                  )}`}
+                  href={`/login?redirectTo=${encodeURIComponent(liveHrefForRedirect)}`}
                 >
                   Login to support this stream
                 </a>
@@ -322,10 +306,7 @@ export default function LiveRoomPage() {
             {error && (
               <div className="w-full max-w-xl mb-1 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
                 <span>{error}</span>
-                <button
-                  className="text-xs underline"
-                  onClick={() => setError(null)}
-                >
+                <button className="text-xs underline" onClick={() => setError(null)}>
                   Dismiss
                 </button>
               </div>
@@ -436,51 +417,45 @@ export default function LiveRoomPage() {
         </div>
       </main>
 
-      {pendingPurchase && (
+      {pendingPurchase ? (
         <LivePurchaseChoiceSheet
           mode={pendingPurchase.mode}
           onClose={() => setPendingPurchase(null)}
           onSingle={() => handleSingle(pendingPurchase.mode)}
           onPack={() => handlePack(pendingPurchase.mode)}
         />
-      )}
+      ) : null}
     </div>
   );
 }
 
 /* ---------------------- Video Stage ---------------------- */
 
-function StageConference() {
-  const tracks = useTracks(
-    [
-      { source: Track.Source.Camera, withPlaceholder: true },
-      { source: Track.Source.ScreenShare, withPlaceholder: true },
-    ],
-    { onlySubscribed: false }
-  );
-
-  return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 min-h-0">
-        <GridLayout tracks={tracks} className="h-full">
-          <ParticipantTile />
-        </GridLayout>
-      </div>
-      <div className="shrink-0">
-        <ControlBar />
-      </div>
-    </div>
-  );
-}
-
-function VideoStage({
-  token,
-  serverUrl,
-}: {
-  token: string;
-  serverUrl: string;
-}) {
+function VideoStage({ token, serverUrl }: { token: string; serverUrl: string }) {
   const ready = Boolean(token && serverUrl);
+
+  function StageConference() {
+    const tracks = useTracks(
+      [
+        { source: Track.Source.Camera, withPlaceholder: true },
+        { source: Track.Source.ScreenShare, withPlaceholder: true },
+      ],
+      { onlySubscribed: false }
+    );
+
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-1 min-h-0">
+          <GridLayout tracks={tracks} className="h-full">
+            <ParticipantTile />
+          </GridLayout>
+        </div>
+        <div className="shrink-0">
+          <ControlBar />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="w-full max-w-xl">
@@ -526,8 +501,7 @@ function LivePurchaseChoiceSheet({
   const modeLabel = mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
 
   const singleAmount = mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
-  const packAmount =
-    mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
+  const packAmount = mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
 
   const packLabel =
     mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
@@ -537,17 +511,14 @@ function LivePurchaseChoiceSheet({
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 space-y-3 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Support with a {modeLabel}</h2>
-          <button
-            onClick={onClose}
-            className="text-xs text-white/50 hover:text-white"
-          >
+          <button onClick={onClose} className="text-xs text-white/50 hover:text-white">
             Close
           </button>
         </div>
 
         <p className="text-xs text-white/60">
-          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to
-          avoid checking out each time.
+          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to avoid
+          checking out each time.
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -559,9 +530,7 @@ function LivePurchaseChoiceSheet({
             <div className="font-semibold">
               Single {modeLabel} ({singleAmount})
             </div>
-            <div className="text-[11px] text-emerald-200/80">
-              Quick one-off support
-            </div>
+            <div className="text-[11px] text-emerald-200/80">Quick one-off support</div>
           </button>
 
           <button
