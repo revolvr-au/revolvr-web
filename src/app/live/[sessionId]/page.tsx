@@ -1,18 +1,17 @@
 // src/app/live/[sessionId]/page.tsx
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+
 import LiveChatPanel from "@/components/live/LiveChatPanel";
 import {
-  useEffect,
-  useMemo,
-  useState } from "react";import { useParams,
-  useRouter,
-  useSearchParams } from "next/navigation";import {  LiveKitRoom,
-  RoomAudioRenderer,
-  GridLayout,
-  ParticipantTile,
   ControlBar,
-  useTracks
+  GridLayout,
+  LiveKitRoom,
+  ParticipantTile,
+  RoomAudioRenderer,
+  useTracks,
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 
