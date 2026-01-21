@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=-1",
     "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix --max-warnings=-1",
