@@ -342,6 +342,8 @@ export default function LiveRoomPage() {
   serverUrl={lkUrl}
   isMobile={typeof window !== "undefined" && window.innerWidth < 1024}
   sessionId={sessionId}
+  liveHrefForRedirect={liveHrefForRedirect}
+  userEmail={userEmail}
 />
 
             {/* ================= SUPPORT UI (viewer primarily) ================= */}
