@@ -438,27 +438,6 @@ export default function LiveRoomPage() {
           </aside>
         </div>
 
-        {/* ================= CHAT (MOBILE) ================= */}
-        <div className="mx-auto mt-4 w-full max-w-6xl lg:hidden">
-          <LiveChatPanel
-            roomId={sessionId}
-            liveHrefForRedirect={liveHrefForRedirect}
-            userEmail={userEmail}
-          />
-        </div>
-      </main>
-
-      {pendingPurchase && (
-        <LivePurchaseChoiceSheet
-          mode={pendingPurchase.mode}
-          onClose={() => setPendingPurchase(null)}
-          onSingle={() => handleSingle(pendingPurchase.mode)}
-          onPack={() => handlePack(pendingPurchase.mode)}
-        />
-      )}
-    </div>
-  );
-}
 
 /* ---------------------- Video Stage ---------------------- */
 
