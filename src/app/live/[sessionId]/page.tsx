@@ -480,7 +480,18 @@ function VideoStage({
               <RoomAudioRenderer />
               <VideoConference className="h-full" />
             </LiveKitRoom>
-          ) : (
+          
+
+      {/* Chat overlay (mobile) */}
+      <div className="lg:hidden absolute inset-x-3 bottom-3 z-20">
+        <LiveChatPanel
+          roomId={sessionId}
+          liveHrefForRedirect={liveHrefForRedirect}
+          userEmail={userEmail}
+          variant="overlay"
+        />
+      </div>
+) : (
             <div className="h-full w-full grid place-items-center text-white/50 text-sm">
               Connecting…
             </div>

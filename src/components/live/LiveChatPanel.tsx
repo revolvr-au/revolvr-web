@@ -41,10 +41,12 @@ export default function LiveChatPanel({
   roomId,
   liveHrefForRedirect,
   userEmail,
+  variant = "panel",
 }: {
   roomId: string;
   liveHrefForRedirect: string;
   userEmail: string | null;
+  variant?: "panel" | "overlay";
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,7 +202,13 @@ export default function LiveChatPanel({
   }
 
   return (
-    <div className="h-[72vh] lg:h-[calc(100vh-140px)] rounded-2xl border border-white/10 bg-black/30 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+    <div
+      className={
+        (variant === "overlay"
+          ? "h-[44vh] max-h-[520px] rounded-2xl border border-white/10 bg-black/40 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
+          : "h-[72vh] lg:h-[calc(100vh-140px)] rounded-2xl border border-white/10 bg-black/30 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]")
+      }
+    >
       <div className="flex items-center justify-between px-1">
         <div>
           <div className="text-sm font-semibold text-white/90">Live chat</div>
@@ -290,7 +298,7 @@ export default function LiveChatPanel({
         </div>
       ) : null}
 
-      <div className="mt-auto pt-2">
+      <div className="mt-auto pt-2 sticky bottom-0 bg-transparent pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
         {!userEmail ? (
           <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/60">
             You must be logged in to chat.{" "}
