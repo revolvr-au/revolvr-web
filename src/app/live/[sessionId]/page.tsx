@@ -338,12 +338,10 @@ export default function LiveRoomPage() {
 
             {/* ================= VIDEO STAGE ================= */}
             <VideoStage
-  token=activeToken
-  serverUrl=lkUrl
-  isMobile={{typeof window !== "undefined" && window.innerWidth < 1024}}
-  sessionId={{sessionId}}
-  liveHrefForRedirect={{liveHrefForRedirect}}
-  userEmail={{userEmail}}
+  token={activeToken}
+  serverUrl={lkUrl}
+  isMobile={typeof window !== "undefined" && window.innerWidth < 1024}
+  sessionId={sessionId}
 />
 
             {/* ================= SUPPORT UI (viewer primarily) ================= */}
