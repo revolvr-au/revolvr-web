@@ -433,20 +433,22 @@ export default function LiveRoomPage() {
 
 function VideoStage({ token, serverUrl }: { token: string; serverUrl: string }) {
   const ready = Boolean(token && serverUrl);
-
   function StageConference() {
+    // Prefer screenshare when available; otherwise show camera.
     const tracks = useTracks(
       [
-        { source: Track.Source.Camera, withPlaceholder: true },
-        { source: Track.Source.ScreenShare, withPlaceholder: true },
+        { source: Track.Source.ScreenShare, withPlaceholder: false },
+        { source: Track.Source.Camera, withPlaceholder: false },
       ],
-      { onlySubscribed: false }
+      { onlySubscribed: true }
     );
+
+    const active = tracks.find((t) => t.source === Track.Source.ScreenShare) || tracks[0];
 
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1 min-h-0">
-          <GridLayout tracks={tracks} className="h-full">
+          <GridLayout tracks={active ? [active] : []} className="h-full">
             <ParticipantTile />
           </GridLayout>
         </div>
@@ -458,7 +460,7 @@ function VideoStage({ token, serverUrl }: { token: string; serverUrl: string }) 
   }
 
   return (
-    <section className="w-full max-w-xl">
+    <section className="w-full">
       <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
         <div className="relative aspect-video w-full max-h-[72vh] min-h-[320px]">
           {ready ? (

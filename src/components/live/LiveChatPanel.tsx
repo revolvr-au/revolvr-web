@@ -191,7 +191,7 @@ export default function LiveChatPanel({
       className={
         variant === "overlay"
           ? "absolute inset-x-3 bottom-3 z-20 rounded-2xl border border-white/10 bg-black/40 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)] max-h-[42vh]"
-          : "h-[42vh] sm:h-[72vh] lg:h-[calc(100vh-140px)] rounded-2xl border border-white/10 bg-black/30 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
+          : "h-[28vh] sm:h-[60vh] lg:h-[calc(100vh-140px)] rounded-2xl border border-white/10 bg-black/30 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
       }
     >
       <div className="flex items-center justify-between px-1">
