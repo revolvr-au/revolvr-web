@@ -337,7 +337,14 @@ export default function LiveRoomPage() {
             </header>
 
             {/* ================= VIDEO STAGE ================= */}
-            <VideoStage token={activeToken} serverUrl={lkUrl} />
+            <VideoStage
+  token=activeToken
+  serverUrl=lkUrl
+  isMobile={{typeof window !== "undefined" && window.innerWidth < 1024}}
+  sessionId={{sessionId}}
+  liveHrefForRedirect={{liveHrefForRedirect}}
+  userEmail={{userEmail}}
+/>
 
             {/* ================= SUPPORT UI (viewer primarily) ================= */}
             {!isHost && (
@@ -458,17 +465,24 @@ export default function LiveRoomPage() {
 function VideoStage({
   token,
   serverUrl,
+  isMobile,
+  sessionId,
+  liveHrefForRedirect,
+  userEmail,
 }: {
   token: string;
   serverUrl: string;
+  isMobile: boolean;
+  sessionId: string;
+  liveHrefForRedirect: string;
+  userEmail: string | null;
 }) {
-  // If creds are missing (viewer), show a clean placeholder rather than a broken LK mount.
   const ready = Boolean(token && serverUrl);
 
   return (
     <section className="w-full max-w-xl">
       <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-        <div className="aspect-video w-full max-h-[72vh] min-h-[320px]">
+        <div className="relative aspect-video w-full max-h-[72vh] min-h-[320px]">
           {ready ? (
             <LiveKitRoom
               token={token}
@@ -480,22 +494,23 @@ function VideoStage({
               <RoomAudioRenderer />
               <VideoConference className="h-full" />
             </LiveKitRoom>
-          
-
-      {/* Chat overlay (mobile) */}
-      <div className="lg:hidden absolute inset-x-3 bottom-3 z-20">
-        <LiveChatPanel
-          roomId={sessionId}
-          liveHrefForRedirect={liveHrefForRedirect}
-          userEmail={userEmail}
-          variant="overlay"
-        />
-      </div>
-) : (
+          ) : (
             <div className="h-full w-full grid place-items-center text-white/50 text-sm">
               Connecting…
             </div>
           )}
+
+          {/* Chat overlay (mobile) */}
+          {isMobile ? (
+            <div className="absolute inset-x-3 bottom-3 z-20">
+              <LiveChatPanel
+                roomId={sessionId}
+                liveHrefForRedirect={liveHrefForRedirect}
+                userEmail={userEmail}
+                variant="overlay"
+              />
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
