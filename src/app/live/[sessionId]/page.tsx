@@ -62,6 +62,9 @@ export default function LiveRoomPage() {
     useState<PendingPurchase | null>(null);
   const [supportBusy, setSupportBusy] = useState(false);
 
+  // Stage UI (prevents jank during first paint)
+  const [stageReady, setStageReady] = useState(false);
+
   // ---- Live creator attribution ----
   const creatorEmail = useMemo(() => {
     const qs = searchParams?.get("creator")?.trim().toLowerCase() || "";
@@ -95,6 +98,7 @@ export default function LiveRoomPage() {
     };
 
     loadUser();
+    setStageReady(true);
   }, []);
 
   /* ---------------------- Load credits for user -------------------- */
