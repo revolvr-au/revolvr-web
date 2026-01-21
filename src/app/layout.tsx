@@ -1,3 +1,7 @@
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
 import "@livekit/components-styles";
 import type { Metadata } from "next";
 import "./globals.css";
