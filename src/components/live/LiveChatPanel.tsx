@@ -19,15 +19,6 @@ type ApiGetResponse =
 
 type ApiPostResponse = { ok: true } | { error: string };
 
-function initials(name: string) {
-  const n = (name || '').trim();
-  if (!n) return 'U';
-  const parts = n.split(/\s+/).filter(Boolean);
-  const a = parts[0]?.[0] || 'U';
-  const b = parts[1]?.[0] || '';
-  return (a + b).toUpperCase();
-}
-
 function formatTime(iso: string) {
   try {
     const d = new Date(iso);
@@ -58,7 +49,8 @@ export default function LiveChatPanel({
   const listRef = useRef<HTMLDivElement | null>(null);
   const lastIdRef = useRef<string | null>(null);
 
-  const canSend = !!userEmail && text.trim().length > 0 && text.trim().length <= 280;
+  const canSend =
+    !!userEmail && text.trim().length > 0 && text.trim().length <= 280;
 
   const loginHref = useMemo(() => {
     return `/login?redirectTo=${encodeURIComponent(liveHrefForRedirect)}`;
@@ -76,7 +68,9 @@ export default function LiveChatPanel({
       const json = (await res.json().catch(() => ({}))) as ApiGetResponse;
 
       if (!res.ok || "error" in json) {
-        throw new Error(("error" in json && json.error) || "Failed to load chat");
+        throw new Error(
+          ("error" in json && json.error) || "Failed to load chat"
+        );
       }
 
       const incoming = Array.isArray(json.messages) ? json.messages : [];
@@ -87,7 +81,11 @@ export default function LiveChatPanel({
 
         if (!prevLast) return incoming;
 
-        if (incomingLast && incomingLast === prevLast && incoming.length === prev.length) {
+        if (
+          incomingLast &&
+          incomingLast === prevLast &&
+          incoming.length === prev.length
+        ) {
           return prev;
         }
 
@@ -102,7 +100,8 @@ export default function LiveChatPanel({
           const el = listRef.current;
           if (!el) return;
 
-          const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+          const nearBottom =
+            el.scrollHeight - el.scrollTop - el.clientHeight < 160;
           if (nearBottom) el.scrollTop = el.scrollHeight;
         });
       }
@@ -118,31 +117,14 @@ export default function LiveChatPanel({
     setLoading(true);
     const ac = new AbortController();
 
-    let inFlight = false;
+    fetchMessages(ac.signal);
 
-    const tick = async () => {
-      if (document.hidden) return;
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        await fetchMessages(ac.signal);
-      } finally {
-        inFlight = false;
-      }
-    };
-
-    tick();
-
-    const t = window.setInterval(tick, 2500);
-
-    const onVis = () => {
-      if (!document.hidden) tick();
-    };
-    document.addEventListener("visibilitychange", onVis);
+    const t = setInterval(() => {
+      fetchMessages(ac.signal);
+    }, 1500);
 
     return () => {
-      window.clearInterval(t);
-      document.removeEventListener("visibilitychange", onVis);
+      clearInterval(t);
       ac.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -189,7 +171,9 @@ export default function LiveChatPanel({
       const json = (await res.json().catch(() => ({}))) as ApiPostResponse;
 
       if (!res.ok || "error" in json) {
-        throw new Error(("error" in json && json.error) || "Failed to send message");
+        throw new Error(
+          ("error" in json && json.error) || "Failed to send message"
+        );
       }
 
       await fetchMessages();
@@ -204,16 +188,19 @@ export default function LiveChatPanel({
   return (
     <div
       className={
-        (variant === "overlay"
-          ? "h-[44vh] max-h-[520px] rounded-2xl border border-white/10 bg-black/40 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
-          : "h-[72vh] lg:h-[calc(100vh-140px)] rounded-2xl border border-white/10 bg-black/30 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]")
+        variant === "overlay"
+          ? "absolute inset-x-3 bottom-3 z-20 rounded-2xl border border-white/10 bg-black/40 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)] max-h-[42vh]"
+          : "h-[72vh] lg:h-[calc(100vh-140px)] rounded-2xl border border-white/10 bg-black/30 backdrop-blur p-3 flex flex-col shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
       }
     >
       <div className="flex items-center justify-between px-1">
         <div>
           <div className="text-sm font-semibold text-white/90">Live chat</div>
           <div className="text-[11px] text-white/45">
-            Room <span className="font-mono text-white/65">{roomId.slice(0, 10)}…</span>
+            Room{" "}
+            <span className="font-mono text-white/65">
+              {roomId.slice(0, 10)}…
+            </span>
           </div>
         </div>
 
@@ -233,14 +220,20 @@ export default function LiveChatPanel({
 
       <div className="mt-3 h-px bg-white/10" />
 
-      <div ref={listRef} className="flex-1 overflow-y-auto px-1 py-3 space-y-2">
-        {loading ? <div className="text-xs text-white/50 px-1">Loading chat…</div> : null}
+      <div
+        ref={listRef}
+        className={
+          variant === "overlay"
+            ? "flex-1 overflow-y-auto px-1 py-2 space-y-2"
+            : "flex-1 overflow-y-auto px-1 py-3 space-y-2"
+        }
+      >
+        {loading ? (
+          <div className="text-xs text-white/50 px-1">Loading chat…</div>
+        ) : null}
 
         {!loading && messages.length === 0 ? (
-          <div className="px-1 py-6 text-center">
-            <div className="text-sm font-semibold text-white/80">Be the first to say hi</div>
-            <div className="mt-1 text-xs text-white/50">Messages appear here during the live stream.</div>
-          </div>
+          <div className="text-xs text-white/50 px-1">No messages yet.</div>
         ) : null}
 
         {messages.map((m) => {
@@ -254,43 +247,31 @@ export default function LiveChatPanel({
             m.user_email.toLowerCase() === userEmail.toLowerCase();
 
           return (
-            <div key={m.id} className={"flex " + (isMe ? "justify-end" : "justify-start")}>
-              <div className={"flex max-w-[92%] gap-2 " + (isMe ? "flex-row-reverse" : "flex-row")}>
-                <div
-                  className={
-                    "mt-0.5 h-7 w-7 shrink-0 rounded-full border flex items-center justify-center text-[10px] font-semibold " +
-                    (isMe
-                      ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-100"
-                      : "border-white/10 bg-white/5 text-white/70")
-                  }
-                  title={name}
-                >
-                  {initials(name)}
+            <div
+              key={m.id}
+              className={
+                "rounded-xl border px-3 py-2 " +
+                (isMe
+                  ? "border-emerald-400/30 bg-emerald-500/10"
+                  : "border-white/10 bg-white/5")
+              }
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[11px] text-white/65 truncate">
+                  <span className="font-semibold text-white/85">{name}</span>
                 </div>
-
-                <div
-                  className={
-                    "rounded-2xl border px-3 py-2 " +
-                    (isMe
-                      ? "border-emerald-400/30 bg-emerald-500/10"
-                      : "border-white/10 bg-white/5")
-                  }
-                >
-                  <div className={"flex items-center gap-2 " + (isMe ? "justify-end" : "justify-between")}>
-                    <div className="text-[11px] text-white/65 truncate">
-                      <span className="font-semibold text-white/85">{name}</span>
-                    </div>
-                    <div className="text-[10px] text-white/35 shrink-0">{formatTime(m.created_at)}</div>
-                  </div>
-
-                  <div className="mt-1 text-sm text-white/90 whitespace-pre-wrap break-words">
-                    {m.message}
-                  </div>
+                <div className="text-[10px] text-white/35 shrink-0">
+                  {formatTime(m.created_at)}
                 </div>
+              </div>
+
+              <div className="mt-1 text-sm text-white/90 whitespace-pre-wrap break-words">
+                {m.message}
               </div>
             </div>
           );
-        })}      </div>
+        })}
+      </div>
 
       {err ? (
         <div className="mb-2 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs text-red-200">
@@ -298,7 +279,13 @@ export default function LiveChatPanel({
         </div>
       ) : null}
 
-      <div className="mt-auto pt-2 sticky bottom-0 bg-transparent pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+      <div
+        className={
+          variant === "overlay"
+            ? "mt-auto pt-2 pb-[calc(env(safe-area-inset-bottom)+8px)]"
+            : "mt-auto pt-2"
+        }
+      >
         {!userEmail ? (
           <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/60">
             You must be logged in to chat.{" "}
@@ -307,40 +294,28 @@ export default function LiveChatPanel({
             </a>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-              <input
-                value={text}
-                maxLength={280}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                placeholder="Type a message…"
-                className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/35 outline-none focus:border-white/25"
-              />
+          <div className="flex gap-2 items-end">
+            <input
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              placeholder="Type a message…"
+              className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white placeholder:text-white/35 outline-none focus:border-white/25"
+            />
 
-              <button
-                type="button"
-                disabled={!canSend || posting}
-                onClick={sendMessage}
-                className="px-4 rounded-xl bg-emerald-400 text-black text-sm font-semibold hover:bg-emerald-300 disabled:opacity-50 disabled:hover:bg-emerald-400"
-              >
-                {posting ? "Sending…" : "Send"}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between px-1">
-              <div className="text-[11px] text-white/45">
-                Press Enter to send • Shift+Enter for a new line
-              </div>
-              <div className={"text-[11px] " + (text.trim().length > 280 ? "text-red-300" : "text-white/45")}>
-                {text.trim().length}/280
-              </div>
-            </div>
+            <button
+              type="button"
+              disabled={!canSend || posting}
+              onClick={sendMessage}
+              className="px-4 rounded-xl bg-emerald-400 text-black text-sm font-semibold hover:bg-emerald-300 disabled:opacity-50 py-2"
+            >
+              {posting ? "Sending…" : "Send"}
+            </button>
           </div>
         )}
       </div>
