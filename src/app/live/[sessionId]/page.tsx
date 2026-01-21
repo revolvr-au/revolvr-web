@@ -65,6 +65,17 @@ export default function LiveRoomPage() {
   // Stage UI (prevents jank during first paint)
   const [stageReady, setStageReady] = useState(false);
 
+  // Responsive helper (avoid window usage during render)
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   // ---- Live creator attribution ----
   const creatorEmail = useMemo(() => {
     const qs = searchParams?.get("creator")?.trim().toLowerCase() || "";
@@ -340,7 +351,7 @@ export default function LiveRoomPage() {
             <VideoStage
   token={activeToken}
   serverUrl={lkUrl}
-  isMobile={typeof window !== "undefined" && window.innerWidth < 1024}
+  isMobile={isMobile}
   sessionId={sessionId}
   liveHrefForRedirect={liveHrefForRedirect}
   userEmail={userEmail}
