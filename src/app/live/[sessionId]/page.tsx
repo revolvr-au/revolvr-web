@@ -312,8 +312,7 @@ export default function LiveRoomPage() {
                 Live on Revolvr
               </h1>
               <p className="text-[11px] text-white/55 mt-1">
-                {isHost ? "Host mode • " : ""}
-                Room: <span className="font-mono">{sessionId}</span>
+                {isHost ? "Host mode " : ""}
               </p>
             </div>
 
@@ -425,8 +424,7 @@ export default function LiveRoomPage() {
                   Live on Revolvr
                 </h1>
                 <p className="text-xs text-white/50 mt-1">
-                  {isHost ? "Host mode • " : ""}
-                  Room: <span className="font-mono">{sessionId}</span>
+                  {isHost ? "Host mode " : ""}
                 </p>
               </div>
               <button
