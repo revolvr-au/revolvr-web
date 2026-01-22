@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import LiveChatPanel from "@/components/live/LiveChatPanel";
 import LiveChatOverlay from "@/components/live/LiveChatOverlay";
+
 import {
   ControlBar,
   GridLayout,
@@ -35,7 +36,10 @@ export default function LiveRoomPage() {
   const searchParams = useSearchParams();
 
   const safeSessionId = params?.sessionId ?? "";
-  const sessionId = useMemo(() => decodeURIComponent(safeSessionId), [safeSessionId]);
+  const sessionId = useMemo(
+    () => decodeURIComponent(safeSessionId),
+    [safeSessionId]
+  );
 
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
@@ -59,9 +63,7 @@ export default function LiveRoomPage() {
 
   // Gate host join behind a user gesture for iOS reliability
   const [joined, setJoined] = useState<boolean>(() => !isHost);
-  useEffect(() => {
-    setJoined(!isHost);
-  }, [isHost]);
+  useEffect(() => setJoined(!isHost), [isHost]);
 
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,8 @@ export default function LiveRoomPage() {
   const [credits, setCredits] = useState<CreditBalances | null>(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null);
+  const [pendingPurchase, setPendingPurchase] =
+    useState<PendingPurchase | null>(null);
   const [supportBusy, setSupportBusy] = useState(false);
 
   // Responsive helper
@@ -85,7 +88,9 @@ export default function LiveRoomPage() {
   // ---- Live creator attribution ----
   const creatorEmail = useMemo(() => {
     const qs = searchParams?.get("creator")?.trim().toLowerCase() || "";
-    const fallback = (process.env.NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL || "").trim().toLowerCase();
+    const fallback = (process.env.NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL || "")
+      .trim()
+      .toLowerCase();
     return qs || fallback || null;
   }, [searchParams]);
 
@@ -148,7 +153,9 @@ export default function LiveRoomPage() {
 
   const ensureCreatorKnown = () => {
     if (!creatorEmail) {
-      setError("Missing creator identity for this live room. Add ?creator=EMAIL to the URL.");
+      setError(
+        "Missing creator identity for this live room. Add ?creator=EMAIL to the URL."
+      );
       return false;
     }
     return true;
@@ -250,18 +257,21 @@ export default function LiveRoomPage() {
   /* ---------------------- UI helpers ------------------------------- */
   const creditsSummary = useMemo(() => {
     if (!credits) return null;
-    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    const total =
+      (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
     if (total <= 0) return null;
 
     const parts: string[] = [];
-    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.tip > 0)
+      parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
     if (credits.boost > 0)
       parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
-    if (credits.spin > 0) parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
+    if (credits.spin > 0)
+      parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
     return parts.join(" • ");
   }, [credits]);
 
-  // Host missing creds
+  // Missing creds screen (host)
   if (isHost && (!activeToken || !lkUrl)) {
     return (
       <main className="live-room min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
@@ -293,23 +303,14 @@ export default function LiveRoomPage() {
   /** ===================== MOBILE: ONE SCREEN ===================== */
   if (isMobile) {
     return (
-      <div className="live-room bg-[#050814] text-white h-[100dvh] w-full overflow-hidden relative">
-        {/* Fullscreen stage */}
-        <div className="absolute inset-0">
-          <VideoStage
-            token={activeToken}
-            serverUrl={lkUrl}
-            isMobile={true}
-            isHost={isHost}
-            joined={joined}
-          />
-        </div>
-
-        {/* Top overlay */}
+      <div className="live-room bg-[#050814] text-white h-[100dvh] w-full overflow-hidden">
+        {/* Top overlay header */}
         <div className="absolute top-0 inset-x-0 z-40 px-4 pt-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">Live on Revolvr</h1>
+              <h1 className="text-lg font-semibold tracking-tight">
+                Live on Revolvr
+              </h1>
               <p className="text-[11px] text-white/55 mt-1">
                 {isHost ? "Host mode • " : ""}
                 Room: <span className="font-mono">{sessionId}</span>
@@ -323,20 +324,6 @@ export default function LiveRoomPage() {
               Back to feed
             </button>
           </div>
-
-          {isHost && !joined && (
-            <div className="mt-3">
-              <button
-                className="rounded-xl bg-emerald-400 px-4 py-2 text-black font-medium hover:bg-emerald-300"
-                onClick={() => setJoined(true)}
-              >
-                Go Live
-              </button>
-              <p className="mt-2 text-xs text-white/60">
-                Required on mobile to enable camera/microphone permissions.
-              </p>
-            </div>
-          )}
 
           {!userEmail && (
             <div className="mt-2 text-xs text-white/70">
@@ -352,23 +339,56 @@ export default function LiveRoomPage() {
           {error && (
             <div className="mt-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
               <span>{error}</span>
-              <button className="text-xs underline" onClick={() => setError(null)}>
+              <button
+                className="text-xs underline"
+                onClick={() => setError(null)}
+              >
                 Dismiss
               </button>
             </div>
           )}
         </div>
 
-        {/* Bottom chat overlay (single screen) */}
+        {/* Full-screen video surface */}
+        <div className="absolute inset-0">
+          <VideoStage
+            token={activeToken}
+            serverUrl={lkUrl}
+            isMobile={true}
+            isHost={isHost}
+            joined={joined}
+          />
+        </div>
+
+        {/* Floating messages overlay */}
+        <div className="absolute inset-0 z-40 pointer-events-none">
+          <LiveChatOverlay roomId={sessionId} />
+        </div>
+
+        {/* Bottom composer-only bar */}
         <div className="absolute inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-        <div className="mb-3">
-          <LiveChatOverlay roomId={sessionId} <LiveChatPanel
+          <LiveChatPanel
             roomId={sessionId}
             liveHrefForRedirect={liveHrefForRedirect}
             userEmail={userEmail}
             variant="composer"
           />
         </div>
+
+        {/* Host join button */}
+        {isHost && !joined && (
+          <div className="absolute inset-x-0 bottom-[86px] z-50 px-3">
+            <button
+              className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-black font-semibold hover:bg-emerald-300"
+              onClick={() => setJoined(true)}
+            >
+              Go Live
+            </button>
+            <p className="mt-2 text-xs text-white/60">
+              Required on mobile to enable camera/microphone permissions.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
@@ -443,7 +463,9 @@ export default function LiveRoomPage() {
             {!isHost && (
               <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm sm:text-base font-semibold">Support this stream</h2>
+                  <h2 className="text-sm sm:text-base font-semibold">
+                    Support this stream
+                  </h2>
                   {userEmail && (
                     <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
                       Signed in as {userEmail}
@@ -452,8 +474,7 @@ export default function LiveRoomPage() {
                 </div>
 
                 <p className="text-xs text-white/60">
-                  Use your credits first. If you run out, you’ll be taken straight to Stripe to
-                  top up.
+                  Use your credits first. If you run out, you’ll be taken straight to Stripe to top up.
                 </p>
 
                 <p className="text-[11px] text-white/55 mt-1">
@@ -519,7 +540,7 @@ export default function LiveRoomPage() {
             )}
           </div>
 
-          {/* RIGHT */}
+          {/* RIGHT: chat panel */}
           <aside className="hidden lg:block h-full">
             <LiveChatPanel
               roomId={sessionId}
@@ -560,13 +581,13 @@ function VideoStage({
 }) {
   const ready = Boolean(token && serverUrl);
 
-  function StageConference({ isMobile, isHost }: { isMobile: boolean; isHost: boolean }) {
+  function StageConference({ isMobile }: { isMobile: boolean }) {
     const tracks = useTracks(
       [
         { source: Track.Source.ScreenShare, withPlaceholder: false },
         { source: Track.Source.Camera, withPlaceholder: false },
       ],
-      // host should see local; viewers only subscribed
+      // host should see local as well
       { onlySubscribed: !isHost }
     );
 
@@ -603,9 +624,12 @@ function VideoStage({
     );
   }
 
+  // Host should not connect until joined
+  const shouldConnect = isHost ? joined : true;
+
   return (
-    <section className={isMobile ? "w-full" : "w-full max-w-xl"}>
-      <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
+    <section className={isMobile ? "w-full h-full" : "w-full max-w-xl"}>
+      <div className="relative w-full h-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
         <div
           className={
             isMobile
@@ -617,15 +641,14 @@ function VideoStage({
             <LiveKitRoom
               token={token}
               serverUrl={serverUrl}
-              connect={true}
-              // publish only after user gesture (host)
-              audio={isHost ? joined : false}
-              video={isHost ? joined : false}
+              connect={shouldConnect}
+              audio={isHost && joined}
+              video={isHost && joined}
               data-lk-theme="default"
               className="h-full"
             >
               <RoomAudioRenderer />
-              <StageConference isMobile={isMobile} isHost={isHost} />
+              <StageConference isMobile={isMobile} />
             </LiveKitRoom>
           ) : (
             <div className="h-full w-full grid place-items-center text-white/50 text-sm">
@@ -647,13 +670,19 @@ type LivePurchaseChoiceSheetProps = {
   onPack: () => void;
 };
 
-function LivePurchaseChoiceSheet({ mode, onClose, onSingle, onPack }: LivePurchaseChoiceSheetProps) {
+function LivePurchaseChoiceSheet({
+  mode,
+  onClose,
+  onSingle,
+  onPack,
+}: LivePurchaseChoiceSheetProps) {
   const modeLabel = mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
 
   const singleAmount = mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
   const packAmount = mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
 
-  const packLabel = mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
+  const packLabel =
+    mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm">
@@ -666,8 +695,8 @@ function LivePurchaseChoiceSheet({ mode, onClose, onSingle, onPack }: LivePurcha
         </div>
 
         <p className="text-xs text-white/60">
-          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to avoid checking out
-          each time.
+          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to avoid
+          checking out each time.
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -703,109 +732,6 @@ function LivePurchaseChoiceSheet({ mode, onClose, onSingle, onPack }: LivePurcha
         >
           Maybe later
         </button>
-      </div>
-    </div>
-  );
-}
-type FloatingMsg = {
-  id: string;
-  display: string;
-  text: string;
-  createdAt: number;
-};
-
-function LiveChatFloatingOverlay({ roomId }: { roomId: string }) {
-  const [items, setItems] = useState<FloatingMsg[]>([]);
-
-  useEffect(() => {
-    let alive = true;
-
-    // optional: pull a small recent history so it doesn't feel empty
-    (async () => {
-      try {
-        const res = await fetch(`/api/live/chat?roomId=${encodeURIComponent(roomId)}&limit=12`, {
-          cache: "no-store",
-        });
-        const json = (await res.json().catch(() => ({}))) as any;
-        const messages = Array.isArray(json?.messages) ? json.messages : [];
-
-        if (!alive) return;
-
-        const now = Date.now();
-        const seeded: FloatingMsg[] = messages
-          .slice(-6)
-          .map((m: any) => ({
-            id: String(m.id),
-            display: (m.display_name || m.user_email || "guest").split("@")[0],
-            text: String(m.message || ""),
-            createdAt: now,
-          }));
-
-        setItems(seeded);
-
-        // expire seeded too
-        seeded.forEach((m) => {
-          setTimeout(() => {
-            setItems((prev) => prev.filter((x) => x.id !== m.id));
-          }, 15000);
-        });
-      } catch {
-        // ignore
-      }
-    })();
-
-    const channel = supabase
-      .channel(`live-chat-float:${roomId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "live_chat_messages",
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload: any) => {
-          const msg = payload?.new;
-          if (!msg?.id) return;
-
-          const id = String(msg.id);
-          const display = String(msg.display_name || msg.user_email || "guest").split("@")[0];
-          const text = String(msg.message || "");
-          const createdAt = Date.now();
-
-          setItems((prev) => {
-            if (prev.some((x) => x.id === id)) return prev;
-            const next = [...prev, { id, display, text, createdAt }];
-            // keep it tight
-            return next.length > 8 ? next.slice(next.length - 8) : next;
-          });
-
-          setTimeout(() => {
-            setItems((prev) => prev.filter((x) => x.id !== id));
-          }, 15000);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      alive = false;
-      supabase.removeChannel(channel);
-    };
-  }, [roomId]);
-
-  // pointer-events-none so it never blocks taps
-  return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-[120px] z-40 px-4">
-      <div className="flex flex-col gap-2 max-w-[78%]">
-        {items.map((m) => (
-          <div
-            key={m.id}
-            className="rounded-2xl bg-black/35 backdrop-blur border border-white/10 px-3 py-2 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
-          >
-            <div className="text-[12px] font-semibold text-white/85">{m.display}</div>
-            <div className="text-[13px] text-white/90 leading-snug">{m.text}</div>
-          </div>
-        ))}
       </div>
     </div>
   );
