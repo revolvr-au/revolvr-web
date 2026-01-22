@@ -24,6 +24,7 @@ import {
   PurchaseMode,
 } from "@/lib/credits";
 
+
 type PendingPurchase = { mode: PurchaseMode };
 type LiveMode = PurchaseMode | "reaction" | "vote";
 type CheckoutResponse = { url?: string; error?: string };
