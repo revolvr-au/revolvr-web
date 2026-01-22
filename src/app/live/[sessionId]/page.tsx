@@ -705,3 +705,106 @@ function LivePurchaseChoiceSheet({ mode, onClose, onSingle, onPack }: LivePurcha
     </div>
   );
 }
+type FloatingMsg = {
+  id: string;
+  display: string;
+  text: string;
+  createdAt: number;
+};
+
+function LiveChatFloatingOverlay({ roomId }: { roomId: string }) {
+  const [items, setItems] = useState<FloatingMsg[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+
+    // optional: pull a small recent history so it doesn't feel empty
+    (async () => {
+      try {
+        const res = await fetch(`/api/live/chat?roomId=${encodeURIComponent(roomId)}&limit=12`, {
+          cache: "no-store",
+        });
+        const json = (await res.json().catch(() => ({}))) as any;
+        const messages = Array.isArray(json?.messages) ? json.messages : [];
+
+        if (!alive) return;
+
+        const now = Date.now();
+        const seeded: FloatingMsg[] = messages
+          .slice(-6)
+          .map((m: any) => ({
+            id: String(m.id),
+            display: (m.display_name || m.user_email || "guest").split("@")[0],
+            text: String(m.message || ""),
+            createdAt: now,
+          }));
+
+        setItems(seeded);
+
+        // expire seeded too
+        seeded.forEach((m) => {
+          setTimeout(() => {
+            setItems((prev) => prev.filter((x) => x.id !== m.id));
+          }, 15000);
+        });
+      } catch {
+        // ignore
+      }
+    })();
+
+    const channel = supabase
+      .channel(`live-chat-float:${roomId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "live_chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload: any) => {
+          const msg = payload?.new;
+          if (!msg?.id) return;
+
+          const id = String(msg.id);
+          const display = String(msg.display_name || msg.user_email || "guest").split("@")[0];
+          const text = String(msg.message || "");
+          const createdAt = Date.now();
+
+          setItems((prev) => {
+            if (prev.some((x) => x.id === id)) return prev;
+            const next = [...prev, { id, display, text, createdAt }];
+            // keep it tight
+            return next.length > 8 ? next.slice(next.length - 8) : next;
+          });
+
+          setTimeout(() => {
+            setItems((prev) => prev.filter((x) => x.id !== id));
+          }, 15000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      alive = false;
+      supabase.removeChannel(channel);
+    };
+  }, [roomId]);
+
+  // pointer-events-none so it never blocks taps
+  return (
+    <div className="pointer-events-none absolute inset-x-0 bottom-[120px] z-40 px-4">
+      <div className="flex flex-col gap-2 max-w-[78%]">
+        {items.map((m) => (
+          <div
+            key={m.id}
+            className="rounded-2xl bg-black/35 backdrop-blur border border-white/10 px-3 py-2 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]"
+          >
+            <div className="text-[12px] font-semibold text-white/85">{m.display}</div>
+            <div className="text-[13px] text-white/90 leading-snug">{m.text}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
