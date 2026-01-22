@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import LiveChatPanel from "@/components/live/LiveChatPanel";
+import LiveSupportBar from "@/components/live/LiveSupportBar";
 import LiveChatOverlay from "@/components/live/LiveChatOverlay";
 
 import {
@@ -364,7 +365,15 @@ export default function LiveRoomPage() {
 
 {/* Composer pinned to bottom */}
 <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+90px)]">
-  <LiveChatPanel
+    <LiveSupportBar
+    isHost={isHost}
+    creatorEmail={creatorEmail}
+    userEmail={userEmail}
+    sessionId={sessionId}
+    liveHrefForRedirect={liveHrefForRedirect}
+  />
+
+<LiveChatPanel
     roomId={sessionId}
     liveHrefForRedirect={liveHrefForRedirect}
     userEmail={userEmail}
