@@ -351,3 +351,13 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Revolvr Live: hide LiveKit participant identity label overlay */
+.live-room .lk-participant-name,
+.live-room [data-lk-participant-name],
+.live-room .lk-participant-metadata,
+.live-room [data-lk-participant-metadata],
+.live-room .lk-participant-tile__name,
+.live-room [class*="participant-name"] {
+  display: none !important;
+}

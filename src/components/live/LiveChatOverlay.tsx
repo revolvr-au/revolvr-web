@@ -153,7 +153,7 @@ export default function LiveChatOverlay({
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-40">
       {/* stack messages above composer + bottom rail */}
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+170px)]">
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+260px)]">
         <div className="flex flex-col gap-2">
           {items.map((m) => (
             <div key={m.id} className="w-fit max-w-[88%] px-3 py-2">
