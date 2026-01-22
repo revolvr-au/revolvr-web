@@ -162,9 +162,9 @@ export default function LiveChatOverlay({
           {items.map((m) => (
             <div
               key={m.id}
-              className="w-fit max-w-[88%] rounded-2xl border border-white/10 bg-black/45 backdrop-blur px-3 py-2 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
+              className="w-fit max-w-[88%] rounded-none border-0 bg-black/45  px-3 py-2 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
             >
-              <div className="text-[11px] text-white/70">
+              <div className="text-[11px] text-white/70 drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)]">
                 {nameFor(m)}
               </div>
               <div className="text-sm text-white/90 leading-snug break-words">
