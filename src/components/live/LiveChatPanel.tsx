@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+
+import { supabase } from "@/lib/supabaseClients";
 type ChatMessage = {
   id: string;
   room_id: string;
@@ -17,7 +19,10 @@ type ApiGetResponse =
   | { ok: true; messages: ChatMessage[] }
   | { error: string };
 
-type ApiPostResponse = { ok: true } | { error: string };
+type ApiPostResponse =
+  | { ok: true; message: ChatMessage }
+  | { ok: true }
+  | { error: string };
 
 function formatTime(iso: string) {
   try {
@@ -116,21 +121,51 @@ export default function LiveChatPanel({
   useEffect(() => {
     setLoading(true);
     const ac = new AbortController();
-
     fetchMessages(ac.signal);
-
-    const t = setInterval(() => {
-      fetchMessages(ac.signal);
-    }, 1500);
-
-    return () => {
-      clearInterval(t);
-      ac.abort();
-    };
+    return () => ac.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId]);
 
-  async function sendMessage() {
+  // Realtime: receive messages instantly (no polling)
+  useEffect(() => {
+    if (!roomId) return;
+
+    const channel = supabase
+      .channel(`live-chat:${roomId}`)
+      .on(
+        \"postgres_changes\",
+        {
+          event: \"INSERT\",
+          schema: \"public\",
+          table: \"live_chat_messages\",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload: any) => {
+          const msg = payload?.new as ChatMessage | undefined;
+          if (!msg?.id) return;
+
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            const next = [...prev, msg];
+            return next.length > 200 ? next.slice(next.length - 200) : next;
+          });
+
+          queueMicrotask(() => {
+            const el = listRef.current;
+            if (!el) return;
+            const nearBottom =
+              el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+            if (nearBottom) el.scrollTop = el.scrollHeight;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomId]);
+async function sendMessage() {
     if (!canSend || posting) return;
 
     const msg = text.trim();
@@ -176,7 +211,13 @@ export default function LiveChatPanel({
         );
       }
 
-      await fetchMessages();
+      // replace optimistic with saved message (prevents duplicates/jump)
+      if ("ok" in json && json.ok && (json as any).message && (json as any).message.id) {
+        const saved = (json as any).message as ChatMessage;
+        setMessages((prev) => prev.map((m) => (m.id === optimisticId ? saved : m)));
+      } else {
+        await fetchMessages();
+      }
     } catch (e: any) {
       setErr(String(e?.message || e || "Chat send failed"));
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
