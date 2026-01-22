@@ -248,7 +248,13 @@ export default function LiveChatPanel({
           return next.length > 200 ? next.slice(next.length - 200) : next;
         });
       } else if (!isComposer) {
-        await fetchMessages();
+        if (typeof window !== "undefined" && "message" in json && (json as any).message?.id) {
+        try {
+          window.dispatchEvent(new CustomEvent("livechat:insert", { detail: (json as any).message }));
+        } catch {}
+      }
+
+      await fetchMessages();
       }
     } catch (e: any) {
       setErr(String(e?.message || e || "Chat send failed"));
