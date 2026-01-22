@@ -360,20 +360,19 @@ export default function LiveRoomPage() {
           />
         </div>
 
-        {/* Floating messages overlay */}
-        <div className="absolute inset-0 z-40 pointer-events-none">
-          <LiveChatOverlay roomId={sessionId} />
-        </div>
+       {/* Floating messages */}
+<LiveChatOverlay roomId={sessionId} />
 
-        {/* Bottom composer-only bar */}
-        <div className="inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+84px)] z-50 px-3 fixed bottom-[var(--bottom-rail-h)] pb-[calc(env(safe-area-inset-bottom)+12px)] bottom-[calc(var(--bottom-rail-h)+env(safe-area-inset-bottom)+12px)]">
-          <LiveChatPanel
-            roomId={sessionId}
-            liveHrefForRedirect={liveHrefForRedirect}
-            userEmail={userEmail}
-            variant="composer"
-          />
-        </div>
+{/* Composer pinned to bottom */}
+<div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+90px)]">
+  <LiveChatPanel
+    roomId={sessionId}
+    liveHrefForRedirect={liveHrefForRedirect}
+    userEmail={userEmail}
+    variant="composer"
+  />
+</div>
+
 
         {/* Host join button */}
         {isHost && !joined && (
