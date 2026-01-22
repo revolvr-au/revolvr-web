@@ -133,11 +133,11 @@ export default function LiveChatPanel({
     const channel = supabase
       .channel(`live-chat:${roomId}`)
       .on(
-        \"postgres_changes\",
+        "postgres_changes",
         {
-          event: \"INSERT\",
-          schema: \"public\",
-          table: \"live_chat_messages\",
+          event: "INSERT",
+          schema: "public",
+          table: "live_chat_messages",
           filter: `room_id=eq.${roomId}`,
         },
         (payload: any) => {
