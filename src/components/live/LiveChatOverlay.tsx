@@ -1,24 +1,25 @@
-// src/components/live/LiveChatOverlay.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClients";
+import { supabase } from "@/lib/supabase/client";
 
 type ChatMessage = {
   id: string;
   room_id: string;
-  user_id?: string | null;
-  user_email?: string | null;
-  display_name?: string | null;
-  avatar_url?: string | null;
   message: string;
+  user_email?: string | null;
   created_at?: string | null;
 };
 
-type ApiGetResponse = { messages?: ChatMessage[]; error?: string };
+type ApiGetResponse =
+  | { messages: ChatMessage[] }
+  | { error: string };
 
 function nameFor(m: ChatMessage) {
-  return (m.display_name || m.user_email || "Guest").toString();
+  const email = (m.user_email || "").trim();
+  if (!email) return "Viewer";
+  const handle = email.split("@")[0];
+  return handle || "Viewer";
 }
 
 export default function LiveChatOverlay({
@@ -40,7 +41,6 @@ export default function LiveChatOverlay({
     setItems((prev) => {
       if (!msg?.id) return prev;
       if (prev.some((x) => x.id === msg.id)) return prev;
-
       const next = [...prev, { ...msg, _seenAt: seenAt }];
       return next.length > 30 ? next.slice(next.length - 30) : next;
     });
@@ -48,28 +48,24 @@ export default function LiveChatOverlay({
 
   async function fetchLatest(signal?: AbortSignal) {
     if (!roomKey) return;
-
     try {
       const res = await fetch(
         `/api/live/chat?roomId=${encodeURIComponent(roomKey)}&limit=40`,
         { method: "GET", cache: "no-store", signal }
       );
-
       const json = (await res.json().catch(() => ({}))) as ApiGetResponse;
       if (!res.ok) return;
-      if (json?.error) return;
+      if ("error" in json) return;
 
       const incoming = Array.isArray(json.messages) ? json.messages : [];
       const now = Date.now();
-
-      // only take the most recent few to avoid flooding
       const recent = incoming.slice(-10).map((m) => ({ ...m, _seenAt: now }));
 
       setItems((prev) => {
-        const existing = new Set(prev.map((x) => x.id));
+        const existingIds = new Set(prev.map((x) => x.id));
         const merged = [...prev];
         for (const m of recent) {
-          if (!existing.has(m.id)) merged.push(m);
+          if (!existingIds.has(m.id)) merged.push(m);
         }
         return merged.length > 30 ? merged.slice(merged.length - 30) : merged;
       });
@@ -81,7 +77,6 @@ export default function LiveChatOverlay({
   // Expire messages
   useEffect(() => {
     if (cleanupTimer.current) window.clearInterval(cleanupTimer.current);
-
     cleanupTimer.current = window.setInterval(() => {
       const cutoff = Date.now() - ttlMs;
       setItems((prev) => prev.filter((m) => m._seenAt >= cutoff));
@@ -93,7 +88,7 @@ export default function LiveChatOverlay({
     };
   }, [ttlMs]);
 
-  // 1) local instant feedback (LiveChatPanel should dispatch this)
+  // Instant insert event (optional; if you dispatch it on send)
   useEffect(() => {
     const onInsert = (e: Event) => {
       const ce = e as CustomEvent;
@@ -102,12 +97,11 @@ export default function LiveChatOverlay({
       if (String(msg.room_id) !== roomKey) return;
       upsert(msg);
     };
-
     window.addEventListener("livechat:insert", onInsert as any);
     return () => window.removeEventListener("livechat:insert", onInsert as any);
   }, [roomKey]);
 
-  // 2) realtime subscription
+  // Realtime subscription
   useEffect(() => {
     if (!roomKey) return;
 
@@ -134,15 +128,12 @@ export default function LiveChatOverlay({
     };
   }, [roomKey]);
 
-  // 3) safety poll
+  // Safety poll
   useEffect(() => {
     if (!roomKey) return;
-
     const ac = new AbortController();
     fetchLatest(ac.signal);
-
     const t = window.setInterval(() => fetchLatest(ac.signal), 1500);
-
     return () => {
       window.clearInterval(t);
       ac.abort();
@@ -152,11 +143,11 @@ export default function LiveChatOverlay({
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-40">
-      {/* stack messages above composer + bottom rail */}
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+260px)]">
+      {/* Stack messages above the composer + bottom rail */}
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-[calc(env(safe-area-inset-bottom)+170px)]">
         <div className="flex flex-col gap-2">
           {items.map((m) => (
-            <div key={m.id} className="w-fit max-w-[88%] px-3 py-2">
+            <div key={m.id} className="w-fit max-w-[88%] px-0 py-0">
               <div className="text-[11px] text-white/70 drop-shadow-[0_2px_10px_rgba(0,0,0,0.65)]">
                 {nameFor(m)}
               </div>
