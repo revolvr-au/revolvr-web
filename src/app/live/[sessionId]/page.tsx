@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import LiveChatPanel from "@/components/live/LiveChatPanel";
+import LiveChatOverlay from "@/components/live/LiveChatOverlay";
 import {
   ControlBar,
   GridLayout,
@@ -360,11 +361,12 @@ export default function LiveRoomPage() {
 
         {/* Bottom chat overlay (single screen) */}
         <div className="absolute inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-          <LiveChatPanel
+        <div className="mb-3">
+          <LiveChatOverlay roomId={sessionId} <LiveChatPanel
             roomId={sessionId}
             liveHrefForRedirect={liveHrefForRedirect}
             userEmail={userEmail}
-            variant="overlay"
+            variant="composer"
           />
         </div>
       </div>
