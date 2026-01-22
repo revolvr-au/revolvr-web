@@ -24,7 +24,6 @@ import {
   PurchaseMode,
 } from "@/lib/credits";
 
-
 type PendingPurchase = { mode: PurchaseMode };
 type LiveMode = PurchaseMode | "reaction" | "vote";
 type CheckoutResponse = { url?: string; error?: string };
@@ -35,10 +34,7 @@ export default function LiveRoomPage() {
   const searchParams = useSearchParams();
 
   const safeSessionId = params?.sessionId ?? "";
-  const sessionId = useMemo(
-    () => decodeURIComponent(safeSessionId),
-    [safeSessionId]
-  );
+  const sessionId = useMemo(() => decodeURIComponent(safeSessionId), [safeSessionId]);
 
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
@@ -62,9 +58,7 @@ export default function LiveRoomPage() {
 
   // Gate host join behind a user gesture for iOS reliability
   const [joined, setJoined] = useState<boolean>(() => !isHost);
-
   useEffect(() => {
-    // If role changes (e.g. navigation), reset join gating
     setJoined(!isHost);
   }, [isHost]);
 
@@ -74,13 +68,11 @@ export default function LiveRoomPage() {
   const [credits, setCredits] = useState<CreditBalances | null>(null);
   const [creditsLoading, setCreditsLoading] = useState(false);
 
-  const [pendingPurchase, setPendingPurchase] =
-    useState<PendingPurchase | null>(null);
+  const [pendingPurchase, setPendingPurchase] = useState<PendingPurchase | null>(null);
   const [supportBusy, setSupportBusy] = useState(false);
 
-  // Responsive helper (avoid window usage during render)
+  // Responsive helper
   const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
     const update = () => setIsMobile(mq.matches);
@@ -92,9 +84,7 @@ export default function LiveRoomPage() {
   // ---- Live creator attribution ----
   const creatorEmail = useMemo(() => {
     const qs = searchParams?.get("creator")?.trim().toLowerCase() || "";
-    const fallback = (process.env.NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL || "")
-      .trim()
-      .toLowerCase();
+    const fallback = (process.env.NEXT_PUBLIC_DEFAULT_CREATOR_EMAIL || "").trim().toLowerCase();
     return qs || fallback || null;
   }, [searchParams]);
 
@@ -157,9 +147,7 @@ export default function LiveRoomPage() {
 
   const ensureCreatorKnown = () => {
     if (!creatorEmail) {
-      setError(
-        "Missing creator identity for this live room. Add ?creator=EMAIL to the URL."
-      );
+      setError("Missing creator identity for this live room. Add ?creator=EMAIL to the URL.");
       return false;
     }
     return true;
@@ -261,21 +249,18 @@ export default function LiveRoomPage() {
   /* ---------------------- UI helpers ------------------------------- */
   const creditsSummary = useMemo(() => {
     if (!credits) return null;
-    const total =
-      (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
+    const total = (credits.tip ?? 0) + (credits.boost ?? 0) + (credits.spin ?? 0);
     if (total <= 0) return null;
 
     const parts: string[] = [];
-    if (credits.tip > 0)
-      parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
+    if (credits.tip > 0) parts.push(`${credits.tip} tip${credits.tip === 1 ? "" : "s"}`);
     if (credits.boost > 0)
       parts.push(`${credits.boost} boost${credits.boost === 1 ? "" : "s"}`);
-    if (credits.spin > 0)
-      parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
+    if (credits.spin > 0) parts.push(`${credits.spin} spin${credits.spin === 1 ? "" : "s"}`);
     return parts.join(" • ");
   }, [credits]);
 
-  // Missing creds screen (host)
+  // Host missing creds
   if (isHost && (!activeToken || !lkUrl)) {
     return (
       <main className="live-room min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
@@ -304,41 +289,100 @@ export default function LiveRoomPage() {
     );
   }
 
+  /** ===================== MOBILE: ONE SCREEN ===================== */
+  if (isMobile) {
+    return (
+      <div className="live-room bg-[#050814] text-white h-[100dvh] w-full overflow-hidden relative">
+        {/* Fullscreen stage */}
+        <div className="absolute inset-0">
+          <VideoStage
+            token={activeToken}
+            serverUrl={lkUrl}
+            isMobile={true}
+            isHost={isHost}
+            joined={joined}
+          />
+        </div>
+
+        {/* Top overlay */}
+        <div className="absolute top-0 inset-x-0 z-40 px-4 pt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h1 className="text-lg font-semibold tracking-tight">Live on Revolvr</h1>
+              <p className="text-[11px] text-white/55 mt-1">
+                {isHost ? "Host mode • " : ""}
+                Room: <span className="font-mono">{sessionId}</span>
+              </p>
+            </div>
+
+            <button
+              onClick={() => router.push("/public-feed")}
+              className="text-xs px-3 py-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10"
+            >
+              Back to feed
+            </button>
+          </div>
+
+          {isHost && !joined && (
+            <div className="mt-3">
+              <button
+                className="rounded-xl bg-emerald-400 px-4 py-2 text-black font-medium hover:bg-emerald-300"
+                onClick={() => setJoined(true)}
+              >
+                Go Live
+              </button>
+              <p className="mt-2 text-xs text-white/60">
+                Required on mobile to enable camera/microphone permissions.
+              </p>
+            </div>
+          )}
+
+          {!userEmail && (
+            <div className="mt-2 text-xs text-white/70">
+              <a
+                className="underline"
+                href={`/login?redirectTo=${encodeURIComponent(liveHrefForRedirect)}`}
+              >
+                Login to support this stream
+              </a>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-3 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
+              <span>{error}</span>
+              <button className="text-xs underline" onClick={() => setError(null)}>
+                Dismiss
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom chat overlay (single screen) */}
+        <div className="absolute inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
+          <LiveChatPanel
+            roomId={sessionId}
+            liveHrefForRedirect={liveHrefForRedirect}
+            userEmail={userEmail}
+            variant="overlay"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  /** ===================== DESKTOP: TWO COLUMN ===================== */
   return (
     <div className="live-room min-h-screen bg-[#050814] text-white flex flex-col">
-      {/* Mobile chat overlay mount */}
-      <div
-        className={
-          isMobile
-            ? "fixed inset-x-0 bottom-0 z-50 p-3 pb-[calc(env(safe-area-inset-bottom)+12px)]"
-            : "hidden"
-        }
-      >
-        <LiveChatPanel
-          roomId={sessionId}
-          liveHrefForRedirect={liveHrefForRedirect}
-          userEmail={userEmail}
-          variant="overlay"
-        />
-      </div>
-
-      <main
-        className={
-          isMobile
-            ? "flex-1 w-full px-4 py-4 pb-[260px]"
-            : "flex-1 w-full px-4 py-4 pb-24"
-        }
-      >
+      <main className="flex-1 w-full px-4 py-4 pb-24">
         <div className="mx-auto w-full max-w-6xl grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-          {/* ================= LEFT: LIVE CONTENT ================= */}
+          {/* LEFT */}
           <div className="min-w-0 flex flex-col gap-4">
             {!userEmail && (
-              <div className="w-full max-w-xl mb-1 VideoStage text-xs text-white/70">
+              <div className="w-full max-w-xl mb-1 text-xs text-white/70">
                 <a
                   className="underline"
-                  href={`/login?redirectTo=${encodeURIComponent(
-                    liveHrefForRedirect
-                  )}`}
+                  href={`/login?redirectTo=${encodeURIComponent(liveHrefForRedirect)}`}
                 >
                   Login to support this stream
                 </a>
@@ -348,10 +392,7 @@ export default function LiveRoomPage() {
             {error && (
               <div className="w-full max-w-xl mb-1 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
                 <span>{error}</span>
-                <button
-                  className="text-xs underline"
-                  onClick={() => setError(null)}
-                >
+                <button className="text-xs underline" onClick={() => setError(null)}>
                   Dismiss
                 </button>
               </div>
@@ -375,7 +416,6 @@ export default function LiveRoomPage() {
               </button>
             </header>
 
-            {/* Host join button (gesture for camera/mic) */}
             {isHost && !joined && (
               <div className="w-full max-w-xl">
                 <button
@@ -390,22 +430,18 @@ export default function LiveRoomPage() {
               </div>
             )}
 
-            {/* ================= VIDEO STAGE ================= */}
             <VideoStage
               token={activeToken}
               serverUrl={lkUrl}
-              isMobile={isMobile}
+              isMobile={false}
               isHost={isHost}
               joined={joined}
             />
 
-            {/* ================= SUPPORT UI (viewer primarily) ================= */}
             {!isHost && (
               <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm sm:text-base font-semibold">
-                    Support this stream
-                  </h2>
+                  <h2 className="text-sm sm:text-base font-semibold">Support this stream</h2>
                   {userEmail && (
                     <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
                       Signed in as {userEmail}
@@ -414,8 +450,8 @@ export default function LiveRoomPage() {
                 </div>
 
                 <p className="text-xs text-white/60">
-                  Use your credits first. If you run out, you’ll be taken
-                  straight to Stripe to top up.
+                  Use your credits first. If you run out, you’ll be taken straight to Stripe to
+                  top up.
                 </p>
 
                 <p className="text-[11px] text-white/55 mt-1">
@@ -481,7 +517,7 @@ export default function LiveRoomPage() {
             )}
           </div>
 
-          {/* ================= RIGHT: CHAT (DESKTOP) ================= */}
+          {/* RIGHT */}
           <aside className="hidden lg:block h-full">
             <LiveChatPanel
               roomId={sessionId}
@@ -492,7 +528,6 @@ export default function LiveRoomPage() {
           </aside>
         </div>
 
-        {/* Purchase sheet */}
         {pendingPurchase && (
           <LivePurchaseChoiceSheet
             mode={pendingPurchase.mode}
@@ -523,18 +558,13 @@ function VideoStage({
 }) {
   const ready = Boolean(token && serverUrl);
 
-  function StageConference({
-    isMobile,
-    isHost,
-  }: {
-    isMobile: boolean;
-    isHost: boolean;
-  }) {
+  function StageConference({ isMobile, isHost }: { isMobile: boolean; isHost: boolean }) {
     const tracks = useTracks(
       [
         { source: Track.Source.ScreenShare, withPlaceholder: false },
         { source: Track.Source.Camera, withPlaceholder: false },
       ],
+      // host should see local; viewers only subscribed
       { onlySubscribed: !isHost }
     );
 
@@ -572,12 +602,12 @@ function VideoStage({
   }
 
   return (
-    <section className="w-full max-w-xl">
+    <section className={isMobile ? "w-full" : "w-full max-w-xl"}>
       <div className="relative w-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
         <div
           className={
             isMobile
-              ? "relative w-full h-[62vh] min-h-[420px]"
+              ? "relative w-full h-[100dvh]"
               : "relative aspect-video w-full max-h-[72vh] min-h-[320px]"
           }
         >
@@ -585,9 +615,10 @@ function VideoStage({
             <LiveKitRoom
               token={token}
               serverUrl={serverUrl}
-              connect={joined}
-              audio={isHost && joined}
-              video={isHost && joined}
+              connect={true}
+              // publish only after user gesture (host)
+              audio={isHost ? joined : false}
+              video={isHost ? joined : false}
               data-lk-theme="default"
               className="h-full"
             >
@@ -614,20 +645,13 @@ type LivePurchaseChoiceSheetProps = {
   onPack: () => void;
 };
 
-function LivePurchaseChoiceSheet({
-  mode,
-  onClose,
-  onSingle,
-  onPack,
-}: LivePurchaseChoiceSheetProps) {
+function LivePurchaseChoiceSheet({ mode, onClose, onSingle, onPack }: LivePurchaseChoiceSheetProps) {
   const modeLabel = mode === "tip" ? "Tip" : mode === "boost" ? "Boost" : "Spin";
 
   const singleAmount = mode === "tip" ? "A$2" : mode === "boost" ? "A$5" : "A$1";
-  const packAmount =
-    mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
+  const packAmount = mode === "tip" ? "A$20" : mode === "boost" ? "A$50" : "A$20";
 
-  const packLabel =
-    mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
+  const packLabel = mode === "tip" ? "tip pack" : mode === "boost" ? "boost pack" : "spin pack";
 
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 backdrop-blur-sm">
@@ -640,8 +664,8 @@ function LivePurchaseChoiceSheet({
         </div>
 
         <p className="text-xs text-white/60">
-          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to
-          avoid checking out each time.
+          Choose a one-off {modeLabel.toLowerCase()} or grab a {packLabel} to avoid checking out
+          each time.
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
@@ -653,9 +677,7 @@ function LivePurchaseChoiceSheet({
             <div className="font-semibold">
               Single {modeLabel} ({singleAmount})
             </div>
-            <div className="text-[11px] text-emerald-200/80">
-              Quick one-off support
-            </div>
+            <div className="text-[11px] text-emerald-200/80">Quick one-off support</div>
           </button>
 
           <button
