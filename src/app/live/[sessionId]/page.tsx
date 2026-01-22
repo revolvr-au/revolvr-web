@@ -366,7 +366,7 @@ export default function LiveRoomPage() {
         </div>
 
         {/* Bottom composer-only bar */}
-        <div className="inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+84px)] z-50 px-3 fixed bottom-[var(--bottom-rail-h)] pb-[calc(env(safe-area-inset-bottom)+12px)]">
+        <div className="inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+84px)] z-50 px-3 fixed bottom-[var(--bottom-rail-h)] pb-[calc(env(safe-area-inset-bottom)+12px)] bottom-[calc(var(--bottom-rail-h)+env(safe-area-inset-bottom)+12px)]">
           <LiveChatPanel
             roomId={sessionId}
             liveHrefForRedirect={liveHrefForRedirect}
