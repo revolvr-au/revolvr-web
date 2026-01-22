@@ -127,20 +127,24 @@ export async function POST(req: Request) {
         ? u.user_metadata.avatar_url
         : null;
 
-    const { error: insErr } = await supabase.from("live_chat_messages").insert({
+    const { data: inserted, error: insErr } = await supabase
+      .from("live_chat_messages")
+      .insert({
       room_id: roomId,
       user_id: u.id,
       user_email: email || null,
       display_name: displayName || null,
       avatar_url: avatarUrl,
       message,
-    });
+      })
+      .select("id, room_id, user_id, user_email, display_name, avatar_url, message, created_at")
+      .single();
 
     if (insErr) {
       return NextResponse.json({ error: insErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, message: inserted });
   } catch (e: any) {
     return NextResponse.json(
       { error: String(e?.message || e || "Chat send failed") },
