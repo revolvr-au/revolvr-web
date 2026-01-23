@@ -39,12 +39,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const posts = await prisma.post.findMany({
     where: { userEmail: email },
     orderBy: { createdAt: "desc" },
-    take: 24,
+    take: 60,
   });
 
-  // If you want profiles viewable even with zero data, keep rendering.
-  // If you want strict notFound for totally unknown profiles, uncomment below:
-  // if (!creator && posts.length === 0) notFound();
+  // If totally unknown and no posts, 404
+  if (!creator && posts.length === 0) notFound();
 
   const displayName =
     creator?.displayName ||
@@ -83,7 +82,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       : verification === "blue"
         ? "Verified Individual"
         : null,
-    accountType ? accountType : null,
+    accountType,
     memberSinceBase ? `Member since ${formatMonthYear(memberSinceBase)}` : null,
   ]
     .filter(Boolean)
@@ -141,9 +140,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
           </div>
 
           <div className="mt-1 text-sm text-white/60">
-            {handle ? (
-              <span className="mr-2">{handle}</span>
-            ) : null}
+            {handle ? <span className="mr-2">{handle}</span> : null}
             <span className="truncate">{email}</span>
           </div>
         </div>
@@ -159,14 +156,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
       {/* Bio */}
       {bio ? (
         <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 px-5 py-4">
-          <div className="text-sm text-white/90 whitespace-pre-wrap">
-            {bio}
-          </div>
+          <div className="text-sm text-white/90 whitespace-pre-wrap">{bio}</div>
         </div>
       ) : null}
 
       {/* Content */}
-            {/* Content */}
       <div className="mt-8">
         {posts.length === 0 ? (
           <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-10 text-center text-white/60">
@@ -179,9 +173,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
               const isVideo = Boolean(post.mediaType?.startsWith("video"));
 
               return (
-                <a
+                <div
                   key={post.id}
-                  href="#"
                   className="group relative aspect-square overflow-hidden rounded-2xl bg-white/5 border border-white/10"
                 >
                   {isImage && post.imageUrl ? (
@@ -195,11 +188,11 @@ export default async function PublicProfilePage({ params }: PageProps) {
                     <div className="h-full w-full bg-white/5" />
                   )}
 
-                  {(isVideo || isImage) && (
+                  {(isVideo || isImage) ? (
                     <div className="absolute left-2 top-2 rounded-full bg-black/50 backdrop-blur px-2 py-1 text-[11px] text-white/90 border border-white/10">
                       {isVideo ? "▶" : "🖼"}
                     </div>
-                  )}
+                  ) : null}
 
                   {post.caption ? (
                     <div className="pointer-events-none absolute inset-x-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -211,10 +204,12 @@ export default async function PublicProfilePage({ params }: PageProps) {
                       </div>
                     </div>
                   ) : null}
-                </a>
+                </div>
               );
             })}
           </div>
         )}
       </div>
-
+    </div>
+  );
+}
