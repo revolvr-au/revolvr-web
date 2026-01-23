@@ -58,8 +58,8 @@ export default async function UserProfilePage({
             key={post.id}
             className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
           >
-            {post.mediaUrl && (
-              <img src={post.mediaUrl} alt="" className="w-full object-cover" />
+            {post.imageUrl && (
+              <img src={post.imageUrl} alt="" className="w-full object-cover" />
             )}
             {post.caption && <div className="p-4 text-sm">{post.caption}</div>}
           </div>
