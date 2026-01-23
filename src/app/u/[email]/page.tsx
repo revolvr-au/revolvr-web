@@ -1,13 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
-type PageProps = {
-  params: {
-    email: string;
-  };
-};
-
-export default async function UserProfilePage({ params }: PageProps) {
-  const decodedEmail = decodeURIComponent(params.email).toLowerCase();
+export default async function UserProfilePage({
+  params,
+}: {
+  params: Promise<{ email: string }>;
+}) {
+  const { email } = await params;
+  const decodedEmail = decodeURIComponent(email).toLowerCase();
 
   const creator = await prisma.creatorProfile.findUnique({
     where: { email: decodedEmail },
@@ -26,21 +25,32 @@ export default async function UserProfilePage({ params }: PageProps) {
         </h1>
         <p className="text-sm text-white/60">{decodedEmail}</p>
 
-        {creator && (
-          <div className="mt-3 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm">
-            Creator status:{" "}
-            {creator.verificationStatus
-              ? creator.verificationStatus.toUpperCase()
-              : "STANDARD"}
+        <div className="mt-4 grid gap-3">
+          <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm">
+            <div className="text-white/70">Creator status</div>
+            <div className="mt-1 font-semibold">
+              {creator
+                ? creator.verificationStatus
+                  ? String(creator.verificationStatus).toUpperCase()
+                  : "STANDARD"
+                : "NOT A CREATOR"}
+            </div>
           </div>
-        )}
+
+          {creator?.verificationCurrentPeriodEnd && (
+            <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-sm">
+              <div className="text-white/70">Verification renews</div>
+              <div className="mt-1 font-semibold">
+                {new Date(creator.verificationCurrentPeriodEnd).toLocaleString()}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
         {posts.length === 0 && (
-          <div className="text-sm text-white/50">
-            No posts yet.
-          </div>
+          <div className="text-sm text-white/50">No posts yet.</div>
         )}
 
         {posts.map((post) => (
@@ -49,15 +59,9 @@ export default async function UserProfilePage({ params }: PageProps) {
             className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
           >
             {post.mediaUrl && (
-              <img
-                src={post.mediaUrl}
-                alt=""
-                className="w-full object-cover"
-              />
+              <img src={post.mediaUrl} alt="" className="w-full object-cover" />
             )}
-            {post.caption && (
-              <div className="p-4 text-sm">{post.caption}</div>
-            )}
+            {post.caption && <div className="p-4 text-sm">{post.caption}</div>}
           </div>
         ))}
       </div>
