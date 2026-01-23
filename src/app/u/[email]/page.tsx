@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import VerificationCTA from "@/components/VerificationCTA";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,10 @@ export default async function UserProfilePage({ params }: PageProps) {
           </div>
         )}
       </div>
+        <div className="mt-6 space-y-4">
+  ...
+  <VerificationCTA />
+</div>
 
       {posts.length > 0 && (
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
