@@ -6,12 +6,13 @@ export const dynamic = "force-dynamic";
 export default async function UserProfilePage({
   params,
 }: {
-  params: { email: string };
+  params: Promise<{ email: string }>;
 }) {
-  const email = decodeURIComponent(params.email).toLowerCase();
+  const { email } = await params;
+  const decodedEmail = decodeURIComponent(email).toLowerCase();
 
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { email: decodedEmail },
   });
 
   if (!user) {
@@ -19,7 +20,7 @@ export default async function UserProfilePage({
   }
 
   const creator = await prisma.creatorProfile.findUnique({
-    where: { email },
+    where: { email: decodedEmail },
   });
 
   return (
@@ -28,22 +29,25 @@ export default async function UserProfilePage({
         {creator?.displayName || creator?.handle || "User"}
       </h1>
 
-      <p className="mt-1 text-sm text-white/60">{email}</p>
+      <p className="mt-1 text-sm text-white/60">{decodedEmail}</p>
 
       {creator ? (
         <div className="mt-6 space-y-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Creator status:</span>
+
             {creator.verificationStatus === "gold" && (
               <span className="rounded-full bg-yellow-400/20 px-3 py-1 text-xs font-semibold text-yellow-300">
                 Gold
               </span>
             )}
+
             {creator.verificationStatus === "blue" && (
               <span className="rounded-full bg-blue-400/20 px-3 py-1 text-xs font-semibold text-blue-300">
                 Verified
               </span>
             )}
+
             {!creator.verificationStatus && (
               <span className="rounded-full bg-white/10 px-3 py-1 text-xs">
                 Creator
