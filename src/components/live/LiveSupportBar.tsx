@@ -108,10 +108,12 @@ export default function LiveSupportBar({
   }, [activeMode]);
 
   const isAuthed = Boolean(userEmail);
-  const canCheckout = Boolean(userEmail && creatorEmail);
+  const creatorReady = Boolean(creatorEmail);
 
   async function begin(mode: Mode, amountCents: number) {
-    if (!creatorEmail || !userEmail) return;
+    if (!creatorEmail) throw new Error("Creator payouts are not available for this live session.");
+    if (!userEmail) throw new Error("Please sign in to continue.");
+
     setBusy(true);
     try {
       const { url } = await createCheckout({
@@ -132,25 +134,34 @@ export default function LiveSupportBar({
   const loginHref = `/login?redirectTo=${encodeURIComponent(liveHrefForRedirect)}`;
 
   return (
-    <div className="w-full flex items-center justify-center gap-2">
-      <ActionButton
-        icon="💰"
-        label="Tip"
-        disabled={!canCheckout}
-        onClick={() => setActiveMode("tip")}
-      />
-      <ActionButton
-        icon="⚡"
-        label="Boost"
-        disabled={!canCheckout}
-        onClick={() => setActiveMode("boost")}
-      />
-      <ActionButton
-        icon="🌀"
-        label="Spin"
-        disabled={!canCheckout}
-        onClick={() => setActiveMode("spin")}
-      />
+    <div className="w-full flex flex-col items-center justify-center gap-2">
+      {!creatorReady && (
+        <div className="text-[11px] text-white/60">
+          Support actions unavailable (creator not set).
+        </div>
+      )}
+
+      <div className="w-full flex items-center justify-center gap-2">
+        <ActionButton
+          icon="💰"
+          label="Tip"
+          disabled={!creatorReady}
+          onClick={() => creatorReady && setActiveMode("tip")}
+        />
+        <ActionButton
+          icon="⚡"
+          label="Boost"
+          disabled={!creatorReady}
+          onClick={() => creatorReady && setActiveMode("boost")}
+        />
+        <ActionButton
+          icon="🌀"
+          label="Spin"
+          disabled={!creatorReady}
+          onClick={() => creatorReady && setActiveMode("spin")}
+        />
+      </div>
+
       <PostActionModal
         open={Boolean(activeMode && activeMeta)}
         onClose={() => setActiveMode(null)}
