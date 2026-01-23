@@ -81,7 +81,23 @@ export default function CreatorOnboardPage() {
         return;
       }
 
-      router.push("/creator");
+      // Immediately send creator to Stripe Connect
+      const stripeRes = await fetch("/api/stripe/connect/create", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const stripeJson = await stripeRes.json().catch(() => null);
+
+      if (!stripeRes.ok || !stripeJson?.url) {
+        setErr("Creator activated, but Stripe onboarding failed.");
+        return;
+      }
+
+      // HARD redirect (required by Stripe)
+      window.location.href = stripeJson.url;
     } catch (e) {
       console.error("[creator/onboard] activate error", e);
       setErr("Server error");
