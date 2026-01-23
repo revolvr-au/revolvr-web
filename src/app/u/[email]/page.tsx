@@ -168,35 +168,50 @@ export default async function PublicProfilePage({ params }: PageProps) {
       {/* Content */}
       <div className="mt-8">
         {posts.length === 0 ? (
-          <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-10 text-center text-white/60">
-            No posts yet.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden"
-              >
-                {post.imageUrl && post.mediaType?.startsWith("image") && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={post.imageUrl}
-                    alt=""
-                    className="w-full object-cover"
-                  />
-                )}
+  <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-10 text-center text-white/60">
+    No posts yet.
+  </div>
+) : (
+  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    {posts.map((post) => {
+      const isImage = Boolean(post.mediaType?.startsWith("image"));
+      const isVideo = Boolean(post.mediaType?.startsWith("video"));
 
-                {post.caption ? (
-                  <div className="p-4 text-sm text-white/90">
-                    {post.caption}
-                  </div>
-                ) : null}
+      return (
+        <a
+          key={post.id}
+          href="#"
+          className="group relative aspect-square overflow-hidden rounded-2xl bg-white/5 border border-white/10"
+        >
+          {isImage && post.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={post.imageUrl}
+              alt=""
+              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="h-full w-full bg-white/5" />
+          )}
+
+          {(isVideo || isImage) && (
+            <div className="absolute left-2 top-2 rounded-full bg-black/50 backdrop-blur px-2 py-1 text-[11px] text-white/90 border border-white/10">
+              {isVideo ? "▶" : "🖼"}
+            </div>
+          )}
+
+          {post.caption ? (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="h-14 bg-gradient-to-t from-black/70 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 px-3 pb-2">
+                <div className="text-xs text-white/90 line-clamp-1">
+                  {post.caption}
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+            </div>
+          ) : null}
+        </a>
+      );
+    })}
+  </div>
+)}
