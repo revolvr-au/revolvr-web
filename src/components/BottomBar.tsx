@@ -27,23 +27,24 @@ export type BottomBarProps = {
 
 const defaultTabs: BottomBarTab[] = [
   {
-    key: "feed",
-    label: "Feed",
-    href: "/public-feed",
-    matchPrefix: ["/public-feed", "/feed"],
-  },
+  key: "command",
+  label: "Command",
+  href: "/command",
+  matchPrefix: ["/command", "/u"],
+},
+
   {
     key: "create",
     label: "+", // until /create exists, treat creator routes as the "create area"
     matchPrefix: "/create",
   },
   {
-    key: "command",
-    label: "Command",
-    href: "/command",
-    matchPrefix: ["/command", "/me", "/u"],
-  },
-];
+  key: "command",
+  label: "Command",
+  matchPrefix: ["/u", "/command", "/me"],
+  onClick: () => goToMyPublicProfile(router),
+},
+]
 
 function isActive(pathname: string, tab: BottomBarTab) {
   const prefixes = tab.matchPrefix
@@ -58,6 +59,15 @@ function isActive(pathname: string, tab: BottomBarTab) {
     if (prefix === "/") return pathname === "/";
     return pathname === prefix || pathname.startsWith(prefix + "/");
   });
+}
+async function goToMyPublicProfile(router: ReturnType<typeof useRouter>) {
+  const { data } = await supabase.auth.getUser();
+  const email = data?.user?.email;
+  if (!email) {
+    router.push("/login?redirect=/command");
+    return;
+  }
+  router.push(`/u/${encodeURIComponent(email.toLowerCase())}`);
 }
 
 
