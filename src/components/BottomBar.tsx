@@ -27,24 +27,23 @@ export type BottomBarProps = {
 
 const defaultTabs: BottomBarTab[] = [
   {
-  key: "command",
-  label: "Command",
-  href: "/command",
-  matchPrefix: ["/command", "/u"],
-},
-
+    key: "feed",
+    label: "Feed",
+    href: "/public-feed",
+    matchPrefix: ["/public-feed", "/feed"],
+  },
   {
     key: "create",
     label: "+", // until /create exists, treat creator routes as the "create area"
     matchPrefix: "/create",
   },
   {
-  key: "command",
-  label: "Command",
-  matchPrefix: ["/u", "/command", "/me"],
-  onClick: () => goToMyPublicProfile(router),
-},
-]
+    key: "command",
+    label: "Command",
+    // action button (no href) – takes you to your own public profile
+    matchPrefix: ["/u", "/command", "/me"],
+  },
+];
 
 function isActive(pathname: string, tab: BottomBarTab) {
   const prefixes = tab.matchPrefix
@@ -60,16 +59,6 @@ function isActive(pathname: string, tab: BottomBarTab) {
     return pathname === prefix || pathname.startsWith(prefix + "/");
   });
 }
-async function goToMyPublicProfile(router: ReturnType<typeof useRouter>) {
-  const { data } = await supabase.auth.getUser();
-  const email = data?.user?.email;
-  if (!email) {
-    router.push("/login?redirect=/command");
-    return;
-  }
-  router.push(`/u/${encodeURIComponent(email.toLowerCase())}`);
-}
-
 
 function Icon({
   name,
@@ -153,7 +142,6 @@ export default function BottomBar({
           onClick:
             t.onClick ??
             (() => {
-              // until /create exists, this is the best "create" entry point you have
               router.push("/create");
             }),
         };
@@ -169,13 +157,14 @@ export default function BottomBar({
                 data: { user },
               } = await supabase.auth.getUser();
 
-              if (!user?.email) {
-                // force login first; user can then tap Command again
-                router.push("/login?redirectTo=/creator");
+              const email = user?.email?.toLowerCase() ?? null;
+
+              if (!email) {
+                router.push("/login?redirectTo=/command");
                 return;
               }
 
-              router.push(`/u/${encodeURIComponent(user.email)}`);
+              router.push(`/u/${encodeURIComponent(email)}`);
             }),
         };
       }
