@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import PostActionModal, { type Preset } from "@/components/PostActionModal";
 import { createCheckout } from "@/lib/actionsClient";
 
@@ -87,7 +87,10 @@ function formatMonthYear(iso: string) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   try {
-    return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short" }).format(d);
+    return new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "short",
+    }).format(d);
   } catch {
     return iso.slice(0, 7);
   }
@@ -157,7 +160,9 @@ function PostModal({
   const canCheckout = Boolean(viewerEmail && profileEmail && post?.id);
 
   const returnPath =
-    typeof window !== "undefined" ? window.location.pathname : `/u/${encodeURIComponent(profileEmail)}`;
+    typeof window !== "undefined"
+      ? window.location.pathname
+      : `/u/${encodeURIComponent(profileEmail)}`;
 
   const loginHref = `/login?redirectTo=${encodeURIComponent(returnPath)}`;
 
@@ -241,9 +246,24 @@ function PostModal({
           {/* Actions */}
           <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <ActionPill icon="💰" label="Tip" disabled={!canCheckout} onClick={() => setActiveMode("tip")} />
-              <ActionPill icon="⚡" label="Boost" disabled={!canCheckout} onClick={() => setActiveMode("boost")} />
-              <ActionPill icon="🌀" label="Spin" disabled={!canCheckout} onClick={() => setActiveMode("spin")} />
+              <ActionPill
+                icon="💰"
+                label="Tip"
+                disabled={!canCheckout}
+                onClick={() => setActiveMode("tip")}
+              />
+              <ActionPill
+                icon="⚡"
+                label="Boost"
+                disabled={!canCheckout}
+                onClick={() => setActiveMode("boost")}
+              />
+              <ActionPill
+                icon="🌀"
+                label="Spin"
+                disabled={!canCheckout}
+                onClick={() => setActiveMode("spin")}
+              />
             </div>
             <div className="text-[11px] text-white/50">
               {isAuthed ? "Payments via Stripe" : "Sign in to support"}
@@ -276,10 +296,24 @@ function PostModal({
 }
 
 export default function ProfileClient(props: ProfileClientProps) {
-  const { email, displayName, handle, verification, trustLine, avatarUrl, bio, posts } = props;
+  const { email, displayName, handle, verification, trustLine, avatarUrl, bio, posts } =
+    props;
 
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
   const [selected, setSelected] = useState<ProfilePost | null>(null);
+
+  // Hamburger menu
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    if (menuOpen) document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen]);
 
   useEffect(() => {
     fetch("/api/creator/me", { cache: "no-store" })
@@ -300,7 +334,38 @@ export default function ProfileClient(props: ProfileClientProps) {
           ← Back to feed
         </a>
         <div className="text-sm text-white/60">Profile</div>
-        <div className="w-[92px]" />
+
+        {/* Hamburger (top right) */}
+        <div ref={menuRef} className="relative w-[92px] flex justify-end">
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 flex items-center justify-center"
+            aria-label="Menu"
+          >
+            <span className="text-xl leading-none">≡</span>
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 top-12 w-56 rounded-2xl border border-white/10 bg-black/90 backdrop-blur p-2 shadow-xl">
+              <a
+                href="/me"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Account
+              </a>
+
+              <a
+                href="/terms"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Terms &amp; Conditions
+              </a>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Header */}
