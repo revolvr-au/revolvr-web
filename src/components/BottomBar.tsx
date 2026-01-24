@@ -40,7 +40,8 @@ const defaultTabs: BottomBarTab[] = [
   {
     key: "command",
     label: "Command",// public profile route
-    matchPrefix: "/u",
+    href: "/me",
+    matchPrefix: "/me",
   },
 ];
 
