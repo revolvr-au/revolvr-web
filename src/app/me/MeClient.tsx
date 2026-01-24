@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
@@ -18,6 +18,8 @@ type CreatorMeResponse = {
     stripeConnectAccountId?: string | null;
     stripeConnectChargesEnabled?: boolean | null;
     stripeConnectPayoutsEnabled?: boolean | null;
+    avatarUrl?: string | null;
+    bio?: string | null;
   } | null;
   isCreator?: boolean;
 };
@@ -35,9 +37,24 @@ function clsx(...s: Array<string | false | null | undefined>) {
 }
 
 function badgeForTier(tier: "blue" | "gold" | null | undefined) {
-  if (tier === "gold") return { label: "GOLD", className: "bg-yellow-400/20 text-yellow-200 border-yellow-300/20" };
-  if (tier === "blue") return { label: "BLUE", className: "bg-blue-400/20 text-blue-200 border-blue-300/20" };
-  return { label: "NONE", className: "bg-white/10 text-white/70 border-white/10" };
+  if (tier === "gold")
+    return {
+      label: "GOLD",
+      className: "bg-yellow-400/20 text-yellow-200 border-yellow-300/20",
+    };
+  if (tier === "blue")
+    return {
+      label: "BLUE",
+      className: "bg-blue-400/20 text-blue-200 border-blue-300/20",
+    };
+  return {
+    label: "NONE",
+    className: "bg-white/10 text-white/70 border-white/10",
+  };
+}
+
+function safeKeyFromEmail(email: string) {
+  return email.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
 export default function MeClient() {
@@ -49,11 +66,14 @@ export default function MeClient() {
   const [me, setMe] = useState<CreatorMeResponse | null>(null);
   const [connect, setConnect] = useState<ConnectStatus | null>(null);
 
-  // editable fields (creator-only)
+  // editable fields
   const [avatarUrl, setAvatarUrl] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [handle, setHandle] = useState("");
   const [bio, setBio] = useState("");
+
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -62,7 +82,8 @@ export default function MeClient() {
   const isCreator = Boolean(me?.creator || me?.isCreator);
 
   const tier = useMemo(() => {
-    const t = me?.creator?.verificationTier || me?.creator?.verificationStatus || null;
+    const t =
+      me?.creator?.verificationTier || me?.creator?.verificationStatus || null;
     return t === "gold" || t === "blue" ? t : null;
   }, [me]);
 
@@ -101,11 +122,10 @@ export default function MeClient() {
 
         setMe(meJson);
 
-        // Seed editable fields (creator-only)
+        // seed fields
         const c = meJson?.creator || null;
         setDisplayName(c?.displayName || "");
         setHandle(c?.handle || "");
-        // prefer any avatar-ish property if present
         setAvatarUrl((c as any)?.avatarUrl || (c as any)?.imageUrl || "");
         setBio((c as any)?.bio || "");
 
@@ -119,7 +139,10 @@ export default function MeClient() {
           const stJson = await st.json().catch(() => null);
           if (!cancelled) {
             if (st.ok) setConnect(stJson);
-            else setConnect({ error: stJson?.error || "Could not load payouts status." });
+            else
+              setConnect({
+                error: stJson?.error || "Could not load payouts status.",
+              });
           }
         } else {
           setConnect(null);
@@ -136,6 +159,29 @@ export default function MeClient() {
       cancelled = true;
     };
   }, [router]);
+
+  async function uploadAvatarToStorage(file: File) {
+    if (!email) throw new Error("Not signed in");
+
+    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const key = `avatars/${safeKeyFromEmail(email)}/${Date.now()}.${ext}`;
+
+    const { error: upErr } = await supabase.storage
+      .from("avatars")
+      .upload(key, file, {
+        cacheControl: "3600",
+        upsert: true,
+        contentType: file.type || "image/jpeg",
+      });
+
+    if (upErr) throw upErr;
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(key);
+    const publicUrl = data?.publicUrl;
+    if (!publicUrl) throw new Error("Could not resolve avatar URL");
+
+    return publicUrl;
+  }
 
   async function startVerificationCheckout(t: "blue" | "gold") {
     setError(null);
@@ -246,11 +292,6 @@ export default function MeClient() {
     setError(null);
     setNotice(null);
 
-    if (!isCreator) {
-      setError("Only creators can edit their public profile at the moment. Use “Become a Creator”.");
-      return;
-    }
-
     setSaving(true);
     try {
       const { data } = await supabase.auth.getSession();
@@ -337,20 +378,56 @@ export default function MeClient() {
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="text-sm font-semibold">Account summary</div>
             <div className="mt-4 flex items-start gap-4">
-              <div className="h-16 w-16 rounded-xl bg-white/10 border border-white/10 overflow-hidden flex items-center justify-center">
-  {avatarUrl ? (
-    <img
-      src={avatarUrl}
-      alt=""
-      className="h-full w-full object-cover"
-    />
-  ) : (
-    <span className="text-lg font-semibold text-white/60">
-      {displayName?.[0]?.toUpperCase() ?? "U"}
-    </span>
-  )}
-</div>
+              {/* square avatar box (click to upload) */}
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={avatarUploading}
+                className={clsx(
+                  "h-16 w-16 rounded-xl bg-white/10 border border-white/10 overflow-hidden flex items-center justify-center",
+                  avatarUploading ? "opacity-70" : "hover:bg-white/15"
+                )}
+                title="Upload avatar"
+              >
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold text-white/60">
+                    {(displayName?.[0] || email?.[0] || "U").toUpperCase()}
+                  </span>
+                )}
+              </button>
 
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+
+                  setError(null);
+                  setNotice(null);
+                  setAvatarUploading(true);
+
+                  try {
+                    const url = await uploadAvatarToStorage(f);
+                    setAvatarUrl(url); // show immediately
+                    setNotice("Avatar uploaded. Hit “Save changes” to publish.");
+                  } catch (err: any) {
+                    setError(err?.message || "Avatar upload failed.");
+                  } finally {
+                    setAvatarUploading(false);
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
@@ -373,7 +450,9 @@ export default function MeClient() {
                   </span>
                 </div>
 
-                <div className="mt-1 text-sm text-white/60 truncate">{email}</div>
+                <div className="mt-1 text-sm text-white/60 truncate">
+                  {email}
+                </div>
               </div>
             </div>
           </section>
@@ -419,7 +498,7 @@ export default function MeClient() {
             </div>
           </section>
 
-          {/* 3) Public Profile Controls */}
+          {/* 3) Public Profile Controls (NO URL FIELD) */}
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="text-sm font-semibold">Public profile</div>
             <div className="mt-1 text-xs text-white/60">
@@ -443,22 +522,11 @@ export default function MeClient() {
               </div>
             ) : (
               <div className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-white/70">Avatar URL</label>
-                  <input
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="https://…"
-                    className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none"
-                  />
-                  <div className="text-[11px] text-white/45">
-                    File upload will be added after launch; URL is supported now.
-                  </div>
-                </div>
-
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-white/70">Display name</label>
+                    <label className="text-xs font-semibold text-white/70">
+                      Display name
+                    </label>
                     <input
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
@@ -468,7 +536,9 @@ export default function MeClient() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-white/70">Handle</label>
+                    <label className="text-xs font-semibold text-white/70">
+                      Handle
+                    </label>
                     <input
                       value={handle}
                       onChange={(e) => setHandle(e.target.value)}
@@ -479,7 +549,9 @@ export default function MeClient() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-white/70">Bio</label>
+                  <label className="text-xs font-semibold text-white/70">
+                    Bio
+                  </label>
                   <textarea
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
@@ -535,13 +607,17 @@ export default function MeClient() {
                 <div className="text-sm text-white/80">Creator</div>
 
                 <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-4">
-                  <div className="text-xs font-semibold text-white/70">Payouts</div>
+                  <div className="text-xs font-semibold text-white/70">
+                    Payouts
+                  </div>
                   <div className="mt-2 text-sm text-white/85">
                     {connect?.error
                       ? connect.error
                       : connect?.connected
-                        ? `Connected${connect.chargesEnabled ? " · Charges enabled" : ""}${connect.payoutsEnabled ? " · Payouts enabled" : ""}`
-                        : "Not connected"}
+                      ? `Connected${
+                          connect.chargesEnabled ? " · Charges enabled" : ""
+                        }${connect.payoutsEnabled ? " · Payouts enabled" : ""}`
+                      : "Not connected"}
                   </div>
 
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -575,7 +651,10 @@ export default function MeClient() {
 
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {statItems.map((s) => (
-                <div key={s.label} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                <div
+                  key={s.label}
+                  className="rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+                >
                   <div className="text-[11px] text-white/60">{s.label}</div>
                   <div className="mt-1 text-lg font-semibold">{s.value}</div>
                 </div>
