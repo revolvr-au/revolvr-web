@@ -34,16 +34,16 @@ const defaultTabs: BottomBarTab[] = [
   },
   {
     key: "create",
-    label: "+",// until /create exists, treat creator routes as the "create area"
+    label: "+", // until /create exists, treat creator routes as the "create area"
     matchPrefix: "/create",
   },
   {
-  key: "command",
-  label: "Command",
-  href: "/command",
-  matchPrefix: ["/command", "/me", "/u"],
-},
-
+    key: "command",
+    label: "Command",
+    href: "/command",
+    matchPrefix: ["/command", "/me", "/u"],
+  },
+];
 
 function isActive(pathname: string, tab: BottomBarTab) {
   const prefixes = tab.matchPrefix
@@ -59,6 +59,7 @@ function isActive(pathname: string, tab: BottomBarTab) {
     return pathname === prefix || pathname.startsWith(prefix + "/");
   });
 }
+
 
 function Icon({
   name,
