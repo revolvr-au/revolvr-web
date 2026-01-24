@@ -38,12 +38,12 @@ const defaultTabs: BottomBarTab[] = [
     matchPrefix: "/create",
   },
   {
-    key: "command",
-    label: "Command",// public profile route
-    href: "/me",
-    matchPrefix: "/me",
-  },
-];
+  key: "command",
+  label: "Command",
+  href: "/command",
+  matchPrefix: ["/command", "/me", "/u"],
+},
+
 
 function isActive(pathname: string, tab: BottomBarTab) {
   const prefixes = tab.matchPrefix
