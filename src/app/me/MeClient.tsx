@@ -337,16 +337,20 @@ export default function MeClient() {
           <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
             <div className="text-sm font-semibold">Account summary</div>
             <div className="mt-4 flex items-start gap-4">
-              <div className="h-14 w-14 rounded-full bg-white/10 flex items-center justify-center overflow-hidden">
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="text-lg font-semibold text-white/60">
-                    {(displayName || email || "U")[0]?.toUpperCase() ?? "U"}
-                  </div>
-                )}
-              </div>
+              <div className="h-16 w-16 rounded-xl bg-white/10 border border-white/10 overflow-hidden flex items-center justify-center">
+  {avatarUrl ? (
+    <img
+      src={avatarUrl}
+      alt=""
+      className="h-full w-full object-cover"
+    />
+  ) : (
+    <span className="text-lg font-semibold text-white/60">
+      {displayName?.[0]?.toUpperCase() ?? "U"}
+    </span>
+  )}
+</div>
+
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
