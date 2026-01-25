@@ -348,25 +348,26 @@ export default function ProfileClient(props: ProfileClientProps) {
           </button>
 
           {menuOpen && (
-  <div className="absolute right-0 top-12 w-56 rounded-2xl border border-white/10 bg-black/90 backdrop-blur p-2 shadow-xl">
-    <Link
-      href="/me"
-      className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-      onClick={() => setMenuOpen(false)}
-    >
-      Account
-    </Link>
+            <div className="absolute right-0 top-12 w-56 rounded-2xl border border-white/10 bg-black/90 backdrop-blur p-2 shadow-xl">
+              <Link
+                href="/me"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Account
+              </Link>
 
-    <Link
-      href="/terms"
-      className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-      onClick={() => setMenuOpen(false)}
-    >
-      Terms &amp; Conditions
-    </Link>
-  </div>
-)}
-
+              <Link
+                href="/terms"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Terms &amp; Conditions
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Header */}
       <div className="mt-8 flex items-start gap-4">
