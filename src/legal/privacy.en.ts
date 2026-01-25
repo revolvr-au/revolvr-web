@@ -1,3 +1,4 @@
+export const PRIVACY_VERSION = "2026-01-25";
 export const PRIVACY_LAST_UPDATED = "25 January 2026";
 
 export const PRIVACY_TEXT = `

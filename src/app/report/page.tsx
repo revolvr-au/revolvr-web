@@ -26,7 +26,35 @@ export default function ReportPage() {
   const [details, setDetails] = useState("");
   const [link, setLink] = useState("");
 
-  const mailtoHref = useMemo(() => {
+  
+  const [busy, setBusy] = useState(false);
+  const [ok, setOk] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    setBusy(true);
+    setErr(null);
+    setOk(null);
+    try {
+      const res = await fetch("/api/report", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ category, link, details }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(data?.error ?? "Unable to submit report right now.");
+        return;
+      }
+      setOk("Report submitted. Thank you.");
+    } catch {
+      setErr("Network error. You can still email support below.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+const mailtoHref = useMemo(() => {
     const subject = `Revolvr Safety Report: ${category}`;
     const body = [
       `Category: ${category}`,
@@ -104,12 +132,14 @@ export default function ReportPage() {
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <a
-            href={mailtoHref}
-            className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/90 hover:bg-white/15"
+          <button
+            type="button"
+            disabled={busy}
+            onClick={submit}
+            className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-white/90 hover:bg-white/15 disabled:opacity-50"
           >
-            Send report
-          </a>
+            {busy ? "Sending..." : "Send report"}
+          </button>
           <button
             type="button"
             onClick={() => router.back()}
@@ -118,6 +148,23 @@ export default function ReportPage() {
             Cancel
           </button>
         </div>
+
+
+        {ok ? (
+          <div className="mt-6 rounded-xl border border-emerald-300/20 bg-emerald-400/10 p-4 text-sm text-emerald-100">
+            {ok}
+          </div>
+        ) : null}
+
+        {err ? (
+          <div className="mt-6 rounded-xl border border-red-300/20 bg-red-400/10 p-4 text-sm text-red-100">
+            {err}{" "}
+            <a href={mailtoHref} className="underline hover:text-white/80">
+              Email support
+            </a>
+            .
+          </div>
+        ) : null}
 
         <div className="mt-6 text-xs text-white/50">
           If you are in immediate danger, contact local emergency services.
