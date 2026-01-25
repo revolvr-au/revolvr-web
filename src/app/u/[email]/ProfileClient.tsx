@@ -364,6 +364,25 @@ export default function ProfileClient(props: ProfileClientProps) {
               >
                 Terms &amp; Conditions
               </Link>
+
+              <div className="my-2 h-px bg-white/10" />
+
+              <Link
+                href="/deactivate-account"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Deactivate Account
+              </Link>
+
+              <Link
+                href="/delete-account"
+                className="block rounded-xl px-3 py-2 text-sm text-red-200 hover:bg-red-500/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Delete Account
+              </Link>
+
             </div>
           )}
         </div>
