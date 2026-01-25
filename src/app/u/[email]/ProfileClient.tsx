@@ -337,7 +337,7 @@ export default function ProfileClient(props: ProfileClientProps) {
         <div className="text-sm text-white/60">Profile</div>
 
         {/* Hamburger (top right) */}
-        <div ref={menuRef} className="relative w-[92px] flex justify-end">
+        <div ref={menuRef} className="relative z-[200] w-[92px] flex justify-end">
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
@@ -348,7 +348,7 @@ export default function ProfileClient(props: ProfileClientProps) {
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-12 w-56 rounded-2xl border border-white/10 bg-black/90 backdrop-blur p-2 shadow-xl">
+            <div className="absolute z-[300] right-0 top-12 w-56 rounded-2xl border border-white/10 bg-black/90 backdrop-blur p-2 shadow-xl">
               <Link
                 href="/me"
                 className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
