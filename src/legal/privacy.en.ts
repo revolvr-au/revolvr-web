@@ -82,8 +82,12 @@ Depending on your jurisdiction, you may have rights to:
 Requests can be made by contacting us using the details below.
 
 ## 9. Children’s Privacy
-The Platform is **not intended for individuals under 18 years of age**.
-We do not knowingly collect personal information from children.
+The Platform is **not intended for children under the age of 13**.
+
+We do not knowingly collect personal information from children under 13 years of age. If we become aware that personal information has been collected from a child under 13 without verified parental consent, we will take reasonable steps to delete such information.
+
+Users aged 13 to 17 may use the Platform only with the involvement and consent of a parent or legal guardian. Certain features, including payments, monetisation, and commercial activities, are restricted to users who are 18 years of age or older (or the age of majority in their jurisdiction).
+
 
 ## 10. International Data Transfers
 Your information may be processed or stored in countries outside your own.
