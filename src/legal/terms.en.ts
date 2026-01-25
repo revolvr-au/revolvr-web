@@ -19,7 +19,8 @@ By accessing or using the Platform, you agree to be legally bound by these Terms
 - “Content” means any material uploaded, posted, or transmitted through the Platform.
 
 ## 2. Acceptance of Terms
-You confirm that you are at least 18 years old and, if acting on behalf of a business, have the authority to bind that business.
+You confirm that you are at least 13 years old. If you are under 18 (or the age of majority where you live), you may use the Platform only with the consent and supervision of a parent or legal guardian.
+You must be at least 18 years old (or the age of majority where you live) to make payments, receive payouts, or enter into Campaigns or other commercial arrangements through the Platform. If acting on behalf of a business, you confirm you have the authority to bind that business.
 Your continued use of the Platform constitutes acceptance of these Terms and any updates to them.
 
 ## 3. Platform Description & Role
