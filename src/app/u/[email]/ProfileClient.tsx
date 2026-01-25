@@ -372,6 +372,23 @@ export default function ProfileClient(props: ProfileClientProps) {
                 Privacy Policy
               </Link>
 
+              <Link
+                href="/support"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Support
+              </Link>
+
+              <Link
+                href="/about"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                About
+              </Link>
+
+
 
               <div className="my-2 h-px bg-white/10" />
 
