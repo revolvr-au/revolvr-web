@@ -47,7 +47,7 @@ export default function GuidelinesPage() {
 
           <section>
             <div className="font-semibold">Minors</div>
-            <div>The Platform is not intended for individuals under 18 years of age.</div>
+            <div>Revolvr is intended for users 13 years of age and older. Some features (including payments and certain creator tools) are available only to users 18+.</div>
           </section>
 
           <section>
