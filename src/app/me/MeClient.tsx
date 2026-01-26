@@ -257,36 +257,57 @@ export default function MeClient() {
   }
 
   async function connectStripe() {
-    setError(null);
-    setNotice(null);
+  setError(null);
+  setNotice(null);
 
-    setSaving(true);
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-
-      const res = await fetch("/api/stripe/connect/link", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const json = await res.json().catch(() => null);
-
-      if (!res.ok || !json?.url) {
-        setError(json?.error || "Could not start Stripe onboarding.");
-        return;
-      }
-
-      window.location.href = json.url;
-    } catch (e: any) {
-      setError(e?.message || "Could not start Stripe onboarding.");
-    } finally {
-      setSaving(false);
+  setSaving(true);
+  try {
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) {
+      router.replace("/login");
+      return;
     }
+
+    const res = await fetch("/api/stripe/connect/link", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      redirect: "follow", // explicit
+    });
+
+    // 1) If the endpoint returns a redirect and fetch follows it, res.url becomes the final URL.
+    if (res.redirected && res.url) {
+      window.location.assign(res.url);
+      return;
+    }
+
+    // 2) Try JSON first
+    let url: string | null = null;
+    let json: any = null;
+
+    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("application/json")) {
+      json = await res.json().catch(() => null);
+      url = json?.url || null;
+    } else {
+      // 3) Fallback: plain text (some handlers return the URL directly)
+      const text = await res.text().catch(() => "");
+      if (text && /^https?:\/\//i.test(text.trim())) url = text.trim();
+    }
+
+    if (!res.ok || !url) {
+      setError(json?.error || "Could not start Stripe onboarding.");
+      return;
+    }
+
+    window.location.assign(url);
+  } catch (e: any) {
+    setError(e?.message || "Could not start Stripe onboarding.");
+  } finally {
+    setSaving(false);
   }
+}
+
 
   async function saveCreatorProfile() {
     setError(null);
