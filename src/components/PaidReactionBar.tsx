@@ -124,7 +124,7 @@ export function PaidReactionBar({
               onClick={() => send(r)}
               className="rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-2.5 py-1 text-sm disabled:opacity-50"
               title="Paid reaction (spends 1 tip credit)"
-              aria-label={`Send paid reaction ${r}`}
+              aria-label={`Send expression ${r}`}
             >
               <span className="mr-1">{r}</span>
               <span className="tabular-nums text-white/80">

@@ -19,9 +19,9 @@ function metaFor(mode: Mode): Meta {
   switch (mode) {
     case "tip":
       return {
-        title: "Tip creator",
-        subtitle: "Support this creator",
-        icon: "💰",
+        title: "React",
+        subtitle: "Send a flower",
+        icon: "🌼",
         presets: [
           { label: "A$1.50", amountCents: 150 },
           { label: "A$2.00", amountCents: 200 },
@@ -29,13 +29,13 @@ function metaFor(mode: Mode): Meta {
           { label: "A$10.00", amountCents: 1000 },
         ],
         defaultAmountCents: 150,
-        confirmLabel: "Tip",
+        confirmLabel: "React",
       };
     case "boost":
       return {
-        title: "Boost",
-        subtitle: "Boost this live",
-        icon: "⚡",
+        title: "Highlight",
+        subtitle: "Highlight this live",
+        icon: "⭐",
         presets: [
           { label: "A$5.00", amountCents: 500 },
           { label: "A$10.00", amountCents: 1000 },
@@ -43,13 +43,13 @@ function metaFor(mode: Mode): Meta {
           { label: "A$50.00", amountCents: 5000 },
         ],
         defaultAmountCents: 1000,
-        confirmLabel: "Boost",
+        confirmLabel: "Highlight",
       };
     case "spin":
       return {
-        title: "Spin",
-        subtitle: "Spin the Revolvr",
-        icon: "🌀",
+        title: "Pulse",
+        subtitle: "Send a pulse",
+        icon: "💫",
         presets: [
           { label: "A$1.00", amountCents: 100 },
           { label: "A$2.00", amountCents: 200 },
@@ -57,10 +57,12 @@ function metaFor(mode: Mode): Meta {
           { label: "A$10.00", amountCents: 1000 },
         ],
         defaultAmountCents: 200,
-        confirmLabel: "Spin",
+        confirmLabel: "Pulse",
       };
   }
 }
+
+
 
 function ActionButton({
   icon,
@@ -143,23 +145,23 @@ export default function LiveSupportBar({
 
       <div className="w-full flex items-center justify-center gap-2">
         <ActionButton
-          icon="💰"
-          label="Tip"
-          disabled={!creatorReady}
-          onClick={() => creatorReady && setActiveMode("tip")}
-        />
-        <ActionButton
-          icon="⚡"
-          label="Boost"
-          disabled={!creatorReady}
-          onClick={() => creatorReady && setActiveMode("boost")}
-        />
-        <ActionButton
-          icon="🌀"
-          label="Spin"
-          disabled={!creatorReady}
-          onClick={() => creatorReady && setActiveMode("spin")}
-        />
+  icon="🌼"
+  label="React"
+  disabled={!creatorReady}
+  onClick={() => creatorReady && setActiveMode("tip")}
+/>
+<ActionButton
+  icon="⭐"
+  label="Highlight"
+  disabled={!creatorReady}
+  onClick={() => creatorReady && setActiveMode("boost")}
+/>
+<ActionButton
+  icon="💫"
+  label="Pulse"
+  disabled={!creatorReady}
+  onClick={() => creatorReady && setActiveMode("spin")}
+/>
       </div>
 
       <PostActionModal

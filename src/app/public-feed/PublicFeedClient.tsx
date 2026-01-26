@@ -149,60 +149,61 @@ function actionMeta(mode: ActionMode): ActionMeta {
   switch (mode) {
     case "tip":
       return {
-        title: "Tip creator",
-        subtitle: "Support this creator",
-        icon: "💰",
+        title: "React",
+        subtitle: "Send a flower",
+        icon: "🌼",
         allowCustom: true,
         presetsCents: [150, 200, 500, 1000],
         defaultAmountCents: 150,
-        confirmLabel: "Tip",
+        confirmLabel: "React",
       };
 
     case "boost":
       return {
-        title: "Boost post",
-        subtitle: "Boost this post",
-        icon: "⚡",
+        title: "Highlight",
+        subtitle: "Highlight this post",
+        icon: "⭐",
         allowCustom: true,
         presetsCents: [500, 1000, 2500, 5000],
         defaultAmountCents: 1000,
-        confirmLabel: "Boost",
+        confirmLabel: "Highlight",
       };
 
     case "spin":
       return {
-        title: "Spin",
-        subtitle: "Spin the Revolvr",
-        icon: "🌀",
+        title: "Pulse",
+        subtitle: "Send a pulse",
+        icon: "💫",
         allowCustom: true,
         presetsCents: [100, 200, 500, 1000],
         defaultAmountCents: 200,
-        confirmLabel: "Spin",
+        confirmLabel: "Pulse",
       };
 
     case "reaction":
       return {
-        title: "Reaction",
-        subtitle: "Send a paid reaction",
-        icon: "😊",
+        title: "Bloom",
+        subtitle: "Send a bloom",
+        icon: "🌸",
         allowCustom: true,
         presetsCents: [100, 200, 300, 500],
         defaultAmountCents: 100,
-        confirmLabel: "React",
+        confirmLabel: "Bloom",
       };
 
     case "vote":
       return {
-        title: "Vote",
-        subtitle: "Cast a paid vote",
-        icon: "🗳",
+        title: "Signal",
+        subtitle: "Send a signal",
+        icon: "🐝",
         allowCustom: true,
         presetsCents: [100, 200, 500, 1000],
         defaultAmountCents: 100,
-        confirmLabel: "Vote",
+        confirmLabel: "Signal",
       };
   }
 }
+
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -521,20 +522,22 @@ export default function PublicFeedClient() {
                   <div className="px-4 py-2 border-t border-white/10">
                     <div className="hidden sm:flex">
                       <div className="inline-flex items-center gap-10">
-                        <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-                        <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
-                        <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-                        <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
-                        <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
+                        <FooterAction label="React" icon="🌼" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
+<FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
+<FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
+<FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
+<FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
+
                       </div>
                     </div>
 
                     <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
-                      <FooterAction label="Tip" icon="💰" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-                      <FooterAction label="Boost" icon="⚡" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
-                      <FooterAction label="Spin" icon="🌀" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-                      <FooterAction label="React" icon="😊" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
-                      <FooterAction label="Vote" icon="🗳" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
+                      <FooterAction label="React" icon="🌼" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
+<FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
+<FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
+<FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
+<FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
+
                     </div>
                   </div>
 

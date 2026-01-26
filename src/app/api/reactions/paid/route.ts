@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Record the paid reaction
+    // Record the expression
     await prisma.supportLedger.create({
       data: {
         creatorEmail: resolvedCreatorEmail,

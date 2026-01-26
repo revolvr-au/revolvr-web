@@ -70,7 +70,7 @@ function metaFor(mode: Mode): Meta {
     case "spin":
       return {
         title: "Spin",
-        subtitle: "Spin the Revolvr",
+        subtitle: "Send a pulse",
         icon: "🌀",
         presets: [
           { label: "A$1.00", amountCents: 100 },
