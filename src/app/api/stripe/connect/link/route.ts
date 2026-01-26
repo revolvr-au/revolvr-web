@@ -12,7 +12,7 @@ if (!stripeSecret) throw new Error("Missing STRIPE_SECRET_KEY");
 const stripe = new Stripe(stripeSecret);
 
 function appBaseUrl(req: NextRequest) {
-  return req.nextUrl.origin.replace(/\/\$/, "");
+  return req.nextUrl.origin.replace(/\/$/, "");
 }
 
 async function getUserEmail(req: NextRequest): Promise<string | null> {
