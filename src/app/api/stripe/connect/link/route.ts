@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
     if (!stripeAccountId) return NextResponse.json({ error: "Missing Stripe account" }, { status: 500 });
 
     const base = appBaseUrl(req);
-    const returnUrl = `/me?stripe=return`;
-    const refreshUrl = `/me?stripe=refresh`;
+    const returnUrl = `${base}/me?stripe=return`;
+    const refreshUrl = `${base}/me?stripe=refresh`;
 
     const link = await stripe.accountLinks.create({
       account: stripeAccountId,
