@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, url: link.url }, { status: 200 });
   } catch (e: any) {
-    console.error("[api/stripe/connect/link] error", e?.message ?? e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("[api/stripe/connect/link] error", e);
+    return NextResponse.json({ error: e?.message || String(e), stack: e?.stack }, { status: 500 });
   }
 }
