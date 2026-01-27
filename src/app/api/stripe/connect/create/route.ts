@@ -106,6 +106,18 @@ export async function POST(req: NextRequest) {
 
     const { profile, stripeAccountId } = await ensureConnectedAccount(email);
     if (!profile) return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
+
+    // Gate: must accept creator terms before starting Stripe onboarding
+    if (!profile.creatorTermsAccepted) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "terms_required",
+          redirectTo: "/creator/terms?returnTo=%2Fcreator%2Fonboard",
+        },
+        { status: 409 }
+      );
+    }
     if (!stripeAccountId) return NextResponse.json({ error: "Failed to create Stripe account" }, { status: 500 });
 
     const url = await onboardingLink(req, stripeAccountId);
