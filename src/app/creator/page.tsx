@@ -1,6 +1,18 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { prisma } from "@/lib/prisma";
+
+
+// ... after you compute `email`:
+const cp = await prisma.creatorProfile.findUnique({
+  where: { email },
+  select: { creatorTermsAccepted: true },
+});
+
+if (!cp) redirect("/creator/onboard");
+if (!cp.creatorTermsAccepted) redirect("/creator/terms");
+
 
 export const dynamic = "force-dynamic";
 

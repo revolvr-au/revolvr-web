@@ -1,0 +1,53 @@
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import { prisma } from "@/lib/prisma";
+
+const CREATOR_TERMS_VERSION = "v1.0-2026-01-27";
+
+export async function POST() {
+  const cookieStore = await cookies();
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnon) {
+    return NextResponse.json(
+      { ok: false, error: "missing_supabase_env" },
+      { status: 500 }
+    );
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseAnon, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value;
+      },
+      set(name: string, value: string, options: any) {
+        cookieStore.set({ name, value, ...options });
+      },
+      remove(name: string, options: any) {
+        cookieStore.set({ name, value: "", ...options });
+      },
+    },
+  });
+
+  const { data, error } = await supabase.auth.getUser();
+  if (error || !data.user?.email) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
+  const email = data.user.email;
+  const now = new Date();
+
+  const result = await prisma.creatorProfile.updateMany({
+    where: { email, creatorTermsAccepted: false },
+    data: {
+      creatorTermsAccepted: true,
+      creatorTermsAcceptedAt: now,
+      creatorTermsVersion: CREATOR_TERMS_VERSION,
+    },
+  });
+
+  return NextResponse.json({ ok: true, updated: result.count });
+}

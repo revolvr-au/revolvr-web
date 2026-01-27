@@ -1,7 +1,8 @@
 datasource db {
   provider = "postgresql"
-  schemas  = ["public", "auth"]
+  schemas  = ["public"]
 }
+
 
 generator client {
   provider = "prisma-client-js"
@@ -111,7 +112,6 @@ model CreatorProfile {
   creatorTermsAcceptedAt DateTime? @map("creator_terms_accepted_at")
   creatorTermsVersion    String?   @map("creator_terms_version")
 
-
   // Stripe Connect (Express)
   stripeAccountId        String? @map("stripe_account_id")
   stripeOnboardingStatus String  @default("not_started") @map("stripe_onboarding_status")
@@ -131,6 +131,7 @@ model CreatorProfile {
   verificationStatus           String    @default("inactive") @map("verification_status")
   verificationCurrentPeriodEnd DateTime? @map("verification_current_period_end")
 
+  @@map("CreatorProfile")
   @@schema("public")
 }
 
@@ -233,48 +234,50 @@ model Tip {
   @@schema("public") // <-- match whatever schema your other models use
 }
 
-
 // -----------------------------------------------------------------------------
 // Account lifecycle + policy acceptance + safety ops (Revolvr)
 // -----------------------------------------------------------------------------
 model AccountState {
-  email              String   @id
-  status             String   @default("ACTIVE") // ACTIVE | DEACTIVATED | DELETED
-  deactivatedAt      DateTime?
-  deactivationReason String?
+  email                String    @id
+  status               String    @default("ACTIVE") // ACTIVE | DEACTIVATED | DELETED
+  deactivatedAt        DateTime?
+  deactivationReason   String?
   deactivationFeedback String?
-  reactivatedAt      DateTime?
-  deletedAt          DateTime?
-  deletionReason     String?
-  deletionFeedback   String?
+  reactivatedAt        DateTime?
+  deletedAt            DateTime?
+  deletionReason       String?
+  deletionFeedback     String?
 
-  termsVersion       String?
-  termsAcceptedAt    DateTime?
-  privacyVersion     String?
-  privacyAcceptedAt  DateTime?
+  termsVersion      String?
+  termsAcceptedAt   DateTime?
+  privacyVersion    String?
+  privacyAcceptedAt DateTime?
 
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@schema("public")
 }
 
 model AccountEvent {
   id        String   @id @default(cuid())
   email     String
-  type      String   // DEACTIVATE | REACTIVATE | DELETE | ACCEPT_TERMS | ACCEPT_PRIVACY | REPORT_SUBMITTED
+  type      String // DEACTIVATE | REACTIVATE | DELETE | ACCEPT_TERMS | ACCEPT_PRIVACY | REPORT_SUBMITTED
   reason    String?
   metadata  Json?
   createdAt DateTime @default(now())
+
   @@schema("public")
 }
 
 model SafetyReport {
-  id           String   @id @default(cuid())
+  id            String   @id @default(cuid())
   reporterEmail String?
-  category     String
-  link         String?
-  details      String?
-  status       String   @default("OPEN") // OPEN | REVIEWING | CLOSED
-  createdAt    DateTime @default(now())
+  category      String
+  link          String?
+  details       String?
+  status        String   @default("OPEN") // OPEN | REVIEWING | CLOSED
+  createdAt     DateTime @default(now())
+
   @@schema("public")
 }
