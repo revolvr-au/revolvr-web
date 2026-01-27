@@ -13,57 +13,82 @@ export default function CreatorOnboardClient() {
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirectingStripe, setRedirectingStripe] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // If we arrived here as "continue=stripe", immediately start Stripe (or bounce to Terms)
+  // If we arrived here specifically to continue to Stripe, do NOT render the form.
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
+    async function run() {
       try {
         const continueParam = searchParams?.get("continue");
-        if (continueParam !== "stripe") return;
 
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+        if (continueParam === "stripe") {
+          setRedirectingStripe(true);
 
-        if (!token) {
-          router.replace("/login?redirectTo=/creator/onboard?continue=stripe");
+          const { data } = await supabase.auth.getSession();
+          const token = data.session?.access_token;
+
+          if (!token) {
+            router.replace("/login?redirectTo=/creator/onboard?continue=stripe");
+            return;
+          }
+
+          const stripeRes = await fetch("/api/stripe/connect/create", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          });
+
+          const stripeJson = await stripeRes.json().catch(() => null);
+
+          if (stripeRes.status === 409 && stripeJson?.redirectTo) {
+            router.replace(String(stripeJson.redirectTo));
+            return;
+          }
+
+          if (stripeRes.ok && stripeJson?.url) {
+            window.location.href = String(stripeJson.url);
+            return;
+          }
+
+          // If we couldn't redirect for some reason, fall back to showing the form with an error.
+          if (!cancelled) {
+            setRedirectingStripe(false);
+            setErr(stripeJson?.error || "Could not start Stripe onboarding.");
+          }
           return;
         }
 
-        const stripeRes = await fetch("/api/stripe/connect/create", {
-          method: "POST",
+        // Normal behavior: if already a creator, skip onboarding
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+
+        const res = await fetch("/api/creator/me", {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
 
-        const stripeJson = await stripeRes.json().catch(() => null);
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
 
-        // Gate: Terms required -> go to Terms, and return back here to continue Stripe
-        if (stripeRes.status === 409 && stripeJson?.redirectTo) {
-          router.replace(String(stripeJson.redirectTo));
+        if (json?.isCreator) {
+          router.replace("/creator");
           return;
         }
-
-        // OK -> hard redirect to Stripe
-        if (stripeRes.ok && stripeJson?.url) {
-          window.location.href = String(stripeJson.url);
-          return;
-        }
-
-        if (!cancelled) setErr(stripeJson?.error || "Could not start Stripe onboarding.");
-      } catch (e: any) {
-        if (!cancelled) setErr(e?.message || "Could not start Stripe onboarding.");
+      } catch {
+        // allow render
       }
-    })();
+    }
 
+    run();
     return () => {
       cancelled = true;
     };
   }, [router, searchParams]);
 
-  // Submit onboarding form -> activate -> then start Stripe (or bounce to Terms)
   const onActivate = async () => {
     setErr(null);
     setLoading(true);
@@ -83,17 +108,18 @@ export default function CreatorOnboardClient() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          handle: handle.trim().toLowerCase(),
-          displayName: displayName.trim(),
-        }),
+        body: JSON.stringify({ handle, displayName }),
       });
 
       const json = await res.json().catch(() => null);
+
       if (!res.ok) {
         setErr(json?.error || "Server error");
         return;
       }
+
+      // After activation, go to Stripe (API will 409->terms if required)
+      setRedirectingStripe(true);
 
       const stripeRes = await fetch("/api/stripe/connect/create", {
         method: "POST",
@@ -109,21 +135,37 @@ export default function CreatorOnboardClient() {
       }
 
       if (!stripeRes.ok || !stripeJson?.url) {
-        setErr(stripeJson?.error || "Stripe onboarding URL missing.");
+        setRedirectingStripe(false);
+        setErr(stripeJson?.error || "Stripe onboarding failed.");
         return;
       }
 
       window.location.href = String(stripeJson.url);
-    } catch (e: any) {
-      setErr(e?.message || "Server error");
+    } catch (e) {
+      console.error("[creator/onboard] activate error", e);
+      setErr("Server error");
+      setRedirectingStripe(false);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ This removes the “glitch”: no onboard UI renders while redirecting.
+  if (redirectingStripe) {
+    return (
+      <div className="mx-auto max-w-md px-6 py-10">
+        <h1 className="text-2xl font-semibold">Redirecting to Stripe…</h1>
+        <p className="mt-2 text-sm text-white/70">Please wait.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-md px-6 py-10">
       <h1 className="text-2xl font-semibold">Creator onboarding</h1>
+      <p className="mt-2 text-sm text-white/70">
+        Choose your creator handle and display name to enable payouts.
+      </p>
 
       {err && (
         <div className="mt-4 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -131,36 +173,30 @@ export default function CreatorOnboardClient() {
         </div>
       )}
 
-      <div className="mt-6 space-y-4">
-        <div>
-          <label className="block text-sm text-white/70">Display name</label>
-          <input
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Your name"
-            disabled={loading}
-          />
-        </div>
+      <div className="mt-6 space-y-3">
+        <label className="block text-sm text-white/80">Handle</label>
+        <input
+          value={handle}
+          onChange={(e) => setHandle(e.target.value)}
+          className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
+          placeholder="yourhandle"
+        />
 
-        <div>
-          <label className="block text-sm text-white/70">Handle</label>
-          <input
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
-            value={handle}
-            onChange={(e) => setHandle(e.target.value)}
-            placeholder="yourhandle"
-            disabled={loading}
-          />
-        </div>
+        <label className="block text-sm text-white/80">Display name</label>
+        <input
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
+          placeholder="Your Name"
+        />
 
         <button
           type="button"
+          disabled={loading}
           onClick={onActivate}
-          disabled={loading || !displayName.trim() || !handle.trim()}
-          className="w-full rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-60"
+          className="mt-2 w-full rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Working…" : "Activate & Connect Stripe"}
+          {loading ? "Saving…" : "Continue"}
         </button>
       </div>
     </div>
