@@ -289,7 +289,10 @@ export default function MeClient() {
         headers: { Authorization: "Bearer " + token },
       });
 
-      const payload = await res.json().catch(() => null);
+      
+
+      setNotice("Stripe connect HTTP: " + res.status);
+const payload = await res.json().catch(() => null);
 
       // Terms not accepted → send them to terms page and come back to /me
       if (res.status === 403) {
