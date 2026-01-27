@@ -210,28 +210,40 @@ export default function MeClient() {
         body: JSON.stringify({ tier: t, creatorEmail: email }),
       });
 
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.url) {
-        setError(json?.error || "Checkout failed.");
-        return;
-      }
+        const payload = await res.json().catch(() => null);
 
-      window.location.href = json.url;
-    } catch (e: any) {
-      setError(e?.message || "Checkout failed.");
-    } finally {
-      setSaving(false);
-    }
+        if (!res.ok) {
+          setError(payload?.error || "Could not start verification checkout.");
+          return;
+        }
+
+        const url: string | null = payload?.url || null;
+        if (!url) {
+          setError("Missing checkout URL.");
+          return;
+        }
+
+        window.location.assign(url);
+
+  } catch (e: any) {
+    setError(e?.message || "Could not start verification checkout.");
+  } finally {
+    setSaving(false);
   }
+}
+
+
+
 
   async function openVerificationPortal() {
     setError(null);
     setNotice(null);
-
     setSaving(true);
+
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
+
       if (!token) {
         router.replace("/login");
         return;
@@ -239,75 +251,66 @@ export default function MeClient() {
 
       const res = await fetch("/api/payments/verification/portal", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: "Bearer " + token },
       });
-      const json = await res.json().catch(() => null);
 
-      if (!res.ok || !json?.url) {
-        setError(json?.error || "Could not open billing portal.");
+      const payload = await res.json().catch(() => null);
+      const url: string | null = payload?.url || null;
+
+      if (!res.ok || !url) {
+        setError(payload?.error || "Could not open verification portal.");
         return;
       }
 
-      window.location.href = json.url;
+      window.location.assign(url);
     } catch (e: any) {
-      setError(e?.message || "Could not open billing portal.");
+      setError(e?.message || "Could not open verification portal.");
     } finally {
       setSaving(false);
     }
   }
 
   async function connectStripe() {
-  setError(null);
-  setNotice(null);
+    setError(null);
+    setNotice(null);
+    setSaving(true);
 
-  setSaving(true);
-  try {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) {
-      router.replace("/login");
-      return;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      if (!token) {
+        router.replace("/login");
+        return;
+      }
+
+      const res = await fetch("/api/stripe/connect/link", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token },
+      });
+
+      const payload = await res.json().catch(() => null);
+
+      // Terms not accepted → send them to terms page and come back to /me
+      if (res.status === 403) {
+        router.push("/creator/terms?next=" + encodeURIComponent("/me"));
+        return;
+      }
+
+      const url: string | null = payload?.url || null;
+
+      if (!res.ok || !url) {
+        setError(payload?.error || "Could not start Stripe onboarding.");
+        return;
+      }
+
+      window.location.assign(url);
+    } catch (e: any) {
+      setError(e?.message || "Could not start Stripe onboarding.");
+    } finally {
+      setSaving(false);
     }
-
-    const res = await fetch("/api/stripe/connect/link", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` },
-      redirect: "follow", // explicit
-    });
-
-    // 1) If the endpoint returns a redirect and fetch follows it, res.url becomes the final URL.
-    if (res.redirected && res.url) {
-      window.location.assign(res.url);
-      return;
-    }
-
-    // 2) Try JSON first
-    let url: string | null = null;
-    let json: any = null;
-
-    const ct = res.headers.get("content-type") || "";
-    if (ct.includes("application/json")) {
-      json = await res.json().catch(() => null);
-      url = json?.url || null;
-    } else {
-      // 3) Fallback: plain text (some handlers return the URL directly)
-      const text = await res.text().catch(() => "");
-      if (text && /^https?:\/\//i.test(text.trim())) url = text.trim();
-    }
-
-    if (!res.ok || !url) {
-      setError(json?.error || "Could not start Stripe onboarding.");
-      return;
-    }
-
-    window.location.assign(url);
-  } catch (e: any) {
-    setError(e?.message || "Could not start Stripe onboarding.");
-  } finally {
-    setSaving(false);
   }
-}
-
 
   async function saveCreatorProfile() {
     setError(null);
@@ -336,10 +339,10 @@ export default function MeClient() {
         }),
       });
 
-      const json = await res.json().catch(() => null);
+      const payload = await res.json().catch(() => null);
 
       if (!res.ok) {
-        setError(json?.error || "Save failed.");
+        setError(payload?.error || "Save failed.");
         return;
       }
 
@@ -350,7 +353,6 @@ export default function MeClient() {
       setSaving(false);
     }
   }
-
   const statItems = [
     { label: "Tips received", value: "—" },
     { label: "Tips sent", value: "—" },

@@ -364,6 +364,14 @@ export default function ProfileClient(props: ProfileClientProps) {
               >
                 Terms &amp; Conditions
               </Link>
+
+              <Link
+                href="/creator/terms?next=/me"
+                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+                onClick={() => setMenuOpen(false)}
+              >
+                Creator Terms
+              </Link>
                             <Link
                 href="/creator/terms"
                 className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
@@ -379,6 +387,13 @@ export default function ProfileClient(props: ProfileClientProps) {
               >
                 Privacy Policy
               </Link>
+            <Link
+  href="/creator/terms"
+  className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
+  onClick={() => setMenuOpen(false)}
+>
+  Creator Terms
+</Link>
 
               <Link
                 href="/support"

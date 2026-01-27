@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
@@ -8,17 +8,25 @@ export const dynamic = "force-dynamic";
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecret) throw new Error("Missing STRIPE_SECRET_KEY");
 
+// You can keep apiVersion if you want, but it’s not required.
+// (Leaving it is fine if it’s valid in your Stripe package.)
 const stripe = new Stripe(stripeSecret, {
   apiVersion: "2025-12-15.clover" as Stripe.LatestApiVersion,
 });
 
-function appBaseUrl(req: Request) {
-  const origin = (req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
-  if (!origin) throw new Error("Missing origin / NEXT_PUBLIC_SITE_URL");
+function appBaseUrl(req: NextRequest) {
+  const env = (process.env.NEXT_PUBLIC_SITE_URL ?? "").trim().replace(/\/$/, "");
+  if (env) {
+    if (!env.startsWith("http")) throw new Error(`NEXT_PUBLIC_SITE_URL must include https:// (got: ${env})`);
+    return env;
+  }
+
+  const origin = req.nextUrl.origin.replace(/\/$/, "");
+  if (!origin.startsWith("http")) throw new Error(`Invalid origin: ${origin}`);
   return origin;
 }
 
-async function getUserEmailFromBearer(req: Request): Promise<string | null> {
+async function getUserEmailFromBearer(req: NextRequest): Promise<string | null> {
   const auth = req.headers.get("authorization") || "";
   const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
   if (!token) return null;
@@ -32,6 +40,7 @@ async function getUserEmailFromBearer(req: Request): Promise<string | null> {
     headers: { Authorization: `Bearer ${token}`, apikey },
     cache: "no-store",
   });
+
   if (!res.ok) return null;
 
   const user = await res.json().catch(() => null);
@@ -50,9 +59,7 @@ async function ensureConnectedAccount(email: string) {
       type: "express",
       country: "AU",
       email,
-      capabilities: {
-        transfers: { requested: true },
-      },
+      capabilities: { transfers: { requested: true } },
       business_type: "individual",
     });
 
@@ -67,7 +74,6 @@ async function ensureConnectedAccount(email: string) {
       },
     });
   } else {
-    // if user re-opens onboarding
     await prisma.creatorProfile.update({
       where: { email },
       data: { stripeOnboardingStatus: "pending" },
@@ -77,10 +83,11 @@ async function ensureConnectedAccount(email: string) {
   return { profile, stripeAccountId };
 }
 
-async function onboardingLink(req: Request, stripeAccountId: string) {
+async function onboardingLink(req: NextRequest, stripeAccountId: string) {
   const base = appBaseUrl(req);
-  const returnUrl = `${base}/creator/payouts?stripe=return`;
-  const refreshUrl = `${base}/creator/payouts?stripe=refresh`;
+
+  const returnUrl = `${base}/me?stripe=return`;
+  const refreshUrl = `${base}/me?stripe=refresh`;
 
   const link = await stripe.accountLinks.create({
     account: stripeAccountId,
@@ -92,7 +99,7 @@ async function onboardingLink(req: Request, stripeAccountId: string) {
   return link.url;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const email = await getUserEmailFromBearer(req);
     if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
@@ -104,7 +111,8 @@ export async function POST(req: Request) {
     const url = await onboardingLink(req, stripeAccountId);
     return NextResponse.json({ ok: true, url }, { status: 200 });
   } catch (e: any) {
-    console.error("[api/stripe/connect/create] error", e?.message ?? e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error("[api/stripe/connect/create] error", e);
+    // For now return the real message so we can finish hardening:
+    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
   }
 }
