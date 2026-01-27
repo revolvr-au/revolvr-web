@@ -15,6 +15,7 @@ function appBaseUrl(req: NextRequest) {
   return req.nextUrl.origin.replace(/\/$/, "");
 }
 
+
 async function getUserEmail(req: NextRequest): Promise<string | null> {
   const auth = req.headers.get("authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
@@ -31,8 +32,6 @@ async function getUserEmail(req: NextRequest): Promise<string | null> {
   const email = (data.user.email ?? "").trim().toLowerCase();
   return email || null;
 }
-
-
 
 async function ensureConnectedAccount(email: string) {
   const profile = await prisma.creatorProfile.findUnique({ where: { email } });
@@ -78,6 +77,11 @@ export async function POST(req: NextRequest) {
 
     const { profile, stripeAccountId } = await ensureConnectedAccount(email);
     if (!profile) return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
+
+    if (!(profile as any).creatorTermsAccepted) {
+      return NextResponse.json({ error: "Creator terms not accepted" }, { status: 403 });
+    }
+
     if (!stripeAccountId) return NextResponse.json({ error: "Missing Stripe account" }, { status: 500 });
 
     const base = appBaseUrl(req);
@@ -97,3 +101,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: e?.message || String(e), stack: e?.stack }, { status: 500 });
   }
 }
+
