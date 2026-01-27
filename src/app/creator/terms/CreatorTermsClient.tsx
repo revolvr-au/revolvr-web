@@ -40,6 +40,11 @@ const next = searchParams?.get("next") ?? "/me?terms=accepted";
           cache: "no-store",
         });
         const json = await res.json().catch(() => null);
+
+      if (json?.redirectTo) {
+        window.location.href = String(json.redirectTo);
+        return;
+      }
         if (cancelled) return;
 
         // If your /api/creator/me doesn't return these yet, no problem.

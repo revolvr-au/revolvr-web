@@ -5,17 +5,28 @@ import { prisma } from "@/lib/prisma";
 
 const CREATOR_TERMS_VERSION = "v1.0-2026-01-27";
 
-export async function POST() {
+function safeReturnTo(raw: string | null) {
+  const fallback = "/creator/onboard";
+  if (!raw) return fallback;
+  try {
+    // Only allow relative in-app paths
+    if (!raw.startsWith("/")) return fallback;
+    if (raw.startsWith("//")) return fallback;
+    if (raw.includes("://")) return fallback;
+    return raw;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function POST(req: Request) {
   const cookieStore = await cookies();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnon) {
-    return NextResponse.json(
-      { ok: false, error: "missing_supabase_env" },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "missing_supabase_env" }, { status: 500 });
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnon, {
@@ -37,7 +48,7 @@ export async function POST() {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  const email = data.user.email;
+  const email = String(data.user.email).trim().toLowerCase();
   const now = new Date();
 
   const result = await prisma.creatorProfile.updateMany({
@@ -49,5 +60,18 @@ export async function POST() {
     },
   });
 
-  return NextResponse.json({ ok: true, updated: result.count });
+  // returnTo can be sent as querystring OR JSON body
+  let returnTo: string | null = null;
+  try {
+    const url = new URL(req.url);
+    returnTo = url.searchParams.get("returnTo");
+  } catch {}
+  if (!returnTo) {
+    const body = await req.json().catch(() => null);
+    returnTo = body?.returnTo ? String(body.returnTo) : null;
+  }
+
+  const redirectTo = safeReturnTo(returnTo);
+
+  return NextResponse.json({ ok: true, updated: result.count, redirectTo });
 }
