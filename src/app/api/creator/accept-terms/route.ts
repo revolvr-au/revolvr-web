@@ -8,15 +8,12 @@ const CREATOR_TERMS_VERSION = "v1.0-2026-01-27";
 function safeReturnTo(raw: string | null) {
   const fallback = "/creator/onboard";
   if (!raw) return fallback;
-  try {
-    // Only allow relative in-app paths
-    if (!raw.startsWith("/")) return fallback;
-    if (raw.startsWith("//")) return fallback;
-    if (raw.includes("://")) return fallback;
-    return raw;
-  } catch {
-    return fallback;
-  }
+  const v = String(raw).trim();
+  // allow only in-app relative paths
+  if (!v.startsWith("/")) return fallback;
+  if (v.startsWith("//")) return fallback;
+  if (v.includes("://")) return fallback;
+  return v;
 }
 
 export async function POST(req: Request) {
@@ -24,7 +21,6 @@ export async function POST(req: Request) {
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
   if (!supabaseUrl || !supabaseAnon) {
     return NextResponse.json({ ok: false, error: "missing_supabase_env" }, { status: 500 });
   }
@@ -60,12 +56,12 @@ export async function POST(req: Request) {
     },
   });
 
-  // returnTo can be sent as querystring OR JSON body
   let returnTo: string | null = null;
   try {
     const url = new URL(req.url);
     returnTo = url.searchParams.get("returnTo");
   } catch {}
+
   if (!returnTo) {
     const body = await req.json().catch(() => null);
     returnTo = body?.returnTo ? String(body.returnTo) : null;
