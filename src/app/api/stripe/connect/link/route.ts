@@ -6,19 +6,22 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const CREATOR_TERMS_VERSION = "v1.0-2026-01-27";
+
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecret) throw new Error("Missing STRIPE_SECRET_KEY");
 
 const stripe = new Stripe(stripeSecret);
 
 function appBaseUrl(req: NextRequest) {
+  const env = (process.env.NEXT_PUBLIC_SITE_URL ?? "").trim().replace(/\/$/, "");
+  if (env) return env;
   return req.nextUrl.origin.replace(/\/$/, "");
 }
 
-
 async function getUserEmail(req: NextRequest): Promise<string | null> {
   const auth = req.headers.get("authorization") || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
+  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : null;
   if (!token) return null;
 
   const supabase = createClient(
@@ -44,9 +47,7 @@ async function ensureConnectedAccount(email: string) {
       type: "express",
       country: "AU",
       email,
-      capabilities: {
-        transfers: { requested: true },
-      },
+      capabilities: { transfers: { requested: true } },
       business_type: "individual",
     });
 
@@ -75,20 +76,27 @@ export async function POST(req: NextRequest) {
     const email = await getUserEmail(req);
     if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 
-    const { profile, stripeAccountId } = await ensureConnectedAccount(email);
-    if (!profile) return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
+    const profile = await prisma.creatorProfile.findUnique({
+      where: { email },
+      select: { creatorTermsAccepted: true, creatorTermsVersion: true },
+    });
 
-      if (!(profile as any).creatorTermsAccepted || (profile as any).creatorTermsVersion !== "v1.0-2026-01-27") {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "terms_required",
-            redirectTo: "/creator/terms?returnTo=%2Fcreator%2Fonboard",
-          },
-          { status: 409 }
-        );
-      }
+    if (!profile) {
+      return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
+    }
 
+    if (!profile.creatorTermsAccepted || profile.creatorTermsVersion !== CREATOR_TERMS_VERSION) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "terms_required",
+          redirectTo: "/creator/terms?returnTo=%2Fcreator%2Fonboard%3Fcontinue%3Dstripe",
+        },
+        { status: 409 }
+      );
+    }
+
+    const { stripeAccountId } = await ensureConnectedAccount(email);
     if (!stripeAccountId) return NextResponse.json({ error: "Missing Stripe account" }, { status: 500 });
 
     const base = appBaseUrl(req);
@@ -105,7 +113,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, url: link.url }, { status: 200 });
   } catch (e: any) {
     console.error("[api/stripe/connect/link] error", e);
-    return NextResponse.json({ error: e?.message || String(e), stack: e?.stack }, { status: 500 });
+    return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
   }
 }
-

@@ -22,6 +22,29 @@ export default function CreatorOnboardPage() {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
 
+  const continueParam = Array.isArray(searchParams?.continue)
+    ? searchParams?.continue[0]
+    : searchParams?.continue;
+
+  if (continueParam === "stripe") {
+    const stripeRes = await fetch("/api/stripe/connect/create", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+
+    const stripeJson = await stripeRes.json().catch(() => null);
+
+    if (stripeRes.status === 409 && stripeJson?.redirectTo) {
+      redirect(String(stripeJson.redirectTo));
+    }
+
+    if (stripeRes.ok && stripeJson?.url) {
+      redirect(String(stripeJson.url));
+    }
+  }
+
+
         if (!token) {
           router.replace("/login");
           return;
@@ -56,6 +79,29 @@ export default function CreatorOnboardPage() {
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
+
+  const continueParam = Array.isArray(searchParams?.continue)
+    ? searchParams?.continue[0]
+    : searchParams?.continue;
+
+  if (continueParam === "stripe") {
+    const stripeRes = await fetch("/api/stripe/connect/create", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+
+    const stripeJson = await stripeRes.json().catch(() => null);
+
+    if (stripeRes.status === 409 && stripeJson?.redirectTo) {
+      redirect(String(stripeJson.redirectTo));
+    }
+
+    if (stripeRes.ok && stripeJson?.url) {
+      redirect(String(stripeJson.url));
+    }
+  }
+
 
       if (!token) {
         setErr("unauthenticated");

@@ -5,25 +5,19 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const CREATOR_TERMS_VERSION = "v1.0-2026-01-27";
+
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecret) throw new Error("Missing STRIPE_SECRET_KEY");
 
-// You can keep apiVersion if you want, but it’s not required.
-// (Leaving it is fine if it’s valid in your Stripe package.)
 const stripe = new Stripe(stripeSecret, {
   apiVersion: "2025-12-15.clover" as Stripe.LatestApiVersion,
 });
 
 function appBaseUrl(req: NextRequest) {
   const env = (process.env.NEXT_PUBLIC_SITE_URL ?? "").trim().replace(/\/$/, "");
-  if (env) {
-    if (!env.startsWith("http")) throw new Error(`NEXT_PUBLIC_SITE_URL must include https:// (got: ${env})`);
-    return env;
-  }
-
-  const origin = req.nextUrl.origin.replace(/\/$/, "");
-  if (!origin.startsWith("http")) throw new Error(`Invalid origin: ${origin}`);
-  return origin;
+  if (env) return env;
+  return req.nextUrl.origin.replace(/\/$/, "");
 }
 
 async function getUserEmailFromBearer(req: NextRequest): Promise<string | null> {
@@ -42,7 +36,6 @@ async function getUserEmailFromBearer(req: NextRequest): Promise<string | null> 
   });
 
   if (!res.ok) return null;
-
   const user = await res.json().catch(() => null);
   const email = user?.email ? String(user.email).trim().toLowerCase() : null;
   return email || null;
@@ -83,48 +76,48 @@ async function ensureConnectedAccount(email: string) {
   return { profile, stripeAccountId };
 }
 
-async function onboardingLink(req: NextRequest, stripeAccountId: string) {
-  const base = appBaseUrl(req);
-
-  const returnUrl = `${base}/me?stripe=return`;
-  const refreshUrl = `${base}/me?stripe=refresh`;
-
-  const link = await stripe.accountLinks.create({
-    account: stripeAccountId,
-    type: "account_onboarding",
-    return_url: returnUrl,
-    refresh_url: refreshUrl,
-  });
-
-  return link.url;
-}
-
 export async function POST(req: NextRequest) {
   try {
     const email = await getUserEmailFromBearer(req);
     if (!email) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
 
-    const { profile, stripeAccountId } = await ensureConnectedAccount(email);
-    if (!profile) return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
+    const profile = await prisma.creatorProfile.findUnique({
+      where: { email },
+      select: { creatorTermsAccepted: true, creatorTermsVersion: true },
+    });
 
-    // Gate: must accept creator terms before starting Stripe onboarding
-    if (!profile.creatorTermsAccepted) {
+    if (!profile) {
+      return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
+    }
+
+    if (!profile.creatorTermsAccepted || profile.creatorTermsVersion !== CREATOR_TERMS_VERSION) {
       return NextResponse.json(
         {
           ok: false,
           error: "terms_required",
-          redirectTo: "/creator/terms?returnTo=%2Fcreator%2Fonboard",
+          redirectTo: "/creator/terms?returnTo=%2Fcreator%2Fonboard%3Fcontinue%3Dstripe",
         },
         { status: 409 }
       );
     }
+
+    const { stripeAccountId } = await ensureConnectedAccount(email);
     if (!stripeAccountId) return NextResponse.json({ error: "Failed to create Stripe account" }, { status: 500 });
 
-    const url = await onboardingLink(req, stripeAccountId);
-    return NextResponse.json({ ok: true, url }, { status: 200 });
+    const base = appBaseUrl(req);
+    const returnUrl = `${base}/me?stripe=return`;
+    const refreshUrl = `${base}/me?stripe=refresh`;
+
+    const link = await stripe.accountLinks.create({
+      account: stripeAccountId,
+      type: "account_onboarding",
+      return_url: returnUrl,
+      refresh_url: refreshUrl,
+    });
+
+    return NextResponse.json({ ok: true, url: link.url }, { status: 200 });
   } catch (e: any) {
     console.error("[api/stripe/connect/create] error", e);
-    // For now return the real message so we can finish hardening:
     return NextResponse.json({ error: e?.message || String(e) }, { status: 500 });
   }
 }
