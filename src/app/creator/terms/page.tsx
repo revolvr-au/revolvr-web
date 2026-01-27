@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
+import Link from "next/link";
+
 
 const supabase = createSupabaseBrowserClient();
 
@@ -49,7 +51,17 @@ export default function CreatorTermsPage() {
       }
     })();
 
-    return () => {
+    return (
+      <div className="fixed right-4 top-4 z-50">
+        <Link
+          href="/me"
+          aria-label="Close"
+          className="h-10 w-10 rounded-xl border border-white/10 bg-black/70 text-white/80 hover:bg-white/10 flex items-center justify-center backdrop-blur"
+        >
+          <span className="text-xl leading-none">×</span>
+        </Link>
+      </div>
+) => {
       cancelled = true;
     };
   }, [router]);
@@ -84,7 +96,6 @@ export default function CreatorTermsPage() {
       setSaving(false);
     }
   }
-
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <div className="flex items-center justify-between">
