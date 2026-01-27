@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-
 
 const supabase = createSupabaseBrowserClient();
 
@@ -13,14 +10,19 @@ const TERMS_VERSION = "v1.0-2026-01-27";
 
 export default function CreatorTermsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const returnTo =
+    searchParams?.get("returnTo") ??
+    searchParams?.get("next") ??
+    "/creator/onboard";
+
   const [loading, setLoading] = useState(true);
   const [checked, setChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const returnTo = searchParams?.get("returnTo") ?? searchParams?.get("next") ?? "/creator/onboard";
 
-  // Optional: if already accepted, let them continue
+  // If already accepted, bounce forward
   useEffect(() => {
     let cancelled = false;
 
@@ -33,22 +35,25 @@ export default function CreatorTermsPage() {
           return;
         }
 
-        // relies on your existing endpoint
         const res = await fetch("/api/creator/me", {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
+
         const json = await res.json().catch(() => null);
 
-      if (json?.redirectTo) {
-        window.location.href = String(json.redirectTo);
-        return;
-      }
-        if (cancelled) return;
+        // If backend wants to drive a redirect, honor it
+        if (json?.redirectTo) {
+          window.location.href = String(json.redirectTo);
+          return;
+        }
 
-        // If your /api/creator/me doesn't return these yet, no problem.
-        // We'll still allow acceptance.
-        if (json?.creator?.creatorTermsAccepted) {
+        const accepted = Boolean(json?.creator?.creatorTermsAccepted);
+        const version = json?.creator?.creatorTermsVersion
+          ? String(json.creator.creatorTermsVersion)
+          : "";
+
+        if (accepted && version === TERMS_VERSION) {
           router.replace(returnTo);
           return;
         }
@@ -62,9 +67,8 @@ export default function CreatorTermsPage() {
     return () => {
       cancelled = true;
     };
-  }, [router, next]);
+  }, [router, returnTo]);
 
-  async function accept() {
   async function accept() {
     setError(null);
     setSaving(true);
@@ -77,6 +81,7 @@ export default function CreatorTermsPage() {
       });
 
       const json = await res.json().catch(() => null);
+
       if (!res.ok || !json?.ok) {
         setError(json?.error || "Could not record acceptance.");
         return;
@@ -90,6 +95,8 @@ export default function CreatorTermsPage() {
       setSaving(false);
     }
   }
+
+  return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <div className="flex items-center justify-between">
         <a href="/feed" className="text-sm text-white/70 hover:text-white">
@@ -111,7 +118,6 @@ export default function CreatorTermsPage() {
       )}
 
       <div className="mt-8 space-y-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/85 relative">
-        
         <button
           type="button"
           aria-label="Close"
@@ -120,11 +126,14 @@ export default function CreatorTermsPage() {
         >
           <span className="text-xl leading-none">×</span>
         </button>
-<section className="space-y-2">
+
+        <section className="space-y-2">
           <h2 className="text-base font-semibold">1. Eligibility</h2>
           <ul className="list-disc pl-5 space-y-1 text-white/75">
             <li>Revolvr is available to users aged 13 and over.</li>
-            <li>To receive payouts, you must complete Stripe Connect onboarding and verification.</li>
+            <li>
+              To receive payouts, you must complete Stripe Connect onboarding and verification.
+            </li>
           </ul>
         </section>
 
@@ -135,7 +144,9 @@ export default function CreatorTermsPage() {
             <div className="mt-2 grid gap-2 sm:grid-cols-2">
               <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div className="font-semibold text-white/85">Main Feed</div>
-                <div className="mt-1 text-white/70">React · Highlight · Pulse · Bloom · Signal</div>
+                <div className="mt-1 text-white/70">
+                  React · Highlight · Pulse · Bloom · Signal
+                </div>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                 <div className="font-semibold text-white/85">Live Broadcast</div>
@@ -191,7 +202,7 @@ export default function CreatorTermsPage() {
             onClick={accept}
             className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Agree & Continue"}
+            {saving ? "Saving…" : loading ? "Loading…" : "Agree & Continue"}
           </button>
         </section>
       </div>
