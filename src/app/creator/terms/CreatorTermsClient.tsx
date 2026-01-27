@@ -17,9 +17,8 @@ export default function CreatorTermsPage() {
   const [checked, setChecked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-const searchParams = useSearchParams();
-const next = searchParams?.get("next") ?? "/me?terms=accepted";
-
+  const searchParams = useSearchParams();
+  const returnTo = searchParams?.get("returnTo") ?? searchParams?.get("next") ?? "/creator/onboard";
 
   // Optional: if already accepted, let them continue
   useEffect(() => {
@@ -50,7 +49,7 @@ const next = searchParams?.get("next") ?? "/me?terms=accepted";
         // If your /api/creator/me doesn't return these yet, no problem.
         // We'll still allow acceptance.
         if (json?.creator?.creatorTermsAccepted) {
-          router.replace(next);
+          router.replace(returnTo);
           return;
         }
       } catch {
@@ -66,36 +65,31 @@ const next = searchParams?.get("next") ?? "/me?terms=accepted";
   }, [router, next]);
 
   async function accept() {
+  async function accept() {
     setError(null);
     setSaving(true);
 
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-
-      const res = await fetch("/api/creator/terms/accept", {
+      const res = await fetch("/api/creator/accept-terms", {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ returnTo }),
       });
 
       const json = await res.json().catch(() => null);
-      if (!res.ok) {
+      if (!res.ok || !json?.ok) {
         setError(json?.error || "Could not record acceptance.");
         return;
       }
 
-      router.replace(next);
+      const dest = json?.redirectTo ? String(json.redirectTo) : returnTo;
+      window.location.href = dest;
     } catch (e: any) {
       setError(e?.message || "Could not record acceptance.");
     } finally {
       setSaving(false);
     }
   }
-  return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       <div className="flex items-center justify-between">
         <a href="/feed" className="text-sm text-white/70 hover:text-white">
@@ -121,7 +115,7 @@ const next = searchParams?.get("next") ?? "/me?terms=accepted";
         <button
           type="button"
           aria-label="Close"
-          onClick={() => router.replace(next)}
+          onClick={() => router.replace(returnTo)}
           className="absolute right-4 top-4 h-10 w-10 rounded-xl border border-white/10 bg-black/40 text-white/80 hover:bg-white/10 flex items-center justify-center"
         >
           <span className="text-xl leading-none">×</span>
