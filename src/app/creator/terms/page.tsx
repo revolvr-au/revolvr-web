@@ -109,13 +109,17 @@ export default function CreatorTermsPage() {
 
       <div className="mt-8 space-y-6 rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/85 relative">
         
-        <Link
-          href="/me"
+        <button
+          type="button"
           aria-label="Close"
+          onClick={() => {
+            if (window.history.length > 1) router.back();
+            else router.replace("/me");
+          }}
           className="absolute right-4 top-4 h-10 w-10 rounded-xl border border-white/10 bg-black/40 text-white/80 hover:bg-white/10 flex items-center justify-center"
         >
           <span className="text-xl leading-none">×</span>
-        </Link>
+        </button>
 <section className="space-y-2">
           <h2 className="text-base font-semibold">1. Eligibility</h2>
           <ul className="list-disc pl-5 space-y-1 text-white/75">
