@@ -78,9 +78,16 @@ export async function POST(req: NextRequest) {
     const { profile, stripeAccountId } = await ensureConnectedAccount(email);
     if (!profile) return NextResponse.json({ error: "Creator not found. Activate creator first." }, { status: 404 });
 
-    if (!(profile as any).creatorTermsAccepted) {
-      return NextResponse.json({ error: "Creator terms not accepted" }, { status: 403 });
-    }
+      if (!(profile as any).creatorTermsAccepted || (profile as any).creatorTermsVersion !== "v1.0-2026-01-27") {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "terms_required",
+            redirectTo: "/creator/terms?returnTo=%2Fcreator%2Fonboard",
+          },
+          { status: 409 }
+        );
+      }
 
     if (!stripeAccountId) return NextResponse.json({ error: "Missing Stripe account" }, { status: 500 });
 

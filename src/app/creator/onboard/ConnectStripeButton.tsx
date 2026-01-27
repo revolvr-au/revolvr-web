@@ -23,6 +23,11 @@ export default function ConnectStripeButton() {
 
       const json = await res.json().catch(() => null);
 
+    if (res.status === 409 && json?.error === "terms_required" && json?.redirectTo) {
+      window.location.href = String(json.redirectTo);
+      return;
+    }
+
       if (!res.ok) {
         setErr(json?.error || "Could not start Stripe onboarding.");
         return;
