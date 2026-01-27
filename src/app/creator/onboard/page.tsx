@@ -91,6 +91,12 @@ export default function CreatorOnboardPage() {
 
       const stripeJson = await stripeRes.json().catch(() => null);
 
+
+      if (stripeRes.status === 409 && stripeJson?.error === "terms_required" && stripeJson?.redirectTo) {
+        window.location.href = String(stripeJson.redirectTo);
+        return;
+      }
+
       if (!stripeRes.ok || !stripeJson?.url) {
         setErr("Creator activated, but Stripe onboarding failed.");
         return;

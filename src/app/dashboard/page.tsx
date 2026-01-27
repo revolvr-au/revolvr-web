@@ -181,6 +181,12 @@ export default function DashboardClient() {
 
       const json = await res.json().catch(() => null);
 
+
+      if (res.status === 409 && (json as any)?.error === "terms_required" && (json as any)?.redirectTo) {
+        window.location.href = String((json as any).redirectTo);
+        return;
+      }
+
       if (!res.ok) {
         setError((json as { error?: string } | null)?.error || "Could not start Stripe payouts onboarding.");
         return;
