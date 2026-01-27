@@ -107,6 +107,11 @@ model CreatorProfile {
   payoutShare Int           @default(45)
   status      CreatorStatus @default(ACTIVE)
 
+  creatorTermsAccepted   Boolean   @default(false) @map("creator_terms_accepted")
+  creatorTermsAcceptedAt DateTime? @map("creator_terms_accepted_at")
+  creatorTermsVersion    String?   @map("creator_terms_version")
+
+
   // Stripe Connect (Express)
   stripeAccountId        String? @map("stripe_account_id")
   stripeOnboardingStatus String  @default("not_started") @map("stripe_onboarding_status")
