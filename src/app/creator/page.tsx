@@ -4,14 +4,6 @@ import { createServerClient } from "@supabase/ssr";
 import { prisma } from "@/lib/prisma";
 
 
-// ... after you compute `email`:
-const cp = await prisma.creatorProfile.findUnique({
-  where: { email },
-  select: { creatorTermsAccepted: true },
-});
-
-if (!cp) redirect("/creator/onboard");
-if (!cp.creatorTermsAccepted) redirect("/creator/terms");
 
 
 export const dynamic = "force-dynamic";
@@ -39,8 +31,17 @@ export default async function CreatorEntryPage() {
   const email = data?.user?.email;
 
   if (!email) {
-    redirect("/login?redirectTo=/creator");
-  }
+  redirect("/login?redirectTo=/creator");
+}
+
+const cp = await prisma.creatorProfile.findUnique({
+  where: { email },
+  select: { creatorTermsAccepted: true },
+});
+
+if (!cp) redirect("/creator/onboard");
+if (!cp.creatorTermsAccepted) redirect("/creator/terms");
+
 
   redirect(`/u/${encodeURIComponent(String(email).trim().toLowerCase())}`);
 }
