@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 export default function FrontGatePage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-[#05070C] text-white [padding-left:env(safe-area-inset-left)] [padding-right:env(safe-area-inset-right)]">
@@ -44,7 +45,7 @@ export default function FrontGatePage() {
               <MobileCard name="Mila" status="support rolling" />
             </div>
             <div className="absolute right-[4%] top-[-6%] w-[72%] rotate-[7deg] opacity-18 blur-[1.5px]">
-              <MobileCard name="Jordan" status="boosted" />
+              <MobileCard name="Jordan" status="support rising" />
             </div>
             <div className="absolute left-1/2 top-[4%] w-[74%] -translate-x-1/2 rotate-[2deg] opacity-32 blur-[0.5px]">
               <MobileCard name="Kai" status="momentum building" prominent />
@@ -89,12 +90,12 @@ export default function FrontGatePage() {
                 </Link>
 
                 <div className="mt-5 text-center text-[13px] text-white/55">
-                  Creators earn <span className="font-semibold text-white/85">45%</span> on all tips, boosts, and spins.
+                  Creators earn <span className="font-semibold text-white/85">on Revolvr.</span>
                 </div>
 
                 <div className="mt-4 flex items-center justify-center gap-2 text-[13px] text-white/55">
                   <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-                  <span>37 people live right now</span>
+                  <span>Live creators daily</span>
                 </div>
               </div>
             </div>
