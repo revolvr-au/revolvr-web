@@ -7,10 +7,16 @@ export async function GET() {
   try {
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: "desc" },
-      include: {
+      include: { media: { orderBy: { order: "asc" } },
         _count: {
           // 👈 use "Like" (relation name) not "likes"
-          select: { Like: true },
+          select: {
+        imageUrl: true,
+        mediaType: true,
+
+        imageUrl: true,
+        mediaType: true,
+ Like: true },
         },
       },
     });
