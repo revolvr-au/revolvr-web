@@ -4,30 +4,53 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type MediaIn = { type: "image" | "video"; url: string; order?: number };
+type MediaIn = { type: "image" | "video"; url: string; order: number };
 
-function isHttpUrl(s: unknown): s is string {
-  return typeof s === "string" && /^https?:\/\//i.test(s.trim());
+function asEmail(v: unknown) {
+  const s = String(v ?? "").trim().toLowerCase();
+  return s.includes("@") ? s : "";
 }
 
-// POST /api/posts -> create Post + PostMedia[]
+function asHttpUrl(v: unknown) {
+  const s = String(v ?? "").trim();
+  return /^https?:\/\//i.test(s) ? s : "";
+}
+
+function normalizeMedia(body: any): MediaIn[] {
+  const mediaRaw = Array.isArray(body?.media) ? (body.media as any[]) : [];
+
+  const mediaFromArray: MediaIn[] = mediaRaw
+    .map((m, i) => ({
+      type: (String(m?.type ?? "image").toLowerCase() === "video" ? "video" : "image") as "image" | "video",
+      url: asHttpUrl(m?.url),
+      order: Number.isFinite(Number(m?.order)) ? Number(m.order) : i,
+    }))
+    .filter((m) => Boolean(m.url));
+
+  if (mediaFromArray.length) {
+    return mediaFromArray.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+
+  // ✅ Legacy fallback: imageUrl + mediaType
+  const legacyUrl = asHttpUrl(body?.imageUrl);
+  if (legacyUrl) {
+    const t = String(body?.mediaType ?? "image").toLowerCase() === "video" ? "video" : "image";
+    return [{ type: t as "image" | "video", url: legacyUrl, order: 0 }];
+  }
+
+  return [];
+}
+
+// POST /api/posts -> create post + PostMedia rows
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => null);
+    const body = await req.json().catch(() => null) as any;
 
-    const userEmail = String(body?.userEmail ?? "").trim().toLowerCase();
+    const userEmail = asEmail(body?.userEmail);
     const caption = String(body?.caption ?? "").trim();
+    const media = normalizeMedia(body);
 
-    const mediaRaw = Array.isArray(body?.media) ? (body.media as any[]) : [];
-    const media = mediaRaw
-      .map((m, i) => ({
-        type: (String(m?.type ?? "image").toLowerCase() === "video" ? "video" : "image") as "image" | "video",
-        url: String(m?.url ?? "").trim(),
-        order: Number.isFinite(Number(m?.order)) ? Number(m.order) : i,
-      }))
-      .filter((m) => isHttpUrl(m.url));
-
-    if (!userEmail || !userEmail.includes("@")) {
+    if (!userEmail) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
@@ -39,14 +62,14 @@ export async function POST(req: Request) {
       data: {
         userEmail,
         caption,
+
+        // ✅ New: always write PostMedia rows
         media: {
-          createMany: {
-            data: media.map((m) => ({
-              type: m.type,
-              url: m.url,
-              order: m.order ?? 0,
-            })),
-          },
+          create: media.map((m) => ({
+            type: m.type,
+            url: m.url,
+            order: m.order,
+          })),
         },
       },
       select: { id: true },
@@ -62,7 +85,7 @@ export async function POST(req: Request) {
   }
 }
 
-// GET /api/posts -> list all posts with media[] + legacy fields (imageUrl/mediaType) for UI compatibility
+// GET /api/posts -> list posts with media + like counts (+verificationTier if present elsewhere)
 export async function GET() {
   try {
     const posts = await prisma.post.findMany({
@@ -73,78 +96,35 @@ export async function GET() {
       },
     });
 
-    // creator verification tier mapping (existing behavior)
-    const emails = Array.from(new Set(posts.map((p) => p.userEmail).filter(Boolean))).map((e) =>
-      String(e).trim().toLowerCase()
-    );
-
-    const profiles = emails.length
-      ? await prisma.creatorProfile.findMany({
-          where: { email: { in: emails } },
-          select: {
-            email: true,
-            verificationStatus: true,
-            verificationPriceId: true,
-            verificationCurrentPeriodEnd: true,
-          },
-        })
-      : [];
-
-    const tierByEmail = new Map<string, "blue" | "gold" | null>();
-    const bluePriceId = (process.env.STRIPE_BLUE_TICK_PRICE_ID ?? "").trim();
-    const goldPriceId = (process.env.STRIPE_GOLD_TICK_PRICE_ID ?? "").trim();
-
-    for (const prof of profiles) {
-      const email = String(prof.email ?? "").trim().toLowerCase();
-      if (!email) continue;
-
-      const s = String(prof.verificationStatus ?? "").trim().toLowerCase();
-      if (s === "gold" || s === "blue") {
-        tierByEmail.set(email, s);
-        continue;
-      }
-
-      const periodEndOk =
-        prof.verificationCurrentPeriodEnd &&
-        new Date(prof.verificationCurrentPeriodEnd).getTime() > Date.now();
-
-      const priceId = prof.verificationPriceId ? String(prof.verificationPriceId).trim() : "";
-
-      const inferred =
-        periodEndOk && goldPriceId && priceId === goldPriceId
-          ? "gold"
-          : periodEndOk && bluePriceId && priceId === bluePriceId
-            ? "blue"
-            : null;
-
-      tierByEmail.set(email, inferred);
-    }
-
     const payload = posts.map((p) => {
-      const email = String(p.userEmail ?? "").trim().toLowerCase();
-
-      const first = (p as any).media?.[0] ?? null;
-      const legacyImageUrl = first?.url ?? null;
-      const legacyMediaType = (first?.type === "video" ? "video" : "image") as "image" | "video";
+      const media = (p as any).media ?? [];
+      const first = media[0] ?? null;
 
       return {
         id: p.id,
-        userEmail: email,
-        // legacy fields used across the app
-        imageUrl: legacyImageUrl,
-        mediaType: legacyMediaType,
-        // new field for carousel
-        media: (p as any).media ?? [],
+        userEmail: String(p.userEmail ?? "").trim().toLowerCase(),
         caption: p.caption ?? "",
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
         likesCount: p._count.Like,
-        verificationTier: (email && tierByEmail.get(email)) ?? null,
+
+        // ✅ Keep legacy fields for UI compatibility (derived from media)
+        imageUrl: first?.url ?? null,
+        mediaType: (first?.type === "video" ? "video" : "image") as "image" | "video",
+
+        // ✅ New
+        media: media.map((m: any) => ({
+          id: m.id,
+          type: (String(m.type).toLowerCase() === "video" ? "video" : "image") as "image" | "video",
+          url: String(m.url),
+          order: Number(m.order ?? 0),
+          createdAt: m.createdAt,
+        })),
       };
     });
 
     return NextResponse.json(payload);
-  } catch (err) {
+  } catch (err: any) {
     console.error("GET /api/posts error:", err);
     return NextResponse.json({ message: "Failed to load posts" }, { status: 500 });
   }
