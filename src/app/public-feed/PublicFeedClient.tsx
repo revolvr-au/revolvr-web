@@ -1,6 +1,7 @@
 // src/app/public-feed/PublicFeedClient.tsx
 "use client";
 
+import FeedVideo from "@/components/FeedVideo";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -208,7 +209,9 @@ function actionMeta(mode: ActionMode): ActionMeta {
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({});
+  const [err, setErr] = useState<string | null>(null);
+const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({});
+
 
   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
 
@@ -481,26 +484,23 @@ export default function PublicFeedClient() {
                     </Link>
                   </div>
 
-  <div className="relative w-full max-h-[520px]">
+  <div className="relative w-full">
   {showFallback ? (
     <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
       <span className="text-xs text-white/50">Media unavailable</span>
     </div>
   ) : post.mediaType === "video" ? (
-    <video
-      src={post.imageUrl}
-      controls
-      playsInline
-      preload="metadata"
-      className="w-full max-h-[520px] object-cover bg-black"
-      onError={() =>
-        setBrokenPostImages((prev) => ({
-          ...prev,
-          [post.id]: true,
-        }))
-      }
-    />
-  ) : (
+  <FeedVideo
+    src={post.imageUrl}
+    onError={() =>
+      setBrokenPostImages((prev) => ({
+        ...prev,
+        [post.id]: true,
+      }))
+    }
+  />
+) : (
+
     <Image
       src={post.imageUrl}
       alt={post.caption || "post"}
