@@ -65,9 +65,6 @@ export async function POST(req: Request) {
         caption,
 
         // Keep legacy columns populated for backwards compatibility
-        imageUrl: primaryUrl,
-        mediaType: primaryType,
-
         // New: PostMedia rows
         ...(media.length
           ? {
@@ -167,24 +164,13 @@ export async function GET() {
               url: m.url,
               order: m.order ?? 0,
             }))
-          : p.imageUrl
-            ? [
-                {
-                  type: (p.mediaType === "video" ? "video" : "image") as "image" | "video",
-                  url: p.imageUrl,
-                  order: 0,
-                },
-              ]
-            : [];
+          : [];
 
       return {
         id: p.id,
         userEmail: email,
 
         // keep legacy fields in response (existing clients expect them)
-        imageUrl: p.imageUrl,
-        mediaType: (p as any).mediaType ?? "image",
-
         caption: p.caption,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
