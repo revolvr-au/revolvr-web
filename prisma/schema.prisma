@@ -1,6 +1,6 @@
 datasource db {
   provider = "postgresql"
-  schemas  = ["public"]
+  schemas  = ["public", "auth"]
 }
 
 
@@ -11,16 +11,18 @@ generator client {
 model Post {
   id        String   @id @default(uuid())
   userEmail String
-  imageUrl  String
-  mediaType String   @default("image") // "image" | "video"
   caption   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // NEW: multi-media support
+  media PostMedia[]
 
   Like Like[]
 
   @@schema("public")
 }
+
 
 model StripeEvent {
   id        String   @id
@@ -40,6 +42,21 @@ model Like {
   @@unique([postId, userEmail])
   @@schema("public")
 }
+model PostMedia {
+  id        String   @id @default(dbgenerated("gen_random_uuid()::text")) @db.Text
+  postId    String   @db.Text
+  type      String   @db.Text
+  url       String   @db.Text
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@schema("public")
+}
+
+
 
 model RevolvrItem {
   id        String        @id @default(uuid())
