@@ -4,35 +4,82 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// POST /api/posts -> create a post row (media already uploaded to storage by client)
+// Helpers
+function normEmail(v: any) {
+  return String(v ?? "").trim().toLowerCase();
+}
+
+function isHttpUrl(v: string) {
+  return /^https?:\/\//i.test(v);
+}
+
+function normMediaType(v: any): "image" | "video" {
+  const s = String(v ?? "").trim().toLowerCase();
+  return s === "video" ? "video" : "image";
+}
+
+function parseMedia(body: any): { type: "image" | "video"; url: string }[] {
+  const arr = Array.isArray(body?.media) ? body.media : [];
+  const out: { type: "image" | "video"; url: string }[] = [];
+
+  for (const it of arr) {
+    const type = normMediaType(it?.type);
+    const url = String(it?.url ?? "").trim();
+    if (!url || !isHttpUrl(url)) continue;
+    out.push({ type, url });
+  }
+  return out;
+}
+
+// POST /api/posts -> create post (client uploads files to storage first)
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
 
-    const userEmail = String(body?.userEmail ?? "")
-      .trim()
-      .toLowerCase();
-
+    const userEmail = normEmail(body?.userEmail);
     const caption = String(body?.caption ?? "").trim();
 
-    const imageUrl = String(body?.imageUrl ?? "").trim();
-    const mediaTypeRaw = String(body?.mediaType ?? "image").trim().toLowerCase();
-    const mediaType = mediaTypeRaw === "video" ? "video" : "image";
+    const media = parseMedia(body);
+
+    // Legacy fallback
+    const imageUrlLegacy = String(body?.imageUrl ?? "").trim();
+    const mediaTypeLegacy = normMediaType(body?.mediaType);
 
     if (!userEmail || !userEmail.includes("@")) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
-    if (!imageUrl || !/^https?:\/\//i.test(imageUrl)) {
-      return NextResponse.json({ ok: false, error: "invalid_imageUrl" }, { status: 400 });
+    // Require either new media[] or legacy imageUrl
+    if (media.length === 0) {
+      if (!imageUrlLegacy || !isHttpUrl(imageUrlLegacy)) {
+        return NextResponse.json({ ok: false, error: "no_media" }, { status: 400 });
+      }
     }
+
+    const primaryUrl = media[0]?.url || imageUrlLegacy;
+    const primaryType = media[0]?.type || mediaTypeLegacy;
 
     const created = await prisma.post.create({
       data: {
         userEmail,
         caption,
-        imageUrl,
-        mediaType,
+
+        // Keep legacy columns populated for backwards compatibility
+        imageUrl: primaryUrl,
+        mediaType: primaryType,
+
+        // New: PostMedia rows
+        ...(media.length
+          ? {
+              media: {
+                create: media.map((m, idx) => ({
+                  type: m.type,
+                  url: m.url,
+                  order: idx,
+                })),
+              },
+            }
+          : {}),
       },
       select: { id: true },
     });
@@ -47,12 +94,13 @@ export async function POST(req: Request) {
   }
 }
 
-// GET /api/posts -> list all posts with like counts + verification tier
+// GET /api/posts -> list posts with like counts + verification tier + media[]
 export async function GET() {
   try {
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: "desc" },
       include: {
+        media: { orderBy: { order: "asc" } }, // ✅ NEW
         _count: {
           // relation name is "Like" (capital L)
           select: { Like: true },
@@ -60,9 +108,9 @@ export async function GET() {
       },
     });
 
-    // Collect distinct emails from posts
+    // Collect distinct emails
     const emails = Array.from(new Set(posts.map((p) => p.userEmail).filter(Boolean))).map((e) =>
-      String(e).trim().toLowerCase()
+      normEmail(e)
     );
 
     const profiles = emails.length
@@ -70,20 +118,20 @@ export async function GET() {
           where: { email: { in: emails } },
           select: {
             email: true,
-            verificationStatus: true, // expected: "blue" | "gold" | null
-            verificationPriceId: true, // optional fallback
-            verificationCurrentPeriodEnd: true, // optional fallback
+            verificationStatus: true, // "blue" | "gold" | null
+            verificationPriceId: true,
+            verificationCurrentPeriodEnd: true,
           },
         })
       : [];
 
     const tierByEmail = new Map<string, "blue" | "gold" | null>();
 
-    const bluePriceId = (process.env.STRIPE_BLUE_TICK_PRICE_ID ?? "").trim();
-    const goldPriceId = (process.env.STRIPE_GOLD_TICK_PRICE_ID ?? "").trim();
+    const bluePriceId = String(process.env.STRIPE_BLUE_TICK_PRICE_ID ?? "").trim();
+    const goldPriceId = String(process.env.STRIPE_GOLD_TICK_PRICE_ID ?? "").trim();
 
     for (const prof of profiles) {
-      const email = String(prof.email ?? "").trim().toLowerCase();
+      const email = normEmail(prof.email);
       if (!email) continue;
 
       const s = String(prof.verificationStatus ?? "").trim().toLowerCase();
@@ -109,16 +157,41 @@ export async function GET() {
     }
 
     const payload = posts.map((p) => {
-      const email = String(p.userEmail ?? "").trim().toLowerCase();
+      const email = normEmail(p.userEmail);
+
+      // Provide media array if present; otherwise fallback to legacy single media
+      const media =
+        (p as any).media?.length
+          ? (p as any).media.map((m: any) => ({
+              type: m.type === "video" ? "video" : "image",
+              url: m.url,
+              order: m.order ?? 0,
+            }))
+          : p.imageUrl
+            ? [
+                {
+                  type: (p.mediaType === "video" ? "video" : "image") as "image" | "video",
+                  url: p.imageUrl,
+                  order: 0,
+                },
+              ]
+            : [];
+
       return {
         id: p.id,
         userEmail: email,
+
+        // keep legacy fields in response (existing clients expect them)
         imageUrl: p.imageUrl,
-        mediaType: p.mediaType ?? "image",
+        mediaType: (p as any).mediaType ?? "image",
+
         caption: p.caption,
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
-        likesCount: p._count.Like,
+
+        media, // ✅ NEW field
+
+        likesCount: (p as any)._count?.Like ?? 0,
         verificationTier: (email && tierByEmail.get(email)) ?? null,
       };
     });

@@ -5,6 +5,7 @@ import FeedVideo from "@/components/FeedVideo";
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { MediaCarousel } from "@/components/media/MediaCarousel";
 
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
@@ -16,6 +17,7 @@ type Post = {
   userEmail: string;
   imageUrl: string;       // this is your media URL
   mediaType?: "image" | "video";
+  media?: { type: "image" | "video"; url: string; order?: number }[];
   caption: string;
   createdAt: string;
 };
@@ -489,35 +491,30 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
     <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
       <span className="text-xs text-white/50">Media unavailable</span>
     </div>
-  ) : post.mediaType === "video" ? (
-  <FeedVideo
-    src={post.imageUrl}
-    onError={() =>
-      setBrokenPostImages((prev) => ({
-        ...prev,
-        [post.id]: true,
-      }))
-    }
-  />
-) : (
-
-    <Image
-      src={post.imageUrl}
-      alt={post.caption || "post"}
-      width={1200}
-      height={800}
-      unoptimized
-      className="w-full max-h-[520px] object-cover"
-      onError={() =>
-        setBrokenPostImages((prev) => ({
-          ...prev,
-          [post.id]: true,
-        }))
+  ) : (
+    <MediaCarousel
+      className="w-full"
+      media={
+        (post as any).media?.length
+          ? (post as any).media
+              .slice()
+              .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+              .map((m: any) => ({
+                type: m.type === "video" ? "video" : "image",
+                url: m.url,
+              }))
+          : post.imageUrl
+            ? [
+                {
+                  type: post.mediaType === "video" ? "video" : "image",
+                  url: post.imageUrl,
+                },
+              ]
+            : []
       }
     />
   )}
 </div>
-
 
                   <div className="px-4 py-2 border-t border-white/10">
                     <div className="hidden sm:flex">
