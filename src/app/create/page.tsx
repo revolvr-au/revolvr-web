@@ -16,59 +16,16 @@ export default function CreatePage() {
   const [err, setErr] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    // revoke old previews
-    previewUrls.forEach((u) => URL.revokeObjectURL(u));
-
-    if (!files.length) {
-      setPreviewUrls([]);
-      return;
-    }
-
+    // build previews
     const urls = files.map((f) => URL.createObjectURL(f));
     setPreviewUrls(urls);
-
-    return () => {
-      urls.forEach((u) => URL.revokeObjectURL(u));
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => urls.forEach((u) => URL.revokeObjectURL(u));
   }, [files]);
 
   const canPost = files.length > 0 && !isPosting;
 
   function guessMediaType(f: File): "image" | "video" {
     return f.type.startsWith("video/") ? "video" : "image";
-  }
-
-  async function uploadOne(userEmail: string, file: File): Promise<MediaOut> {
-    const type = guessMediaType(file);
-
-    const ext =
-      file.name.split(".").pop() || (type === "video" ? "mp4" : "jpg");
-    const safeExt =
-      ext.toLowerCase().replace(/[^a-z0-9]/g, "") || (type === "video" ? "mp4" : "jpg");
-
-    const filePath = `${userEmail}/${Date.now()}-${Math.random().toString(16).slice(2)}.${safeExt}`;
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("posts")
-      .upload(filePath, file, {
-        upsert: false,
-        contentType: file.type || undefined,
-      });
-
-    if (uploadError || !uploadData) {
-      console.error("[create] upload error", uploadError);
-      throw new Error("Upload failed. Check posts bucket permissions.");
-    }
-
-    const { data: publicData } = supabase.storage
-      .from("posts")
-      .getPublicUrl(uploadData.path);
-
-    const publicUrl = publicData?.publicUrl;
-    if (!publicUrl) throw new Error("Upload succeeded but public URL missing.");
-
-    return { type, url: publicUrl, order: 0 };
   }
 
   async function handlePost() {
@@ -78,7 +35,6 @@ export default function CreatePage() {
     setErr(null);
 
     try {
-      // 1) Require auth email (post ownership)
       const { data: authData, error: authErr } = await supabase.auth.getUser();
       if (authErr) throw authErr;
 
@@ -88,32 +44,72 @@ export default function CreatePage() {
         return;
       }
 
-      // 2) Upload ALL files -> build media[]
-      const uploaded: MediaOut[] = [];
+      const uploads: MediaOut[] = [];
+
       for (let i = 0; i < files.length; i++) {
-        const m = await uploadOne(userEmail, files[i]);
-        uploaded.push({ ...m, order: i });
+        const file = files[i];
+        const mediaType = guessMediaType(file);
+
+        const ext =
+          file.name.split(".").pop() ||
+          (mediaType === "video" ? "mp4" : "jpg");
+
+        const safeExt =
+          ext.toLowerCase().replace(/[^a-z0-9]/g, "") ||
+          (mediaType === "video" ? "mp4" : "jpg");
+
+        const filePath = `${userEmail}/${Date.now()}-${Math.random()
+          .toString(16)
+          .slice(2)}.${safeExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from("posts")
+          .upload(filePath, file, {
+            upsert: false,
+            contentType: file.type || undefined,
+          });
+
+        if (uploadError || !uploadData) {
+          console.error("[create] upload error", uploadError);
+          setErr("Upload failed. Check the posts bucket policy + public access.");
+          return;
+        }
+
+        const { data: publicData } = supabase.storage
+          .from("posts")
+          .getPublicUrl(uploadData.path);
+
+        const publicUrl = publicData?.publicUrl;
+        if (!publicUrl) {
+          setErr("Upload succeeded but public URL could not be created.");
+          return;
+        }
+
+        uploads.push({ type: mediaType, url: publicUrl, order: i });
       }
 
-      // 3) Create post in DB via API (Prisma)
+      // Create post in DB via API (Prisma)
       const res = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userEmail,
           caption,
-          media: uploaded.map((m) => ({ type: m.type, url: m.url, order: m.order })),
+          media: uploads,
+          // legacy (safe)
+          imageUrl: uploads[0]?.url ?? null,
+          mediaType: uploads[0]?.type ?? "image",
         }),
       });
 
       const json = await res.json().catch(() => null);
+
       if (!res.ok) {
         console.error("[create] /api/posts failed", res.status, json);
         setErr(`Post failed (${res.status}).`);
         return;
       }
 
-      // 4) Go to feed
       router.push("/public-feed");
     } catch (e: any) {
       console.error("[create] unhandled error", e);
@@ -126,21 +122,13 @@ export default function CreatePage() {
   return (
     <main className="mx-auto w-full max-w-screen-sm p-4">
       <div className="mb-4 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="text-white/80 hover:text-white"
-        >
+        <button type="button" onClick={() => router.back()} className="text-white/80 hover:text-white">
           ← Back
         </button>
 
         <h1 className="text-lg font-semibold">Create</h1>
 
-        <button
-          type="button"
-          onClick={() => router.push("/public-feed")}
-          className="text-white/80 hover:text-white"
-        >
+        <button type="button" onClick={() => router.push("/public-feed")} className="text-white/80 hover:text-white">
           Cancel
         </button>
       </div>
@@ -152,9 +140,7 @@ export default function CreatePage() {
       ) : null}
 
       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <label className="block text-sm font-medium text-white/80">
-          Upload videos or images (multiple)
-        </label>
+        <label className="block text-sm font-medium text-white/80">Upload video or images</label>
 
         <input
           className="mt-2 w-full text-sm text-white/80 file:mr-4 file:rounded-lg file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-white hover:file:bg-white/15"
@@ -166,25 +152,13 @@ export default function CreatePage() {
 
         {previewUrls.length ? (
           <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/20">
-            {files[0]?.type?.startsWith("video/") ? (
-              <video
-                src={previewUrls[0]}
-                controls
-                playsInline
-                className="h-[360px] w-full object-contain"
-              />
+            {files[0]?.type.startsWith("video/") ? (
+              <video src={previewUrls[0]} controls playsInline className="h-[360px] w-full object-contain" />
             ) : (
-              <img
-                src={previewUrls[0]}
-                alt="Preview"
-                className="h-[360px] w-full object-contain"
-              />
+              <img src={previewUrls[0]} alt="Preview" className="h-[360px] w-full object-contain" />
             )}
-
             {previewUrls.length > 1 ? (
-              <div className="px-3 py-2 text-xs text-white/60">
-                + {previewUrls.length - 1} more selected
-              </div>
+              <div className="px-3 py-2 text-xs text-white/60">+ {previewUrls.length - 1} more</div>
             ) : null}
           </div>
         ) : null}
@@ -213,7 +187,7 @@ export default function CreatePage() {
         </button>
 
         <p className="mt-3 text-xs text-white/50">
-          Posts appear on /public-feed once DB insert succeeds.
+          Tip: to select multiple files, hold <b>Ctrl</b> (Windows) or <b>Cmd</b> (Mac) while clicking, or use <b>Shift</b>.
         </p>
       </div>
     </main>
