@@ -5,10 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // GET /api/posts/[id] -> fetch a single post (legacy + media[])
-export async function GET(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_req: Request, { params }: { params: any }) {
   try {
     const id = String(params?.id ?? "").trim();
     if (!id) {
