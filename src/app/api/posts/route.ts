@@ -19,9 +19,9 @@ export async function POST(req: Request) {
     const caption = String(body?.caption ?? "").trim();
 
     const mediaRaw = Array.isArray(body?.media) ? (body.media as any[]) : [];
-    const media: MediaIn[] = mediaRaw
+    const media = mediaRaw
       .map((m, i) => ({
-        type: String(m?.type ?? "image").toLowerCase() === "video" ? "video" : "image",
+        type: (String(m?.type ?? "image").toLowerCase() === "video" ? "video" : "image") as "image" | "video",
         url: String(m?.url ?? "").trim(),
         order: Number.isFinite(Number(m?.order)) ? Number(m.order) : i,
       }))
