@@ -1,74 +1,48 @@
-// src/app/api/posts/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/posts  -> list all posts with like counts
-export async function GET() {
-  try {
-    const posts = await prisma.post.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { media: { orderBy: { order: "asc" } },
-        _count: {
-          // 👈 use "Like" (relation name) not "likes"
-          select: {
-        imageUrl: true,
-        mediaType: true,
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-        imageUrl: true,
-        mediaType: true,
- Like: true },
-        },
+// GET /api/posts/[id] -> fetch a single post (legacy + media[])
+export async function GET(
+  _req: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = String(params?.id ?? "").trim();
+    if (!id) {
+      return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
+    }
+
+    const p = await prisma.post.findUnique({
+      where: { id },
+      include: {
+        media: { orderBy: { order: "asc" } },
+        _count: { select: { Like: true } },
       },
     });
 
-    const payload = posts.map((p) => ({
+    if (!p) {
+      return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
       id: p.id,
-      userEmail: p.userEmail,
-      imageUrl: p.imageUrl,
-      caption: p.caption,
+      userEmail: String(p.userEmail ?? "").trim().toLowerCase(),
+      imageUrl: (p as any).imageUrl ?? null, // legacy
+      mediaType: (p as any).mediaType ?? "image", // legacy
+      media: (p as any).media ?? [],
+      caption: p.caption ?? "",
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
-      likesCount: p._count.Like, // number of likes
-    }));
-
-    return NextResponse.json(payload);
-  } catch (err) {
-    console.error("GET /api/posts error:", err);
+      likesCount: p._count.Like,
+    });
+  } catch (err: any) {
+    console.error("GET /api/posts/[id] error:", err);
     return NextResponse.json(
-      { message: "Failed to load posts" },
+      { ok: false, error: err?.message || "Failed to load post" },
       { status: 500 }
     );
   }
 }
-
-// POST /api/posts  -> create a new post
-export async function POST(req: Request) {
-  try {
-    const body = await req.json();
-    const { caption, imageUrl, userEmail, mediaType } = body;
-
-    const mt = mediaType === "video" ? "video" : "image";
-
-    if (!imageUrl || !userEmail) {
-      return NextResponse.json(
-        { message: "imageUrl and userEmail are required" },
-        { status: 400 }
-      );
-    }
-
-    const post = await prisma.post.create({
-      data: {
-        caption: typeof caption === "string" ? caption : "",
-        imageUrl: String(imageUrl),
-        userEmail: String(userEmail).trim().toLowerCase(),
-        mediaType: mt,
-      },
-    });
-
-    return NextResponse.json({ ...post, likesCount: 0 }, { status: 201 });
-  } catch (err) {
-    console.error("POST /api/posts error:", err);
-    return NextResponse.json({ message: "Failed to create post" }, { status: 500 });
-  }
-}
-
