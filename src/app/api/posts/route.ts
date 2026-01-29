@@ -12,22 +12,19 @@ function normalizeMedia(body: any): MediaIn[] {
   return mediaRaw
     .map((m, i): MediaIn => {
       const type: "image" | "video" =
-        String(m?.type ?? "image").toLowerCase() === "video"
-          ? "video"
-          : "image";
-
+        String(m?.type ?? "image").toLowerCase() === "video" ? "video" : "image";
       const url = String(m?.url ?? "").trim();
       const order = Number.isFinite(Number(m?.order)) ? Number(m.order) : i;
-
       return { type, url, order };
     })
     .filter((m) => m.url && /^https?:\/\//i.test(m.url))
     .sort((a, b) => a.order - b.order);
 }
 
-
 /* =========================================================
    POST /api/posts  – create post + PostMedia
+   - IMPORTANT: do NOT write Post.imageUrl/Post.mediaType (not in Prisma model on Vercel)
+   - Legacy support: if media[] empty but imageUrl provided, convert it to media[0]
    ========================================================= */
 export async function POST(req: Request) {
   try {
@@ -40,18 +37,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
-    const media = normalizeMedia(body);
+    let media = normalizeMedia(body);
 
-    // LEGACY FALLBACK (compute BEFORE validating)
-    const legacyUrl =
-      media[0]?.url ??
-      String(body?.imageUrl ?? "").trim();
+    // Legacy fallback: imageUrl/mediaType -> media[0]
+    const legacyUrl = String(body?.imageUrl ?? "").trim();
+    const legacyType: "image" | "video" =
+      String(body?.mediaType ?? "image").toLowerCase() === "video" ? "video" : "image";
 
-    const legacyType =
-      media[0]?.type ??
-      (String(body?.mediaType ?? "image").toLowerCase() === "video" ? "video" : "image");
+    if (!media.length && legacyUrl && /^https?:\/\//i.test(legacyUrl)) {
+      media = [{ type: legacyType, url: legacyUrl, order: 0 }];
+    }
 
-    if (!legacyUrl || !/^https?:\/\//i.test(legacyUrl)) {
+    if (!media.length) {
       return NextResponse.json({ ok: false, error: "missing_media" }, { status: 400 });
     }
 
@@ -59,19 +56,13 @@ export async function POST(req: Request) {
       data: {
         userEmail,
         caption,
-        imageUrl: legacyUrl,
-        mediaType: legacyType,
-        ...(media.length
-          ? {
-              media: {
-                create: media.map((m) => ({
-                  type: m.type,
-                  url: m.url,
-                  order: m.order,
-                })),
-              },
-            }
-          : {}),
+        media: {
+          create: media.map((m) => ({
+            type: m.type,
+            url: m.url,
+            order: m.order,
+          })),
+        },
       },
       select: { id: true },
     });
@@ -86,9 +77,9 @@ export async function POST(req: Request) {
   }
 }
 
-
 /* =========================================================
    GET /api/posts – public feed
+   - Legacy fields are derived from first PostMedia row
    ========================================================= */
 export async function GET() {
   try {
@@ -103,20 +94,21 @@ export async function GET() {
     const payload = posts.map((p) => {
       const first = (p as any).media?.[0] ?? null;
 
-return {
-  id: p.id,
-  userEmail: p.userEmail,
-  caption: p.caption ?? "",
-  createdAt: p.createdAt,
-  updatedAt: p.updatedAt,
-  likesCount: p._count.Like,
+      return {
+        id: p.id,
+        userEmail: String(p.userEmail ?? "").trim().toLowerCase(),
+        caption: p.caption ?? "",
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        likesCount: p._count.Like,
 
-  media: (p as any).media ?? [],
+        // NEW
+        media: (p as any).media ?? [],
 
-  // legacy fallback
-  imageUrl: first?.url ?? (p as any).imageUrl ?? null,
-  mediaType: ((first?.type ?? (p as any).mediaType ?? "image") === "video" ? "video" : "image") as "image" | "video",
-};
+        // LEGACY (derived)
+        imageUrl: first?.url ?? null,
+        mediaType: (first?.type === "video" ? "video" : "image") as "image" | "video",
+      };
     });
 
     return NextResponse.json(payload);
