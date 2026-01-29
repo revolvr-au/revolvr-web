@@ -61,25 +61,26 @@ export async function POST(req: Request) {
     }
 
     const created = await prisma.post.create({
-      data: {
-        userEmail,
-        caption, // required
-        imageUrl: legacyUrl, // required
-        mediaType: legacyType,
-        ...(media.length
-          ? {
-              media: {
-                create: media.map((m) => ({
-                  type: m.type,
-                  url: m.url,
-                  order: m.order,
-                })),
-              },
-            }
-          : {}),
-      },
-      select: { id: true },
-    });
+  data: {
+    userEmail,
+    caption,
+    imageUrl: legacyUrl,       // ✅ required by schema
+    // mediaType: legacyType,  // optional (schema has default)
+    ...(media.length
+      ? {
+          media: {
+            create: media.map((m) => ({
+              url: m.url,
+              type: m.type,
+              order: m.order,
+            })),
+          },
+        }
+      : {}),
+  },
+  include: { media: { orderBy: { order: "asc" } } },
+});
+
 
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
   } catch (err: unknown) {
