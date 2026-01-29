@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,53 +24,72 @@ function normalizeMedia(body: any): MediaIn[] {
 
 /* =========================================================
    POST /api/posts  – create post + PostMedia
-   - IMPORTANT: do NOT write Post.imageUrl/Post.mediaType (not in Prisma model on Vercel)
-   - Legacy support: if media[] empty but imageUrl provided, convert it to media[0]
    ========================================================= */
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => null);
+    const body = await req.json();
 
     const userEmail = String(body?.userEmail ?? "").trim().toLowerCase();
-    const caption = String(body?.caption ?? "").trim();
+    const captionRaw = String(body?.caption ?? "");
+    const caption = captionRaw.trim() || ""; // caption is required in schema
 
     if (!userEmail || !userEmail.includes("@")) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
-    let media = normalizeMedia(body);
+    const media = normalizeMedia(body);
 
-    // Legacy fallback: imageUrl/mediaType -> media[0]
-    const legacyUrl = String(body?.imageUrl ?? "").trim();
+    // ALWAYS compute legacyUrl/type (even if media[] is empty)
+    const legacyUrl = String(media[0]?.url ?? body?.imageUrl ?? "").trim();
     const legacyType: "image" | "video" =
-      String(body?.mediaType ?? "image").toLowerCase() === "video" ? "video" : "image";
+      (media[0]?.type ??
+        (String(body?.mediaType ?? "image").toLowerCase() === "video" ? "video" : "image")) as
+        | "image"
+        | "video";
 
-    if (!media.length && legacyUrl && /^https?:\/\//i.test(legacyUrl)) {
-      media = [{ type: legacyType, url: legacyUrl, order: 0 }];
-    }
-
-    if (!media.length) {
+    if (!legacyUrl || !/^https?:\/\//i.test(legacyUrl)) {
       return NextResponse.json({ ok: false, error: "missing_media" }, { status: 400 });
     }
 
     const created = await prisma.post.create({
       data: {
         userEmail,
-        caption,
-        media: {
-          create: media.map((m) => ({
-            type: m.type,
-            url: m.url,
-            order: m.order,
-          })),
-        },
+        caption,            // required
+        imageUrl: legacyUrl, // required
+        mediaType: legacyType,
+        ...(media.length
+          ? {
+              media: {
+                create: media.map((m) => ({
+                  type: m.type,
+                  url: m.url,
+                  order: m.order,
+                })),
+              },
+            }
+          : {}),
       },
       select: { id: true },
     });
 
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
-  } catch (err: any) {
+    } catch (err: any) {
     console.error("POST /api/posts error:", err);
+    return NextResponse.json(
+      {
+        ok: false,
+        prisma: {
+          name: (err as any)?.name,
+          code: (err as any)?.code,
+          meta: (err as any)?.meta,
+        },
+        message: (err as any)?.message,
+      },
+      { status: 500 }
+    );
+  }
+
+
     return NextResponse.json(
       { ok: false, error: err?.message || "Failed to create post" },
       { status: 500 }
@@ -79,7 +99,6 @@ export async function POST(req: Request) {
 
 /* =========================================================
    GET /api/posts – public feed
-   - Legacy fields are derived from first PostMedia row
    ========================================================= */
 export async function GET() {
   try {
@@ -96,18 +115,19 @@ export async function GET() {
 
       return {
         id: p.id,
-        userEmail: String(p.userEmail ?? "").trim().toLowerCase(),
+        userEmail: p.userEmail,
         caption: p.caption ?? "",
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
         likesCount: p._count.Like,
 
-        // NEW
         media: (p as any).media ?? [],
 
-        // LEGACY (derived)
-        imageUrl: first?.url ?? null,
-        mediaType: (first?.type === "video" ? "video" : "image") as "image" | "video",
+        // legacy fallback (keep existing fields)
+        imageUrl: first?.url ?? (p as any).imageUrl ?? null,
+        mediaType: ((first?.type ?? (p as any).mediaType ?? "image") === "video" ? "video" : "image") as
+          | "image"
+          | "video",
       };
     });
 
