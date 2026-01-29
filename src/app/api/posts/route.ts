@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../../generated/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,26 +61,25 @@ export async function POST(req: Request) {
     }
 
     const created = await prisma.post.create({
-  data: {
-    userEmail,
-    caption,
-    imageUrl: legacyUrl,       // ✅ required by schema
-    // mediaType: legacyType,  // optional (schema has default)
-    ...(media.length
-      ? {
-          media: {
-            create: media.map((m) => ({
-              url: m.url,
-              type: m.type,
-              order: m.order,
-            })),
-          },
-        }
-      : {}),
-  },
-  include: { media: { orderBy: { order: "asc" } } },
-});
-
+      data: {
+        userEmail,
+        caption,
+        imageUrl: legacyUrl, // ✅ required by schema
+        // mediaType: legacyType,  // optional (schema has default)
+        ...(media.length
+          ? {
+              media: {
+                create: media.map((m) => ({
+                  url: m.url,
+                  type: m.type,
+                  order: m.order,
+                })),
+              },
+            }
+          : {}),
+      },
+      include: { media: { orderBy: { order: "asc" } } },
+    });
 
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
   } catch (err: unknown) {

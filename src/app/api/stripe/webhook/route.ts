@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../../../generated/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,21 +59,19 @@ function getInvoicePeriodEnd(invoice: Stripe.Invoice): Date | null {
   return typeof end === "number" ? new Date(end * 1000) : null;
 }
 
+function getSubscriptionPriceId(sub: Stripe.Subscription): string | null {
+  const item: any = (sub.items?.data && sub.items.data[0]) || null;
+  const direct = item?.price?.id;
+  const plan = item?.plan?.id;
+  if (typeof direct === "string" && direct) return direct;
+  if (typeof plan === "string" && plan) return plan;
+  return null;
+}
 
-
-  function getSubscriptionPriceId(sub: Stripe.Subscription): string | null {
-    const item: any = (sub.items?.data && sub.items.data[0]) || null;
-    const direct = item?.price?.id;
-    const plan = item?.plan?.id;
-    if (typeof direct === "string" && direct) return direct;
-    if (typeof plan === "string" && plan) return plan;
-    return null;
-  }
-
-  function getSubscriptionPeriodEnd(sub: Stripe.Subscription): Date | null {
-    const end = (sub as any).current_period_end;
-    return typeof end === "number" ? new Date(end * 1000) : null;
-  }
+function getSubscriptionPeriodEnd(sub: Stripe.Subscription): Date | null {
+  const end = (sub as any).current_period_end;
+  return typeof end === "number" ? new Date(end * 1000) : null;
+}
 
 /* -------------------------------- Stripe -------------------------------- */
 
@@ -89,7 +87,7 @@ export async function POST(req: Request) {
   if (!stripeSecret) {
     return NextResponse.json(
       { ok: false, error: "Missing STRIPE_SECRET_KEY" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -97,7 +95,7 @@ export async function POST(req: Request) {
   if (!sig) {
     return NextResponse.json(
       { ok: false, error: "Missing stripe-signature header" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -108,7 +106,7 @@ export async function POST(req: Request) {
   if (secrets.length === 0) {
     return NextResponse.json(
       { ok: false, error: "No webhook secrets configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -118,7 +116,7 @@ export async function POST(req: Request) {
     try {
       event = stripe.webhooks.constructEvent(body, sig, secret);
 
-        break;
+      break;
     } catch {
       // try next secret
     }
@@ -128,34 +126,44 @@ export async function POST(req: Request) {
     console.error("[stripe/webhook] signature verification failed");
     return NextResponse.json(
       { ok: false, error: "Invalid signature" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-    // --- Idempotency guard (Stripe retries webhooks) ------------------------
-    // Record event.id; if already seen, skip side-effects.
-    try {
-      await prisma.stripeEvent.create({ data: { id: event.id } });
-    } catch (e: any) {
-      const code = e?.code || e?.cause?.code;
-      if (code === "P2002") {
-        return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
-      }
-      console.error("[stripe/webhook] stripeEvent insert failed", e);
-      // continue to avoid retry storms
+  // --- Idempotency guard (Stripe retries webhooks) ------------------------
+  // Record event.id; if already seen, skip side-effects.
+  try {
+    await prisma.stripeEvent.create({
+      data: {
+        id: event.id,
+        type: event.type,
+      },
+    });
+  } catch (e: any) {
+    const code = e?.code || e?.cause?.code;
+    if (code === "P2002") {
+      return NextResponse.json(
+        { received: true, duplicate: true },
+        { status: 200 },
+      );
     }
+    console.error("[stripe/webhook] stripeEvent insert failed", e);
+    // continue to avoid retry storms
+  }
 
-    try {
-      await prisma.stripeEvent.create({ data: { id: event.id } as any });
-    } catch (e: any) {
-      const code = e?.code || e?.cause?.code;
-      if (code === "P2002") {
-        return NextResponse.json({ received: true, duplicate: true }, { status: 200 });
-      }
-      console.error("[stripe/webhook] stripeEvent insert failed", e);
-      // continue to avoid retry storms
+  try {
+    await prisma.stripeEvent.create({ data: { id: event.id } as any });
+  } catch (e: any) {
+    const code = e?.code || e?.cause?.code;
+    if (code === "P2002") {
+      return NextResponse.json(
+        { received: true, duplicate: true },
+        { status: 200 },
+      );
     }
-
+    console.error("[stripe/webhook] stripeEvent insert failed", e);
+    // continue to avoid retry storms
+  }
 
   try {
     switch (event.type) {
@@ -185,8 +193,9 @@ export async function POST(req: Request) {
           session: toPrismaJson(session),
         });
 
-        const metadata: Prisma.InputJsonValue | undefined =
-          session.metadata ? toPrismaJson(session.metadata) : undefined;
+        const metadata: Prisma.InputJsonValue | undefined = session.metadata
+          ? toPrismaJson(session.metadata)
+          : undefined;
 
         // 1) Always store receipt / ledger
         await prisma.stripeCheckoutReceipt.upsert({
@@ -228,7 +237,9 @@ export async function POST(req: Request) {
           typeof session.customer === "string" ? session.customer : null;
 
         const stripeSubscriptionId =
-          typeof session.subscription === "string" ? session.subscription : null;
+          typeof session.subscription === "string"
+            ? session.subscription
+            : null;
 
         const isVerification =
           purpose === "verification" &&
@@ -257,7 +268,7 @@ export async function POST(req: Request) {
             });
           } else {
             console.warn(
-              "[stripe/webhook] verification checkout missing creator mapping"
+              "[stripe/webhook] verification checkout missing creator mapping",
             );
           }
         }
@@ -309,12 +320,18 @@ export async function POST(req: Request) {
           // - Blue NEVER overwrites Gold (no downgrade)
           if (tier === "gold") {
             await prisma.creatorProfile.updateMany({
-              where: { stripeSubscriptionId, NOT: { verificationStatus: "gold" } },
+              where: {
+                stripeSubscriptionId,
+                NOT: { verificationStatus: "gold" },
+              },
               data: { verificationStatus: "gold" },
             });
           } else if (tier === "blue") {
             await prisma.creatorProfile.updateMany({
-              where: { stripeSubscriptionId, NOT: { verificationStatus: "gold" } },
+              where: {
+                stripeSubscriptionId,
+                NOT: { verificationStatus: "gold" },
+              },
               data: { verificationStatus: "blue" },
             });
           }
@@ -336,12 +353,14 @@ export async function POST(req: Request) {
             });
           }
         } else {
-          console.warn("[stripe/webhook] invoice.payment_succeeded missing subscription/customer mapping");
+          console.warn(
+            "[stripe/webhook] invoice.payment_succeeded missing subscription/customer mapping",
+          );
         }
 
         return NextResponse.json({ ok: true }, { status: 200 });
       }
-        case "customer.subscription.deleted": {
+      case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
 
         const stripeSubscriptionId = sub.id;
@@ -370,160 +389,176 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ ok: true }, { status: 200 });
+      }
 
-        
+      /* ===================== INVOICE FAILED ===================== */
+      case "invoice.payment_failed": {
+        const invoice = event.data.object as Stripe.Invoice;
 
+        const stripeSubscriptionId =
+          typeof (invoice as any).subscription === "string"
+            ? (invoice as any).subscription
+            : null;
+
+        const stripeCustomerId =
+          typeof invoice.customer === "string" ? invoice.customer : null;
+
+        const invoicePriceId = getInvoicePriceId(invoice);
+        const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
+        const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+
+        const isVerificationInvoice =
+          (Boolean(blue) && invoicePriceId === blue) ||
+          (Boolean(gold) && invoicePriceId === gold);
+
+        if (!isVerificationInvoice) {
+          return NextResponse.json(
+            { ok: true, skipped: true },
+            { status: 200 },
+          );
         }
 
-        /* ===================== INVOICE FAILED ===================== */
-        case "invoice.payment_failed": {
-          const invoice = event.data.object as Stripe.Invoice;
+        const where = stripeSubscriptionId
+          ? { stripeSubscriptionId }
+          : stripeCustomerId
+            ? { stripeCustomerId }
+            : null;
 
-          const stripeSubscriptionId =
-            typeof (invoice as any).subscription === "string"
-              ? (invoice as any).subscription
+        if (!where) {
+          console.warn(
+            "[stripe/webhook] invoice.payment_failed missing mapping",
+          );
+          return NextResponse.json(
+            { ok: true, missingMapping: true },
+            { status: 200 },
+          );
+        }
+
+        await prisma.creatorProfile.updateMany({
+          where,
+          data: {
+            isVerified: false,
+            verificationStatus: null,
+            verificationPriceId: null,
+            verificationCurrentPeriodEnd: null,
+          } as any,
+        });
+
+        return NextResponse.json({ ok: true }, { status: 200 });
+      }
+
+      /* ===================== SUBSCRIPTION UPDATED ===================== */
+      case "customer.subscription.updated": {
+        const sub = event.data.object as Stripe.Subscription;
+
+        const stripeSubscriptionId = typeof sub.id === "string" ? sub.id : null;
+        const stripeCustomerId =
+          typeof sub.customer === "string" ? sub.customer : null;
+
+        const priceId = getSubscriptionPriceId(sub);
+        const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
+        const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+
+        const tier =
+          gold && priceId === gold
+            ? "gold"
+            : blue && priceId === blue
+              ? "blue"
               : null;
 
-          const stripeCustomerId =
-            typeof invoice.customer === "string" ? invoice.customer : null;
+        if (!tier) {
+          return NextResponse.json(
+            { ok: true, skipped: true },
+            { status: 200 },
+          );
+        }
 
-          const invoicePriceId = getInvoicePriceId(invoice);
-          const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
-          const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+        const periodEnd = getSubscriptionPeriodEnd(sub);
 
-          const isVerificationInvoice =
-            (Boolean(blue) && invoicePriceId === blue) ||
-            (Boolean(gold) && invoicePriceId === gold);
-
-          if (!isVerificationInvoice) {
-            return NextResponse.json({ ok: true, skipped: true }, { status: 200 });
-          }
-
-          const where = stripeSubscriptionId
-            ? { stripeSubscriptionId }
-            : stripeCustomerId
-              ? { stripeCustomerId }
-              : null;
-
-          if (!where) {
-            console.warn("[stripe/webhook] invoice.payment_failed missing mapping");
-            return NextResponse.json({ ok: true, missingMapping: true }, { status: 200 });
-          }
-
+        if (stripeSubscriptionId) {
           await prisma.creatorProfile.updateMany({
-            where,
+            where: { stripeSubscriptionId },
             data: {
-              isVerified: false,
-              verificationStatus: null,
-              verificationPriceId: null,
-              verificationCurrentPeriodEnd: null,
+              isVerified: true,
+              verificationStatus: tier,
+              verificationCurrentPeriodEnd: periodEnd,
             } as any,
           });
-
-          return NextResponse.json({ ok: true }, { status: 200 });
-        }
-
-        /* ===================== SUBSCRIPTION UPDATED ===================== */
-        case "customer.subscription.updated": {
-          const sub = event.data.object as Stripe.Subscription;
-
-          const stripeSubscriptionId = typeof sub.id === "string" ? sub.id : null;
-          const stripeCustomerId = typeof sub.customer === "string" ? sub.customer : null;
-
-          const priceId = getSubscriptionPriceId(sub);
-          const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
-          const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
-
-          const tier =
-            gold && priceId === gold
-              ? "gold"
-              : blue && priceId === blue
-                ? "blue"
-                : null;
-
-          if (!tier) {
-            return NextResponse.json({ ok: true, skipped: true }, { status: 200 });
-          }
-
-          const periodEnd = getSubscriptionPeriodEnd(sub);
-
-          if (stripeSubscriptionId) {
-            await prisma.creatorProfile.updateMany({
-              where: { stripeSubscriptionId },
-              data: {
-                isVerified: true,
-                verificationStatus: tier,
-                verificationCurrentPeriodEnd: periodEnd,
-              } as any,
-            });
-          } else if (stripeCustomerId) {
-            await prisma.creatorProfile.updateMany({
-              where: { stripeCustomerId },
-              data: {
-                isVerified: true,
-                verificationStatus: tier,
-                verificationCurrentPeriodEnd: periodEnd,
-              } as any,
-            });
-          }
-
-          return NextResponse.json({ ok: true }, { status: 200 });
-        }
-
-        /* ===================== SUBSCRIPTION CANCELED ===================== */
-        case "customer.subscription.deleted": {
-          const sub = event.data.object as Stripe.Subscription;
-
-          const stripeSubscriptionId = typeof sub.id === "string" ? sub.id : null;
-          const stripeCustomerId = typeof sub.customer === "string" ? sub.customer : null;
-
-          const priceId = getSubscriptionPriceId(sub);
-          const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
-          const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
-
-          const tier =
-            gold && priceId === gold
-              ? "gold"
-              : blue && priceId === blue
-                ? "blue"
-                : null;
-
-          if (!tier) {
-            return NextResponse.json({ ok: true, skipped: true }, { status: 200 });
-          }
-
-          const where = stripeSubscriptionId
-            ? { stripeSubscriptionId }
-            : stripeCustomerId
-              ? { stripeCustomerId }
-              : null;
-
-          if (!where) {
-            console.warn("[stripe/webhook] subscription.deleted missing mapping");
-            return NextResponse.json({ ok: true, missingMapping: true }, { status: 200 });
-          }
-
+        } else if (stripeCustomerId) {
           await prisma.creatorProfile.updateMany({
-            where,
+            where: { stripeCustomerId },
             data: {
-              isVerified: false,
-              verificationStatus: null,
-              verificationPriceId: null,
-              verificationCurrentPeriodEnd: null,
+              isVerified: true,
+              verificationStatus: tier,
+              verificationCurrentPeriodEnd: periodEnd,
             } as any,
           });
-
-          return NextResponse.json({ ok: true }, { status: 200 });
         }
 
-default:
+        return NextResponse.json({ ok: true }, { status: 200 });
+      }
+
+      /* ===================== SUBSCRIPTION CANCELED ===================== */
+      case "customer.subscription.deleted": {
+        const sub = event.data.object as Stripe.Subscription;
+
+        const stripeSubscriptionId = typeof sub.id === "string" ? sub.id : null;
+        const stripeCustomerId =
+          typeof sub.customer === "string" ? sub.customer : null;
+
+        const priceId = getSubscriptionPriceId(sub);
+        const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
+        const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
+
+        const tier =
+          gold && priceId === gold
+            ? "gold"
+            : blue && priceId === blue
+              ? "blue"
+              : null;
+
+        if (!tier) {
+          return NextResponse.json(
+            { ok: true, skipped: true },
+            { status: 200 },
+          );
+        }
+
+        const where = stripeSubscriptionId
+          ? { stripeSubscriptionId }
+          : stripeCustomerId
+            ? { stripeCustomerId }
+            : null;
+
+        if (!where) {
+          console.warn("[stripe/webhook] subscription.deleted missing mapping");
+          return NextResponse.json(
+            { ok: true, missingMapping: true },
+            { status: 200 },
+          );
+        }
+
+        await prisma.creatorProfile.updateMany({
+          where,
+          data: {
+            isVerified: false,
+            verificationStatus: null,
+            verificationPriceId: null,
+            verificationCurrentPeriodEnd: null,
+          } as any,
+        });
+
+        return NextResponse.json({ ok: true }, { status: 200 });
+      }
+
+      default:
         return NextResponse.json({ ok: true }, { status: 200 });
     }
   } catch (err: unknown) {
     console.error("[stripe/webhook] handler error", getErrorMessage(err));
     return NextResponse.json(
       { ok: false, error: "Webhook handler failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
