@@ -45,7 +45,7 @@ export async function POST(req: Request) {
         displayName: displayName || null,
         handle: handle || null,
         bio: bio || null,
-        avatar_url: avatarUrl || null,
+        avatarUrl: avatarUrl || null,
       } as any,
     });
 

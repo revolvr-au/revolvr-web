@@ -84,6 +84,8 @@ model CreatorProfile {
   email                          String        @unique
   displayName                    String
   handle                         String?       @unique
+  bio                            String?       @db.Text
+  avatarUrl                      String?       @map("avatar_url") @db.Text
   payoutShare                    Int           @default(45)
   status                         CreatorStatus @default(ACTIVE)
   createdAt                      DateTime      @default(now())
