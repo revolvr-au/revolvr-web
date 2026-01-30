@@ -220,7 +220,7 @@ function PostModal({
           {/* Media */}
           <div className="bg-black">
             {post.imageUrl && post.mediaType?.startsWith("video") ? (
-              // eslint-disable-next-line jsx-a11y/media-has-caption
+               
               <video
                 src={post.imageUrl}
                 controls

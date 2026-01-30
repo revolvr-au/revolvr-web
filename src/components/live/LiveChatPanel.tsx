@@ -251,7 +251,7 @@ export default function LiveChatPanel({
         if (typeof window !== "undefined" && "message" in json && (json as any).message?.id) {
         try {
           window.dispatchEvent(new CustomEvent("livechat:insert", { detail: (json as any).message }));
-        } catch {}
+        } catch { void 0; }
       }
 
       await fetchMessages();

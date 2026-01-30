@@ -64,7 +64,7 @@ export default function FeedVideo({
       setHasFrame(true);
       try {
         v.pause();
-      } catch {}
+      } catch { void 0; }
     };
 
     const handleError = () => {
@@ -75,7 +75,7 @@ export default function FeedVideo({
       // leaving viewport: pause + unload to reduce decoder pressure
       try {
         v.pause();
-      } catch {}
+      } catch { void 0; }
 
       v.removeEventListener("loadedmetadata", handleLoadedMetadata);
       v.removeEventListener("seeked", handleSeeked);

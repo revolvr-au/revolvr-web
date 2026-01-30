@@ -39,7 +39,7 @@ export default function GoLivePage() {
 
         setEmail(u?.email ?? null);
         setIsCreator(Boolean(u?.user_metadata?.is_creator));
-      } catch (e) {
+      } catch (_e) {
         if (cancelled) return;
         setEmail(null);
         setIsCreator(false);
@@ -88,7 +88,7 @@ export default function GoLivePage() {
         if (typeof livekitUrl === "string" && livekitUrl.length > 0) {
           sessionStorage.setItem("lk_url", livekitUrl);
         }
-      } catch {}
+      } catch { void 0; }
 
       router.push(
         `/live/${encodeURIComponent(String(sessionId))}?creator=${encodeURIComponent(

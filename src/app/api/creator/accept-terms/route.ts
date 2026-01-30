@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
     returnTo = url.searchParams.get("returnTo");
-  } catch {}
+  } catch { void 0; }
 
   if (!returnTo) {
     const body = await req.json().catch(() => null);

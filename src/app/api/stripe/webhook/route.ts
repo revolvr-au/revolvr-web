@@ -499,57 +499,6 @@ export async function POST(req: Request) {
       }
 
       /* ===================== SUBSCRIPTION CANCELED ===================== */
-      case "customer.subscription.deleted": {
-        const sub = event.data.object as Stripe.Subscription;
-
-        const stripeSubscriptionId = typeof sub.id === "string" ? sub.id : null;
-        const stripeCustomerId =
-          typeof sub.customer === "string" ? sub.customer : null;
-
-        const priceId = getSubscriptionPriceId(sub);
-        const blue = process.env.STRIPE_BLUE_TICK_PRICE_ID?.trim();
-        const gold = process.env.STRIPE_GOLD_TICK_PRICE_ID?.trim();
-
-        const tier =
-          gold && priceId === gold
-            ? "gold"
-            : blue && priceId === blue
-              ? "blue"
-              : null;
-
-        if (!tier) {
-          return NextResponse.json(
-            { ok: true, skipped: true },
-            { status: 200 },
-          );
-        }
-
-        const where = stripeSubscriptionId
-          ? { stripeSubscriptionId }
-          : stripeCustomerId
-            ? { stripeCustomerId }
-            : null;
-
-        if (!where) {
-          console.warn("[stripe/webhook] subscription.deleted missing mapping");
-          return NextResponse.json(
-            { ok: true, missingMapping: true },
-            { status: 200 },
-          );
-        }
-
-        await prisma.creatorProfile.updateMany({
-          where,
-          data: {
-            isVerified: false,
-            verificationStatus: null,
-            verificationPriceId: null,
-            verificationCurrentPeriodEnd: null,
-          } as any,
-        });
-
-        return NextResponse.json({ ok: true }, { status: 200 });
-      }
 
       default:
         return NextResponse.json({ ok: true }, { status: 200 });

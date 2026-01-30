@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "../../../generated/prisma";
+import { _Prisma } from "../../../generated/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
     // ALWAYS compute legacyUrl/type (even if media[] is empty)
     const legacyUrl = String(media[0]?.url ?? body?.imageUrl ?? "").trim();
-    const legacyType: "image" | "video" = (media[0]?.type ??
+    const _legacyType: "image" | "video" = (media[0]?.type ??
       (String(body?.mediaType ?? "image").toLowerCase() === "video"
         ? "video"
         : "image")) as "image" | "video";
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
         userEmail,
         caption,
         imageUrl: legacyUrl, // ✅ required by schema
-        // mediaType: legacyType,  // optional (schema has default)
+        // mediaType: _legacyType,  // optional (schema has default)
         ...(media.length
           ? {
               media: {
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
   } catch (err: unknown) {
-    // If it's a Prisma-ish error, include extra debug fields
+    // If it's a _Prisma-ish error, include extra debug fields
     const e = err as any;
 
     if (e?.name || e?.code || e?.meta) {
