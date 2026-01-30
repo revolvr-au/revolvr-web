@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { _Prisma } from "../../../generated/prisma";
+import { Prisma } from "../../../generated/prisma";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -83,7 +83,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
   } catch (err: unknown) {
-    // If it's a _Prisma-ish error, include extra debug fields
+    // If it's a Prisma-ish error, include extra debug fields
     const e = err as any;
 
     if (e?.name || e?.code || e?.meta) {
