@@ -463,7 +463,7 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
               const tick = (post as any).verificationTier ?? null;
               const creator = (post as any).creator ?? null;
               const displayName = String(creator?.displayName || displayNameFromEmail(email));
-              const avatarUrl = (creator?.avatarUrl && String(creator.avatarUrl).trim()) ? String(creator.avatarUrl).trim() : null;
+              const avatarUrl = (((creator as any)?.avatarUrl ?? (creator as any)?.avatar_url) && String(((creator as any)?.avatarUrl ?? (creator as any)?.avatar_url)).trim()) ? String(((creator as any)?.avatarUrl ?? (creator as any)?.avatar_url)).trim() : null;
               const isVerified = !!creator?.isVerified || tick === "blue" || tick === "gold";
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
