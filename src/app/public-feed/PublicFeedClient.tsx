@@ -481,12 +481,8 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
                             (email || "r")[0].toUpperCase()
                           )}
                         </div>
-                          ) : (
-                            (email || "r")[0].toUpperCase()
-                          )}
-                        </div>
 
-                      <div className="flex flex-col">
+                        <div className="flex flex-col">
                         <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
                           {displayName}
                           {isVerified ? <VerifiedBadge /> : null}
@@ -505,54 +501,54 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
                     </Link>
                   </div>
 
-  <div className="relative w-full">
-  {showFallback ? (
-    <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
-      <span className="text-xs text-white/50">Media unavailable</span>
-    </div>
-  ) : (
-    <MediaCarousel
-      className="w-full"
-      media={
-        (post as any).media?.length
-          ? (post as any).media
-              .slice()
-              .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
-              .map((m: any) => ({
-                type: m.type === "video" ? "video" : "image",
-                url: m.url,
-              }))
-          : post.imageUrl
-            ? [
-                {
-                  type: post.mediaType === "video" ? "video" : "image",
-                  url: post.imageUrl,
-                },
-              ]
-            : []
-      }
-    />
-  )}
-</div>
+                    <div className="relative w-full">
+                      {showFallback ? (
+                            <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
+                              <span className="text-xs text-white/50">Media unavailable</span>
+                            </div>
+                          ) : (
+                            <MediaCarousel
+                              className="w-full"
+                              media={
+                                (post as any).media?.length
+                                  ? (post as any).media
+                                      .slice()
+                                      .sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0))
+                                      .map((m: any) => ({
+                                        type: m.type === "video" ? "video" : "image",
+                                        url: m.url,
+                                      }))
+                                  : post.imageUrl
+                                    ? [
+                                        {
+                                          type: post.mediaType === "video" ? "video" : "image",
+                                          url: post.imageUrl,
+                                        },
+                                      ]
+                                    : []
+                              }
+                            />
+                          )}
+                        </div>
 
                   <div className="px-4 py-2 border-t border-white/10">
                     <div className="hidden sm:flex">
                       <div className="inline-flex items-center gap-10">
                         <FooterAction label="React" icon="🌼" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-<FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
-<FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-<FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
-<FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
+                          <FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
+                          <FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
+                          <FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
+                          <FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
 
                       </div>
                     </div>
 
                     <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
                       <FooterAction label="React" icon="🌼" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-<FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
-<FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-<FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
-<FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
+                        <FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
+                        <FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
+                        <FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
+                        <FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
 
                     </div>
                   </div>
