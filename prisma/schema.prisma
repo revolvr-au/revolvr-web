@@ -696,7 +696,7 @@ model CreatorProfile {
   displayName                    String
   handle                         String?       @unique
   bio                            String?       @db.Text
-  avatarUrl                      String?       @db.Text
+  avatarUrl                      String?       ("avatar_url") .Text@db.Text
   payoutShare                    Int           @default(45)
   status                         CreatorStatus @default(ACTIVE)
   createdAt                      DateTime      @default(now()) 
