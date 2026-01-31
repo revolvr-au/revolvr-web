@@ -696,7 +696,7 @@ model CreatorProfile {
   displayName                    String
   handle                         String?       @unique
   bio                            String?       @db.Text
-  avatarUrl                      String?       ("avatar_url") .Text@db.Text
+  avatarUrl                      String?       @map("avatar_url") @db.Text
   payoutShare                    Int           @default(45)
   status                         CreatorStatus @default(ACTIVE)
   createdAt                      DateTime      @default(now()) 
@@ -711,7 +711,7 @@ model CreatorProfile {
   stripeCustomerId               String?       @map("stripe_customer_id")
   stripeSubscriptionId           String?       @unique(map: "creatorprofile_stripe_subscription_id_key") @map("stripe_subscription_id")
   verificationPriceId            String?       @map("verification_price_id")
-  verificationStatus             String        @default("inactive") 
+  verificationStatus             String        @default("inactive") @map("verification_status")
   verificationCurrentPeriodEnd   DateTime?     @map("verification_current_period_end") @db.Timestamptz(6)
   blue_tick_status               String        @default("inactive")
   blue_tick_sub_id               String?
