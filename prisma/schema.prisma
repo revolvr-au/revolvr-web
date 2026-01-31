@@ -699,8 +699,8 @@ model CreatorProfile {
   avatarUrl                      String?       @db.Text
   payoutShare                    Int           @default(45)
   status                         CreatorStatus @default(ACTIVE)
-  createdAt                      DateTime      @default(now()) @map("created_at")
-  updatedAt                      DateTime      @updatedAt @map("updated_at")
+  createdAt                      DateTime      @default(now()) 
+  updatedAt                      DateTime      @updatedAt 
   stripeAccountId                String?       @map("stripe_account_id")
   stripeOnboardingStatus         String        @default("not_started") @map("stripe_onboarding_status")
   payoutCurrency                 String        @default("aud") @map("payout_currency")
