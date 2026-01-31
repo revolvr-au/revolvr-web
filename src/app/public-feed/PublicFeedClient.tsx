@@ -481,6 +481,10 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
                             (email || "r")[0].toUpperCase()
                           )}
                         </div>
+                          ) : (
+                            (email || "r")[0].toUpperCase()
+                          )}
+                        </div>
 
                       <div className="flex flex-col">
                         <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
