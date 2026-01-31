@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3000",
     "build": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
     "build:ci": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
     "start": "next start",

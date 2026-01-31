@@ -79,43 +79,6 @@ model UserCredits {
   @@schema("public")
 }
 
-model CreatorProfile {
-  id                             String        @id @default(cuid())
-  email                          String        @unique
-  displayName                    String
-  handle                         String?       @unique
-  bio                            String?       @db.Text
-  avatarUrl                      String?       @map("avatar_url") @db.Text
-  payoutShare                    Int           @default(45)
-  status                         CreatorStatus @default(ACTIVE)
-  createdAt                      DateTime      @default(now())
-  updatedAt                      DateTime      @updatedAt
-  stripeAccountId                String?       @map("stripe_account_id")
-  stripeOnboardingStatus         String        @default("not_started") @map("stripe_onboarding_status")
-  payoutCurrency                 String        @default("aud") @map("payout_currency")
-  stripeChargesEnabled           Boolean       @default(false) @map("stripe_charges_enabled")
-  stripePayoutsEnabled           Boolean       @default(false) @map("stripe_payouts_enabled")
-  isVerified                     Boolean       @default(false) @map("is_verified")
-  verifiedSince                  DateTime?     @map("verified_since") @db.Timestamptz(6)
-  stripeCustomerId               String?       @map("stripe_customer_id")
-  stripeSubscriptionId           String?       @unique(map: "creatorprofile_stripe_subscription_id_key") @map("stripe_subscription_id")
-  verificationPriceId            String?       @map("verification_price_id")
-  verificationStatus             String        @default("inactive") @map("verification_status")
-  verificationCurrentPeriodEnd   DateTime?     @map("verification_current_period_end") @db.Timestamptz(6)
-  blue_tick_status               String        @default("inactive")
-  blue_tick_sub_id               String?
-  blue_tick_customer_id          String?
-  blue_tick_current_period_end   DateTime?     @db.Timestamptz(6)
-  blue_tick_cancel_at_period_end Boolean       @default(false)
-  creatorTermsAccepted           Boolean       @default(false) @map("creator_terms_accepted")
-  creatorTermsAcceptedAt         DateTime?     @map("creator_terms_accepted_at") @db.Timestamptz(6)
-  creatorTermsVersion            String?       @map("creator_terms_version")
-
-  @@index([blue_tick_sub_id], map: "creatorprofile_blue_tick_sub_id_idx")
-  @@map("CreatorProfile")
-  @@schema("public")
-}
-
 model CreatorBalance {
   creatorEmail     String   @id
   totalEarnedCents Int      @default(0)
@@ -619,8 +582,11 @@ model creator_profiles {
   handle        String?
   revenue_share Decimal  @default(0.45) @db.Decimal
   created_at    DateTime @default(now()) @db.Timestamptz(6)
-  avatar_url    String?
-  users         users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  avatar_url String?
+  bio        String? @db.Text
+
+  users users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id])
   @@schema("public")
@@ -721,6 +687,43 @@ model spinner_spins {
   payload    Json?
 
   @@index([user_email])
+  @@schema("public")
+}
+
+model CreatorProfile {
+  id                             String        @id @default(cuid())
+  email                          String        @unique
+  displayName                    String
+  handle                         String?       @unique
+  bio                            String?       @db.Text
+  avatarUrl                      String?       @map("avatar_url") @db.Text
+  payoutShare                    Int           @default(45)
+  status                         CreatorStatus @default(ACTIVE)
+  createdAt                      DateTime      @default(now()) @map("created_at")
+  updatedAt                      DateTime      @updatedAt @map("updated_at")
+  stripeAccountId                String?       @map("stripe_account_id")
+  stripeOnboardingStatus         String        @default("not_started") @map("stripe_onboarding_status")
+  payoutCurrency                 String        @default("aud") @map("payout_currency")
+  stripeChargesEnabled           Boolean       @default(false) @map("stripe_charges_enabled")
+  stripePayoutsEnabled           Boolean       @default(false) @map("stripe_payouts_enabled")
+  isVerified                     Boolean       @default(false) @map("is_verified")
+  verifiedSince                  DateTime?     @map("verified_since") @db.Timestamptz(6)
+  stripeCustomerId               String?       @map("stripe_customer_id")
+  stripeSubscriptionId           String?       @unique(map: "creatorprofile_stripe_subscription_id_key") @map("stripe_subscription_id")
+  verificationPriceId            String?       @map("verification_price_id")
+  verificationStatus             String        @default("inactive") @map("verification_status")
+  verificationCurrentPeriodEnd   DateTime?     @map("verification_current_period_end") @db.Timestamptz(6)
+  blue_tick_status               String        @default("inactive")
+  blue_tick_sub_id               String?
+  blue_tick_customer_id          String?
+  blue_tick_current_period_end   DateTime?     @db.Timestamptz(6)
+  blue_tick_cancel_at_period_end Boolean       @default(false)
+  creatorTermsAccepted           Boolean       @default(false) @map("creator_terms_accepted")
+  creatorTermsAcceptedAt         DateTime?     @map("creator_terms_accepted_at") @db.Timestamptz(6)
+  creatorTermsVersion            String?       @map("creator_terms_version")
+
+  @@index([blue_tick_sub_id], map: "creatorprofile_blue_tick_sub_id_idx")
+  @@map("CreatorProfile")
   @@schema("public")
 }
 

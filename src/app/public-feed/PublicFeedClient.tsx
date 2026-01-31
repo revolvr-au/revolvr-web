@@ -15,12 +15,20 @@ import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 type Post = {
   id: string;
   userEmail: string;
-  imageUrl: string;       // this is your media URL
+  imageUrl: string;
   mediaType?: "image" | "video";
   media?: { type: "image" | "video"; url: string; order?: number }[];
   caption: string;
   createdAt: string;
+
+  creator?: {
+    displayName?: string | null;
+    handle?: string | null;
+    avatarUrl?: string | null;
+    isVerified?: boolean | null;
+  } | null;
 };
+
 
 
 type PostsResponseShape = { posts?: unknown };
