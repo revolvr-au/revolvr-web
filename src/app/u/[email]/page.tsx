@@ -30,6 +30,15 @@ export default async function PublicProfilePage({ params }: PageProps) {
 
   const creator = await prisma.creatorProfile.findUnique({
     where: { email },
+    select: {
+      email: true,
+      displayName: true,
+      handle: true,
+      avatarUrl: true,
+      bio: true,
+      createdAt: true,
+      verificationStatus: true,
+    },
   });
 
   const postsDb = await prisma.post.findMany({
