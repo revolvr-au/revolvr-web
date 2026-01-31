@@ -130,6 +130,7 @@ export async function GET() {
       displayName: prof.displayName,
       handle: prof.handle,
       avatarUrl: prof.avatarUrl,
+      avatar_url: prof.avatarUrl,
       isVerified: prof.isVerified,
     }
   : null,
