@@ -461,7 +461,10 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
             {posts.map((post) => {
               const email = String(post.userEmail || "").trim().toLowerCase();
               const tick = (post as any).verificationTier ?? null;
-              const isVerified = tick === "blue" || tick === "gold";
+              const creator = (post as any).creator ?? null;
+              const displayName = String(creator?.displayName || displayNameFromEmail(email));
+              const avatarUrl = (creator?.avatarUrl && String(creator.avatarUrl).trim()) ? String(creator.avatarUrl).trim() : null;
+              const isVerified = !!creator?.isVerified || tick === "blue" || tick === "gold";
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
               return (
@@ -477,7 +480,7 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
 
                       <div className="flex flex-col">
                         <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
-                          {displayNameFromEmail(email)}
+                          {displayName}
                           {isVerified ? <VerifiedBadge /> : null}
                         </span>
                         <span className="text-[11px] text-white/40">
