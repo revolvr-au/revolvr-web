@@ -474,9 +474,13 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
                 >
                   <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                     <div className="flex items-center gap-2">
-                      <div className="h-8 w-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-                        {(email || "r")[0].toUpperCase()}
-                      </div>
+                        <div className="h-8 w-8 rounded-full overflow-hidden bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
+                          {avatarUrl ? (
+                            <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                          ) : (
+                            (email || "r")[0].toUpperCase()
+                          )}
+                        </div>
 
                       <div className="flex flex-col">
                         <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
