@@ -37,7 +37,7 @@ setStatus("loading");
 
     if (error) {
       setStatus("error");
-      setError(error.message);
+      setError(error?.message ?? "Something went wrong.");
       return;
     }
   }
@@ -65,7 +65,7 @@ setStatus("loading");
 
     if (error) {
       setStatus("error");
-      setError(error.message);
+      setError(error?.message ?? "Something went wrong.");
       return;
     }
 
