@@ -1,11 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Dancing_Script } from "next/font/google";
-import { supabase } from "@/lib/supabase/client";
-
-const welcomeFont = Dancing_Script({ subsets: ["latin"], weight: ["600", "700"] });
+import { useRouter, useSearchParams } from "next/navigation";import { supabase } from "@/lib/supabase/client";
 
 export default function WelcomeClient() {
   const router = useRouter();
@@ -103,7 +99,7 @@ setStatus("loading");
 
           <div className="w-full max-w-[560px]">
             <p
-              className={`${welcomeFont.className} text-xl font-semibold tracking-wide text-neutral-700 md:text-2xl`}
+              className={`text-xl font-semibold tracking-wide text-neutral-700 md:text-2xl`}
             >
               Welcome to REVOLVR
             </p>
