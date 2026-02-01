@@ -18,7 +18,12 @@ export default function WelcomeClient() {
   const redirectTo = searchParams?.get("redirectTo") || "/public-feed";
 
   async function signInWithProvider(provider: "google" | "apple") {
-    setStatus("loading");
+    
+    // OAuth providers are not configured yet (Apple/Google dev accounts pending)
+    console.warn(`[auth]  sign-in is coming soon`);
+    return;
+
+setStatus("loading");
     setError("");
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -121,6 +126,7 @@ export default function WelcomeClient() {
               >
                 Continue with Apple
               </button>
+                <div style={{ marginTop: 6, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>Coming soon</div>
 
               <button
                 type="button"
@@ -130,6 +136,7 @@ export default function WelcomeClient() {
               >
                 Continue with Google
               </button>
+                <div style={{ marginTop: 6, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>Coming soon</div>
 
               <div className="my-5 flex items-center gap-3">
                 <div className="h-px w-full bg-neutral-200" />
