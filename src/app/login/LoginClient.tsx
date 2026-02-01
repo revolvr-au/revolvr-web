@@ -123,7 +123,7 @@ export default function LoginClient() {
             onClick={() => router.push(redirect)}
             className="w-full text-xs text-white/50 hover:text-white/70 mt-3"
           >
-            Continue without signing in
+            Explore first
           </button>
         </div>
       </div>
