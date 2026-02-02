@@ -83,7 +83,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       include: {
         media: { orderBy: { order: "asc" } },
-        _count: { select: { Like: true } },
+        _count: { select: { likes: true } },
       },
     });
 
@@ -117,7 +117,7 @@ export async function GET() {
         caption: p.caption ?? "",
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
-        likesCount: p._count.Like,
+        likesCount: p._count.likes,
 
         media: (p as any).media ?? [],
         imageUrl: first?.url ?? (p as any).imageUrl ?? null,

@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: any }) {
       where: { id },
       include: {
         media: { orderBy: { order: "asc" } },
-        _count: { select: { Like: true } },
+        _count: { select: { likes: true } },
       },
     });
 
@@ -33,7 +33,7 @@ export async function GET(_req: Request, { params }: { params: any }) {
       caption: p.caption ?? "",
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
-      likesCount: p._count.Like,
+      likesCount: p._count.likes,
     });
   } catch (err: any) {
     console.error("GET /api/posts/[id] error:", err);
