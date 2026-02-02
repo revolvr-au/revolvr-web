@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
     "lint:ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=0",
-    "postinstall": "rm -rf node_modules/.prisma && prisma generate"
+    "postinstall": "rm -rf node_modules/.prisma && prisma generate || true"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.17",
