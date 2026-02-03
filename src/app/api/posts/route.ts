@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+
+
+
 type MediaIn = { type: "image" | "video"; url: string; order: number };
 
 function normalizeMedia(body: any): MediaIn[] {
