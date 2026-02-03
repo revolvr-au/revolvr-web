@@ -54,3 +54,8 @@
     "node": ">=22 <23"
   }
 }
+{
+  "scripts": {
+    "postinstall": "prisma generate"
+  }
+}
