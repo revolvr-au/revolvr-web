@@ -4,6 +4,7 @@ import { getAuthedEmailFromCreatorMe } from "@/lib/authedEmail";
 import { TERMS_VERSION } from "@/legal/terms.en";
 import { PRIVACY_VERSION } from "@/legal/privacy.en";
 
+export const runtime = "nodejs";
 export async function POST(req: Request) {
   try {
     const email = await getAuthedEmailFromCreatorMe(req);
