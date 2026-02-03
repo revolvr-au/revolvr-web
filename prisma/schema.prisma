@@ -3,13 +3,12 @@ generator client {
   output     = "../src/generated/prisma"
   engineType = "library"
 }
-
-
 datasource db {
-  provider = "postgresql"
-  schemas  = ["public"]
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public"]
 }
-
 
 model Post {
   id        String      @id @default(uuid())
