@@ -1,3 +1,4 @@
+// src/lib/prisma.ts
 import { PrismaClient } from "../generated/prisma";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
@@ -9,15 +10,27 @@ declare global {
   var __pgPool: Pool | undefined;
 }
 
-const pool =
-  global.__pgPool ??
-  new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // IMPORTANT: do NOT ship rejectUnauthorized:false unless you *fully* accept the risk.
-    // If you're using Supabase with sslmode=require this should not be needed.
-    // ssl: { rejectUnauthorized: false },
-  });
+function buildPgPool() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set");
+  }
 
+  /**
+   * Supabase + Vercel: if you’re seeing
+   * “self-signed certificate in certificate chain”
+   * then you need to control TLS via `pg` here.
+   *
+   * IMPORTANT: This bypasses TLS chain verification.
+   * Use it to get unblocked, then replace with proper CA validation later.
+   */
+  return new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+  });
+}
+
+const pool = global.__pgPool ?? buildPgPool();
 const adapter = new PrismaPg(pool);
 
 export const prisma =
