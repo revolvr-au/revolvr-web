@@ -7,4 +7,9 @@ export default defineConfig({
       directUrl: process.env.DIRECT_URL,
     },
   },
+  generator: {
+    client: {
+      engineType: "library",
+    },
+  },
 });
