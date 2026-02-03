@@ -4,8 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000",
-    "build": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
-    "build:ci": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
+
+    "migrate:deploy": "prisma migrate deploy",
+
+    "build": "prisma generate && prisma migrate deploy && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
+    "build:ci": "prisma generate && prisma migrate deploy && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
+
     "start": "next start",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
