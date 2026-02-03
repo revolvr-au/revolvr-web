@@ -5,9 +5,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["public"]
 }
-
-
 
 
 model Post {
