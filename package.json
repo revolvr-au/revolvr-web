@@ -3,16 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000",
-    "migrate:deploy": "prisma migrate deploy",
-    "build": "prisma generate && cross-env-shell \"DATABASE_URL=$DIRECT_URL prisma migrate deploy\" && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
-    "build:ci": "prisma generate && cross-env-shell \"DATABASE_URL=$DIRECT_URL prisma migrate deploy\" && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
-    "start": "next start",
-    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
-    "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
-    "lint:ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=0",
-    "postinstall": "rm -rf node_modules/.prisma && prisma generate || true"
-  },
+  "dev": "next dev -p 3000",
+  "migrate:deploy": "prisma migrate deploy",
+  "build": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
+  "build:ci": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
+  "start": "next start",
+  "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
+  "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
+  "lint:ci": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --max-warnings=0",
+  "postinstall": "rm -rf node_modules/.prisma && prisma generate || true"
+},
   "dependencies": {
     "@livekit/components-react": "^2.9.17",
     "@livekit/components-styles": "^1.2.0",
