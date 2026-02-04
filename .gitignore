@@ -43,6 +43,12 @@ next-env.d.ts
 /src/generated/prisma
 *.bak
 
+# env files (never commit)
+.env
+.env.*
+!.env.example
+
 # local safety backups
+*.bak
 *.bak.*
-.env*.local
+
