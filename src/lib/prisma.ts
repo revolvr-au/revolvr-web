@@ -12,12 +12,21 @@ declare global {
 
 function buildPgPool() {
   const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) throw new Error("DATABASE_URL is not set");
+  if (!connectionString) {
+    // Don’t crash build-time evaluation (Next can execute modules during build).
+    // Runtime routes that need DB should handle missing DB explicitly.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("DATABASE_URL is not set");
+    }
+    return new Pool({ connectionString: "postgresql://invalid" });
+  }
 
   return new Pool({
     connectionString,
     // Supabase pooler typically requires SSL
-    ssl: { rejectUnauthorized: false },
+    ssl: process.env.NODE_ENV === "production"
+      ? { rejectUnauthorized: true }
+      : { rejectUnauthorized: false },
   });
 }
 
