@@ -1,51 +1,46 @@
-import { NextResponse, type NextRequest } from "next/server";
+// src/app/auth/callback/route.ts
+import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-const safeRedirect = (v: string | null) => {
-  // Default into the creator entrypoint (which will then send you to /u/<email>)
-  if (!v) return "/creator";
-  if (!v.startsWith("/")) return "/creator";
-  if (v.startsWith("//")) return "/creator";
-  if (v.includes("\\")) return "/creator";
-  return v;
-};
+export async function GET(req: Request) {
+  const { searchParams, origin } = new URL(req.url);
+  const code = searchParams.get("code");
+  const redirectToRaw = searchParams.get("redirectTo") ?? "/public-feed";
 
-export async function GET(req: NextRequest) {
-  const url = req.nextUrl;
-  const code = url.searchParams.get("code");
-  const redirectTo = safeRedirect(url.searchParams.get("redirectTo"));
+  // Prevent open-redirects
+  const redirectTo = redirectToRaw.startsWith("/") ? redirectToRaw : "/public-feed";
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnon) {
-    return NextResponse.redirect(new URL("/login?error=missing_env", url.origin));
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  // Redirect response we can attach cookies to
-  const res = NextResponse.redirect(new URL(redirectTo, url.origin));
+  // IMPORTANT: create the response FIRST so we can attach Set-Cookie to it
+  const res = NextResponse.redirect(new URL(redirectTo, origin));
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnon, {
-    cookies: {
-      getAll() {
-        return req.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) => {
-          res.cookies.set(name, value, options);
-        });
-      },
-    },
-  });
+  const cookieStore = cookies();
 
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (error) {
-      const back = new URL("/login", url.origin);
-      back.searchParams.set("redirectTo", redirectTo);
-      back.searchParams.set("error", "otp_invalid_or_expired");
-      return NextResponse.redirect(back);
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Attach cookies to the redirect response (this is what the browser receives)
+            res.cookies.set(name, value, options);
+          });
+        },
+      },
     }
+  );
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    console.error("[auth/callback] exchange failed", error);
+    return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
   return res;
