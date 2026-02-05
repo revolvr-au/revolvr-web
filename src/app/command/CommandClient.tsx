@@ -34,6 +34,7 @@ export default function CommandClient() {
   const router = useRouter();
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsAuth, setNeedsAuth] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,7 +47,7 @@ export default function CommandClient() {
         if (cancelled) return;
 
         if (!r.ok || !j?.loggedIn) {
-          router.replace("/login?redirect=/command");
+          setNeedsAuth(true);
           return;
         }
 
@@ -60,7 +61,48 @@ export default function CommandClient() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, []);
+
+  if (!loading && needsAuth) {
+    return (
+      <div className="mx-auto max-w-3xl px-6 py-10">
+        <div className="flex items-center justify-between">
+          <a href="/public-feed" className="text-sm text-white/70 hover:text-white">
+            ← Back
+          </a>
+          <div className="text-sm text-white/60">Command</div>
+          <div className="w-[92px]" />
+        </div>
+
+        <h1 className="mt-8 text-3xl font-semibold">Command</h1>
+        <p className="mt-2 text-sm text-white/60">
+          Log in to access your account controls and public profile.
+        </p>
+
+        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="text-sm text-white/70">You’re not logged in.</div>
+
+          <div className="mt-4 flex gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/login?redirect=/command")}
+              className="rounded-2xl bg-white text-black px-4 py-2 text-sm font-semibold hover:bg-white/90 transition"
+            >
+              Log in
+            </button>
+
+            <button
+              type="button"
+              onClick={() => router.push("/")}
+              className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/80 hover:bg-white/10 transition"
+            >
+              Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
@@ -95,11 +137,9 @@ export default function CommandClient() {
         />
       </div>
 
-      {loading && (
-        <div className="mt-6 text-sm text-white/50">Loading…</div>
-      )}
+      {loading && <div className="mt-6 text-sm text-white/50">Loading…</div>}
 
-      {!loading && !email && (
+      {!loading && !email && !needsAuth && (
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/70">
           Could not resolve your email. Try signing out and back in.
         </div>
