@@ -48,9 +48,11 @@ export default function CommandClient() {
 
         if (!r.ok || !j?.loggedIn) {
           setNeedsAuth(true);
+          setEmail(null);
           return;
         }
 
+        setNeedsAuth(false);
         setEmail((j.user?.email ?? "").toLowerCase() || null);
       } finally {
         if (!cancelled) setLoading(false);
@@ -63,6 +65,7 @@ export default function CommandClient() {
     };
   }, []);
 
+  // ✅ Guard must be BEFORE JSX return
   if (!loading && needsAuth) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
@@ -116,9 +119,7 @@ export default function CommandClient() {
       </div>
 
       <h1 className="mt-8 text-3xl font-semibold">Command</h1>
-      <p className="mt-2 text-sm text-white/60">
-        Account controls and public profile.
-      </p>
+      <p className="mt-2 text-sm text-white/60">Account controls and public profile.</p>
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <CardButton
