@@ -88,7 +88,7 @@ export default function CommandClient() {
           <div className="mt-4 flex gap-3">
             <button
               type="button"
-              onClick={() => router.push("/login?redirect=/command")}
+              onClick={() => router.push("/login?redirectTo=/command")}
               className="rounded-2xl bg-white text-black px-4 py-2 text-sm font-semibold hover:bg-white/90 transition"
             >
               Log in

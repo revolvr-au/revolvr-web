@@ -160,7 +160,7 @@ export default function BottomBar({
               const email = user?.email?.toLowerCase() ?? null;
 
               if (!email) {
-                router.push("/login?redirectTo=/command");
+                router.push("/command");
                 return;
               }
 
