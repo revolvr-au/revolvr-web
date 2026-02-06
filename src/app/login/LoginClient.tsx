@@ -59,10 +59,11 @@ export default function LoginClient() {
 
       // IMPORTANT: still include redirectTo so if user clicks link anyway it lands back on site
       // but our primary flow is now CODE verification.
-      const origin = "https://www.revolvr.net";const { error } = await supabase.auth.signInWithOtp({
-        email: cleanEmail,
-        options: {
-          emailRedirectTo,
+      const { error } = await supabase.auth.signInWithOtp({
+  email: cleanEmail,
+  // IMPORTANT: no options.emailRedirectTo for code flow
+});
+
           // If your Supabase project is configured for code-based emails, this will email a code.
           // Even if Supabase also includes a link, we will ignore it and use verifyOtp.
         },
@@ -86,7 +87,7 @@ export default function LoginClient() {
   async function onVerify() {
     const token = code.replace(/\s+/g, "");
     if (!cleanEmail) return setError("Enter your email address.");
-    if (!token) return setError("Enter the 6-digit code from your email.");
+    if (!token) return setError("Enter the 8-digit code from your email.");
 
     try {
       setVerifying(true);
@@ -125,8 +126,8 @@ export default function LoginClient() {
         <h1 className="text-xl font-semibold">Sign in</h1>
         <p className="text-xs text-white/60 mt-1">
           {stage === "email"
-            ? "We’ll email you a 6-digit code."
-            : "Enter the 6-digit code we emailed you."}
+            ? "We’ll email you a 8-digit code."
+            : "Enter the 8-digit code we emailed you."}
         </p>
 
         <div className="mt-4 space-y-2">
@@ -142,13 +143,16 @@ export default function LoginClient() {
 
           {stage === "code" && (
             <>
-              <label className="text-xs text-white/60 mt-3 block">6-digit code</label>
+              <label className="text-xs text-white/60 mt-3 block">8-digit code</label>
               <input
                 className="w-full rounded-xl bg-black/40 border border-white/15 px-3 py-2 text-sm tracking-widest"
                 value={code}
-                onChange={(e) => setCode(e.target.value)}
+                onChange={(e) =>
+  setCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+}
+
                 inputMode="numeric"
-                placeholder="123456"
+                placeholder="12345678"
                 autoComplete="one-time-code"
               />
             </>
