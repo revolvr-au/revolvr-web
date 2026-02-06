@@ -12,6 +12,12 @@ import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 
+const mockPeople: PersonRailItem[] = [
+  { email: "singaporeair@revolvr.net", imageUrl: null, tick: "gold" },
+  { email: "mangusta@yachts.com", imageUrl: null, tick: "blue" },
+  { email: "feadship@revolvr.net", imageUrl: null, tick: null },
+];
+
 type Post = {
   id: string;
   userEmail: string;
@@ -431,7 +437,8 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
       <div className="space-y-6">
-        <PeopleRail items={railItems} size={84} revolve />
+        <PeopleRail items={railItems.length ? railItems : mockPeople} size={72} />
+
 
         {returnBanner ? (
           <div
