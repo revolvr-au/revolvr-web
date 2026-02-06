@@ -59,12 +59,7 @@ export default function LoginClient() {
 
       // IMPORTANT: still include redirectTo so if user clicks link anyway it lands back on site
       // but our primary flow is now CODE verification.
-      const origin = "https://www.revolvr.net";
-      const emailRedirectTo = `${origin}/auth/callback?redirectTo=${encodeURIComponent(
-        redirect
-      )}`;
-
-      const { error } = await supabase.auth.signInWithOtp({
+      const origin = "https://www.revolvr.net";const { error } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
         options: {
           emailRedirectTo,

@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(req: Request) {
+  const { email, token } = (await req.json().catch(() => ({}))) as {
+    email?: string;
+    token?: string;
+  };
+
+  const cleanEmail = (email ?? "").trim().toLowerCase();
+  const cleanToken = (token ?? "").trim();
+
+  if (!cleanEmail || !cleanToken) {
+    return NextResponse.json(
+      { ok: false, error: "missing_email_or_token" },
+      { status: 400 }
+    );
+  }
+
+  const cookieStore = cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
+        },
+      },
+    }
+  );
+
+  const { error } = await supabase.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanToken,
+    type: "email",
+  });
+
+  if (error) {
+    console.error("[api/auth/verify-otp] verifyOtp failed", error);
+    return NextResponse.json(
+      { ok: false, error: "invalid_or_expired" },
+      { status: 400 }
+    );
+  }
+
+  return NextResponse.json({ ok: true }, { status: 200 });
+}
