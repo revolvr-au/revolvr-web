@@ -28,8 +28,8 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const { email: rawEmail } = await params;
   const email = decodeURIComponent(rawEmail).toLowerCase();
 
-  const creator = await prisma.creatorProfile.findUnique({
-    where: { email },
+  const creator = await prisma.creatorProfile.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
     select: {
       email: true,
       displayName: true,
