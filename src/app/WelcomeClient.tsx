@@ -180,15 +180,14 @@ export default function WelcomeClient() {
                     Email
                   </label>
                   <input
-                    type="email"
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    disabled={loading}
-                    className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-[15px] outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-50"
-                  />
-
+  type="email"
+  autoComplete="email"
+  placeholder="you@example.com"
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+  disabled={loading}
+  className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-[15px] outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-50"
+/>
                   <button
                     type="submit"
                     disabled={loading}
@@ -210,9 +209,12 @@ export default function WelcomeClient() {
                   </label>
                   <input
                     inputMode="numeric"
-                    placeholder="123456"
+                    placeholder="12345678"
                     value={code}
-                    onChange={(e) => setCode(e.target.value)}
+                    onChange={(e) =>
+                    setCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+}
+
                     disabled={loading}
                     className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-[15px] outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-50"
                   />
