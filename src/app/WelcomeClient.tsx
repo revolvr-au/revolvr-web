@@ -187,6 +187,11 @@ setStatus("loading");
                 Explore first
               </button>
             </div>
+
+            <div className="mt-6 text-[11px] text-neutral-400">
+              REVOLVR_BUILD_SHA: NO_SHA
+            </div>
+
           </div>
         </div>
       </div>
