@@ -4,21 +4,20 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 export async function GET(req: Request) {
-  const { searchParams, origin } = new URL(req.url);
-  const code = searchParams.get("code");
-  const redirectToRaw = searchParams.get("redirectTo") ?? "/public-feed";
+  const url = new URL(req.url);
+  const code = url.searchParams.get("code");
+  const redirectTo = url.searchParams.get("redirectTo") ?? "/public-feed";
 
-  // Prevent open-redirects
-  const redirectTo = redirectToRaw.startsWith("/") ? redirectToRaw : "/public-feed";
+  const origin = url.origin;
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  // IMPORTANT: create the response FIRST so we can attach Set-Cookie to it
-  const res = NextResponse.redirect(new URL(redirectTo, origin));
+  // IMPORTANT: create the response FIRST and write cookies onto it
+  const res = NextResponse.redirect(`${origin}${redirectTo}`);
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +27,7 @@ export async function GET(req: Request) {
         getAll: () => cookieStore.getAll(),
         setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Attach cookies to the redirect response (this is what the browser receives)
+            // Write to the actual outgoing response
             res.cookies.set(name, value, options);
           });
         },
