@@ -13,10 +13,11 @@ import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 
 const mockPeople: PersonRailItem[] = [
-  { email: "singaporeair@revolvr.net", imageUrl: null, tick: "gold" },
-  { email: "mangusta@yachts.com", imageUrl: null, tick: "blue" },
-  { email: "feadship@revolvr.net", imageUrl: null, tick: null },
+  { email: "singaporeair@revolvr.net", imageUrl: null, tick: "gold", isLive: true },
+  { email: "mangusta@yachts.com", imageUrl: null, tick: "blue", isLive: false },
+  { email: "feadship@revolvr.net", imageUrl: null, tick: null, isLive: true },
 ];
+
 
 type Post = {
   id: string;

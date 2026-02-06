@@ -10,6 +10,7 @@ export type PersonRailItem = {
   imageUrl?: string | null;
   displayName?: string | null;
   tick?: "blue" | "gold" | null;
+  isLive?: boolean | null;
 };
 
 function displayNameFromEmail(email: string) {
@@ -18,12 +19,42 @@ function displayNameFromEmail(email: string) {
   return cleaned || email;
 }
 
+function LivePill() {
+  return (
+    <span
+      title="LIVE"
+      className={[
+        "absolute -left-1 -top-1 z-10",
+        "inline-flex items-center gap-1",
+        "h-5 px-2",
+        "rounded-full",
+        "bg-red-500/90 text-white",
+        "text-[10px] font-bold tracking-wide",
+        "shadow ring-2 ring-black/30",
+        "backdrop-blur",
+      ].join(" ")}
+      aria-label="Live"
+    >
+      <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+      LIVE
+    </span>
+  );
+}
+
 function Tick({ tick }: { tick: "blue" | "gold" }) {
   const bg = tick === "gold" ? "bg-amber-400" : "bg-blue-500";
   return (
     <span
       title={tick === "gold" ? "Gold tick" : "Blue tick"}
-      className={`absolute right-0 top-0 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full ${bg} text-[10px] font-bold text-black shadow`}
+      className={[
+        "absolute -right-1 -top-1 z-10",
+        "inline-flex items-center justify-center",
+        "h-[18px] w-[18px]",
+        "rounded-full",
+        bg,
+        "text-[10px] font-bold text-black",
+        "shadow ring-2 ring-black/30",
+      ].join(" ")}
       aria-label={tick === "gold" ? "Gold tick" : "Blue tick"}
     >
       ✓
@@ -51,12 +82,15 @@ export default function PeopleRail({
       .map((p) => {
         const email = String(p.email || "").trim().toLowerCase();
         if (!email) return null;
+
         const name = p.displayName || displayNameFromEmail(email);
+
         return {
           ...p,
           email,
           displayName: name,
           imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
+          isLive: Boolean(p.isLive),
         };
       })
       .filter(Boolean) as Array<PersonRailItem & { email: string; displayName: string }>;
@@ -68,10 +102,7 @@ export default function PeopleRail({
 
   return (
     <div className="px-4">
-      <div
-        className="flex items-center overflow-x-auto no-scrollbar"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
+      <div className="flex items-center overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
         <div className="flex gap-3 py-2">
           {normalized.map((p) => {
             const email = p.email;
@@ -82,31 +113,36 @@ export default function PeopleRail({
               <Link
                 key={email}
                 href={`/u/${encodeURIComponent(email)}`}
-                className="relative flex-none rounded-full overflow-hidden bg-white/5 rv-avatar"
+                className="relative flex-none overflow-visible"
                 style={{ width: size, height: size }}
                 aria-label={`View ${name}`}
                 title={name}
               >
+                {/* Half-in / half-out badges */}
+                {p.isLive ? <LivePill /> : null}
                 {p.tick ? <Tick tick={p.tick} /> : null}
 
-                <div className="relative w-full h-full">
-                  {showImage ? (
-                    <Image
-                      src={p.imageUrl as string}
-                      alt={name}
-                      fill
-                      unoptimized
-                      className="object-cover"
-                      onError={() => setBroken((prev) => ({ ...prev, [email]: true }))}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
-                      {name.slice(0, 1).toUpperCase()}
-                    </div>
-                  )}
-                </div>
+                {/* Inner wrapper clips to circle and holds premium ring */}
+                <div className="rv-avatar relative w-full h-full rounded-full overflow-hidden bg-white/5">
+                  <div className="relative w-full h-full">
+                    {showImage ? (
+                      <Image
+                        src={p.imageUrl as string}
+                        alt={name}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                        onError={() => setBroken((prev) => ({ ...prev, [email]: true }))}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
+                        {name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
 
-                <span className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
+                  <span className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
+                </div>
               </Link>
             );
           })}
