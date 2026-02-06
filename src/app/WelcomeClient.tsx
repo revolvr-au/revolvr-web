@@ -164,13 +164,13 @@ setStatus("loading");
                   disabled={loading}
                   className="mt-3 w-full rounded-2xl bg-neutral-950 px-5 py-3 text-center text-[15px] font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Send magic link
+                  Send code
                 </button>
               </form>
 
               {status === "sent" && (
                 <p className="mt-3 text-sm text-neutral-700">
-                  Check your inbox — we’ve sent you a magic link.
+                  Check your inbox — we’ve sent you a code.
                 </p>
               )}
               {status === "error" && (
