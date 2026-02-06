@@ -141,17 +141,6 @@
     opacity: 1;
   }
 }
-/* People Rail - slow premium revolve */
-@keyframes revolvr-revolve {
-  from { transform: scale(1.06) rotate(0deg); }
-  to   { transform: scale(1.06) rotate(360deg); }
-}
-
-.rv-revolve-tile {
-  transform-origin: 50% 50%;
-  animation: revolvr-revolve 22s linear infinite;
-  /* keeps it subtle, not dizzy */
-}
 /* ---------------- Live Chat Panel (Phase 1) ---------------- */
 
 .live-chat-panel {
@@ -360,4 +349,45 @@
 .live-room .lk-participant-tile__name,
 .live-room [class*="participant-name"] {
   display: none !important;
+}
+
+/* Outer premium ring */
+/* Inner crisp stroke */
+/* ---------------- People Rail: Premium Avatar Circle ---------------- */
+.rv-avatar {
+  position: relative;
+  border-radius: 9999px;
+  overflow: hidden;
+  transform: translateZ(0);
+}
+
+/* Ensure avatar content is below the ring */
+.rv-avatar > * {
+  position: relative;
+  z-index: 1;
+}
+
+.rv-avatar::before,
+.rv-avatar::after {
+  content: "";
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Outer premium ring */
+.rv-avatar::before {
+  inset: 0;
+  padding: 3px;
+  background: linear-gradient(135deg, rgba(255,255,255,.40), rgba(255,255,255,.08));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Inner crisp stroke */
+.rv-avatar::after {
+  inset: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
 }

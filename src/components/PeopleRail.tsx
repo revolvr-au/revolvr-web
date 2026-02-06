@@ -23,7 +23,7 @@ function Tick({ tick }: { tick: "blue" | "gold" }) {
   return (
     <span
       title={tick === "gold" ? "Gold tick" : "Blue tick"}
-      className={`absolute right-1 top-1 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full ${bg} text-[10px] font-bold text-black shadow`}
+      className={`absolute right-0 top-0 z-10 inline-flex h-4 w-4 items-center justify-center rounded-full ${bg} text-[10px] font-bold text-black shadow`}
       aria-label={tick === "gold" ? "Gold tick" : "Blue tick"}
     >
       ✓
@@ -40,12 +40,10 @@ function isValidImageUrl(url: unknown): url is string {
 
 export default function PeopleRail({
   items,
-  size = 74,
-  revolve = true,
+  size = 72,
 }: {
   items: PersonRailItem[];
   size?: number;
-  revolve?: boolean;
 }) {
   const normalized = useMemo(() => {
     if (!items?.length) return [];
@@ -70,7 +68,10 @@ export default function PeopleRail({
 
   return (
     <div className="px-4">
-      <div className="flex items-center overflow-x-auto no-scrollbar" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div
+        className="flex items-center overflow-x-auto no-scrollbar"
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
         <div className="flex gap-3 py-2">
           {normalized.map((p) => {
             const email = p.email;
@@ -81,14 +82,14 @@ export default function PeopleRail({
               <Link
                 key={email}
                 href={`/u/${encodeURIComponent(email)}`}
-                className="relative flex-none rounded-xl overflow-hidden bg-white/5"
+                className="relative flex-none rounded-full overflow-hidden bg-white/5 rv-avatar"
                 style={{ width: size, height: size }}
                 aria-label={`View ${name}`}
                 title={name}
               >
                 {p.tick ? <Tick tick={p.tick} /> : null}
 
-                <div className={`relative w-full h-full ${revolve ? "rv-revolve-tile" : ""}`}>
+                <div className="relative w-full h-full">
                   {showImage ? (
                     <Image
                       src={p.imageUrl as string}
@@ -105,7 +106,7 @@ export default function PeopleRail({
                   )}
                 </div>
 
-                <span className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
+                <span className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
               </Link>
             );
           })}
