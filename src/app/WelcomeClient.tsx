@@ -50,14 +50,19 @@ setStatus("loading");
       return;
     }
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: cleanEmail,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?redirectTo=${encodeURIComponent(
-          redirectTo
-        )}`,
-      },
-    });
+      const origin =
+        window.location.hostname === "www.revolvr.net"
+          ? "https://www.revolvr.net"
+          : window.location.origin;
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: cleanEmail,
+        options: {
+          emailRedirectTo: `${origin}/auth/callback?redirectTo=${encodeURIComponent(
+            redirectTo
+          )}`,
+        },
+      });
 
     if (error) {
       setStatus("error");
