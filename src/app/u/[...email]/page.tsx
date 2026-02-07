@@ -58,13 +58,12 @@ function ActionButton({
 export default async function ProfilePage({
   params,
 }: {
-  // ✅ catch-all param
   params: { email: string[] };
 }) {
-  // ✅ IMPORTANT: join segments, then decode once
-  // Example URL: /u/revolvr.au%40gmail.com  => ["revolvr.au%40gmail.com"]
-  const rawJoined = Array.isArray(params?.email) ? params.email.join("/") : "";
-  const email = decodeURIComponent(rawJoined).trim().toLowerCase();
+  // [...email] means params.email is ALWAYS an array
+  const raw = Array.isArray(params.email) ? params.email.join("/") : params.email;
+
+  const email = decodeURIComponent(String(raw || "")).trim().toLowerCase();
 
   if (!email) {
     return (
@@ -83,27 +82,10 @@ export default async function ProfilePage({
   const tick: "blue" | "gold" | null = null;
 
   return (
-    <FeedLayout
-      title={displayName}
-      subtitle={handle}
-      right={
-        <Link
-          href="/public-feed"
-          className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
-          aria-label="Back"
-          title="Back"
-        >
-          ←
-        </Link>
-      }
-      showMenu
-      onMenuClick={() => {
-        // later: open menu sheet
-      }}
-    >
-      <div className="pb-20">
+    <FeedLayout title={displayName} subtitle={handle} showMenu onMenuClick={() => {}}>
+      <div className="px-4 sm:px-6 pb-20">
         {/* Hero */}
-        <div className="mt-2 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
+        <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
             {/* Avatar */}
             <div className="flex items-start gap-4 sm:block">
@@ -148,12 +130,16 @@ export default async function ProfilePage({
                 </div>
               </div>
 
+              {/* Mobile identity */}
               <div className="sm:hidden flex-1 min-w-0">
-                <div className="text-lg font-semibold text-white truncate">{displayName}</div>
+                <div className="text-lg font-semibold text-white truncate">
+                  {displayName}
+                </div>
                 <div className="text-sm text-white/50 truncate">{handle}</div>
               </div>
             </div>
 
+            {/* Desktop identity + bio */}
             <div className="flex-1 min-w-0">
               <div className="hidden sm:block">
                 <div className="text-lg font-semibold text-white">{displayName}</div>
@@ -170,6 +156,7 @@ export default async function ProfilePage({
                 <ActionButton variant="ghost">Subscribe</ActionButton>
               </div>
 
+              {/* Stats */}
               <div className="mt-5 flex items-center gap-2">
                 <Stat label="Posts" value="0" />
                 <div className="w-px h-10 bg-white/10" />
@@ -201,6 +188,16 @@ export default async function ProfilePage({
               Next: wire posts grid + creator data + friends/followers/following/likes/comments.
             </div>
           </div>
+        </div>
+
+        {/* Back button (optional) */}
+        <div className="mt-6">
+          <Link
+            href="/public-feed"
+            className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-white/5 hover:bg-white/10 transition text-sm text-white/70"
+          >
+            ← Back to feed
+          </Link>
         </div>
       </div>
     </FeedLayout>
