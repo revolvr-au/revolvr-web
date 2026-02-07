@@ -1,561 +1,375 @@
+// src/app/u/[email]/ProfileClient.tsx
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import PostActionModal, { type Preset } from "@/components/PostActionModal";
-import { createCheckout } from "@/lib/actionsClient";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-type Verification = "blue" | "gold" | null;
-
-export type ProfilePost = {
-  id: string;
-  imageUrl: string;
-  mediaType: string;
-  caption: string | null;
-  createdAt: string; // ISO
-};
-
-export type ProfileClientProps = {
+type CreatorProfile = {
   email: string;
   displayName: string;
-  handle: string | null;
-  verification: Verification;
-  trustLine: string | null;
-  avatarUrl: string | null;
-  bio: string | null;
-  posts: ProfilePost[];
+  handle?: string | null;
+  avatarUrl?: string | null;
+  bio?: string | null;
+
+  // For future
+  isVerified?: boolean | null;
+  verificationTier?: "blue" | "gold" | null;
+
+  stats?: {
+    posts?: number;
+    followers?: number;
+    following?: number;
+  };
 };
 
-type Mode = "tip" | "boost" | "spin";
-
-type Meta = {
-  title: string;
-  subtitle: string;
-  icon: string;
-  presets: Preset[];
-  defaultAmountCents: number;
-  confirmLabel: string;
+type Post = {
+  id: string;
+  imageUrl?: string | null;
+  mediaType?: "image" | "video";
+  createdAt?: string;
 };
 
-function metaFor(mode: Mode): Meta {
-  switch (mode) {
-    case "tip":
-      return {
-        title: "Tip",
-        subtitle: "Support this profile",
-        icon: "💰",
-        presets: [
-          { label: "A$1.50", amountCents: 150 },
-          { label: "A$2.00", amountCents: 200 },
-          { label: "A$5.00", amountCents: 500 },
-          { label: "A$10.00", amountCents: 1000 },
-        ],
-        defaultAmountCents: 150,
-        confirmLabel: "Tip",
-      };
-    case "boost":
-      return {
-        title: "Boost",
-        subtitle: "Boost this post",
-        icon: "⚡",
-        presets: [
-          { label: "A$5.00", amountCents: 500 },
-          { label: "A$10.00", amountCents: 1000 },
-          { label: "A$25.00", amountCents: 2500 },
-          { label: "A$50.00", amountCents: 5000 },
-        ],
-        defaultAmountCents: 1000,
-        confirmLabel: "Boost",
-      };
-    case "spin":
-      return {
-        title: "Spin",
-        subtitle: "Send a pulse",
-        icon: "🌀",
-        presets: [
-          { label: "A$1.00", amountCents: 100 },
-          { label: "A$2.00", amountCents: 200 },
-          { label: "A$5.00", amountCents: 500 },
-          { label: "A$10.00", amountCents: 1000 },
-        ],
-        defaultAmountCents: 200,
-        confirmLabel: "Spin",
-      };
-  }
+function displayNameFromEmail(email: string) {
+  const [localPart] = String(email || "").split("@");
+  const cleaned = localPart.replace(/\W+/g, " ").trim();
+  return cleaned || email;
 }
 
-function formatMonthYear(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  try {
-    return new Intl.DateTimeFormat(undefined, {
-      year: "numeric",
-      month: "short",
-    }).format(d);
-  } catch {
-    return iso.slice(0, 7);
-  }
+function handleFromEmail(email: string) {
+  const [localPart] = String(email || "").split("@");
+  return (localPart || "user").toLowerCase();
 }
 
-type MeResponse = {
-  loggedIn: boolean;
-  user?: { email?: string | null };
-  creator?: { verificationTier?: "blue" | "gold" | null };
-};
+function isValidImageUrl(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  const u = url.trim();
+  if (!u) return false;
+  return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
+}
 
-function ActionPill({
-  icon,
-  label,
-  onClick,
-  disabled,
-}: {
-  icon: string;
-  label: string;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
+function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="rounded-full border border-white/15 bg-black/30 backdrop-blur px-3 py-1.5 text-xs text-white/90 hover:bg-black/40 disabled:opacity-50"
-    >
-      <span className="mr-1">{icon}</span>
-      {label}
-    </button>
-  );
-}
-
-function PostModal({
-  open,
-  onClose,
-  post,
-  profileEmail,
-  viewerEmail,
-}: {
-  open: boolean;
-  onClose: () => void;
-  post: ProfilePost | null;
-  profileEmail: string;
-  viewerEmail: string | null;
-}) {
-  const [activeMode, setActiveMode] = useState<Mode | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  const activeMeta = useMemo(() => {
-    if (!activeMode) return null;
-    return metaFor(activeMode);
-  }, [activeMode]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  const isAuthed = Boolean(viewerEmail);
-  const canCheckout = Boolean(viewerEmail && profileEmail && post?.id);
-
-  const returnPath =
-    typeof window !== "undefined"
-      ? window.location.pathname
-      : `/u/${encodeURIComponent(profileEmail)}`;
-
-  const loginHref = `/login?redirectTo=${encodeURIComponent(returnPath)}`;
-
-  async function begin(mode: Mode, amountCents: number) {
-    if (!post?.id) return;
-    if (!viewerEmail) return;
-    setBusy(true);
-    try {
-      const { url } = await createCheckout({
-        mode,
-        creatorEmail: profileEmail,
-        userEmail: viewerEmail,
-        postId: post.id,
-        source: "FEED",
-        returnPath,
-        amountCents,
-      });
-      window.location.href = url;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  if (!open || !post) return null;
-
-  const created = formatMonthYear(post.createdAt);
-
-  return (
-    <div className="fixed inset-0 z-[100]">
-      <div
-        className="absolute inset-0 bg-black/70"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div className="absolute inset-x-0 bottom-0 mx-auto w-full max-w-3xl px-3 pb-[calc(env(safe-area-inset-bottom)+16px)]">
-        <div className="rounded-3xl border border-white/10 bg-black/80 backdrop-blur overflow-hidden shadow-2xl">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <div className="min-w-0">
-              <div className="text-sm font-semibold truncate">{profileEmail}</div>
-              <div className="text-[11px] text-white/60">
-                {created ? `Posted ${created}` : "Post"}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/80 hover:bg-white/10"
-            >
-              Close
-            </button>
-          </div>
-
-          {/* Media */}
-          <div className="bg-black">
-            {post.imageUrl && post.mediaType?.startsWith("video") ? (
-               
-              <video
-                src={post.imageUrl}
-                controls
-                playsInline
-                className="w-full max-h-[70vh] object-contain bg-black"
-              />
-            ) : post.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={post.imageUrl}
-                alt=""
-                className="w-full max-h-[70vh] object-contain bg-black"
-              />
-            ) : null}
-          </div>
-
-          {/* Caption */}
-          {post.caption ? (
-            <div className="px-4 py-3 text-sm text-white/90 border-t border-white/10 whitespace-pre-wrap">
-              {post.caption}
-            </div>
-          ) : null}
-
-          {/* Actions */}
-          <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <ActionPill
-                icon="💰"
-                label="Tip"
-                disabled={!canCheckout}
-                onClick={() => setActiveMode("tip")}
-              />
-              <ActionPill
-                icon="⚡"
-                label="Boost"
-                disabled={!canCheckout}
-                onClick={() => setActiveMode("boost")}
-              />
-              <ActionPill
-                icon="🌀"
-                label="Spin"
-                disabled={!canCheckout}
-                onClick={() => setActiveMode("spin")}
-              />
-            </div>
-            <div className="text-[11px] text-white/50">
-              {isAuthed ? "Payments via Stripe" : "Sign in to support"}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <PostActionModal
-        open={Boolean(activeMode && activeMeta)}
-        onClose={() => setActiveMode(null)}
-        title={activeMeta?.title ?? ""}
-        subtitle={activeMeta?.subtitle}
-        icon={activeMeta?.icon}
-        isAuthed={isAuthed}
-        loginHref={loginHref}
-        presets={activeMeta?.presets}
-        defaultAmountCents={activeMeta?.defaultAmountCents}
-        confirmLabel={activeMeta?.confirmLabel}
-        allowCustom={true}
-        busy={busy}
-        currency={"aud"}
-        onConfirm={async (amountCents) => {
-          if (!activeMode) return;
-          await begin(activeMode, amountCents);
-        }}
-      />
+    <div className="flex flex-col items-center px-3">
+      <div className="text-white/90 text-[15px] font-semibold leading-none">{value}</div>
+      <div className="text-white/45 text-[11px] mt-1">{label}</div>
     </div>
   );
 }
 
-export default function ProfileClient(props: ProfileClientProps) {
-  const { email, displayName, handle, verification, trustLine, avatarUrl, bio, posts } =
-    props;
+function TabButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "flex-1 h-10 rounded-xl text-[12px] font-semibold",
+        "border transition-all duration-150",
+        active
+          ? "bg-white/10 border-white/15 text-white"
+          : "bg-white/5 border-white/10 text-white/70 hover:bg-white/7",
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
 
-  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
-  const [selected, setSelected] = useState<ProfilePost | null>(null);
+export default function ProfileClient({ email }: { email: string }) {
+  const safeEmail = String(email || "").trim().toLowerCase();
 
-  // Hamburger menu
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<CreatorProfile | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [tab, setTab] = useState<"posts" | "media" | "about">("posts");
 
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (!menuRef.current) return;
-      if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+  const fallbackProfile = useMemo<CreatorProfile>(() => {
+    return {
+      email: safeEmail,
+      displayName: displayNameFromEmail(safeEmail),
+      handle: handleFromEmail(safeEmail),
+      avatarUrl: null,
+      bio: null,
+      isVerified: null,
+      verificationTier: null,
+      stats: { posts: 0, followers: 0, following: 0 },
     };
-    if (menuOpen) document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [menuOpen]);
+  }, [safeEmail]);
 
   useEffect(() => {
-    fetch("/api/creator/me", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((data: MeResponse) => {
-        if (data?.loggedIn) {
-          setViewerEmail((data.user?.email ?? null)?.toLowerCase() ?? null);
+    let cancelled = false;
+
+    async function run() {
+      try {
+        setLoading(true);
+
+        // 1) Try to fetch a creator profile endpoint (if/when you add it)
+        // Recommended shape:
+        // GET /api/creator/profile?email=... -> { email, displayName, handle, avatarUrl, bio, verificationTier, stats }
+        let nextProfile: CreatorProfile | null = null;
+
+        try {
+          const res = await fetch(`/api/creator/profile?email=${encodeURIComponent(safeEmail)}`, {
+            cache: "no-store",
+          });
+          if (res.ok) {
+            const j = (await res.json().catch(() => null)) as any;
+            if (j && typeof j === "object") {
+              nextProfile = {
+                email: safeEmail,
+                displayName: String(j.displayName || j.name || displayNameFromEmail(safeEmail)),
+                handle: j.handle ? String(j.handle) : handleFromEmail(safeEmail),
+                avatarUrl: isValidImageUrl(j.avatarUrl ?? j.avatar_url) ? String(j.avatarUrl ?? j.avatar_url) : null,
+                bio: j.bio ? String(j.bio) : null,
+                verificationTier: (j.verificationTier ?? null) as any,
+                isVerified: Boolean(j.isVerified ?? j.verified ?? false) || j.verificationTier === "blue" || j.verificationTier === "gold",
+                stats: {
+                  posts: Number(j.stats?.posts ?? 0),
+                  followers: Number(j.stats?.followers ?? 0),
+                  following: Number(j.stats?.following ?? 0),
+                },
+              };
+            }
+          }
+        } catch {
+          // ignore - endpoint may not exist yet
         }
-      })
-      .catch(() => null);
-  }, []);
+
+        // 2) Try to fetch posts for this user (optional; safe fallback if not implemented)
+        // Recommended:
+        // GET /api/posts?email=... -> { posts: [...] } or [...]
+        let nextPosts: Post[] = [];
+        try {
+          const res = await fetch(`/api/posts?email=${encodeURIComponent(safeEmail)}`, { cache: "no-store" });
+          if (res.ok) {
+            const j = (await res.json().catch(() => null)) as any;
+            const rows = Array.isArray(j) ? j : Array.isArray(j?.posts) ? j.posts : [];
+            nextPosts = rows
+              .map((x: any) => ({
+                id: String(x.id ?? ""),
+                imageUrl: isValidImageUrl(x.imageUrl) ? String(x.imageUrl) : null,
+                mediaType: x.mediaType === "video" ? "video" : "image",
+                createdAt: x.createdAt ? String(x.createdAt) : undefined,
+              }))
+              .filter((p: Post) => p.id);
+          }
+        } catch {
+          // ignore - endpoint may not support filtering yet
+        }
+
+        if (cancelled) return;
+
+        // If no endpoint yet, use a clean fallback
+        setProfile(nextProfile ?? fallbackProfile);
+
+        // If we did not get stats from API, infer posts count from returned posts
+        if (!nextProfile?.stats?.posts) {
+          setProfile((prev) =>
+            prev
+              ? { ...prev, stats: { ...(prev.stats ?? {}), posts: nextPosts.length || 0 } }
+              : fallbackProfile
+          );
+        }
+
+        setPosts(nextPosts);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [safeEmail, fallbackProfile]);
+
+  const p = profile ?? fallbackProfile;
+  const avatarUrl = isValidImageUrl(p.avatarUrl) ? p.avatarUrl : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
+    <div className="min-h-screen px-4 pb-24">
       {/* Top bar */}
-      <div className="flex items-center justify-between">
-        <a href="/feed" className="text-sm text-white/70 hover:text-white">
-          ← Back to feed
-        </a>
-        <div className="text-sm text-white/60">Profile</div>
+      <div className="pt-8">
+        <div className="flex items-center justify-between">
+          <Link href="/public-feed" className="text-white/65 hover:text-white text-sm">
+            ← Back
+          </Link>
 
-        {/* Hamburger (top right) */}
-        <div ref={menuRef} className="relative z-[200] w-[92px] flex justify-end">
+          <div className="text-white/85 text-sm font-semibold truncate max-w-[70%]">
+            @{p.handle ?? handleFromEmail(p.email)}
+          </div>
+
           <button
             type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 flex items-center justify-center"
-            aria-label="Menu"
+            className="h-9 px-3 rounded-xl border border-white/10 bg-white/5 text-white/70 text-xs hover:bg-white/10"
+            aria-label="Profile menu"
+            title="Menu"
           >
-            <span className="text-xl leading-none">≡</span>
+            ☰
           </button>
-
-          {menuOpen && (
-            <div className="absolute z-[300] right-0 top-12 w-56 rounded-2xl border border-white/10 bg-black/90 backdrop-blur p-2 shadow-xl">
-              <Link
-                href="/me"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Account
-              </Link>
-
-              <Link
-                href="/terms"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Terms &amp; Conditions
-              </Link>
-
-              <Link
-                href="/creator/terms?next=/me"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Creator Terms
-              </Link>
-                            <Link
-                href="/creator/terms"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Creator Terms
-              </Link>
-
-              <Link
-                href="/privacy"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Privacy Policy
-              </Link>
-            <Link
-  href="/creator/terms"
-  className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-  onClick={() => setMenuOpen(false)}
->
-  Creator Terms
-</Link>
-
-              <Link
-                href="/support"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Support
-              </Link>
-
-              <Link
-                href="/about"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                About
-              </Link>
-
-              <Link
-                href="/guidelines"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Guidelines
-              </Link>
-
-              <Link
-                href="/payments"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Payments & Refunds
-              </Link>
-
-
-
-
-              <div className="my-2 h-px bg-white/10" />
-
-              <Link
-                href="/deactivate-account"
-                className="block rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Deactivate Account
-              </Link>
-
-              <Link
-                href="/delete-account"
-                className="block rounded-xl px-3 py-2 text-sm text-red-200 hover:bg-red-500/10"
-                onClick={() => setMenuOpen(false)}
-              >
-                Delete Account
-              </Link>
-
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Header */}
-      <div className="mt-8 flex items-start gap-4">
-        <div className="h-16 w-16 overflow-hidden rounded-full bg-white/10 flex items-center justify-center">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <div className="text-lg font-semibold text-white/70">
-              {displayName?.[0]?.toUpperCase() ?? "U"}
+      {/* Header card */}
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+        <div className="p-4">
+          <div className="flex items-start gap-4">
+            {/* Avatar */}
+            <div className="relative">
+              <div className="rv-avatar relative h-20 w-20 rounded-full overflow-hidden bg-white/5">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full grid place-items-center text-white/70 font-semibold">
+                    {p.displayName.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              {/* Verified (optional) */}
+              {p.verificationTier ? (
+                <div
+                  className={[
+                    "absolute -right-2 -top-2 z-20",
+                    "h-[18px] w-[18px] rounded-full grid place-items-center",
+                    "text-[10px] font-bold text-black shadow ring-2 ring-black/30",
+                    p.verificationTier === "gold" ? "bg-amber-400" : "bg-blue-500",
+                  ].join(" ")}
+                  title={p.verificationTier === "gold" ? "Gold tick" : "Blue tick"}
+                  aria-label={p.verificationTier === "gold" ? "Gold tick" : "Blue tick"}
+                >
+                  ✓
+                </div>
+              ) : null}
             </div>
-          )}
-        </div>
 
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-semibold truncate">{displayName}</h1>
+            {/* Identity */}
+            <div className="flex-1 min-w-0">
+              <div className="text-white/95 text-xl font-semibold leading-tight truncate">
+                {p.displayName}
+              </div>
+              <div className="text-white/50 text-sm truncate">{p.email}</div>
 
-            {verification === "gold" && (
-              <span
-                title="Verified business"
-                className="inline-flex items-center gap-1 rounded-full bg-yellow-400/20 px-3 py-1 text-xs font-semibold text-yellow-200 border border-yellow-300/20"
-              >
-                ✓ GOLD
-              </span>
-            )}
-
-            {verification === "blue" && (
-              <span
-                title="Verified individual"
-                className="inline-flex items-center gap-1 rounded-full bg-blue-400/20 px-3 py-1 text-xs font-semibold text-blue-200 border border-blue-300/20"
-              >
-                ✓ BLUE
-              </span>
-            )}
+              {p.bio ? (
+                <div className="mt-2 text-white/75 text-[13px] leading-snug">
+                  {p.bio}
+                </div>
+              ) : (
+                <div className="mt-2 text-white/45 text-[13px] leading-snug">
+                  {/* keep it elegant until bios exist */}
+                  Professional creator profile.
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="mt-1 text-sm text-white/60">
-            {handle ? <span className="mr-2">{handle}</span> : null}
-            <span className="truncate">{email}</span>
+          {/* Stats */}
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-white/10 bg-black/10 py-3">
+            <div className="flex-1 flex justify-center">
+              <Stat label="Posts" value={p.stats?.posts ?? 0} />
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="flex-1 flex justify-center">
+              <Stat label="Followers" value={p.stats?.followers ?? 0} />
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="flex-1 flex justify-center">
+              <Stat label="Following" value={p.stats?.following ?? 0} />
+            </div>
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              className="flex-1 h-11 rounded-xl bg-white text-black font-semibold text-sm hover:opacity-95"
+            >
+              Follow
+            </button>
+            <button
+              type="button"
+              className="flex-1 h-11 rounded-xl border border-white/12 bg-white/6 text-white/90 font-semibold text-sm hover:bg-white/10"
+            >
+              Message
+            </button>
+            <button
+              type="button"
+              className="h-11 px-4 rounded-xl border border-emerald-400/35 bg-emerald-500/15 text-emerald-100 font-semibold text-sm hover:bg-emerald-500/20"
+              title="Tip / React"
+            >
+              ✨
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="px-4 pb-4">
+          <div className="flex gap-2">
+            <TabButton active={tab === "posts"} onClick={() => setTab("posts")}>
+              Posts
+            </TabButton>
+            <TabButton active={tab === "media"} onClick={() => setTab("media")}>
+              Media
+            </TabButton>
+            <TabButton active={tab === "about"} onClick={() => setTab("about")}>
+              About
+            </TabButton>
           </div>
         </div>
       </div>
 
-      {/* Trust strip */}
-      {trustLine ? (
-        <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 px-5 py-4 text-sm text-white/75">
-          {trustLine}
-        </div>
-      ) : null}
-
-      {/* Bio */}
-      {bio ? (
-        <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 px-5 py-4">
-          <div className="text-sm text-white/90 whitespace-pre-wrap">{bio}</div>
-        </div>
-      ) : null}
-
-      {/* Grid */}
-      <div className="mt-8">
-        {posts.length === 0 ? (
-          <div className="rounded-2xl bg-white/5 border border-white/10 px-5 py-10 text-center text-white/60">
-            No posts yet.
+      {/* Body */}
+      <div className="mt-5">
+        {loading ? (
+          <div className="text-sm text-white/60">Loading profile…</div>
+        ) : tab === "about" ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div className="text-white/85 font-semibold">About</div>
+            <div className="mt-2 text-white/60 text-sm leading-relaxed">
+              This is where we’ll place the professional identity layer (bio, links, categories, location, offerings).
+              No Instagram copy — Revolvr’s “creator card”.
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            {posts.map((post) => (
-              <button
-                key={post.id}
-                type="button"
-                onClick={() => setSelected(post)}
-                className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5"
-              >
-                <div className="aspect-square w-full">
-                  {post.imageUrl && post.mediaType?.startsWith("video") ? (
-                    <div className="h-full w-full flex items-center justify-center bg-black/40">
-                      <div className="text-xs text-white/70">Video</div>
-                    </div>
-                  ) : post.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={post.imageUrl}
-                      alt=""
-                      className="h-full w-full object-cover group-hover:scale-[1.02] transition-transform"
-                    />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center">
-                      <div className="text-xs text-white/50">No media</div>
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
-          </div>
+          <>
+            {!posts.length ? (
+              <div className="text-white/60 text-sm">No posts yet.</div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {posts.map((post) => (
+                  <div
+                    key={post.id}
+                    className="aspect-square rounded-xl overflow-hidden border border-white/10 bg-white/5"
+                    title={post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
+                  >
+                    {post.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={post.imageUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full grid place-items-center text-white/35 text-xs">
+                        media
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
-
-      <PostModal
-        open={Boolean(selected)}
-        onClose={() => setSelected(null)}
-        post={selected}
-        profileEmail={email}
-        viewerEmail={viewerEmail}
-      />
     </div>
   );
 }
