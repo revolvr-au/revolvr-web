@@ -60,12 +60,11 @@ export default async function ProfilePage({
 }: {
   params: { email: string[] };
 }) {
-  // [...email] means params.email is ALWAYS an array
-  const raw = Array.isArray(params.email) ? params.email.join("/") : params.email;
+  // ✅ Catch-all params arrive as string[]
+  const raw = Array.isArray(params?.email) ? params.email.join("/") : "";
+  const email = decodeURIComponent(raw).trim().toLowerCase();
 
-  const email = decodeURIComponent(String(raw || "")).trim().toLowerCase();
-
-  if (!email) {
+  if (!email || !email.includes("@")) {
     return (
       <FeedLayout title="Revolvr" subtitle="Profile">
         <div className="px-4 pb-16 pt-6 text-sm text-white/70">
@@ -78,12 +77,32 @@ export default async function ProfilePage({
   const displayName = displayNameFromEmail(email);
   const handle = handleFromEmail(email);
 
+  // Scaffold-only (wire DB later)
   const isLive = false;
   const tick: "blue" | "gold" | null = null;
 
   return (
-    <FeedLayout title={displayName} subtitle={handle} showMenu onMenuClick={() => {}}>
+    <FeedLayout
+      title={displayName}
+      subtitle={handle}
+      showMenu
+      onMenuClick={() => {
+        // install later
+      }}
+    >
       <div className="px-4 sm:px-6 pb-20">
+        {/* Back button stays in page body (FeedLayout currently has no "left slot") */}
+        <div className="pt-4">
+          <Link
+            href="/public-feed"
+            className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
+            aria-label="Back"
+            title="Back"
+          >
+            ←
+          </Link>
+        </div>
+
         {/* Hero */}
         <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -130,7 +149,7 @@ export default async function ProfilePage({
                 </div>
               </div>
 
-              {/* Mobile identity */}
+              {/* Mobile-only identity beside avatar */}
               <div className="sm:hidden flex-1 min-w-0">
                 <div className="text-lg font-semibold text-white truncate">
                   {displayName}
@@ -147,7 +166,8 @@ export default async function ProfilePage({
               </div>
 
               <div className="mt-3 text-sm text-white/70 leading-relaxed">
-                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and high-signal.
+                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and
+                high-signal.
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -156,7 +176,6 @@ export default async function ProfilePage({
                 <ActionButton variant="ghost">Subscribe</ActionButton>
               </div>
 
-              {/* Stats */}
               <div className="mt-5 flex items-center gap-2">
                 <Stat label="Posts" value="0" />
                 <div className="w-px h-10 bg-white/10" />
@@ -188,16 +207,6 @@ export default async function ProfilePage({
               Next: wire posts grid + creator data + friends/followers/following/likes/comments.
             </div>
           </div>
-        </div>
-
-        {/* Back button (optional) */}
-        <div className="mt-6">
-          <Link
-            href="/public-feed"
-            className="inline-flex items-center justify-center h-10 px-4 rounded-xl bg-white/5 hover:bg-white/10 transition text-sm text-white/70"
-          >
-            ← Back to feed
-          </Link>
         </div>
       </div>
     </FeedLayout>
