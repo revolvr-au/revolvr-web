@@ -1,116 +1,179 @@
-import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import ProfileClient, { type ProfilePost } from "./ProfileClient";
+import prisma from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-type PageProps = {
-  params: Promise<{ email: string }>;
-};
-
-function formatMonthYear(d: Date) {
+function safeDecodeEmail(raw: string) {
   try {
-    return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short" }).format(d);
+    // Next may pass it already-decoded, but decodeURIComponent is safe here.
+    return decodeURIComponent(raw).trim().toLowerCase();
   } catch {
-    return d.toISOString();
+    return String(raw || "").trim().toLowerCase();
   }
 }
 
-function safePickString(obj: any, keys: string[]): string | null {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (typeof v === "string" && v.trim()) return v.trim();
-  }
-  return null;
+function displayNameFromEmail(email: string) {
+  const [localPart] = String(email || "").split("@");
+  const cleaned = localPart.replace(/\W+/g, " ").trim();
+  return cleaned || email;
 }
 
-export default async function PublicProfilePage({ params }: PageProps) {
-  const { email: rawEmail } = await params;
-  const email = decodeURIComponent(rawEmail).toLowerCase();
+export default async function ProfilePage({
+  params,
+}: {
+  params: { email: string };
+}) {
+  const email = safeDecodeEmail(params.email);
+  if (!email || !email.includes("@")) notFound();
 
-  const creator = await prisma.creatorProfile.findFirst({
-    where: { email: { equals: email, mode: "insensitive" } },
+  // IMPORTANT: use findFirst unless email is @unique in Prisma
+  const creator =
+    (await prisma.creator.findFirst({
+      where: { email },
+      select: {
+        email: true,
+        displayName: true,
+        handle: true,
+        avatarUrl: true,
+        isVerified: true,
+      },
+    })) ?? null;
+
+  const posts = await prisma.post.findMany({
+    where: { userEmail: email },
+    orderBy: { createdAt: "desc" },
+    take: 24,
     select: {
-      email: true,
-      displayName: true,
-      handle: true,
-      avatarUrl: true,
-      bio: true,
+      id: true,
+      imageUrl: true,
+      mediaType: true,
       createdAt: true,
-      verificationStatus: true,
+      caption: true,
     },
   });
 
-  const postsDb = await prisma.post.findMany({
-    where: { userEmail: email },
-    orderBy: { createdAt: "desc" },
-    take: 48,
-  });
-
-  if (!creator && postsDb.length === 0) {
-    notFound();
-  }
-
-  const displayName =
-    creator?.displayName ||
-    creator?.handle ||
-    email.split("@")[0] ||
-    "User";
-
+  const name = creator?.displayName || displayNameFromEmail(email);
   const handle = creator?.handle ? `@${creator.handle}` : null;
 
-  const verification =
-    creator?.verificationStatus === "gold"
-      ? "gold"
-      : creator?.verificationStatus === "blue"
-        ? "blue"
-        : null;
-
-  const avatarUrl =
-    safePickString(creator as any, ["avatarUrl", "imageUrl", "profileImageUrl"]) || null;
-
-  const bio =
-    safePickString(creator as any, ["bio", "about", "description"]) || null;
-
-  const memberSinceBase: Date | null =
-    (creator as any)?.createdAt
-      ? new Date((creator as any).createdAt)
-      : postsDb[postsDb.length - 1]?.createdAt
-        ? new Date(postsDb[postsDb.length - 1].createdAt)
-        : null;
-
-  const accountType = creator ? "Creator" : "User";
-
-  const trustLine = [
-    verification === "gold"
-      ? "Verified Business"
-      : verification === "blue"
-        ? "Verified Individual"
-        : null,
-    accountType,
-    memberSinceBase ? `Member since ${formatMonthYear(memberSinceBase)}` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  const posts: ProfilePost[] = postsDb.map((p) => ({
-    id: p.id,
-    imageUrl: (p as any).imageUrl ?? "",
-    mediaType: (p as any).mediaType ?? "",
-    caption: (p as any).caption ?? null,
-    createdAt: p.createdAt.toISOString(),
-  }));
-
   return (
-    <ProfileClient
-      email={email}
-      displayName={displayName}
-      handle={handle}
-      verification={verification}
-      trustLine={trustLine || null}
-      avatarUrl={avatarUrl}
-      bio={bio}
-      posts={posts}
-    />
+    <div className="min-h-screen px-4 pt-6 pb-16">
+      <div className="max-w-3xl mx-auto">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="h-20 w-20 rounded-full overflow-hidden bg-white/10 flex items-center justify-center text-xl font-semibold text-white/70">
+              {creator?.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={creator.avatarUrl}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                (name || "r")[0].toUpperCase()
+              )}
+            </div>
+
+            <div className="pt-1">
+              <div className="text-2xl font-semibold text-white/95 leading-tight">
+                {name}
+                {creator?.isVerified ? (
+                  <span
+                    title="Verified"
+                    className="ml-2 inline-flex items-center justify-center h-5 w-5 rounded-full bg-blue-500 text-white text-[11px] align-middle"
+                  >
+                    ✓
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="text-sm text-white/55 mt-1">
+                {handle ? <span className="mr-2">{handle}</span> : null}
+                <span className="opacity-80">{email}</span>
+              </div>
+
+              <div className="mt-3 flex items-center gap-3">
+                <Link
+                  href="/public-feed"
+                  className="text-xs text-white/60 hover:text-white underline"
+                >
+                  Back to feed
+                </Link>
+
+                {/* Placeholder buttons for the next phase */}
+                <button
+                  type="button"
+                  className="text-xs px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                >
+                  Follow
+                </button>
+                <button
+                  type="button"
+                  className="text-xs px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                >
+                  Message
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Hamburger placement (we’ll wire data later) */}
+          <button
+            type="button"
+            aria-label="Menu"
+            className="h-10 w-10 rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 inline-flex items-center justify-center"
+          >
+            ☰
+          </button>
+        </div>
+
+        {/* Stats row (stubs for now) */}
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          {[
+            { label: "Posts", value: posts.length },
+            { label: "Followers", value: "—" },
+            { label: "Following", value: "—" },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center"
+            >
+              <div className="text-lg font-semibold text-white/90">
+                {s.value}
+              </div>
+              <div className="text-xs text-white/45 mt-1">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Grid */}
+        <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-3">
+          {posts.length ? (
+            posts.map((p) => (
+              <Link
+                key={p.id}
+                href={`/public-feed#${p.id}`}
+                className="block aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 hover:border-white/20"
+                title={p.caption || ""}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.imageUrl}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              </Link>
+            ))
+          ) : (
+            <div className="col-span-3 text-sm text-white/60 rounded-2xl bg-white/5 border border-white/10 p-6">
+              No posts yet.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
