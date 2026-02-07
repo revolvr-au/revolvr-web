@@ -19,9 +19,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex-1 min-w-[92px] text-center">
       <div className="text-lg font-semibold text-white leading-none">{value}</div>
-      <div className="mt-1 text-[11px] tracking-wide uppercase text-white/40">
-        {label}
-      </div>
+      <div className="mt-1 text-[11px] tracking-wide uppercase text-white/40">{label}</div>
     </div>
   );
 }
@@ -55,20 +53,33 @@ function ActionButton({
   );
 }
 
+/**
+ * Catch-all route param is string[].
+ * We join with "/" then decode once.
+ */
+function resolveEmailParam(emailParam: string[] | string | undefined): string {
+  if (!emailParam) return "";
+  const raw = Array.isArray(emailParam) ? emailParam.join("/") : emailParam;
+  try {
+    return decodeURIComponent(raw).trim().toLowerCase();
+  } catch {
+    return String(raw).trim().toLowerCase();
+  }
+}
+
 export default async function ProfilePage({
   params,
 }: {
-  params: { email: string[] };
+  params: { email?: string[] | string };
 }) {
-  // ✅ Catch-all params arrive as string[]
-  const raw = Array.isArray(params?.email) ? params.email.join("/") : "";
-  const email = decodeURIComponent(raw).trim().toLowerCase();
+  const email = resolveEmailParam(params?.email);
 
-  if (!email || !email.includes("@")) {
+  // Debug safety: show what we actually received if empty
+  if (!email) {
     return (
       <FeedLayout title="Revolvr" subtitle="Profile">
         <div className="px-4 pb-16 pt-6 text-sm text-white/70">
-          Profile not found.
+          Profile not found. (Missing email param)
         </div>
       </FeedLayout>
     );
@@ -77,32 +88,12 @@ export default async function ProfilePage({
   const displayName = displayNameFromEmail(email);
   const handle = handleFromEmail(email);
 
-  // Scaffold-only (wire DB later)
   const isLive = false;
   const tick: "blue" | "gold" | null = null;
 
   return (
-    <FeedLayout
-      title={displayName}
-      subtitle={handle}
-      showMenu
-      onMenuClick={() => {
-        // install later
-      }}
-    >
+    <FeedLayout title={displayName} subtitle={handle} showMenu onMenuClick={() => {}}>
       <div className="px-4 sm:px-6 pb-20">
-        {/* Back button stays in page body (FeedLayout currently has no "left slot") */}
-        <div className="pt-4">
-          <Link
-            href="/public-feed"
-            className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
-            aria-label="Back"
-            title="Back"
-          >
-            ←
-          </Link>
-        </div>
-
         {/* Hero */}
         <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -149,11 +140,8 @@ export default async function ProfilePage({
                 </div>
               </div>
 
-              {/* Mobile-only identity beside avatar */}
               <div className="sm:hidden flex-1 min-w-0">
-                <div className="text-lg font-semibold text-white truncate">
-                  {displayName}
-                </div>
+                <div className="text-lg font-semibold text-white truncate">{displayName}</div>
                 <div className="text-sm text-white/50 truncate">{handle}</div>
               </div>
             </div>
@@ -166,8 +154,7 @@ export default async function ProfilePage({
               </div>
 
               <div className="mt-3 text-sm text-white/70 leading-relaxed">
-                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and
-                high-signal.
+                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and high-signal.
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -182,6 +169,13 @@ export default async function ProfilePage({
                 <Stat label="Followers" value="0" />
                 <div className="w-px h-10 bg-white/10" />
                 <Stat label="Following" value="0" />
+              </div>
+
+              {/* Back link (optional, keeps flow) */}
+              <div className="mt-4">
+                <Link href="/public-feed" className="text-sm text-white/60 hover:text-white">
+                  ← Back to feed
+                </Link>
               </div>
             </div>
           </div>
