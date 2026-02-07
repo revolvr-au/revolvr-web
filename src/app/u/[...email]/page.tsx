@@ -1,4 +1,5 @@
-// src/app/u/[email]/page.tsx
+// src/app/u/[...email]/page.tsx
+import Link from "next/link";
 import type { ReactNode } from "react";
 import FeedLayout from "@/components/FeedLayout";
 
@@ -57,11 +58,16 @@ function ActionButton({
 export default async function ProfilePage({
   params,
 }: {
-  params: { email: string };
+  params: { email: string[] }; // catch-all => array
 }) {
-  const email = decodeURIComponent(String(params?.email || ""))
-    .trim()
-    .toLowerCase();
+  const raw = Array.isArray(params?.email) ? params.email.join("") : "";
+
+  let email = "";
+  try {
+    email = decodeURIComponent(raw).trim().toLowerCase();
+  } catch {
+    email = raw.trim().toLowerCase();
+  }
 
   if (!email) {
     return (
@@ -85,16 +91,27 @@ export default async function ProfilePage({
       title={displayName}
       subtitle={handle}
       showMenu
-      onMenuClick={() => {}}
+      onMenuClick={() => {
+        // wire later
+      }}
+      right={
+        <Link
+          href="/public-feed"
+          className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
+          aria-label="Back"
+          title="Back"
+        >
+          ←
+        </Link>
+      }
     >
       <div className="px-4 sm:px-6 pb-20">
         {/* Hero */}
-        <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
+        <div className="mt-2 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
             {/* Avatar */}
             <div className="flex items-start gap-4 sm:block">
               <div className="relative">
-                {/* LIVE pill (future) */}
                 {isLive ? (
                   <span
                     className={[
@@ -112,7 +129,6 @@ export default async function ProfilePage({
                   </span>
                 ) : null}
 
-                {/* Tick (future) */}
                 {tick ? (
                   <span
                     className={[
@@ -148,9 +164,7 @@ export default async function ProfilePage({
             {/* Desktop identity + bio */}
             <div className="flex-1 min-w-0">
               <div className="hidden sm:block">
-                <div className="text-lg font-semibold text-white">
-                  {displayName}
-                </div>
+                <div className="text-lg font-semibold text-white">{displayName}</div>
                 <div className="text-sm text-white/50">{handle}</div>
               </div>
 
@@ -159,7 +173,6 @@ export default async function ProfilePage({
                 high-signal.
               </div>
 
-              {/* Actions */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <div className="w-full sm:w-auto">
                   <div className="grid grid-cols-2 sm:flex gap-2">
