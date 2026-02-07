@@ -110,44 +110,52 @@ export default function PeopleRail({
             const showImage = Boolean(p.imageUrl) && !broken[email];
 
             return (
-              <Link
-                key={email}
-                href={`/u/${encodeURIComponent(email)}`}
-                className="relative flex-none overflow-visible"
-                style={{ width: size, height: size }}
-                aria-label={`View ${name}`}
-                title={name}
-              >
-                {/* Half-in / half-out badges */}
-                {p.isLive ? <LivePill /> : null}
-                {p.tick ? <Tick tick={p.tick} /> : null}
+  <Link
+    key={email}
+    href={`/u/${encodeURIComponent(email)}`}
+    className="flex-none"
+    aria-label={`View ${name}`}
+    title={name}
+  >
+    <div
+      className="relative overflow-visible"
+      style={{ width: size }}
+    >
+      {/* Top badges */}
+      {p.isLive ? <LivePill /> : null}
+      {p.tick ? <Tick tick={p.tick} /> : null}
 
-                {/* Inner wrapper clips to circle and holds premium ring */}
-                <div className="rv-avatar relative w-full h-full rounded-full overflow-hidden bg-white/5">
-                  <div className="relative w-full h-full">
-                    {showImage ? (
-                      <Image
-                        src={p.imageUrl as string}
-                        alt={name}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                        onError={() => setBroken((prev) => ({ ...prev, [email]: true }))}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
-                        {name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
+      {/* Avatar */}
+      <div
+        className="rv-avatar relative w-full rounded-full overflow-hidden bg-white/5"
+        style={{ height: size }}
+      >
+        <div className="relative w-full h-full">
+          {showImage ? (
+            <Image
+              src={p.imageUrl as string}
+              alt={name}
+              fill
+              unoptimized
+              className="object-cover"
+              onError={() => setBroken((prev) => ({ ...prev, [email]: true }))}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
+              {name.slice(0, 1).toUpperCase()}
+            </div>
+          )}
+        </div>
 
-                  <span className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
-                </div>
-              </Link>
-            );
-          })}
+        <span className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
+      </div>
+
+      {/* Label */}
+      <div className="mt-2 text-center">
+        <div className="text-[11px] leading-tight font-medium text-white/80 truncate max-w-[92px] mx-auto">
+          {name}
         </div>
       </div>
     </div>
-  );
-}
+  </Link>
+);
