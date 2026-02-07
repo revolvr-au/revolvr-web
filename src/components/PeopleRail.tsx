@@ -1,3 +1,4 @@
+// src/components/PeopleRail.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -18,19 +19,12 @@ function displayNameFromEmail(email: string) {
   return cleaned || email;
 }
 
-function isValidImageUrl(url: unknown): url is string {
-  if (typeof url !== "string") return false;
-  const u = url.trim();
-  if (!u) return false;
-  return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
-}
-
 function LivePill() {
   return (
     <span
       title="LIVE"
       className={[
-        "absolute -left-1 -top-1 z-10",
+        "absolute -left-2 -top-2 z-20",
         "inline-flex items-center gap-1",
         "h-5 px-2",
         "rounded-full",
@@ -53,17 +47,25 @@ function Tick({ tick }: { tick: "blue" | "gold" }) {
     <span
       title={tick === "gold" ? "Gold tick" : "Blue tick"}
       className={[
-        "absolute -right-1 -top-1 z-10",
-        "inline-flex h-[18px] w-[18px] items-center justify-center rounded-full",
+        "absolute -right-2 -top-2 z-20",
+        "inline-flex h-[18px] w-[18px] items-center justify-center",
+        "rounded-full",
         bg,
-        "text-[10px] font-bold text-black shadow",
-        "ring-2 ring-black/30",
+        "text-[10px] font-bold text-black",
+        "shadow ring-2 ring-black/30",
       ].join(" ")}
       aria-label={tick === "gold" ? "Gold tick" : "Blue tick"}
     >
       ✓
     </span>
   );
+}
+
+function isValidImageUrl(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  const u = url.trim();
+  if (!u) return false;
+  return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
 }
 
 export default function PeopleRail({
@@ -79,8 +81,8 @@ export default function PeopleRail({
       .map((p) => {
         const email = String(p.email || "").trim().toLowerCase();
         if (!email) return null;
+        const name = p.displayName || displayNameFromEmail(email);
 
-        const name = String(p.displayName || displayNameFromEmail(email));
         return {
           ...p,
           email,
@@ -104,7 +106,7 @@ export default function PeopleRail({
         className="flex items-center overflow-x-auto no-scrollbar"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        <div className="flex gap-3 py-2">
+        <div className="flex gap-4 py-2">
           {normalized.map((p) => {
             const email = p.email;
             const name = p.displayName;
@@ -118,43 +120,43 @@ export default function PeopleRail({
                 aria-label={`View ${name}`}
                 title={name}
               >
-                <div className="relative overflow-visible" style={{ width: size }}>
-                  {/* badges (half in / half out) */}
-                  {p.isLive ? <LivePill /> : null}
-                  {p.tick ? <Tick tick={p.tick} /> : null}
-
-                  {/* avatar */}
+                <div className="flex flex-col items-center gap-2">
+                  {/* OUTER box allows badges to hang outside */}
                   <div
-                    className="rv-avatar relative w-full rounded-full overflow-hidden bg-white/5"
-                    style={{ height: size }}
+                    className="relative overflow-visible"
+                    style={{ width: size, height: size }}
                   >
-                    <div className="relative w-full h-full">
-                      {showImage ? (
-                        <Image
-                          src={p.imageUrl as string}
-                          alt={name}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                          onError={() =>
-                            setBroken((prev) => ({ ...prev, [email]: true }))
-                          }
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
-                          {name.slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
+                    {p.isLive ? <LivePill /> : null}
+                    {p.tick ? <Tick tick={p.tick} /> : null}
 
-                    <span className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
+                    {/* Inner wrapper clips image + premium ring */}
+                    <div className="rv-avatar relative w-full h-full rounded-full overflow-hidden bg-white/5">
+                      <div className="relative w-full h-full">
+                        {showImage ? (
+                          <Image
+                            src={p.imageUrl as string}
+                            alt={name}
+                            fill
+                            unoptimized
+                            className="object-cover"
+                            onError={() =>
+                              setBroken((prev) => ({ ...prev, [email]: true }))
+                            }
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
+                            {name.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      <span className="absolute inset-0 rounded-full opacity-0 hover:opacity-100 transition-opacity bg-white/5" />
+                    </div>
                   </div>
 
-                  {/* label under circle */}
-                  <div className="mt-2 text-center">
-                    <div className="text-[11px] leading-tight font-medium text-white/80 truncate max-w-[92px] mx-auto">
-                      {name}
-                    </div>
+                  {/* Label under avatar */}
+                  <div className="text-[13px] font-medium text-white/80 max-w-[96px] truncate">
+                    {name}
                   </div>
                 </div>
               </Link>
