@@ -18,7 +18,9 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex-1 min-w-[92px] text-center">
       <div className="text-lg font-semibold text-white leading-none">{value}</div>
-      <div className="mt-1 text-[11px] tracking-wide uppercase text-white/40">{label}</div>
+      <div className="mt-1 text-[11px] tracking-wide uppercase text-white/40">
+        {label}
+      </div>
     </div>
   );
 }
@@ -57,12 +59,16 @@ export default async function ProfilePage({
 }: {
   params: { email: string };
 }) {
-  const email = decodeURIComponent(String(params?.email || "")).trim().toLowerCase();
+  const email = decodeURIComponent(String(params?.email || ""))
+    .trim()
+    .toLowerCase();
 
   if (!email) {
     return (
       <FeedLayout title="Revolvr" subtitle="Profile">
-        <div className="px-4 pb-16 pt-6 text-sm text-white/70">Profile not found.</div>
+        <div className="px-4 pb-16 pt-6 text-sm text-white/70">
+          Profile not found.
+        </div>
       </FeedLayout>
     );
   }
@@ -132,7 +138,9 @@ export default async function ProfilePage({
 
               {/* Mobile-only identity beside avatar */}
               <div className="sm:hidden flex-1 min-w-0">
-                <div className="text-lg font-semibold text-white truncate">{displayName}</div>
+                <div className="text-lg font-semibold text-white truncate">
+                  {displayName}
+                </div>
                 <div className="text-sm text-white/50 truncate">{handle}</div>
               </div>
             </div>
@@ -140,12 +148,15 @@ export default async function ProfilePage({
             {/* Desktop identity + bio */}
             <div className="flex-1 min-w-0">
               <div className="hidden sm:block">
-                <div className="text-lg font-semibold text-white">{displayName}</div>
+                <div className="text-lg font-semibold text-white">
+                  {displayName}
+                </div>
                 <div className="text-sm text-white/50">{handle}</div>
               </div>
 
               <div className="mt-3 text-sm text-white/70 leading-relaxed">
-                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and high-signal.
+                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and
+                high-signal.
               </div>
 
               {/* Actions */}
