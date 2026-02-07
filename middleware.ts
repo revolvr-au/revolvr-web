@@ -9,11 +9,20 @@ const PUBLIC_PATHS = new Set([
 
 function isPublic(pathname: string) {
   if (PUBLIC_PATHS.has(pathname)) return true;
-  if (pathname.startsWith("/api/")) return true; // API handles DB checks itself
+
+  // ✅ Public pages
+  if (pathname.startsWith("/u/")) return true;          // public profiles
+  if (pathname === "/public-feed") return true;         // if you want public feed public
+  if (pathname.startsWith("/public-feed/")) return true;
+
+  // ✅ Always-public technical paths
+  if (pathname.startsWith("/api/")) return true;
   if (pathname.startsWith("/_next/")) return true;
   if (pathname.startsWith("/favicon")) return true;
+
   return false;
 }
+
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
