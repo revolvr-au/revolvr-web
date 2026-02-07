@@ -58,16 +58,15 @@ function ActionButton({
 export default async function ProfilePage({
   params,
 }: {
-  params: { email: string[] }; // catch-all => array
+  params: Promise<{ email?: string[] }>;
 }) {
-  const raw = Array.isArray(params?.email) ? params.email.join("") : "";
+  // ✅ Next 16: params may be a Promise, and catch-all is string[]
+  const { email: segments = [] } = await params;
 
-  let email = "";
-  try {
-    email = decodeURIComponent(raw).trim().toLowerCase();
-  } catch {
-    email = raw.trim().toLowerCase();
-  }
+  // For /u/revolvr.au%40gmail.com -> segments = ["revolvr.au%40gmail.com"]
+  const raw = Array.isArray(segments) ? segments.join("/") : String(segments || "");
+
+  const email = decodeURIComponent(String(raw || "")).trim().toLowerCase();
 
   if (!email) {
     return (
@@ -82,7 +81,6 @@ export default async function ProfilePage({
   const displayName = displayNameFromEmail(email);
   const handle = handleFromEmail(email);
 
-  // Scaffold-only (wire DB later)
   const isLive = false;
   const tick: "blue" | "gold" | null = null;
 
@@ -90,10 +88,6 @@ export default async function ProfilePage({
     <FeedLayout
       title={displayName}
       subtitle={handle}
-      showMenu
-      onMenuClick={() => {
-        // wire later
-      }}
       right={
         <Link
           href="/public-feed"
@@ -104,12 +98,11 @@ export default async function ProfilePage({
           ←
         </Link>
       }
+      showMenu
     >
       <div className="px-4 sm:px-6 pb-20">
-        {/* Hero */}
         <div className="mt-2 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-            {/* Avatar */}
             <div className="flex items-start gap-4 sm:block">
               <div className="relative">
                 {isLive ? (
@@ -152,7 +145,6 @@ export default async function ProfilePage({
                 </div>
               </div>
 
-              {/* Mobile-only identity beside avatar */}
               <div className="sm:hidden flex-1 min-w-0">
                 <div className="text-lg font-semibold text-white truncate">
                   {displayName}
@@ -161,7 +153,6 @@ export default async function ProfilePage({
               </div>
             </div>
 
-            {/* Desktop identity + bio */}
             <div className="flex-1 min-w-0">
               <div className="hidden sm:block">
                 <div className="text-lg font-semibold text-white">{displayName}</div>
@@ -169,49 +160,15 @@ export default async function ProfilePage({
               </div>
 
               <div className="mt-3 text-sm text-white/70 leading-relaxed">
-                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and
-                high-signal.
+                Profile bio goes here (REVOLVR-style). Keep it clean, premium, and high-signal.
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <div className="w-full sm:w-auto">
-                  <div className="grid grid-cols-2 sm:flex gap-2">
-                    <div className="col-span-2 sm:col-auto">
-                      <div className="sm:hidden">
-                        <button
-                          type="button"
-                          className="w-full h-10 rounded-xl bg-white text-black hover:bg-white/90 text-sm font-semibold transition-all duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
-                        >
-                          Follow
-                        </button>
-                      </div>
-                      <div className="hidden sm:block">
-                        <ActionButton>Follow</ActionButton>
-                      </div>
-                    </div>
-
-                    <div className="col-span-1 sm:col-auto">
-                      <button
-                        type="button"
-                        className="w-full sm:w-auto h-10 px-4 rounded-xl bg-white/5 text-white/80 hover:bg-white/10 text-sm font-semibold transition-all duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
-                      >
-                        Message
-                      </button>
-                    </div>
-
-                    <div className="col-span-1 sm:col-auto">
-                      <button
-                        type="button"
-                        className="w-full sm:w-auto h-10 px-4 rounded-xl bg-white/5 text-white/80 hover:bg-white/10 text-sm font-semibold transition-all duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
-                      >
-                        Subscribe
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <ActionButton>Follow</ActionButton>
+                <ActionButton variant="ghost">Message</ActionButton>
+                <ActionButton variant="ghost">Subscribe</ActionButton>
               </div>
 
-              {/* Stats */}
               <div className="mt-5 flex items-center gap-2">
                 <Stat label="Posts" value="0" />
                 <div className="w-px h-10 bg-white/10" />
@@ -223,7 +180,6 @@ export default async function ProfilePage({
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="mt-5 rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
           <div className="grid grid-cols-3">
             <button
