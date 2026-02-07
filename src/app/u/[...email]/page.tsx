@@ -61,11 +61,15 @@ export default async function ProfilePage({
   // ✅ Next 16 can pass params as a Promise
   params: Promise<{ email?: string[] }>;
 }) {
-  const p = await params;
+  const p = await Promise.resolve(params);
 
-  // ✅ catch-all param will be string[]
-  const raw = Array.isArray(p?.email) ? p.email.join("/") : "";
-  const email = decodeURIComponent(raw).trim().toLowerCase();
+// catch-all can be string[] BUT in some setups it can arrive as a string.
+// handle both.
+const v = (p as any)?.email;
+const raw = Array.isArray(v) ? v.join("/") : String(v ?? "");
+
+const email = decodeURIComponent(raw).trim().toLowerCase();
+
 
   if (!email) {
     return (
