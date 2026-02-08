@@ -27,11 +27,9 @@ function Stat({ label, value }: { label: string; value: string }) {
 function ActionButton({
   children,
   variant = "primary",
-  onClick,
 }: {
   children: ReactNode;
   variant?: "primary" | "ghost";
-  onClick?: () => void;
 }) {
   const cls =
     variant === "primary"
@@ -41,7 +39,6 @@ function ActionButton({
   return (
     <button
       type="button"
-      onClick={onClick}
       className={[
         "h-10 rounded-xl px-4 text-sm font-semibold",
         "transition-all duration-150 active:scale-[0.98]",
@@ -173,7 +170,7 @@ export default async function ProfilePage({
                         </button>
                       </div>
                       <div className="hidden sm:block">
-                        <ActionButton onClick={() => {}}>Follow</ActionButton>
+                        <ActionButton>Follow</ActionButton>
                       </div>
                     </div>
 
