@@ -32,16 +32,15 @@ export default function FeedLayout({
             {right ?? null}
 
             {showMenu ? (
-              <button
-                type="button"
-                onClick={onMenuClick ?? (() => {})}
-                className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
-                aria-label="Menu"
-                title="Menu"
-              >
-                ☰
-              </button>
-            ) : null}
+  <button
+    type="button"
+    onClick={onMenuClick ?? undefined}
+    ...
+  >
+    ☰
+  </button>
+) : null}
+
           </div>
         </div>
       </header>

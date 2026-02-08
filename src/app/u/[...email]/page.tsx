@@ -85,13 +85,12 @@ export default async function ProfilePage({
 
   return (
     <FeedLayout
-      title={displayName}
-      subtitle={handle}
-      showMenu
-      onMenuClick={() => {
-        // hook later
-      }}
-      right={
+  title={displayName}
+  subtitle={handle}
+  showMenu
+  right={...}
+/>
+
         <Link
           href="/public-feed"
           className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
