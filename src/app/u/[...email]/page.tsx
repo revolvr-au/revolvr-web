@@ -49,7 +49,7 @@ export default async function ProfilePage({
   const handle = decoded ? handleFromEmail(decoded) : "Profile";
 
   return (
-    <FeedLayout title={displayName} subtitle={handle} showMenu onMenuClick={() => {}}>
+    <FeedLayout title={displayName} subtitle={handle} showMenu>
       <div className="px-4 sm:px-6 pb-20">
         {/* DEBUG (leave this in until fixed in prod) */}
         <div className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-4">
