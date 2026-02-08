@@ -88,19 +88,18 @@ export default async function ProfilePage({
   title={displayName}
   subtitle={handle}
   showMenu
-  right={...}
-/>
-
-        <Link
-          href="/public-feed"
-          className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
-          aria-label="Back"
-          title="Back"
-        >
-          ←
-        </Link>
-      }
+  right={
+    <Link
+      href="/public-feed"
+      className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 hover:bg-white/10 transition"
+      aria-label="Back"
+      title="Back"
     >
+      ←
+    </Link>
+  }
+>
+
       <div className="px-4 sm:px-6 pb-20">
         {/* Hero */}
         <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4 sm:p-5">
