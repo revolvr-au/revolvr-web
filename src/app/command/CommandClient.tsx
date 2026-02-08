@@ -13,16 +13,22 @@ function CardButton({
   title,
   desc,
   onClick,
+  disabled,
 }: {
   title: string;
   desc: string;
   onClick: () => void;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
-      className="w-full text-left rounded-2xl border border-white/10 bg-white/5 p-5 hover:bg-white/10 transition"
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      className={[
+        "w-full text-left rounded-2xl border border-white/10 bg-white/5 p-5 transition",
+        disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-white/10",
+      ].join(" ")}
     >
       <div className="text-base font-semibold">{title}</div>
       <div className="mt-1 text-sm text-white/60">{desc}</div>
@@ -65,7 +71,7 @@ export default function CommandClient() {
     };
   }, []);
 
-  // ✅ Guard must be BEFORE JSX return
+  // Not authed state
   if (!loading && needsAuth) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
@@ -107,11 +113,12 @@ export default function CommandClient() {
     );
   }
 
+  // Authed state
   return (
     <div className="mx-auto max-w-3xl px-6 py-10">
       {/* Top bar */}
       <div className="flex items-center justify-between">
-        <a href="/feed" className="text-sm text-white/70 hover:text-white">
+        <a href="/public-feed" className="text-sm text-white/70 hover:text-white">
           ← Back to feed
         </a>
         <div className="text-sm text-white/60">Command</div>
@@ -130,11 +137,9 @@ export default function CommandClient() {
 
         <CardButton
           title="Public profile"
-          desc="View how others see you."
-          onClick={() => {
-            if (!email) return;
-            router.push(`/u/${encodeURIComponent(email)}`);
-          }}
+          desc={email ? "View how others see you." : "Loading your profile…"}
+          disabled={!email}
+          onClick={() => router.push(`/u/${encodeURIComponent(email as string)}`)}
         />
       </div>
 
