@@ -8,6 +8,34 @@ datasource db {
   schemas  = ["public"]
 }
 
+model Follow {
+  id             String   @id @default(uuid())
+  followerEmail  String
+  followingEmail String
+  createdAt      DateTime @default(now())
+
+  @@unique([followerEmail, followingEmail])
+  @@index([followerEmail])
+  @@index([followingEmail])
+  @@schema("public")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([userEmail, createdAt(sort: Desc)])
+  @@schema("public")
+}
+
+
 model Post {
   id        String   @id @default(uuid())
   userEmail String
@@ -17,11 +45,13 @@ model Post {
   updatedAt DateTime @updatedAt
   mediaType String   @default("image")
 
-  likes Like[]
-  media PostMedia[]
+  likes    Like[]
+  media    PostMedia[]
+  comments Comment[]   // <-- add this line
 
   @@schema("public")
 }
+
 
 model StripeEvent {
   id        String   @id

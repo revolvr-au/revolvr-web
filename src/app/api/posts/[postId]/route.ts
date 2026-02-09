@@ -4,19 +4,19 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// GET /api/posts/[id] -> fetch a single post (legacy + media[])
-export async function GET(_req: Request, { params }: { params: any }) {
+// GET /api/posts/[postId] -> fetch a single post (legacy + media[])
+export async function GET(_req: Request, { params }: { params: { postId: string } }) {
   try {
-    const id = String(params?.id ?? "").trim();
-    if (!id) {
-      return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
+    const postId = String(params?.postId ?? "").trim();
+    if (!postId) {
+      return NextResponse.json({ ok: false, error: "missing_postId" }, { status: 400 });
     }
 
     const p = await prisma.post.findUnique({
-      where: { id },
+      where: { id: postId },
       include: {
         media: { orderBy: { order: "asc" } },
-        _count: { select: { Like: true } },
+        _count: { select: { likes: true } },
       },
     });
 
@@ -33,10 +33,10 @@ export async function GET(_req: Request, { params }: { params: any }) {
       caption: p.caption ?? "",
       createdAt: p.createdAt,
       updatedAt: p.updatedAt,
-      likesCount: p._count.Like,
+      likesCount: p._count.likes,
     });
   } catch (err: any) {
-    console.error("GET /api/posts/[id] error:", err);
+    console.error("GET /api/posts/[postId] error:", err);
     return NextResponse.json(
       { ok: false, error: err?.message || "Failed to load post" },
       { status: 500 }

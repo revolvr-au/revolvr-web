@@ -11,6 +11,9 @@ import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
+import FollowButton from "@/components/FollowButton";
+
+
 
 type Post = {
   id: string;
@@ -489,13 +492,16 @@ const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({
                       </div>
                     </div>
 
-                    <Link
-                      href={`/u/${encodeURIComponent(email)}`}
-                      className="text-xs text-white/60 hover:text-white underline"
-                    >
-                      View
-                    </Link>
-                  </div>
+                    <div className="flex items-center gap-2">
+  <FollowButton followingEmail={email} />
+  <Link
+    href={`/u/${encodeURIComponent(email)}`}
+    className="text-xs text-white/60 hover:text-white underline"
+  >
+    View
+  </Link>
+</div>
+
 
   <div className="relative w-full">
   {showFallback ? (
