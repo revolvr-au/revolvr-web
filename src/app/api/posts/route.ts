@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type MediaIn = { type: "image" | "video"; url: string; order: number };
+type MediaIn = {
+  type: "image" | "video";
+  url: string;
+  order: number;
+};
 
 function normalizeMedia(body: any): MediaIn[] {
   const mediaRaw: any[] = Array.isArray(body?.media) ? body.media : [];
@@ -13,8 +17,10 @@ function normalizeMedia(body: any): MediaIn[] {
     .map((m, i): MediaIn => {
       const type: "image" | "video" =
         String(m?.type ?? "image").toLowerCase() === "video" ? "video" : "image";
+
       const url = String(m?.url ?? "").trim();
       const order = Number.isFinite(Number(m?.order)) ? Number(m.order) : i;
+
       return { type, url, order };
     })
     .filter((m) => m.url && /^https?:\/\//i.test(m.url))
@@ -56,7 +62,9 @@ export async function POST(req: Request) {
             }
           : {}),
       },
-      include: { media: { orderBy: { order: "asc" } } },
+      include: {
+        media: { orderBy: { order: "asc" } },
+      },
     });
 
     return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
@@ -65,13 +73,21 @@ export async function POST(req: Request) {
 
     if (e?.name || e?.code || e?.meta) {
       return NextResponse.json(
-        { ok: false, prisma: { name: e?.name, code: e?.code, meta: e?.meta }, message: e?.message },
+        {
+          ok: false,
+          prisma: {
+            name: e?.name,
+            code: e?.code,
+            meta: e?.meta,
+          },
+          message: e?.message,
+        },
         { status: 500 }
       );
     }
 
     return NextResponse.json(
-      { ok: false, error: (e?.message as string) || "Failed to create post" },
+      { ok: false, error: e?.message || "Failed to create post" },
       { status: 500 }
     );
   }
@@ -83,7 +99,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       include: {
         media: { orderBy: { order: "asc" } },
-        _count: { select: { Like: true } },
+        _count: { select: { likes: true } },
       },
     });
 
@@ -91,19 +107,19 @@ export async function GET() {
       new Set(posts.map((p) => String(p.userEmail || "").trim().toLowerCase()).filter(Boolean))
     );
 
-    const profiles = emails.length
-  ? await prisma.creatorProfile.findMany({
-      where: { email: { in: emails } },
-      select: {
-        email: true,
-        displayName: true,
-        handle: true,
-        avatarUrl: true,
-        isVerified: true,
-      },
-    })
-  : [];
-
+    const profiles =
+      emails.length > 0
+        ? await prisma.creatorProfile.findMany({
+            where: { email: { in: emails } },
+            select: {
+              email: true,
+              displayName: true,
+              handle: true,
+              avatarUrl: true,
+              isVerified: true,
+            },
+          })
+        : [];
 
     const profileByEmail = new Map(profiles.map((p) => [p.email.toLowerCase(), p]));
 
@@ -113,32 +129,36 @@ export async function GET() {
 
       return {
         id: p.id,
-        userEmail: p.userEmail,
+        userEmail: String(p.userEmail || "").trim().toLowerCase(),
         caption: p.caption ?? "",
         createdAt: p.createdAt,
         updatedAt: p.updatedAt,
-        likesCount: p._count.Like,
+
+        likesCount: p._count.likes,
 
         media: (p as any).media ?? [],
         imageUrl: first?.url ?? (p as any).imageUrl ?? null,
-        mediaType: ((first?.type ?? (p as any).mediaType ?? "image") === "video" ? "video" : "image") as
-          | "image"
-          | "video",
+        mediaType: ((first?.type ?? (p as any).mediaType ?? "image") === "video"
+          ? "video"
+          : "image") as "image" | "video",
 
         creator: prof
-  ? {
-      displayName: prof.displayName,
-      handle: prof.handle,
-      avatarUrl: prof.avatarUrl,
-      isVerified: prof.isVerified,
-    }
-  : null,
+          ? {
+              displayName: prof.displayName,
+              handle: prof.handle,
+              avatarUrl: prof.avatarUrl,
+              isVerified: prof.isVerified,
+            }
+          : null,
       };
     });
 
-    return NextResponse.json({ posts: payload });
+    return NextResponse.json({ ok: true, posts: payload });
   } catch (err: any) {
     console.error("GET /api/posts error:", err);
-    return NextResponse.json({ ok: false, error: err?.message || "Failed to load posts" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: err?.message || "Failed to load posts" },
+      { status: 500 }
+    );
   }
 }
