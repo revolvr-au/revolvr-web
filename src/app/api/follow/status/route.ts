@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
+
+    // query params (UI/API)
     const viewerEmail = String(url.searchParams.get("viewer") ?? "").trim().toLowerCase();
     const targetEmail = String(url.searchParams.get("target") ?? "").trim().toLowerCase();
 
@@ -17,8 +19,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ following: false });
     }
 
-    const row = await prisma.follow.findFirst({
-      where: { viewerEmail, targetEmail } as any,
+    const followerEmail = viewerEmail;
+    const followingEmail = targetEmail;
+
+    const row = await (prisma as any).follow.findFirst({
+      where: { followerEmail, followingEmail },
       select: { id: true },
     });
 

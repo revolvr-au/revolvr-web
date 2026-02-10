@@ -8,6 +8,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
 
+    // incoming payload (UI/API)
     const viewerEmail = String(body?.viewerEmail ?? "").trim().toLowerCase();
     const targetEmail = String(body?.targetEmail ?? "").trim().toLowerCase();
     const action = String(body?.action ?? "").trim().toLowerCase();
@@ -22,21 +23,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
     }
 
+    // DB/Prisma Client expects followerEmail/followingEmail right now
+    const followerEmail = viewerEmail;
+    const followingEmail = targetEmail;
+
     const where = {
-      uniq_follow_pair: { viewerEmail, targetEmail },
-    } as any;
+      uniq_follow_pair: { followerEmail, followingEmail },
+    };
 
     if (action === "follow") {
-      await prisma.follow.upsert({
+      await (prisma as any).follow.upsert({
         where,
         update: {},
-        create: { viewerEmail, targetEmail } as any,
+        create: { followerEmail, followingEmail },
         select: { id: true },
       });
+
       return NextResponse.json({ ok: true });
     }
 
-    await prisma.follow.delete({ where }).catch(() => null);
+    await (prisma as any).follow.delete({ where }).catch(() => null);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error("POST /api/follow error:", e);
