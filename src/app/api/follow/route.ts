@@ -22,7 +22,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
     }
 
-    // Avoid depending on any specific compound unique constraint name.
     const existing = await prisma.follow.findFirst({
       where: { viewerEmail, targetEmail } as any,
       select: { id: true },
@@ -30,15 +29,12 @@ export async function POST(req: Request) {
 
     if (action === "follow") {
       if (!existing) {
-        await prisma.follow.create({
-          data: { viewerEmail, targetEmail } as any,
-          select: { id: true },
-        });
+        await prisma.follow.create({ data: { viewerEmail, targetEmail } as any, select: { id: true } });
       }
       return NextResponse.json({ ok: true });
     }
 
-    // action === "unfollow"
+    // unfollow
     if (existing?.id) {
       await prisma.follow.delete({ where: { id: existing.id } as any }).catch(() => null);
     }
