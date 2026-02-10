@@ -4,13 +4,11 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
-
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const viewerEmail = norm(url.searchParams.get("viewer"));
-    const targetEmail = norm(url.searchParams.get("target"));
+    const viewerEmail = String(url.searchParams.get("viewer") ?? "").trim().toLowerCase();
+    const targetEmail = String(url.searchParams.get("target") ?? "").trim().toLowerCase();
 
     if (!viewerEmail.includes("@") || !targetEmail.includes("@")) {
       return NextResponse.json({ following: false });
@@ -21,13 +19,13 @@ export async function GET(req: Request) {
 
     const row = await prisma.follow.findFirst({
       where: {
-        viewerEmail,
+        followerEmail: viewerEmail,
         followingEmail: targetEmail,
-      } as any,
+      },
       select: { id: true },
     });
 
-    return NextResponse.json({ following: Boolean(row?.id) });
+    return NextResponse.json({ following: Boolean(row) });
   } catch (e) {
     console.error("GET /api/follow/status error:", e);
     return NextResponse.json({ following: false });

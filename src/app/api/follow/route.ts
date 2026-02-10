@@ -4,15 +4,13 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
-
 export async function POST(req: Request) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = await req.json();
 
-    const viewerEmail = norm((body as any)?.viewerEmail);
-    const targetEmail = norm((body as any)?.targetEmail);
-    const action = norm((body as any)?.action);
+    const viewerEmail = String(body?.viewerEmail ?? "").trim().toLowerCase();
+    const targetEmail = String(body?.targetEmail ?? "").trim().toLowerCase();
+    const action = String(body?.action ?? "").trim().toLowerCase();
 
     if (!viewerEmail.includes("@") || !targetEmail.includes("@")) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
@@ -24,42 +22,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
     }
 
-    // Prisma Follow expects: viewerEmail + followingEmail
+    // IMPORTANT: align with DB columns: followerEmail/followingEmail
+    const where = {
+      uniq_follow_pair: {
+        followerEmail: viewerEmail,
+        followingEmail: targetEmail,
+      },
+    };
+
     if (action === "follow") {
-      await prisma.follow
-        .create({
-          data: {
-            viewerEmail,
-            followingEmail: targetEmail,
-          } as any,
-          select: { id: true },
-        })
-        .catch((e: any) => {
-          // already following (unique constraint)
-          if (e?.code === "P2002") return null;
-          throw e;
-        });
+      await prisma.follow.upsert({
+        where,
+        update: {},
+        create: {
+          followerEmail: viewerEmail,
+          followingEmail: targetEmail,
+        },
+        select: { id: true },
+      });
 
       return NextResponse.json({ ok: true });
     }
 
-    await prisma.follow.deleteMany({
-      where: {
-        viewerEmail,
-        followingEmail: targetEmail,
-      } as any,
-    });
-
+    await prisma.follow.delete({ where }).catch(() => null);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error("POST /api/follow error:", e);
     return NextResponse.json(
-      {
-        ok: false,
-        error: "server_error",
-        message: e?.message,
-        prisma: e?.code ? { code: e.code, meta: e.meta } : undefined,
-      },
+      { ok: false, error: "server_error", message: String(e?.message ?? e) },
       { status: 500 }
     );
   }

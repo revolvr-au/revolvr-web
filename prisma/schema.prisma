@@ -63,13 +63,13 @@ model RevolvrItem {
 }
 
 model Follow {
-  id          String   @id @default(uuid())
-  viewerEmail String
-  targetEmail String
-  createdAt   DateTime @default(now())
+  id             String   @id @default(uuid())
+  followerEmail  String
+  followingEmail String
+  createdAt      DateTime @default(now())
 
-  @@unique([viewerEmail, targetEmail], name: "uniq_follow_pair")
-  @@index([targetEmail])
+  @@unique([followerEmail, followingEmail], name: "uniq_follow_pair")
+  @@index([followingEmail])
   @@schema("public")
 }
 
