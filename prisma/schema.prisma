@@ -6,23 +6,20 @@ generator client {
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
   schemas   = ["public"]
 }
 
 model Post {
-  id        String      @id @default(uuid())
+  id        String   @id @default(uuid())
   userEmail String
   imageUrl  String
   caption   String
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  mediaType String      @default("image")
-  likes     Like[]
-  media     PostMedia[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@schema("public")
 }
+
 
 model StripeEvent {
   id        String   @id
