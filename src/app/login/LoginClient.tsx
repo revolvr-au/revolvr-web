@@ -57,17 +57,10 @@ export default function LoginClient() {
       setSending(true);
       setError(null);
 
-      // IMPORTANT: still include redirectTo so if user clicks link anyway it lands back on site
-      // but our primary flow is now CODE verification.
-      const { error } = await supabase.auth.signInWithOtp({
+     const { error } = await supabase.auth.signInWithOtp({
   email: cleanEmail,
-  // IMPORTANT: no options.emailRedirectTo for code flow
 });
 
-          // If your Supabase project is configured for code-based emails, this will email a code.
-          // Even if Supabase also includes a link, we will ignore it and use verifyOtp.
-        },
-      });
 
       if (error) {
         console.error("[login] signInWithOtp error", error);
