@@ -628,12 +628,30 @@ export default function PublicFeedClient() {
     </button>
   ) : null}
 
+  <div className="flex items-center gap-2">
+  {email && viewerEmail !== email ? (
+    <button
+      type="button"
+      disabled={!!followBusy[email]}
+      onClick={() => onToggleFollow(email)}
+      className={[
+        "inline-flex items-center justify-center",
+        "h-8 px-4 rounded-full text-sm font-semibold",
+        followMap[email] ? "bg-white/10 text-white border border-white/15" : "bg-blue-500 text-white",
+        followBusy[email] ? "opacity-60 cursor-not-allowed" : "hover:opacity-95",
+      ].join(" ")}
+    >
+      {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
+    </button>
+  ) : null}
+
   <Link
     href={`/u/${encodeURIComponent(email)}`}
     className="text-xs text-white/60 hover:text-white underline"
   >
     View
   </Link>
+</div>
 </div>
 </div>
                     </div>

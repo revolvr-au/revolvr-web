@@ -4,9 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function norm(v: unknown) {
-  return String(v ?? "").trim().toLowerCase();
-}
+const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
 export async function GET(req: Request) {
   try {
@@ -21,22 +19,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ following: false });
     }
 
-    // Try viewerEmail + targetEmail
-    try {
-      const row = await (prisma as any).follow.findFirst({
-        where: { viewerEmail, targetEmail },
-        select: { id: true },
-      });
-      if (row?.id) return NextResponse.json({ following: true });
-    } catch {}
-
-    // Try viewerEmail + followingEmail
-    const row2 = await (prisma as any).follow.findFirst({
-      where: { viewerEmail, followingEmail: targetEmail },
+    const row = await prisma.follow.findFirst({
+      where: { viewerEmail, targetEmail },
       select: { id: true },
     });
 
-    return NextResponse.json({ following: Boolean(row2?.id) });
+    return NextResponse.json({ following: Boolean(row?.id) });
   } catch (e) {
     console.error("GET /api/follow/status error:", e);
     return NextResponse.json({ following: false });
