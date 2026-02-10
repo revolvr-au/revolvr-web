@@ -92,6 +92,13 @@ function isValidImageUrl(url: unknown): url is string {
   return u.startsWith("http://") || u.startsWith("https://") || u.startsWith("/");
 }
 
+function isValidEmail(v: unknown): v is string {
+  if (typeof v !== "string") return false;
+  const s = v.trim().toLowerCase();
+  return s.includes("@");
+}
+
+
 function formatMoneyFromCents(amountCents: number, currency: string) {
   const cur = String(currency || "aud").toUpperCase();
   try {
@@ -527,7 +534,8 @@ export default function PublicFeedClient() {
         ) : (
           <div className="space-y-6 pb-12">
             {posts.map((post) => {
-              const email = String(post.userEmail || "").trim().toLowerCase();
+              const emailRaw = String(post.userEmail || "").trim().toLowerCase();
+              const email = isValidEmail(emailRaw) ? emailRaw : "";
               const tick = (post as any).verificationTier ?? null;
               const creator = (post as any).creator ?? null;
               const displayName = String(creator?.displayName || displayNameFromEmail(email));
@@ -573,35 +581,37 @@ export default function PublicFeedClient() {
                     </div>
 
                     <div className="shrink-0 relative z-20 flex items-center gap-2">
-                      {showFollow ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onToggleFollow(email);
-                          }}
-                          disabled={Boolean(followBusy[email])}
-                          className={[
-                            "inline-flex items-center justify-center",
-                            "h-8 px-4 rounded-full text-sm font-semibold select-none",
-                            followMap[email]
-                              ? "bg-white/10 text-white border border-white/15 hover:bg-white/15"
-                              : "bg-blue-500 text-white hover:opacity-95",
-                            followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
-                          ].join(" ")}
-                        >
-                          {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
-                        </button>
-                      ) : null}
+  {email && email !== viewerEmail ? (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onToggleFollow(email);
+      }}
+      disabled={Boolean(followBusy[email])}
+      className={[
+        "rounded-full px-4 py-1 text-xs font-semibold transition select-none",
+        followMap[email]
+          ? "bg-white/10 text-white hover:bg-white/15 border border-white/15"
+          : "bg-blue-500 text-white hover:bg-blue-400",
+        followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+      ].join(" ")}
+    >
+      {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
+    </button>
+  ) : null}
 
-                      <Link
-                        href={`/u/${encodeURIComponent(email)}`}
-                        className="text-xs text-white/60 hover:text-white underline"
-                      >
-                        View
-                      </Link>
-                    </div>
+  <Link
+    href={`/u/${encodeURIComponent(email)}`}
+    className="text-xs text-white/60 hover:text-white underline"
+    onClick={(e) => {
+      e.stopPropagation();
+    }}
+  >
+    View
+  </Link>
+</div>
                   </div>
 
                   <div className="relative w-full">
@@ -624,7 +634,7 @@ export default function PublicFeedClient() {
                             : post.imageUrl
                               ? [
                                   {
-                                    type: post.mediaType === "video" ? "video" : "image",
+                                    type: "image",
                                     url: post.imageUrl,
                                   },
                                 ]

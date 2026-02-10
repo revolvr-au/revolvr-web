@@ -28,7 +28,6 @@ export async function GET(_req: Request, { params }: { params: any }) {
       id: p.id,
       userEmail: String(p.userEmail ?? "").trim().toLowerCase(),
       imageUrl: (p as any).imageUrl ?? null, // legacy
-      mediaType: (p as any).mediaType ?? "image", // legacy
       media: (p as any).media ?? [],
       caption: p.caption ?? "",
       createdAt: p.createdAt,
