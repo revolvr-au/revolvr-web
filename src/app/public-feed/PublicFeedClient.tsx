@@ -401,15 +401,13 @@ export default function PublicFeedClient() {
         const verifiedRaw = hasVerifiedArray(json)
           ? (json as VerifiedResponseShape).verified ?? []
           : [];
-        normalizeVerifiedEmails(verifiedRaw); // not currently used, but kept for future
+        normalizeVerifiedEmails(verifiedRaw); // kept for later
 
         const currenciesRaw =
           isRecord(json) && "currencies" in json ? (json as any).currencies : undefined;
         const currencies = normalizeCurrencyMap(currenciesRaw);
 
-        if (!cancelled) {
-          setCurrencyByEmail(currencies);
-        }
+        if (!cancelled) setCurrencyByEmail(currencies);
       } catch (e: unknown) {
         console.warn("[public-feed] verified lookup error", e);
       }
@@ -541,6 +539,8 @@ export default function PublicFeedClient() {
               const isVerified = !!creator?.isVerified || tick === "blue" || tick === "gold";
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
+              const showFollow = email && email !== viewerEmail;
+
               return (
                 <article
                   key={post.id}
@@ -572,8 +572,8 @@ export default function PublicFeedClient() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      {email && email !== viewerEmail ? (
+                    <div className="shrink-0 relative z-20 flex items-center gap-2">
+                      {showFollow ? (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -583,10 +583,11 @@ export default function PublicFeedClient() {
                           }}
                           disabled={Boolean(followBusy[email])}
                           className={[
-                            "rounded-full px-4 py-1 text-xs font-semibold transition select-none",
+                            "inline-flex items-center justify-center",
+                            "h-8 px-4 rounded-full text-sm font-semibold select-none",
                             followMap[email]
-                              ? "bg-white/10 text-white hover:bg-white/15 border border-white/15"
-                              : "bg-blue-500 text-white hover:bg-blue-600",
+                              ? "bg-white/10 text-white border border-white/15 hover:bg-white/15"
+                              : "bg-blue-500 text-white hover:opacity-95",
                             followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
                           ].join(" ")}
                         >
