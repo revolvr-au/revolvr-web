@@ -24,17 +24,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
     }
 
+    // Prisma Follow expects: viewerEmail + followingEmail
     if (action === "follow") {
       await prisma.follow
         .create({
           data: {
-            followerEmail: viewerEmail,
+            viewerEmail,
             followingEmail: targetEmail,
           } as any,
           select: { id: true },
         })
         .catch((e: any) => {
-          if (e?.code === "P2002") return null; // unique constraint => already following
+          // already following (unique constraint)
+          if (e?.code === "P2002") return null;
           throw e;
         });
 
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
 
     await prisma.follow.deleteMany({
       where: {
-        followerEmail: viewerEmail,
+        viewerEmail,
         followingEmail: targetEmail,
       } as any,
     });
@@ -52,7 +54,12 @@ export async function POST(req: Request) {
   } catch (e: any) {
     console.error("POST /api/follow error:", e);
     return NextResponse.json(
-      { ok: false, error: "server_error", message: e?.message, prisma: e?.code ? { code: e.code, meta: e.meta } : undefined },
+      {
+        ok: false,
+        error: "server_error",
+        message: e?.message,
+        prisma: e?.code ? { code: e.code, meta: e.meta } : undefined,
+      },
       { status: 500 }
     );
   }
