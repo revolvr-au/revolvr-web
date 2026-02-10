@@ -4,24 +4,24 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function normEmail(v: unknown) {
+function norm(v: unknown) {
   return String(v ?? "").trim().toLowerCase();
 }
 
-async function findExisting(viewerEmail: string, targetEmail: string) {
-  // Try viewer/target
+async function findRow(viewerEmail: string, target: string) {
+  // Try viewerEmail + targetEmail
   try {
     const row = await (prisma as any).follow.findFirst({
-      where: { viewerEmail, targetEmail },
+      where: { viewerEmail, targetEmail: target },
       select: { id: true },
     });
     if (row?.id) return row;
   } catch {}
 
-  // Try follower/following
+  // Try viewerEmail + followingEmail
   try {
     const row = await (prisma as any).follow.findFirst({
-      where: { followerEmail: viewerEmail, followingEmail: targetEmail },
+      where: { viewerEmail, followingEmail: target },
       select: { id: true },
     });
     if (row?.id) return row;
@@ -30,28 +30,28 @@ async function findExisting(viewerEmail: string, targetEmail: string) {
   return null;
 }
 
-async function createFollow(viewerEmail: string, targetEmail: string) {
-  // Try viewer/target
+async function createRow(viewerEmail: string, target: string) {
+  // Try viewerEmail + targetEmail
   try {
     return await (prisma as any).follow.create({
-      data: { viewerEmail, targetEmail },
+      data: { viewerEmail, targetEmail: target },
       select: { id: true },
     });
-  } catch (e1) {
-    // Try follower/following
-    return await (prisma as any).follow.create({
-      data: { followerEmail: viewerEmail, followingEmail: targetEmail },
-      select: { id: true },
-    });
-  }
+  } catch {}
+
+  // Try viewerEmail + followingEmail
+  return await (prisma as any).follow.create({
+    data: { viewerEmail, followingEmail: target },
+    select: { id: true },
+  });
 }
 
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
 
-    const viewerEmail = normEmail((body as any)?.viewerEmail);
-    const targetEmail = normEmail((body as any)?.targetEmail);
+    const viewerEmail = norm((body as any)?.viewerEmail);
+    const targetEmail = norm((body as any)?.targetEmail);
     const action = String((body as any)?.action ?? "").trim().toLowerCase();
 
     if (!viewerEmail.includes("@") || !targetEmail.includes("@")) {
@@ -64,10 +64,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
     }
 
-    const existing = await findExisting(viewerEmail, targetEmail);
+    const existing = await findRow(viewerEmail, targetEmail);
 
     if (action === "follow") {
-      if (!existing) await createFollow(viewerEmail, targetEmail);
+      if (!existing) {
+        // If unique constraint exists, a race can throw P2002; treat it as ok.
+        await createRow(viewerEmail, targetEmail).catch((e: any) => {
+          if (e?.code === "P2002") return null;
+          throw e;
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 
@@ -78,7 +84,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error("POST /api/follow error:", e);
-    // return the real error so we can see what it is in curl/network
     return NextResponse.json(
       {
         ok: false,
