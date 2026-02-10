@@ -42,3 +42,5 @@ Thumbs.db
 # local safety backups
 *.bak
 *.bak.*
+.vercel
+.env*.local
