@@ -18,10 +18,7 @@ export async function GET(req: Request) {
     }
 
     const row = await prisma.follow.findFirst({
-      where: {
-        followerEmail: viewerEmail,
-        followingEmail: targetEmail,
-      },
+      where: { viewerEmail, targetEmail } as any,
       select: { id: true },
     });
 

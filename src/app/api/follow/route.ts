@@ -22,25 +22,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
     }
 
-    // IMPORTANT: align with DB columns: followerEmail/followingEmail
     const where = {
-      uniq_follow_pair: {
-        followerEmail: viewerEmail,
-        followingEmail: targetEmail,
-      },
-    };
+      uniq_follow_pair: { viewerEmail, targetEmail },
+    } as any;
 
     if (action === "follow") {
       await prisma.follow.upsert({
         where,
         update: {},
-        create: {
-          followerEmail: viewerEmail,
-          followingEmail: targetEmail,
-        },
+        create: { viewerEmail, targetEmail } as any,
         select: { id: true },
       });
-
       return NextResponse.json({ ok: true });
     }
 
