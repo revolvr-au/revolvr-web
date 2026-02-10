@@ -6,26 +6,22 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
+    const url = new URL(req.url);
+    const viewerEmail = String(url.searchParams.get("viewer") ?? "").trim().toLowerCase();
+    const targetEmail = String(url.searchParams.get("target") ?? "").trim().toLowerCase();
 
-    const viewer = String(searchParams.get("viewer") ?? "").trim().toLowerCase();
-    const target = String(searchParams.get("target") ?? "").trim().toLowerCase();
-
-    if (!viewer || !target || viewer === target) {
+    if (!viewerEmail.includes("@") || !targetEmail.includes("@")) {
       return NextResponse.json({ following: false });
     }
 
-    const existing = await prisma.follow.findFirst({
-      where: {
-        followerEmail: viewer,
-        followingEmail: target,
-      },
+    const row = await prisma.follow.findFirst({
+      where: { viewerEmail, targetEmail } as any,
       select: { id: true },
     });
 
-    return NextResponse.json({ following: !!existing });
-  } catch (err: any) {
-    console.error("GET /api/follow/status error:", err);
-    return NextResponse.json({ following: false }, { status: 500 });
+    return NextResponse.json({ following: Boolean(row) });
+  } catch (e) {
+    console.error("GET /api/follow/status error:", e);
+    return NextResponse.json({ following: false });
   }
 }

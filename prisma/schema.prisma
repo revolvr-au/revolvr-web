@@ -3,10 +3,11 @@ generator client {
   output     = "../src/generated/prisma"
   engineType = "library"
 }
+
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  schemas   = ["public"]
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public"]
 }
 
 model Post {
@@ -16,19 +17,10 @@ model Post {
   caption   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  mediaType String   @default("image")
 
-  likes Like[]
-  media PostMedia[]
-
-  @@schema("public")
-}
-
-
-
-model StripeEvent {
-  id        String   @id
-  type      String
-  createdAt DateTime @default(now())
+  likes Like[]      @relation("PostLikes")
+  media PostMedia[] @relation("PostMedia")
 
   @@schema("public")
 }
@@ -38,23 +30,23 @@ model Like {
   postId    String
   userEmail String
   createdAt DateTime @default(now())
-  post      Post     @relation(fields: [postId], references: [id])
 
-  @@unique([postId, userEmail])
+  post Post @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
+
   @@schema("public")
 }
 
 model PostMedia {
-  id        String   @id @default(dbgenerated("(gen_random_uuid())::text"))
+  id        String   @id @default(uuid())
   postId    String
   type      String
   url       String
-  order     Int      @default(0)
+  order     Int      @map("order")
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  post Post @relation("PostMedia", fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
-  @@index([postId, order])
   @@schema("public")
 }
 
@@ -67,6 +59,17 @@ model RevolvrItem {
   value     Int?
   name      String
 
+  @@schema("public")
+}
+
+model Follow {
+  id          String   @id @default(uuid())
+  viewerEmail String
+  targetEmail String
+  createdAt   DateTime @default(now())
+
+  @@unique([viewerEmail, targetEmail], name: "uniq_follow_pair")
+  @@index([targetEmail])
   @@schema("public")
 }
 
