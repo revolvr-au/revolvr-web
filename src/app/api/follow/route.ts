@@ -18,33 +18,31 @@ export async function POST(req: Request) {
     if (viewerEmail === targetEmail) {
       return NextResponse.json({ ok: false, error: "same_user" }, { status: 400 });
     }
+    if (action !== "follow" && action !== "unfollow") {
+      return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
+    }
 
-    // IMPORTANT:
-    // Your Prisma unique compound key name may differ.
-    // If tsc complains about `uniq_follow_pair`, change it to whatever your schema generates.
-    const where = {
-      uniq_follow_pair: { viewerEmail, targetEmail },
-    } as any;
+    // Avoid depending on any specific compound unique constraint name.
+    const existing = await prisma.follow.findFirst({
+      where: { viewerEmail, targetEmail } as any,
+      select: { id: true },
+    });
 
     if (action === "follow") {
-      await prisma.follow.upsert({
-        where,
-        update: {},
-        create: { viewerEmail, targetEmail } as any,
-      });
-
+      if (!existing) {
+        await prisma.follow.create({
+          data: { viewerEmail, targetEmail } as any,
+          select: { id: true },
+        });
+      }
       return NextResponse.json({ ok: true });
     }
 
-    if (action === "unfollow") {
-      await prisma.follow
-        .delete({ where })
-        .catch(() => null);
-
-      return NextResponse.json({ ok: true });
+    // action === "unfollow"
+    if (existing?.id) {
+      await prisma.follow.delete({ where: { id: existing.id } as any }).catch(() => null);
     }
-
-    return NextResponse.json({ ok: false, error: "invalid_action" }, { status: 400 });
+    return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("POST /api/follow error:", e);
     return NextResponse.json({ ok: false, error: "server_error" }, { status: 500 });

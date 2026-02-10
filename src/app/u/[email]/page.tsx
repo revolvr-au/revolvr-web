@@ -1,9 +1,13 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 type Props = {
-  params: { email: string[] };
+  params: { email: string };
 };
 
 export default function Page({ params }: Props) {
-  const email = params.email.join("/");
+  const email = String(params.email || "").trim();
+
   return (
     <main className="mx-auto max-w-screen-sm p-4">
       <h1 className="text-xl font-semibold">User</h1>
