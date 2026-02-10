@@ -27,18 +27,27 @@ export async function POST(req: Request) {
     if (action === "follow") {
       await prisma.follow
         .create({
-          data: { viewerEmail, targetEmail },
+          data: {
+            followerEmail: viewerEmail,
+            followingEmail: targetEmail,
+          } as any,
           select: { id: true },
         })
         .catch((e: any) => {
-          if (e?.code === "P2002") return null; // already exists
+          if (e?.code === "P2002") return null; // unique constraint => already following
           throw e;
         });
 
       return NextResponse.json({ ok: true });
     }
 
-    await prisma.follow.deleteMany({ where: { viewerEmail, targetEmail } });
+    await prisma.follow.deleteMany({
+      where: {
+        followerEmail: viewerEmail,
+        followingEmail: targetEmail,
+      } as any,
+    });
+
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     console.error("POST /api/follow error:", e);
