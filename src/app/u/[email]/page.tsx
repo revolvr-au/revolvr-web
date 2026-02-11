@@ -1,96 +1,107 @@
+import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import ProfileClient, { type ProfilePost } from "./ProfileClient";
 
-type Params = { email: string };
-
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function safeDecode(v: string) {
+type PageProps = {
+  params: Promise<{ email: string }>;
+};
+
+function formatMonthYear(d: Date) {
   try {
-    return decodeURIComponent(v);
+    return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short" }).format(d);
   } catch {
-    return v;
+    return d.toISOString();
   }
 }
 
-async function getProfile(email: string) {
-  // Use relative URL so it works on Vercel automatically
-  const res = await fetch(`/api/profile?email=${encodeURIComponent(email)}`, {
-    cache: "no-store",
-  }).catch(() => null);
-
-  if (!res || !res.ok) return null;
-  return (await res.json().catch(() => null)) as any;
+function safePickString(obj: any, keys: string[]): string | null {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
 }
 
-export default async function Page({ params }: { params: Promise<Params> }) {
+export default async function PublicProfilePage({ params }: PageProps) {
   const { email: rawEmail } = await params;
+  const email = decodeURIComponent(rawEmail).toLowerCase();
 
-  const raw = String(rawEmail ?? "");
-  const email = safeDecode(raw).trim().toLowerCase();
+  const creator = await prisma.creatorProfile.findUnique({
+    where: { email },
+  });
 
-  if (!email || !email.includes("@")) notFound();
+  const postsDb = await prisma.post.findMany({
+    where: { userEmail: email },
+    orderBy: { createdAt: "desc" },
+    take: 48,
+  });
 
-  const data = await getProfile(email);
-  const profile = data?.ok ? data.profile : null;
-  const posts = data?.ok ? (data.posts ?? []) : [];
-
-  const handle =
-    (profile?.handle && String(profile.handle).trim()) || `@${email.split("@")[0]}`;
+  if (!creator && postsDb.length === 0) {
+    notFound();
+  }
 
   const displayName =
-    (profile?.displayName && String(profile.displayName).trim()) || email.split("@")[0];
+    creator?.displayName ||
+    creator?.handle ||
+    email.split("@")[0] ||
+    "User";
+
+  const handle = creator?.handle ? `@${creator.handle}` : null;
+
+  const verification =
+    creator?.verificationStatus === "gold"
+      ? "gold"
+      : creator?.verificationStatus === "blue"
+        ? "blue"
+        : null;
 
   const avatarUrl =
-    (profile?.avatarUrl && String(profile.avatarUrl).trim()) || null;
+    safePickString(creator as any, ["avatarUrl", "imageUrl", "profileImageUrl"]) || null;
+
+  const bio =
+    safePickString(creator as any, ["bio", "about", "description"]) || null;
+
+  const memberSinceBase: Date | null =
+    (creator as any)?.createdAt
+      ? new Date((creator as any).createdAt)
+      : postsDb[postsDb.length - 1]?.createdAt
+        ? new Date(postsDb[postsDb.length - 1].createdAt)
+        : null;
+
+  const accountType = creator ? "Creator" : "User";
+
+  const trustLine = [
+    verification === "gold"
+      ? "Verified Business"
+      : verification === "blue"
+        ? "Verified Individual"
+        : null,
+    accountType,
+    memberSinceBase ? `Member since ${formatMonthYear(memberSinceBase)}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const posts: ProfilePost[] = postsDb.map((p) => ({
+    id: p.id,
+    imageUrl: (p as any).imageUrl ?? "",
+    mediaType: (p as any).mediaType ?? "",
+    caption: (p as any).caption ?? null,
+    createdAt: p.createdAt.toISOString(),
+  }));
 
   return (
-    <main className="mx-auto max-w-screen-sm p-6 text-white">
-      <div className="flex items-center gap-3">
-        <div className="h-14 w-14 shrink-0 rounded-full overflow-hidden bg-white/10 flex items-center justify-center font-semibold">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            (displayName || "u")[0].toUpperCase()
-          )}
-        </div>
-
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold truncate">{displayName}</h1>
-          <p className="text-sm text-white/50 truncate">{handle}</p>
-          <p className="text-[12px] text-white/30 truncate">{email}</p>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <h2 className="text-sm font-semibold text-white/80">Posts</h2>
-
-        {!posts.length ? (
-          <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/60">
-            No posts yet.
-          </div>
-        ) : (
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            {posts.map((p: any) => {
-              const img =
-                (p?.media?.length && p.media[0]?.url) || p?.imageUrl || null;
-
-              return (
-                <div
-                  key={p.id}
-                  className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10"
-                >
-                  {img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt="" className="h-full w-full object-cover" />
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </main>
+    <ProfileClient
+      email={email}
+      displayName={displayName}
+      handle={handle}
+      verification={verification}
+      trustLine={trustLine || null}
+      avatarUrl={avatarUrl}
+      bio={bio}
+      posts={posts}
+    />
   );
 }
