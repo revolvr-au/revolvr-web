@@ -25,49 +25,36 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const email = normEmail(url.searchParams.get("email"));
 
-    if (!email || !email.includes("@")) {
+    if (!email.includes("@")) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
-    const handleGuess = handleFromEmail(email).replace(/^@/, "");
-
-    // IMPORTANT: CreatorProfile does NOT have userEmail (your Prisma error confirms this).
-    // Try by email first (case-insensitive), then handle (case-insensitive).
+    // CreatorProfile model doesn't have userEmail (it has email/handle/etc).
     const creatorProfile =
       (await (prisma as any).creatorProfile?.findFirst?.({
         where: {
-          OR: [
-            { email: { equals: email, mode: "insensitive" } },
-            { handle: { equals: handleGuess, mode: "insensitive" } },
-          ],
+          OR: [{ email }, { handle: handleFromEmail(email).replace(/^@/, "") }, { handle: handleFromEmail(email) }],
         },
       }).catch(() => null)) ?? null;
 
-    // Optional fallback if you still have a Creator/User model in your DB.
     const creator =
-      creatorProfile ??
-      ((await (prisma as any).creator?.findFirst?.({
-        where: { email: { equals: email, mode: "insensitive" } },
-      }).catch(() => null)) ??
-        null);
+      (await (prisma as any).creator?.findFirst?.({ where: { email } }).catch(() => null)) ?? null;
+
+    const src = creatorProfile ?? creator ?? null;
 
     const profile = {
       email,
-      displayName: String(creator?.displayName ?? creator?.name ?? displayNameFromEmail(email)),
-      handle: String(
-        creator?.handle
-          ? String(creator.handle).startsWith("@")
-            ? String(creator.handle)
-            : `@${creator.handle}`
-          : handleFromEmail(email)
-      ),
-      avatarUrl: String(creator?.avatarUrl ?? creator?.imageUrl ?? "").trim() || null,
-      bio: String(creator?.bio ?? "").trim() || null,
-      verificationTier: creator?.verificationTier ?? null,
+      displayName: String(src?.displayName ?? src?.name ?? displayNameFromEmail(email)),
+      handle: String(src?.handle ?? handleFromEmail(email)),
+      avatarUrl: String(src?.avatarUrl ?? src?.imageUrl ?? "").trim() || null,
+      bio: String(src?.bio ?? "").trim() || null,
+      verificationTier: src?.verificationTier ?? src?.blue_tick_status ?? src?.verificationStatus ?? null,
       isVerified:
-        Boolean(creator?.isVerified) ||
-        creator?.verificationTier === "blue" ||
-        creator?.verificationTier === "gold",
+        Boolean(src?.isVerified) ||
+        src?.verificationTier === "blue" ||
+        src?.verificationTier === "gold" ||
+        src?.blue_tick_status === "blue" ||
+        src?.blue_tick_status === "gold",
     };
 
     const posts =
