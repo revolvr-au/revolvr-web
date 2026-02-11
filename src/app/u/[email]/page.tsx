@@ -1,13 +1,19 @@
-type Props = { params: { email: string } };
+// src/app/u/[email]/page.tsx
+type Props = {
+  params: { email: string };
+};
+
+function safeDecode(v: string) {
+  try {
+    return decodeURIComponent(v);
+  } catch {
+    return v;
+  }
+}
 
 export default function Page({ params }: Props) {
-  const email = (() => {
-    try {
-      return decodeURIComponent(params.email || "");
-    } catch {
-      return params.email || "";
-    }
-  })();
+  const raw = String(params?.email ?? "");
+  const email = safeDecode(raw);
 
   return (
     <main className="mx-auto max-w-screen-sm p-6 text-white">
