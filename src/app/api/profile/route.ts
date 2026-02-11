@@ -11,7 +11,7 @@ function normEmail(v: unknown) {
 function handleFromEmail(email: string) {
   const [local] = email.split("@");
   const cleaned = (local || "user").replace(/[^a-z0-9_]+/gi, "").slice(0, 30);
-  return cleaned || "user";
+  return cleaned ? `@${cleaned}` : "@user";
 }
 
 function displayNameFromEmail(email: string) {
@@ -29,43 +29,47 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
-    const handleBare = handleFromEmail(email);
-
-    // CreatorProfile uses `email` (and optionally `handle`) — NOT userEmail.
-    const creatorProfile =
-      (await (prisma as any).creatorProfile?.findFirst?.({
-        where: {
-          OR: [{ email }, { handle: handleBare }, { handle: `@${handleBare}` }],
-        },
-      }).catch(() => null)) ?? null;
-
-    // Optional legacy fallback if you still have a Creator table
-    const creator =
-      creatorProfile ??
-      ((await (prisma as any).creator?.findFirst?.({ where: { email } }).catch(() => null)) ?? null);
+    // ✅ CreatorProfile uses `email` (unique)
+    const cp =
+      (await prisma.creatorProfile
+        .findUnique({
+          where: { email },
+          select: {
+            email: true,
+            displayName: true,
+            handle: true,
+            bio: true,
+            avatarUrl: true,
+            isVerified: true,
+            verificationStatus: true,
+            verificationCurrentPeriodEnd: true,
+            blue_tick_status: true,
+            blue_tick_current_period_end: true,
+          },
+        })
+        .catch(() => null)) ?? null;
 
     const profile = {
       email,
-      displayName: String(creator?.displayName ?? creator?.name ?? displayNameFromEmail(email)),
-      handle: String(creator?.handle ?? `@${handleBare}`),
-      avatarUrl: String(creator?.avatarUrl ?? creator?.imageUrl ?? "").trim() || null,
-      bio: String(creator?.bio ?? "").trim() || null,
-
-      // keep these best-effort (your schema has a few variants)
-      verificationTier: creator?.verificationTier ?? null,
-      verificationStatus: creator?.verificationStatus ?? null,
-      blue_tick_status: creator?.blue_tick_status ?? null,
-      isVerified: Boolean(creator?.isVerified),
+      displayName: String(cp?.displayName ?? displayNameFromEmail(email)),
+      handle: String(cp?.handle ? (cp.handle.startsWith("@") ? cp.handle : `@${cp.handle}`) : handleFromEmail(email)),
+      avatarUrl: cp?.avatarUrl?.trim() || null,
+      bio: cp?.bio?.trim() || null,
+      verificationTier: null, // you can map this later if needed
+      verificationStatus: cp?.verificationStatus ?? null,
+      blue_tick_status: cp?.blue_tick_status ?? null,
+      isVerified: Boolean(cp?.isVerified),
     };
 
     const posts =
-      (await (prisma as any).post?.findMany?.({
-        where: { userEmail: email },
-        orderBy: { createdAt: "desc" },
-        take: 60,
-      }).catch(() => [])) ?? [];
+      (await prisma.post
+        .findMany({
+          where: { userEmail: email },
+          orderBy: { createdAt: "desc" },
+          take: 60,
+        })
+        .catch(() => [])) ?? [];
 
-    // Important: return ok:true even if creatorProfile is null so /u never “breaks”
     return NextResponse.json({ ok: true, profile, posts });
   } catch (e: any) {
     console.error("GET /api/profile error:", e);
