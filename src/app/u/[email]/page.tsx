@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
-import ProfileClient, { type ProfilePost } from "./ProfileClient";
+import ProfileClient, { type ProfilePost } from "../ProfileClient";
 
 export const dynamic = "force-dynamic";
 
