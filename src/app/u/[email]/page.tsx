@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import FeedLayout from "@/components/FeedLayout";
+import ProfileClient, { type ProfilePost } from "../ProfileClient";
+
+
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,58 +46,20 @@ export default async function Page({ params }: { params: Promise<Params> }) {
     (profile?.avatarUrl && String(profile.avatarUrl).trim()) || null;
   const bio =
     (profile?.bio && String(profile.bio).trim()) || null;
-
-  return (
-    <FeedLayout title={displayName} subtitle={handle}>
-      <div className="space-y-5 pb-12">
-        <div className="flex items-start gap-3">
-          <div className="h-12 w-12 shrink-0 rounded-full overflow-hidden bg-white/5 border border-white/10 flex items-center justify-center text-sm font-semibold uppercase">
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              (displayName || "u")[0].toUpperCase()
-            )}
-          </div>
-
-          <div className="min-w-0">
-            <div className="text-sm text-white/60 break-all">{email}</div>
-            {bio ? (
-              <p className="mt-2 text-sm text-white/80 whitespace-pre-wrap">{bio}</p>
-            ) : (
-              <p className="mt-2 text-sm text-white/60">Profile page coming online.</p>
-            )}
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-            <span className="text-sm font-medium">Posts</span>
-            <span className="text-xs text-white/40">{posts.length}</span>
-          </div>
-
-          {!posts.length ? (
-            <div className="px-4 py-5 text-sm text-white/60">No posts yet.</div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2 p-3">
-              {posts.map((p: any) => {
-                const img = (p?.imageUrl && String(p.imageUrl).trim()) || null;
-                return (
-                  <div
-                    key={p.id}
-                    className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10"
-                  >
-                    {img ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={img} alt="" className="h-full w-full object-cover" />
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-    </FeedLayout>
-  );
+return (
+  <FeedLayout title={displayName} subtitle={handle}>
+    <ProfileClient
+      profile={{
+        email,
+        displayName,
+        handle,
+        avatarUrl,
+        bio,
+      }}
+      posts={(posts ?? []) as ProfilePost[]}
+    />
+  </FeedLayout>
+);
 }
+
+
