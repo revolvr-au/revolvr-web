@@ -235,9 +235,8 @@ export default function PublicFeedClient() {
   const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
   // TEMP until auth wiring
-  const [viewerEmail, setViewerEmail] = useState<string>("");
-
-const viewer = useMemo(() => viewerEmail.trim().toLowerCase(), [viewerEmail]);
+  const viewerEmail = "test@revolvr.net";
+  const viewer = viewerEmail.trim().toLowerCase();
 
 
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
@@ -550,7 +549,7 @@ const viewer = useMemo(() => viewerEmail.trim().toLowerCase(), [viewerEmail]);
               const isVerified = !!creator?.isVerified || tick === "blue" || tick === "gold";
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
-              const showFollow = Boolean(email) && Boolean(viewer) && email !== viewer;
+              const showFollow = Boolean(email) && viewer.includes("@") && email !== viewer;
 return (
                 <article
                   key={post.id}
