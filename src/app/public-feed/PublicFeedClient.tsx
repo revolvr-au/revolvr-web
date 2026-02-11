@@ -235,7 +235,10 @@ export default function PublicFeedClient() {
   const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
   // TEMP until auth wiring
-  const viewerEmail = "test@revolvr.net";
+  const [viewerEmail: viewer, setViewerEmail] = useState<string>("");
+
+const viewer = useMemo(() => viewerEmail.trim().toLowerCase(), [viewerEmail]);
+
 
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
   const [followBusy, setFollowBusy] = useState<Record<string, boolean>>({});
@@ -352,7 +355,7 @@ export default function PublicFeedClient() {
     let cancelled = false;
 
     async function run() {
-      if (!viewerEmail || !emails.length) return;
+      if (!viewer || !emails.length) return;
 
       const next: Record<string, boolean> = {};
 
@@ -361,7 +364,7 @@ export default function PublicFeedClient() {
           if (!target || target === viewerEmail) return;
           try {
             const res = await fetch(
-              `/api/follow/status?viewer=${encodeURIComponent(viewerEmail)}&target=${encodeURIComponent(
+              `/api/follow/status?viewer=${encodeURIComponent(viewer)}&target=${encodeURIComponent(
                 target
               )}`,
               { cache: "no-store" }
@@ -381,7 +384,7 @@ export default function PublicFeedClient() {
     return () => {
       cancelled = true;
     };
-  }, [emails, viewerEmail]);
+  }, [emails, viewer]);
 
   // Load verified + currency map for authors
   useEffect(() => {
@@ -455,8 +458,8 @@ export default function PublicFeedClient() {
 
   async function onToggleFollow(targetEmail: string) {
     const target = String(targetEmail || "").trim().toLowerCase();
-    if (!viewerEmail.includes("@") || !target.includes("@")) return;
-    if (viewerEmail === target) return;
+    if (!viewer.includes("@") || !target.includes("@")) return;
+    if (viewer === target) return;
 
     const currentlyFollowing = Boolean(followMap[target]);
     const nextValue = !currentlyFollowing;
@@ -469,7 +472,7 @@ export default function PublicFeedClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          viewerEmail,
+          viewerEmail: viewer,
           targetEmail: target,
           action: nextValue ? "follow" : "unfollow",
         }),
@@ -547,9 +550,8 @@ export default function PublicFeedClient() {
               const isVerified = !!creator?.isVerified || tick === "blue" || tick === "gold";
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
-              const showFollow = email && email !== viewerEmail;
-
-              return (
+              const showFollow = Boolean(email) && Boolean(viewer) && email !== viewer;
+return (
                 <article
                   key={post.id}
                   className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
@@ -581,7 +583,7 @@ export default function PublicFeedClient() {
                     </div>
 
                     <div className="shrink-0 relative z-20 flex items-center gap-2">
-  {email && email !== viewerEmail ? (
+  {showFollow ? (
     <button
       type="button"
       onClick={(e) => {
@@ -601,16 +603,17 @@ export default function PublicFeedClient() {
       {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
     </button>
   ) : null}
-
-  <Link
-    href={`/u/${encodeURIComponent(email)}`}
-    className="text-xs text-white/60 hover:text-white underline"
-    onClick={(e) => {
-      e.stopPropagation();
-    }}
-  >
-    View
-  </Link>
+  {email ? (
+    <Link
+      href={`/u/${encodeURIComponent(email)}`}
+      className="text-xs text-white/60 hover:text-white underline"
+      onClick={(e) => {
+        e.stopPropagation();
+      }}
+    >
+      View
+    </Link>
+  ) : null}
 </div>
                   </div>
 
