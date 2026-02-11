@@ -1,107 +1,65 @@
-import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import ProfileClient, { type ProfilePost } from "../ProfileClient";
 
+type Params = { email: string };
+
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type PageProps = {
-  params: Promise<{ email: string }>;
-};
-
-function formatMonthYear(d: Date) {
+function safeDecode(v: string) {
   try {
-    return new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short" }).format(d);
+    return decodeURIComponent(v);
   } catch {
-    return d.toISOString();
+    return v;
   }
 }
 
-function safePickString(obj: any, keys: string[]): string | null {
-  for (const k of keys) {
-    const v = obj?.[k];
-    if (typeof v === "string" && v.trim()) return v.trim();
-  }
-  return null;
+function getBaseUrl() {
+  const envBase = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  if (envBase) return envBase.replace(/\/+$/, "");
+
+  const vercel = process.env.VERCEL_URL?.trim();
+  if (vercel) return `https://${vercel}`.replace(/\/+$/, "");
+
+  const h = headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  if (host) return `${proto}://${host}`.replace(/\/+$/, "");
+
+  return "";
 }
 
-export default async function PublicProfilePage({ params }: PageProps) {
+async function getProfile(email: string) {
+  const base = getBaseUrl();
+  const url = `${base}/api/profile?email=${encodeURIComponent(email)}`;
+
+  const res = await fetch(url, { cache: "no-store" }).catch(() => null);
+  if (!res || !res.ok) return null;
+
+  const json = await res.json().catch(() => null);
+  return json as any;
+}
+
+export default async function Page({ params }: { params: Promise<Params> }) {
   const { email: rawEmail } = await params;
-  const email = decodeURIComponent(rawEmail).toLowerCase();
 
-  const creator = await prisma.creatorProfile.findUnique({
-    where: { email },
-  });
+  const email = safeDecode(String(rawEmail ?? "")).trim().toLowerCase();
+  if (!email || !email.includes("@")) notFound();
 
-  const postsDb = await prisma.post.findMany({
-    where: { userEmail: email },
-    orderBy: { createdAt: "desc" },
-    take: 48,
-  });
+  const data = await getProfile(email);
+  const profile = data?.ok ? data.profile : null;
+  const posts: ProfilePost[] = data?.ok ? (data.posts ?? []) : [];
 
-  if (!creator && postsDb.length === 0) {
-    notFound();
-  }
-
-  const displayName =
-    creator?.displayName ||
-    creator?.handle ||
-    email.split("@")[0] ||
-    "User";
-
-  const handle = creator?.handle ? `@${creator.handle}` : null;
-
-  const verification =
-    creator?.verificationStatus === "gold"
-      ? "gold"
-      : creator?.verificationStatus === "blue"
-        ? "blue"
-        : null;
-
-  const avatarUrl =
-    safePickString(creator as any, ["avatarUrl", "imageUrl", "profileImageUrl"]) || null;
-
-  const bio =
-    safePickString(creator as any, ["bio", "about", "description"]) || null;
-
-  const memberSinceBase: Date | null =
-    (creator as any)?.createdAt
-      ? new Date((creator as any).createdAt)
-      : postsDb[postsDb.length - 1]?.createdAt
-        ? new Date(postsDb[postsDb.length - 1].createdAt)
-        : null;
-
-  const accountType = creator ? "Creator" : "User";
-
-  const trustLine = [
-    verification === "gold"
-      ? "Verified Business"
-      : verification === "blue"
-        ? "Verified Individual"
-        : null,
-    accountType,
-    memberSinceBase ? `Member since ${formatMonthYear(memberSinceBase)}` : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
-  const posts: ProfilePost[] = postsDb.map((p) => ({
-    id: p.id,
-    imageUrl: (p as any).imageUrl ?? "",
-    mediaType: (p as any).mediaType ?? "",
-    caption: (p as any).caption ?? null,
-    createdAt: p.createdAt.toISOString(),
-  }));
+  // prevent server crash -> show 404 instead of "Application error"
+  if (!profile?.email) notFound();
 
   return (
     <ProfileClient
-      email={email}
-      displayName={displayName}
-      handle={handle}
-      verification={verification}
-      trustLine={trustLine || null}
-      avatarUrl={avatarUrl}
-      bio={bio}
+      profile={profile}
       posts={posts}
+      viewerEmail={null}
+      backHref="/public-feed"
     />
   );
 }
