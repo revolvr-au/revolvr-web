@@ -1,6 +1,5 @@
-type Props = {
-  params: { email: string };
-};
+type Params = { email: string };
+type Props = { params: Params | Promise<Params> };
 
 function safeDecode(v: string) {
   try {
@@ -10,8 +9,9 @@ function safeDecode(v: string) {
   }
 }
 
-export default function Page({ params }: Props) {
-  const raw = String(params?.email ?? "");
+export default async function Page({ params }: Props) {
+  const p = await Promise.resolve(params);
+  const raw = String(p?.email ?? "");
   const email = safeDecode(raw);
 
   return (
@@ -21,7 +21,7 @@ export default function Page({ params }: Props) {
 
       {/* temp debug - remove later */}
       <pre className="mt-4 text-[11px] text-white/50 whitespace-pre-wrap">
-        {JSON.stringify({ raw, email, params }, null, 2)}
+        {JSON.stringify({ raw, email, paramsType: typeof params }, null, 2)}
       </pre>
     </main>
   );
