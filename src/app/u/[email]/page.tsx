@@ -1,5 +1,5 @@
 type Params = { email: string };
-type Props = { params: Params };
+type Props = { params: Promise<Params> };
 
 function safeDecode(v: string) {
   try {
@@ -9,8 +9,9 @@ function safeDecode(v: string) {
   }
 }
 
-export default function Page({ params }: Props) {
-  const raw = String(params?.email ?? "");
+export default async function Page({ params }: Props) {
+  const p = await params;
+  const raw = String(p?.email ?? "");
   const email = safeDecode(raw);
 
   return (
