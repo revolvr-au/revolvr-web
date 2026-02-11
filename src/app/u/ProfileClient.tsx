@@ -17,7 +17,7 @@ export type Profile = {
   bio?: string | null;
   followersCount?: number | null;
   followingCount?: number | null;
-  isVerified?: boolean;
+  isVerified?: boolean | null; // optional (safe)
 };
 
 export default function ProfileClient({
@@ -41,6 +41,7 @@ export default function ProfileClient({
 
   return (
     <div className="space-y-5 pb-12">
+      {/* Top card */}
       <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
         <div className="p-5 flex items-start gap-4">
           <div className="h-16 w-16 shrink-0 rounded-full overflow-hidden bg-white/10 border border-white/10 flex items-center justify-center text-lg font-semibold">
@@ -53,19 +54,7 @@ export default function ProfileClient({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <div className="text-lg font-semibold truncate">{profile.displayName}</div>
-              {profile.isVerified ? (
-                <span
-                  title="Verified"
-                  className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-blue-500 text-white text-[10px]"
-                  aria-label="Verified"
-                >
-                  ✓
-                </span>
-              ) : null}
-            </div>
-
+            <div className="text-lg font-semibold truncate">{profile.displayName}</div>
             <div className="text-sm text-white/60 truncate">{profile.handle}</div>
             <div className="text-xs text-white/40 truncate">{profile.email}</div>
 
@@ -83,6 +72,7 @@ export default function ProfileClient({
           </div>
         </div>
 
+        {/* Stats row */}
         <div className="px-5 pb-5">
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
@@ -101,6 +91,7 @@ export default function ProfileClient({
         </div>
       </div>
 
+      {/* Tabs */}
       <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
         <div className="grid grid-cols-3 border-b border-white/10">
           <TabButton active={tab === "posts"} onClick={() => setTab("posts")}>
