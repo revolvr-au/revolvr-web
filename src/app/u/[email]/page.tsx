@@ -1,5 +1,8 @@
-import Link from "next/link";
+// src/app/u/[email]/page.tsx
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
+import Link from "next/link";
+
 import FeedLayout from "@/components/FeedLayout";
 import ProfileClient, { type Profile, type ProfilePost } from "../ProfileClient";
 
@@ -16,26 +19,33 @@ function safeDecode(v: string) {
   }
 }
 
+function getBaseUrl() {
+  // Prefer explicit site URL if set (best for Vercel)
+  const envUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.VERCEL_URL;
+
+  if (envUrl) {
+    // If it's already https://... keep it, otherwise assume https
+    return envUrl.startsWith("http") ? envUrl : `https://${envUrl}`;
+  }
+
+  // Fallback to request host
+  const h = headers();
+  const host = h.get("x-forwarded-host") || h.get("host");
+  const proto = h.get("x-forwarded-proto") || "https";
+  return host ? `${proto}://${host}` : "https://www.revolvr.net";
+}
+
 async function getProfile(email: string) {
-  // IMPORTANT: relative URL so it works on Vercel
-  const res = await fetch(`/api/profile?email=${encodeURIComponent(email)}`, {
-    cache: "no-store",
-  }).catch(() => null);
+  const baseUrl = getBaseUrl();
+  const url = `${baseUrl}/api/profile?email=${encodeURIComponent(email)}`;
 
+  const res = await fetch(url, { cache: "no-store" }).catch(() => null);
   if (!res || !res.ok) return null;
+
   return (await res.json().catch(() => null)) as any;
-}
-
-function fallbackHandle(email: string) {
-  const [local] = String(email).split("@");
-  const cleaned = (local || "user").replace(/[^a-z0-9_]+/gi, "").slice(0, 30);
-  return cleaned ? `@${cleaned}` : "@user";
-}
-
-function fallbackDisplayName(email: string) {
-  const [local] = String(email).split("@");
-  const cleaned = (local || "User").replace(/\W+/g, " ").trim();
-  return cleaned || "User";
 }
 
 export default async function Page({ params }: { params: Promise<Params> }) {
@@ -48,39 +58,23 @@ export default async function Page({ params }: { params: Promise<Params> }) {
 
   const data = await getProfile(email);
 
-  const apiProfile = data?.ok ? data.profile : null;
-  const apiPosts = data?.ok ? (data.posts ?? []) : [];
-
-  const displayName =
-    (apiProfile?.displayName && String(apiProfile.displayName).trim()) ||
-    fallbackDisplayName(email);
-
-  const handle =
-    (apiProfile?.handle && String(apiProfile.handle).trim()) || fallbackHandle(email);
-
-  const avatarUrl =
-    (apiProfile?.avatarUrl && String(apiProfile.avatarUrl).trim()) || null;
-
-  const bio = (apiProfile?.bio && String(apiProfile.bio).trim()) || null;
-
-  // Normalize into the ProfileClient types
-  const profileData: Profile = {
+  // If API fails, still show a page (no 404), but keep it stable
+  const fallbackProfile: Profile = {
     email,
-    displayName,
-    handle,
-    avatarUrl,
-    bio,
-    followersCount: Number(apiProfile?.followersCount ?? 0),
-    followingCount: Number(apiProfile?.followingCount ?? 0),
-    isVerified: Boolean(apiProfile?.isVerified ?? false),
+    displayName: email.split("@")[0] || "User",
+    handle: `@${email.split("@")[0] || "user"}`,
+    avatarUrl: null,
+    bio: null,
+    followersCount: 0,
+    followingCount: 0,
+    isVerified: false,
   };
 
-  const postsData: ProfilePost[] = (apiPosts ?? []).map((p: any) => ({
-    id: String(p?.id ?? crypto.randomUUID()),
-    imageUrl: p?.imageUrl ?? (p?.media?.[0]?.url ?? null),
-    caption: p?.caption ?? null,
-    createdAt: p?.createdAt ?? null,
-  }));
+  const profile: Profile = data?.ok && data?.profile ? data.profile : fallbackProfile;
+  const posts: ProfilePost[] = data?.ok && Array.isArray(data?.posts) ? data.posts : [];
+
+  const displayName = (profile?.displayName || "").trim() || fallbackProfile.displayName;
+  const handle = (profile?.handle || "").trim() || fallbackProfile.handle;
 
   return (
     <FeedLayout
@@ -99,7 +93,7 @@ export default async function Page({ params }: { params: Promise<Params> }) {
         </Link>
       }
     >
-      <ProfileClient profile={profileData} posts={postsData} />
+      <ProfileClient profile={profile} posts={posts} />
     </FeedLayout>
   );
 }
