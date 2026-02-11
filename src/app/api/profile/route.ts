@@ -25,29 +25,49 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const email = normEmail(url.searchParams.get("email"));
 
-    if (!email.includes("@")) {
+    if (!email || !email.includes("@")) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
-    // Best-effort: attempt to pull a profile from whatever tables exist.
-    // If nothing exists yet, we still return a synthesized profile so /u/[email] never 404s.
-    const creator =
+    const handleGuess = handleFromEmail(email).replace(/^@/, "");
+
+    // IMPORTANT: CreatorProfile does NOT have userEmail (your Prisma error confirms this).
+    // Try by email first (case-insensitive), then handle (case-insensitive).
+    const creatorProfile =
       (await (prisma as any).creatorProfile?.findFirst?.({
-        where: { userEmail: email },
+        where: {
+          OR: [
+            { email: { equals: email, mode: "insensitive" } },
+            { handle: { equals: handleGuess, mode: "insensitive" } },
+          ],
+        },
+      }).catch(() => null)) ?? null;
+
+    // Optional fallback if you still have a Creator/User model in your DB.
+    const creator =
+      creatorProfile ??
+      ((await (prisma as any).creator?.findFirst?.({
+        where: { email: { equals: email, mode: "insensitive" } },
       }).catch(() => null)) ??
-      (await (prisma as any).creator?.findFirst?.({
-        where: { email },
-      }).catch(() => null)) ??
-      null;
+        null);
 
     const profile = {
       email,
       displayName: String(creator?.displayName ?? creator?.name ?? displayNameFromEmail(email)),
-      handle: String(creator?.handle ?? handleFromEmail(email)),
+      handle: String(
+        creator?.handle
+          ? String(creator.handle).startsWith("@")
+            ? String(creator.handle)
+            : `@${creator.handle}`
+          : handleFromEmail(email)
+      ),
       avatarUrl: String(creator?.avatarUrl ?? creator?.imageUrl ?? "").trim() || null,
       bio: String(creator?.bio ?? "").trim() || null,
       verificationTier: creator?.verificationTier ?? null,
-      isVerified: Boolean(creator?.isVerified) || creator?.verificationTier === "blue" || creator?.verificationTier === "gold",
+      isVerified:
+        Boolean(creator?.isVerified) ||
+        creator?.verificationTier === "blue" ||
+        creator?.verificationTier === "gold",
     };
 
     const posts =
