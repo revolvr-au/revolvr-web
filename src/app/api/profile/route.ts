@@ -11,7 +11,7 @@ function normEmail(v: unknown) {
 function handleFromEmail(email: string) {
   const [local] = email.split("@");
   const cleaned = (local || "user").replace(/[^a-z0-9_]+/gi, "").slice(0, 30);
-  return cleaned ? `@${cleaned}` : "@user";
+  return cleaned || "user";
 }
 
 function displayNameFromEmail(email: string) {
@@ -29,32 +29,33 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
     }
 
-    // CreatorProfile model doesn't have userEmail (it has email/handle/etc).
+    const handleBare = handleFromEmail(email);
+
+    // CreatorProfile uses `email` (and optionally `handle`) — NOT userEmail.
     const creatorProfile =
       (await (prisma as any).creatorProfile?.findFirst?.({
         where: {
-          OR: [{ email }, { handle: handleFromEmail(email).replace(/^@/, "") }, { handle: handleFromEmail(email) }],
+          OR: [{ email }, { handle: handleBare }, { handle: `@${handleBare}` }],
         },
       }).catch(() => null)) ?? null;
 
+    // Optional legacy fallback if you still have a Creator table
     const creator =
-      (await (prisma as any).creator?.findFirst?.({ where: { email } }).catch(() => null)) ?? null;
-
-    const src = creatorProfile ?? creator ?? null;
+      creatorProfile ??
+      ((await (prisma as any).creator?.findFirst?.({ where: { email } }).catch(() => null)) ?? null);
 
     const profile = {
       email,
-      displayName: String(src?.displayName ?? src?.name ?? displayNameFromEmail(email)),
-      handle: String(src?.handle ?? handleFromEmail(email)),
-      avatarUrl: String(src?.avatarUrl ?? src?.imageUrl ?? "").trim() || null,
-      bio: String(src?.bio ?? "").trim() || null,
-      verificationTier: src?.verificationTier ?? src?.blue_tick_status ?? src?.verificationStatus ?? null,
-      isVerified:
-        Boolean(src?.isVerified) ||
-        src?.verificationTier === "blue" ||
-        src?.verificationTier === "gold" ||
-        src?.blue_tick_status === "blue" ||
-        src?.blue_tick_status === "gold",
+      displayName: String(creator?.displayName ?? creator?.name ?? displayNameFromEmail(email)),
+      handle: String(creator?.handle ?? `@${handleBare}`),
+      avatarUrl: String(creator?.avatarUrl ?? creator?.imageUrl ?? "").trim() || null,
+      bio: String(creator?.bio ?? "").trim() || null,
+
+      // keep these best-effort (your schema has a few variants)
+      verificationTier: creator?.verificationTier ?? null,
+      verificationStatus: creator?.verificationStatus ?? null,
+      blue_tick_status: creator?.blue_tick_status ?? null,
+      isVerified: Boolean(creator?.isVerified),
     };
 
     const posts =
@@ -64,6 +65,7 @@ export async function GET(req: Request) {
         take: 60,
       }).catch(() => [])) ?? [];
 
+    // Important: return ok:true even if creatorProfile is null so /u never “breaks”
     return NextResponse.json({ ok: true, profile, posts });
   } catch (e: any) {
     console.error("GET /api/profile error:", e);
