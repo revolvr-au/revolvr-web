@@ -235,7 +235,7 @@ export default function PublicFeedClient() {
   const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
   // TEMP until auth wiring
-  const [viewerEmail: viewer, setViewerEmail] = useState<string>("");
+  const [viewerEmail, setViewerEmail] = useState<string>("");
 
 const viewer = useMemo(() => viewerEmail.trim().toLowerCase(), [viewerEmail]);
 
