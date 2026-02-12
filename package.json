@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "vercel-build": "node -e \"const u=new URL(process.env.DIRECT_DATABASE_URL); console.log('HAS_DIRECT_URL', !!process.env.DIRECT_DATABASE_URL); console.log('DIRECT_HOST', u.hostname); console.log('DIRECT_PORT', u.port||'5432');\" && node -e \"const net=require('net'); const u=new URL(process.env.DIRECT_DATABASE_URL); const host=u.hostname; const port=Number(u.port||5432); const s=net.createConnection({host,port}); s.setTimeout(5000); s.on('connect',()=>{console.log('DIRECT_TCP_OK'); s.end();}); s.on('timeout',()=>{console.log('DIRECT_TCP_TIMEOUT'); process.exit(2);}); s.on('error',(e)=>{console.log('DIRECT_TCP_ERR', e.code); process.exit(2);});\" && npx prisma generate && DEBUG=prisma:* npx prisma migrate deploy && next build"
+  "vercel-build": "node -e \"const u=new URL(process.env.DIRECT_DATABASE_URL); console.log('HAS_DIRECT_URL', !!process.env.DIRECT_DATABASE_URL); console.log('DIRECT_HOST', u.hostname); console.log('DIRECT_PORT', u.port||'5432');\" && node -e \"const net=require('net'); const u=new URL(process.env.DIRECT_DATABASE_URL); const host=u.hostname; const port=Number(u.port||5432); const s=net.createConnection({host,port}); s.setTimeout(5000); s.on('connect',()=>{console.log('DIRECT_TCP_OK'); s.end();}); s.on('timeout',()=>{console.log('DIRECT_TCP_TIMEOUT'); process.exit(2);}); s.on('error',(e)=>{console.log('DIRECT_TCP_ERR', e.code); process.exit(2);});\" && npx prisma generate && DEBUG=prisma:* npx prisma migrate deploy && next build",
   "dev": "next dev -p 3000",
   "migrate:deploy": "prisma migrate deploy",
   "build": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
