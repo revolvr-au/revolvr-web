@@ -21,7 +21,7 @@ export default function FeedLayout({
   return (
     <div className="min-h-screen bg-[#050814] text-white">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-black/40 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
               {title ?? "Revolvr"}
@@ -46,7 +46,9 @@ export default function FeedLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 py-6">{children}</main>
+      <main className="w-full px-4 py-6">
+        <div className="mx-auto w-full max-w-[720px]">{children}</div>
+      </main>
     </div>
   );
 }
