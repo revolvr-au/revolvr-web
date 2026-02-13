@@ -1,0 +1,3 @@
+-- Migration was already applied in the database.
+-- Original SQL not stored in _prisma_migrations (no script column).
+-- This file exists only to align local migration history with production.

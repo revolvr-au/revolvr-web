@@ -356,88 +356,58 @@ CREATE INDEX IF NOT EXISTS "stripe_checkout_receipts_customer_email_idx" ON "str
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "stripe_checkout_receipts_created_at_idx" ON "stripe_checkout_receipts"("created_at");
 
+
 -- AddForeignKey
+DO $$ BEGIN
+  ALTER TABLE "PostViewEvent"
+    ADD CONSTRAINT "PostViewEvent_postId_fkey"
+    FOREIGN KEY ("postId") REFERENCES "Post"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-    "DO ".("$"x2)." BEGIN
-DO $$ BEGIN
-DO $$ BEGIN
-ALTER TABLE "PostViewEvent" ADD CONSTRAINT "PostViewEvent_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END ".("$"x2).";
-"
-  
 -- AddForeignKey
+DO $$ BEGIN
+  ALTER TABLE "Comment"
+    ADD CONSTRAINT "Comment_postId_fkey"
+    FOREIGN KEY ("postId") REFERENCES "Post"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-    "DO ".("$"x2)." BEGIN
-DO $$ BEGIN
-DO $$ BEGIN
-ALTER TABLE "Comment" ADD CONSTRAINT "Comment_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END ".("$"x2).";
-"
-  
 -- AddForeignKey
+DO $$ BEGIN
+  ALTER TABLE "Comment"
+    ADD CONSTRAINT "Comment_parentId_fkey"
+    FOREIGN KEY ("parentId") REFERENCES "Comment"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-    "DO ".("$"x2)." BEGIN
-DO $$ BEGIN
-DO $$ BEGIN
-ALTER TABLE "Comment" ADD CONSTRAINT "Comment_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Comment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END ".("$"x2).";
-"
-  
 -- AddForeignKey
+DO $$ BEGIN
+  ALTER TABLE "Message"
+    ADD CONSTRAINT "Message_threadId_fkey"
+    FOREIGN KEY ("threadId") REFERENCES "Thread"("id")
+    ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-    "DO ".("$"x2)." BEGIN
-DO $$ BEGIN
-DO $$ BEGIN
-ALTER TABLE "Message" ADD CONSTRAINT "Message_threadId_fkey" FOREIGN KEY ("threadId") REFERENCES "Thread"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END ".("$"x2).";
-"
-  
 -- AddForeignKey
+DO $$ BEGIN
+  ALTER TABLE "Like"
+    ADD CONSTRAINT "Like_postId_fkey"
+    FOREIGN KEY ("postId") REFERENCES "Post"("id")
+    ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
-    "DO ".("$"x2)." BEGIN
-DO $$ BEGIN
-DO $$ BEGIN
-ALTER TABLE "Like" ADD CONSTRAINT "Like_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
-EXCEPTION WHEN duplicate_object THEN null;
-END ".("$"x2).";
-"
-  
 -- AddForeignKey
-
-    "DO ".("$"x2)." BEGIN
 DO $$ BEGIN
-DO $$ BEGIN
-ALTER TABLE "PostMedia" ADD CONSTRAINT "PostMedia_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Post"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
-EXCEPTION WHEN duplicate_object THEN null;
-END $$;
+  ALTER TABLE "PostMedia"
+    ADD CONSTRAINT "PostMedia_postId_fkey"
+    FOREIGN KEY ("postId") REFERENCES "Post"("id")
+    ON DELETE CASCADE ON UPDATE NO ACTION;
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
 
-EXCEPTION WHEN duplicate_object THEN null;
-END ".("$"x2).";
-"
-  
