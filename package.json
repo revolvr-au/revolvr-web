@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
     "scripts": {
-  "vercel-build": "npx prisma generate && cross-env NEXT_DISABLE_TURBOPACK=1 next build",
+  "vercel-build": "npx prisma generate && next build --webpack",
   "dev": "next dev -p 3000",
   "migrate:deploy": "prisma migrate deploy",
   "build": "prisma generate && cross-env NODE_OPTIONS=--max_old_space_size=4096 next build --webpack",
