@@ -1,7 +1,7 @@
 // src/app/public-feed/PublicFeedClient.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
 import FeedLayout from "@/components/FeedLayout";
@@ -9,6 +9,10 @@ import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
+
+const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+const lastTapRef = useRef<Record<string, number>>({});
 
 
 const mockPeople: PersonRailItem[] = [
