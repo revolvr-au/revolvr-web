@@ -13,8 +13,10 @@ function normalizeMedia(body: any): MediaIn[] {
     .map((m, i): MediaIn => {
       const type: "image" | "video" =
         String(m?.type ?? "image").toLowerCase() === "video" ? "video" : "image";
+
       const url = String(m?.url ?? "").trim();
       const order = Number.isFinite(Number(m?.order)) ? Number(m.order) : i;
+
       return { type, url, order };
     })
     .filter((m) => m.url && /^https?:\/\//i.test(m.url))
@@ -23,12 +25,18 @@ function normalizeMedia(body: any): MediaIn[] {
 
 /**
  * GET /api/posts
- * Current Supabase schema (Post table) only has:
- * id, userEmail, imageUrl, caption, createdAt, updatedAt
- * So we ONLY select those fields to avoid "column does not exist" errors.
+ * Returns:
+ * - likeCount
+ * - likedByCurrentUser
  */
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const userEmailParam = searchParams.get("userEmail");
+    const userEmail = userEmailParam
+      ? userEmailParam.trim().toLowerCase()
+      : null;
+
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: "desc" },
       select: {
@@ -38,12 +46,31 @@ export async function GET() {
         caption: true,
         createdAt: true,
         updatedAt: true,
+        _count: {
+          select: { likes: true },
+        },
+        likes: userEmail
+          ? {
+              where: { userEmail },
+              select: { id: true },
+            }
+          : false,
       },
     });
 
-    return NextResponse.json({ posts });
+    const shaped = posts.map((p) => ({
+      id: p.id,
+      userEmail: p.userEmail,
+      imageUrl: p.imageUrl,
+      caption: p.caption,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      likeCount: p._count.likes,
+      likedByCurrentUser: userEmail ? p.likes.length > 0 : false,
+    }));
+
+    return NextResponse.json({ posts: shaped });
   } catch (err: any) {
-    console.error("GET /api/posts error:", err);
     return NextResponse.json(
       { ok: false, error: err?.message || "Failed to load posts" },
       { status: 500 }
@@ -53,25 +80,35 @@ export async function GET() {
 
 /**
  * POST /api/posts
- * For now, we ONLY write to Post fields that exist in DB.
- * We accept media[] but store ONLY the first URL into imageUrl.
+ * Accepts media[] but stores ONLY the first URL into imageUrl
  */
 export async function POST(req: Request) {
   try {
     const body = await req.json();
 
-    const userEmail = String(body?.userEmail ?? "").trim().toLowerCase();
+    const userEmail = String(body?.userEmail ?? "")
+      .trim()
+      .toLowerCase();
+
     const caption = String(body?.caption ?? "").trim();
 
     if (!userEmail || !userEmail.includes("@")) {
-      return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "invalid_email" },
+        { status: 400 }
+      );
     }
 
     const media = normalizeMedia(body);
-    const legacyUrl = String(media[0]?.url ?? body?.imageUrl ?? "").trim();
+    const legacyUrl = String(
+      media[0]?.url ?? body?.imageUrl ?? ""
+    ).trim();
 
     if (!legacyUrl || !/^https?:\/\//i.test(legacyUrl)) {
-      return NextResponse.json({ ok: false, error: "missing_media" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "missing_media" },
+        { status: 400 }
+      );
     }
 
     const created = await prisma.post.create({
@@ -83,20 +120,13 @@ export async function POST(req: Request) {
       select: { id: true },
     });
 
-    return NextResponse.json({ ok: true, id: created.id }, { status: 201 });
-  } catch (err: unknown) {
-    const e = err as any;
-
-    // Prisma-style error payload (useful for debugging in Network tab)
-    if (e?.name || e?.code || e?.meta) {
-      return NextResponse.json(
-        { ok: false, prisma: { name: e?.name, code: e?.code, meta: e?.meta }, message: e?.message },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json(
-      { ok: false, error: (e?.message as string) || "Failed to create post" },
+      { ok: true, id: created.id },
+      { status: 201 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      { ok: false, error: err?.message || "Failed to create post" },
       { status: 500 }
     );
   }

@@ -10,6 +10,7 @@ import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
 
+
 const mockPeople: PersonRailItem[] = [
   { email: "singaporeair@revolvr.net", tick: "gold", isLive: true },
   { email: "mangusta@yachts.com", tick: "blue", isLive: false },
@@ -487,6 +488,29 @@ export default function PublicFeedClient() {
       setFollowBusy((p) => ({ ...p, [target]: false }));
     }
   }
+async function toggleLike(postId: string) {
+  const res = await fetch("/api/likes/toggle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ postId, userEmail: viewer }),
+  });
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.ok) return;
+
+  setLikedMap((p) => ({ ...p, [postId]: Boolean(json.liked) }));
+  setLikeCounts((p) => ({ ...p, [postId]: Number(json.count ?? 0) }));
+}
+
+function handleTapLike(postId: string) {
+  const now = Date.now();
+  const last = lastTapRef.current[postId] ?? 0;
+  lastTapRef.current[postId] = now;
+
+  if (now - last < 280) {
+    toggleLike(postId);
+  }
+}
 
   async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string, amountCents: number) {
     if (!creatorEmail) throw new Error("Missing creator email");
@@ -536,6 +560,9 @@ export default function PublicFeedClient() {
         ) : (
           <div className="space-y-6 pb-12">
             {posts.map((post) => {
+              const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+             const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+             const lastTapRef = useRef<Record<string, number>>({});
               const emailRaw = String(post.userEmail || "").trim().toLowerCase();
               const email = isValidEmail(emailRaw) ? emailRaw : "";
               const tick = (post as any).verificationTier ?? null;

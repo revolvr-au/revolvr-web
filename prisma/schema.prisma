@@ -5,10 +5,11 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
-  schemas   = ["public"]
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  directUrl         = env("DIRECT_DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+  schemas           = ["public"]
 }
 
 model Post {
@@ -22,6 +23,10 @@ model Post {
   likes Like[]      @relation("PostLikes")
   media PostMedia[] @relation("PostMedia")
 
+  // ✅ ADD THESE (inverse relation fields)
+  reactions PostReaction[] @relation("PostReactions")
+  comments  Comment[]      @relation("PostComments")
+
   @@schema("public")
 }
 
@@ -33,6 +38,39 @@ model Like {
 
   post Post @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
 
+  @@unique([postId, userEmail]) // ✅ add this
+  @@schema("public")
+}
+
+
+model PostReaction {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String
+  type      String // e.g. "like", "heart", "🔥", etc
+  createdAt DateTime @default(now())
+
+  post Post @relation("PostReactions", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String
+  body      String
+  parentId  String?
+  createdAt DateTime @default(now())
+
+  post    Post      @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([parentId])
   @@schema("public")
 }
 
