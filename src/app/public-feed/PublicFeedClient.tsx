@@ -564,9 +564,6 @@ function handleTapLike(postId: string) {
         ) : (
           <div className="space-y-6 pb-12">
             {posts.map((post) => {
-              const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
-             const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
-             const lastTapRef = useRef<Record<string, number>>({});
               const emailRaw = String(post.userEmail || "").trim().toLowerCase();
               const email = isValidEmail(emailRaw) ? emailRaw : "";
               const tick = (post as any).verificationTier ?? null;
