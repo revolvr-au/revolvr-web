@@ -239,10 +239,6 @@ export default function PublicFeedClient() {
   const viewerEmail = "test@revolvr.net";
   const viewer = viewerEmail.trim().toLowerCase();
 
-
-  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
-  const [followBusy, setFollowBusy] = useState<Record<string, boolean>>({});
-
   const emails = useMemo(() => {
     const s = new Set<string>();
     for (const p of posts) {

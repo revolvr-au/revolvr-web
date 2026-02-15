@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/api/stripe/webhook/_verification.ts
 import Stripe from "stripe";
