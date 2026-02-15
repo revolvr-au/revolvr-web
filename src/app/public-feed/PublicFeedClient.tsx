@@ -10,10 +10,6 @@ import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
 
-const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
-const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
-const lastTapRef = useRef<Record<string, number>>({});
-
 
 const mockPeople: PersonRailItem[] = [
   { email: "singaporeair@revolvr.net", tick: "gold", isLive: true },
@@ -515,6 +511,11 @@ function handleTapLike(postId: string) {
     toggleLike(postId);
   }
 }
+  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
+ const [followBusy, setFollowBusy] = useState<Record<string, boolean>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const lastTapRef = useRef<Record<string, number>>({});
 
   async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string, amountCents: number) {
     if (!creatorEmail) throw new Error("Missing creator email");
