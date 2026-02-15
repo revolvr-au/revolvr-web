@@ -678,14 +678,6 @@ return (
                       />
                     )}
                   </div>
-                    <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
-                      <FooterAction label="React" icon="🌼" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-                      <FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
-                      <FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-                      <FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
-                      <FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
-                    </div>
-                  </div>
 
                   {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
                 </article>
