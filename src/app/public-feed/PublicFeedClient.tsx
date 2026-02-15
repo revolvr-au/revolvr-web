@@ -1,4 +1,3 @@
-// src/app/public-feed/PublicFeedClient.tsx
 "use client";
 
 import PublicFeedDock from "@/components/feed/PublicFeedDock";
@@ -17,9 +16,6 @@ const mockPeople: PersonRailItem[] = [
   { email: "mangusta@yachts.com", tick: "blue", isLive: false },
   { email: "feadship@revolvr.net", tick: null, isLive: true },
 ];
-
-const [activePostId, setActivePostId] = useState<string | null>(null);
-const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(null);
 
 type Post = {
   id: string;
@@ -226,18 +222,29 @@ function actionMeta(mode: ActionMode): ActionMeta {
 }
 
 export default function PublicFeedClient() {
+
+  // ===== ALL HOOKS FIRST =====
+
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({});
-
   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
-
   const [returnBanner, setReturnBanner] = useState<
-    { type: "success" | "cancel"; mode: string; targetId?: string } | null
-  >(null);
-
+  { type: "success" | "cancel"; mode: string; targetId?: string } | null
+>(null);
   const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
+
+  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
+  const [followBusy, setFollowBusy] = useState<Record<string, boolean>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const lastTapRef = useRef<Record<string, number>>({});
+
+  // ===== FUNCTIONS AFTER =====
+
 
   // TEMP until auth wiring
   const viewerEmail = "test@revolvr.net";
@@ -511,11 +518,6 @@ function handleTapLike(postId: string) {
     toggleLike(postId);
   }
 }
-  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
- const [followBusy, setFollowBusy] = useState<Record<string, boolean>>({});
-  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
-  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
-  const lastTapRef = useRef<Record<string, number>>({});
 
   async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string, amountCents: number) {
     if (!creatorEmail) throw new Error("Missing creator email");
