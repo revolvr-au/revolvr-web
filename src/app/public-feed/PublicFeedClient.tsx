@@ -1,6 +1,7 @@
 // src/app/public-feed/PublicFeedClient.tsx
 "use client";
 
+import PublicFeedDock from "@/components/feed/PublicFeedDock";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 
@@ -16,6 +17,9 @@ const mockPeople: PersonRailItem[] = [
   { email: "mangusta@yachts.com", tick: "blue", isLive: false },
   { email: "feadship@revolvr.net", tick: null, isLive: true },
 ];
+
+const [activePostId, setActivePostId] = useState<string | null>(null);
+const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(null);
 
 type Post = {
   id: string;
@@ -576,10 +580,14 @@ function handleTapLike(postId: string) {
 
               const showFollow = Boolean(email) && viewer.includes("@") && email !== viewer;
 return (
-                <article
-                  key={post.id}
-                  className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
+              
+                  <article
+                 key={post.id}
+                onPointerEnter={() => setActivePostId(post.id)}
+                onPointerDown={() => setActivePostId(post.id)}
+                className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
                 >
+
                   <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
                     <div className="min-w-0 flex items-center gap-2">
                       <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
@@ -670,18 +678,6 @@ return (
                       />
                     )}
                   </div>
-
-                  <div className="px-4 py-2 border-t border-white/10">
-                    <div className="hidden sm:flex">
-                      <div className="inline-flex items-center gap-10">
-                        <FooterAction label="React" icon="🌼" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
-                        <FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
-                        <FooterAction label="Pulse" icon="💫" onClick={() => setActiveAction({ postId: post.id, mode: "spin" })} />
-                        <FooterAction label="Bloom" icon="🌸" onClick={() => setActiveAction({ postId: post.id, mode: "reaction" })} />
-                        <FooterAction label="Signal" icon="🐝" onClick={() => setActiveAction({ postId: post.id, mode: "vote" })} />
-                      </div>
-                    </div>
-
                     <div className="grid sm:hidden grid-cols-5 items-center justify-items-center gap-x-2">
                       <FooterAction label="React" icon="🌼" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} />
                       <FooterAction label="Highlight" icon="⭐" onClick={() => setActiveAction({ postId: post.id, mode: "boost" })} />
@@ -697,6 +693,53 @@ return (
             })}
           </div>
         )}
+        <PublicFeedDock
+  activePostId={activePostId}
+  likeCount={activePostId ? (likeCounts[activePostId] ?? 0) : 0}
+  liked={activePostId ? Boolean(likedMap[activePostId]) : false}
+  onToggleLike={(postId) => toggleLike(postId)}
+  onOpenComments={(postId) => setCommentsOpenFor(postId)}
+  onShare={(postId) => {
+    // quick placeholder: you can wire a real share sheet later
+    const url = `${window.location.origin}/public-feed`;
+    navigator.clipboard?.writeText(url).catch(() => {});
+  }}
+  onOpenReward={(mode, postId) => setActiveAction({ postId, mode })}
+/>
+{commentsOpenFor ? (
+  <div className="fixed inset-0 z-50">
+    <button
+      type="button"
+      className="absolute inset-0 bg-black/60"
+      onClick={() => setCommentsOpenFor(null)}
+      aria-label="Close comments"
+    />
+    <div className="absolute left-0 right-0 bottom-0 rounded-t-3xl border border-white/10 bg-black/70 backdrop-blur p-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-semibold text-white">Comments</div>
+        <button
+          type="button"
+          onClick={() => setCommentsOpenFor(null)}
+          className="text-white/70 hover:text-white"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="mt-3 text-sm text-white/60">
+        (Stub) Thread UI goes here for post: <span className="text-white/80">{commentsOpenFor}</span>
+      </div>
+      <div className="mt-4 flex gap-2">
+        <input
+          className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none"
+          placeholder="Write a comment…"
+        />
+        <button className="rounded-xl px-4 py-2 bg-blue-500 text-white text-sm font-semibold">
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+) : null}
 
         <PostActionModal
           open={Boolean(activeAction && activePost && activeMeta)}
