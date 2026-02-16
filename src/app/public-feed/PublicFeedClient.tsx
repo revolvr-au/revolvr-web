@@ -473,9 +473,9 @@ export default function PublicFeedClient() {
   {/* Post Caption */}
   {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
 
-  {/* Action Bar (Likes, Comments, Share on right side - Mobile horizontal, Desktop vertical) */}
+  {/* Action Bar (Likes, Comments, Share - Right on Desktop, Vertical on Mobile) */}
   <div className="absolute right-3 bottom-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 sm:bottom-4 sm:right-3">
-    <div className="flex sm:flex-col gap-3 sm:gap-3 sm:items-start">
+    <div className="flex flex-col sm:flex-row sm:gap-2 sm:items-start">
       <button
         type="button"
         onClick={() => toggleLike(post.id)}
