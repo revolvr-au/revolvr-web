@@ -473,9 +473,9 @@ export default function PublicFeedClient() {
   {/* Post Caption */}
   {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
 
-  {/* Action Bar (Likes, Comments, Share on the right side) */}
-  <div className="px-4 py-3 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center absolute sm:right-3 sm:bottom-4">
-    <div className="flex sm:flex-col gap-2 sm:gap-3 sm:items-start">
+  {/* Action Bar (Likes, Comments, Share on right side - Mobile horizontal, Desktop vertical) */}
+  <div className="absolute right-3 bottom-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 sm:bottom-4 sm:right-3">
+    <div className="flex sm:flex-col gap-3 sm:gap-3 sm:items-start">
       <button
         type="button"
         onClick={() => toggleLike(post.id)}
@@ -520,7 +520,6 @@ export default function PublicFeedClient() {
       🎁 Reward
     </button>
   </div>
-
                   <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
                     <div className="min-w-0 flex items-center gap-2">
                       <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
