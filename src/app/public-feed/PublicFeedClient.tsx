@@ -371,7 +371,7 @@ export default function PublicFeedClient() {
               const showFollow = Boolean(email) && viewer.includes("@") && email !== viewer;
 
               return (
-                <article
+              <article
   key={post.id}
   onPointerEnter={() => setActivePostId(post.id)}
   onPointerDown={() => setActivePostId(post.id)}
@@ -474,8 +474,8 @@ export default function PublicFeedClient() {
   {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
 
   {/* Action Bar (Likes, Comments, Share on the right side) */}
-  <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between absolute right-3 bottom-4">
-    <div className="flex items-center gap-3">
+  <div className="px-4 py-3 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center absolute sm:right-3 sm:bottom-4">
+    <div className="flex sm:flex-col gap-2 sm:gap-3 sm:items-start">
       <button
         type="button"
         onClick={() => toggleLike(post.id)}
