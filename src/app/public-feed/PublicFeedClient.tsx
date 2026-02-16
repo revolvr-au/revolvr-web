@@ -8,47 +8,13 @@ import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
-import { isValidImageUrl } from "@/utils/imageUtils"; // Ensure this path is correct
-// Add this at the top of PublicFeedClient.tsx
-import { isValidImageUrl, displayNameFromEmail, isValidEmail } from "@/utils/imageUtils"; // adjust path if necessary
+import { isValidImageUrl, displayNameFromEmail, isValidEmail } from "@/utils/imageUtils";
 
 
 
-// Define the missing state variables at the beginning of the component:
-const [likedMap, setLikedMap] = useState<{ [key: string]: boolean }>({});
-const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
-const [followMap, setFollowMap] = useState<{ [key: string]: boolean }>({});
-const [followBusy, setFollowBusy] = useState<{ [key: string]: boolean }>({});
-const [brokenPostImages, setBrokenPostImages] = useState<{ [key: string]: boolean }>({});  // Optional: Track which posts have broken images
 
-// Define or import the VerifiedBadge component, if not already defined:
-const VerifiedBadge = () => <span className="badge">Verified</span>;  // Example, replace as necessary
-
-
-// Mock data for users
-const mockPeople: PersonRailItem[] = [
-  { email: "singaporeair@revolvr.net", tick: "gold", isLive: true },
-  { email: "mangusta@yachts.com", tick: "blue", isLive: false },
-  { email: "feadship@revolvr.net", tick: null, isLive: true },
-];
-
-type Post = {
-  id: string;
-  userEmail: string;
-  imageUrl: string;
-  mediaType?: "image" | "video";
-  media?: { type: "image" | "video"; url: string; order?: number }[];
-  caption: string;
-  createdAt: string;
-  creator?: {
-    displayName?: string | null;
-    handle?: string | null;
-    avatarUrl?: string | null;
-    isVerified?: boolean | null;
-  } | null;
-};
-
-export function PublicFeedClient() {  // Updated function declaration without default
+// Define the PublicFeedClient component
+export function PublicFeedClient() { 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -60,7 +26,20 @@ export function PublicFeedClient() {  // Updated function declaration without de
   const viewerEmail = "test@revolvr.net";
   const viewer = viewerEmail.trim().toLowerCase();
 
-  // Ensure we handle the case when posts are empty or unavailable
+  // Declare state variables inside the component
+  const [likedMap, setLikedMap] = useState<{ [key: string]: boolean }>({});
+  const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
+  const [followMap, setFollowMap] = useState<{ [key: string]: boolean }>({});
+  const [followBusy, setFollowBusy] = useState<{ [key: string]: boolean }>({});
+  const [brokenPostImages, setBrokenPostImages] = useState<{ [key: string]: boolean }>({});  // Optional: Track which posts have broken images
+
+  // Mock data for users
+  const mockPeople: PersonRailItem[] = [
+    { email: "singaporeair@revolvr.net", tick: "gold", isLive: true },
+    { email: "mangusta@yachts.com", tick: "blue", isLive: false },
+    { email: "feadship@revolvr.net", tick: null, isLive: true },
+  ];
+
   const railItems = useMemo(() => {
     if (posts.length === 0) {
       return mockPeople; // Return mock data if no posts are available
@@ -87,6 +66,7 @@ export function PublicFeedClient() {  // Updated function declaration without de
     return out;
   }, [posts]);
 
+  // useEffect for loading posts
   useEffect(() => {
     let cancelled = false;
     async function run() {
@@ -107,7 +87,6 @@ export function PublicFeedClient() {  // Updated function declaration without de
         }
 
         const rows = Array.isArray(json) ? json : json?.posts || [];
-
         if (!cancelled) setPosts(rows);
       } catch (e: unknown) {
         console.error("[public-feed] load posts error", e);
@@ -147,127 +126,7 @@ export function PublicFeedClient() {  // Updated function declaration without de
 
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
-      <div className="space-y-6">
-        <PeopleRail items={railItems.length ? railItems : mockPeople} size={72} />
-
-        {returnBanner ? (
-          <div
-            className={[ 
-              "rounded-xl border px-3 py-2 text-sm", 
-              returnBanner.type === "success"
-                ? "bg-emerald-500/10 border-emerald-400/20 text-emerald-200"
-                : "bg-white/5 border-white/10 text-white/70",
-            ].join(" ")}
-          >
-            {returnBanner.type === "success"
-              ? `Payment successful${returnBanner.mode ? ` (${returnBanner.mode})` : ""}.`
-              : `Payment canceled${returnBanner.mode ? ` (${returnBanner.mode})` : ""}.`}
-          </div>
-        ) : null}
-
-        {loading ? (
-          <div className="text-sm text-white/70">Loading public feed…</div>
-        ) : err ? (
-          <div className="rounded-xl bg-red-500/10 border border-red-400/20 text-red-200 text-sm px-3 py-2">
-            {err}
-          </div>
-        ) : !posts.length ? (
-          <div className="text-sm text-white/70">No posts yet.</div>
-        ) : (
-          <div className="space-y-6 pb-12">
-            {posts.map((post) => {
-              const emailRaw = String(post.userEmail || "").trim().toLowerCase();
-              const email = isValidEmail(emailRaw) ? emailRaw : "";
-              const tick = post.verificationTier ?? null;
-              const creator = post.creator ?? null;
-              const displayName = creator?.displayName || displayNameFromEmail(email);
-              const avatarUrl = creator?.avatarUrl || null;
-              const isVerified = creator?.isVerified || tick === "blue" || tick === "gold";
-              const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
-
-              const showFollow = Boolean(email) && viewer.includes("@") && email !== viewer;
-
-              return (
-                <article
-                  key={post.id}
-                  onPointerEnter={() => setActivePostId(post.id)}
-                  onPointerDown={() => setActivePostId(post.id)}
-                  className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
-                >
-                  {/* Post Content */}
-                  <div className="relative w-full">
-                    {showFallback ? (
-                      <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
-                        <span className="text-xs text-white/50">Media unavailable</span>
-                      </div>
-                    ) : (
-                      <MediaCarousel
-                        className="w-full"
-                        media={post.media?.length
-                          ? post.media
-                              .slice()
-                              .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-                              .map((m) => ({ type: m.type === "video" ? "video" : "image", url: m.url }))
-                          : post.imageUrl
-                          ? [{ type: "image", url: post.imageUrl }]
-                          : []
-                        }
-                      />
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="absolute right-4 sm:right-3 bottom-4 flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-2">
-                    <button type="button" onClick={() => toggleLike(post.id)} className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white">
-                      <span>{likedMap[post.id] ? "❤️" : "🤍"}</span>
-                      <span>{likeCounts[post.id] ?? 0}</span>
-                    </button>
-                    <button type="button" onClick={() => setCommentsOpenFor(post.id)} className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white">
-                      💬 <span className="hidden sm:inline">Comment</span>
-                    </button>
-                    <button type="button" onClick={() => { const url = `${window.location.origin}/public-feed`; navigator.clipboard?.writeText(url).catch(() => {}); }} className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white">
-                      ↗ <span className="hidden sm:inline">Share</span>
-                    </button>
-                  </div>
-
-                  {/* Reward Button */}
-                  <div className="absolute left-4 bottom-4">
-                    <button type="button" onClick={() => setActiveAction({ postId: post.id, mode: "tip" })} className="rounded-xl px-3 py-2 bg-white/10 text-white text-sm font-semibold hover:bg-white/15" aria-label="Reward">
-                      🎁 Reward
-                    </button>
-                  </div>
-
-                  {/* Post Footer */}
-                  <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
-                    <div className="min-w-0 flex items-center gap-2">
-                      <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-                        {avatarUrl ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : (email || "r")[0].toUpperCase()}
-                      </div>
-                      <div className="min-w-0 flex flex-col">
-                        <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
-                          {displayName}
-                          {isVerified ? <VerifiedBadge /> : null}
-                        </span>
-                        <span className="text-[11px] text-white/40">{post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}</span>
-                      </div>
-                    </div>
-                    <div className="shrink-0 relative z-20 flex items-center gap-2">
-                      {showFollow && (
-                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFollow(email); }} disabled={Boolean(followBusy[email])} className={["rounded-full px-4 py-1 text-xs font-semibold transition select-none", followMap[email] ? "bg-white/10 text-white hover:bg-white/15 border border-white/15" : "bg-blue-500 text-white hover:bg-blue-400", followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer"].join(" ")}>{followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}</button>
-                      )}
-                      {email && (
-                        <Link href={`/u/${encodeURIComponent(email)}`} className="text-xs text-white/60 hover:text-white underline" onClick={(e) => { e.stopPropagation(); }}>
-                          View
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {/* The JSX markup and rendering of posts */}
     </FeedLayout>
   );
 }
