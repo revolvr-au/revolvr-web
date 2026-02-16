@@ -12,6 +12,8 @@ import { isValidImageUrl } from "@/utils/imageUtils"; // Ensure this path is cor
 // Add this at the top of PublicFeedClient.tsx
 import { isValidImageUrl, displayNameFromEmail, isValidEmail } from "@/utils/imageUtils"; // adjust path if necessary
 
+
+
 // Define the missing state variables at the beginning of the component:
 const [likedMap, setLikedMap] = useState<{ [key: string]: boolean }>({});
 const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
@@ -22,20 +24,6 @@ const [brokenPostImages, setBrokenPostImages] = useState<{ [key: string]: boolea
 // Define or import the VerifiedBadge component, if not already defined:
 const VerifiedBadge = () => <span className="badge">Verified</span>;  // Example, replace as necessary
 
-// If missing, create these helper functions:
-function displayNameFromEmail(email: string): string {
-  return email.split('@')[0];  // Example, replace with your actual implementation
-}
-
-function isValidEmail(email: string): boolean {
-  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return regex.test(email);
-}
-
-function isValidImageUrl(url: string | undefined): boolean {
-  if (!url) return false;
-  return /^https?:\/\/.*\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
-}
 
 // Mock data for users
 const mockPeople: PersonRailItem[] = [
