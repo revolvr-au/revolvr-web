@@ -9,6 +9,33 @@ import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
 import { isValidImageUrl } from "@/utils/imageUtils";  // Ensure this path is correct
+// Add this at the top of PublicFeedClient.tsx
+import { isValidImageUrl, displayNameFromEmail, isValidEmail } from "@/utils/imageUtils"; // adjust path if necessary
+
+// Define the missing state variables at the beginning of the component:
+const [likedMap, setLikedMap] = useState<{ [key: string]: boolean }>({});
+const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
+const [followMap, setFollowMap] = useState<{ [key: string]: boolean }>({});
+const [followBusy, setFollowBusy] = useState<{ [key: string]: boolean }>({});
+const [brokenPostImages, setBrokenPostImages] = useState<{ [key: string]: boolean }>({});  // Optional: Track which posts have broken images
+
+// Define or import the VerifiedBadge component, if not already defined:
+const VerifiedBadge = () => <span className="badge">Verified</span>;  // Example, replace as necessary
+
+// If missing, create these helper functions:
+function displayNameFromEmail(email: string): string {
+  return email.split('@')[0];  // Example, replace with your actual implementation
+}
+
+function isValidEmail(email: string): boolean {
+  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return regex.test(email);
+}
+
+function isValidImageUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return /^https?:\/\/.*\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
+}
 
 
 
@@ -49,30 +76,31 @@ export function PublicFeedClient() {  // Updated function declaration without de
 
   // Ensure we handle the case when posts are empty or unavailable
   const railItems = useMemo(() => {
-    if (posts.length === 0) {
-      return mockPeople; // Return mock data if no posts are available
-    }
+  if (posts.length === 0) {
+    return mockPeople; // Return mock data if no posts are available
+  }
 
-    const seen = new Set<string>();
-    const out: PersonRailItem[] = [];
+  const seen = new Set<string>();
+  const out: PersonRailItem[] = [];
 
-    for (const p of posts) {
-      const email = String(p.userEmail || "").trim().toLowerCase();
-      if (!email || seen.has(email)) continue;
-      seen.add(email);
+  for (const p of posts) {
+    const email = String(p.userEmail || "").trim().toLowerCase();
+    if (!email || seen.has(email)) continue;
+    seen.add(email);
 
-      out.push({
-        email,
-        imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
-        displayName: displayNameFromEmail(email),
-        tick: p.verificationTier ?? null,
-      });
+    out.push({
+      email,
+      imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null, // Validate image URL
+      displayName: displayNameFromEmail(email),
+      tick: p.verificationTier ?? null,
+    });
 
-      if (out.length >= 20) break;
-    }
+    if (out.length >= 20) break;
+  }
 
-    return out;
-  }, [posts]);
+  return out;
+}, [posts]);
+
 
   useEffect(() => {
     let cancelled = false;

@@ -19,7 +19,7 @@ function safeDecode(v: string) {
   }
 }
 
-function getBaseUrl() {
+async function getBaseUrl() {
   // Prefer explicit site URL if set (best for Vercel)
   const envUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -33,13 +33,13 @@ function getBaseUrl() {
 
   // Fallback to request host
   const h = headers();
-  const host = h.get("x-forwarded-host") || h.get("host");
-  const proto = h.get("x-forwarded-proto") || "https";
+  const host = (await h).get("x-forwarded-host") || (await h).get("host");
+  const proto = (await h).get("x-forwarded-proto") || "https";
   return host ? `${proto}://${host}` : "https://www.revolvr.net";
 }
 
 async function getProfile(email: string) {
-  const baseUrl = getBaseUrl();
+  const baseUrl = await getBaseUrl(); // Make sure this is awaited
   const url = `${baseUrl}/api/profile?email=${encodeURIComponent(email)}`;
 
   const res = await fetch(url, { cache: "no-store" }).catch(() => null);
