@@ -1,7 +1,7 @@
 "use client";
 
 import PublicFeedDock from "@/components/feed/PublicFeedDock";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
@@ -39,52 +39,37 @@ export default function PublicFeedClient() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [returnBanner, setReturnBanner] = useState<null | { type: "success" | "cancel"; mode: string; targetId?: string }>(null);
-  const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
-  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
-  const [followBusy, setFollowBusy] = useState<Record<string, boolean>>({});
-  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
-  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
-  
+
   // Temporary until auth wiring
   const viewerEmail = "test@revolvr.net";
   const viewer = viewerEmail.trim().toLowerCase();
 
-  const emails = useMemo(() => {
-    const s = new Set<string>();
-    for (const p of posts) {
-      const e = String(p.userEmail || "").trim().toLowerCase();
-      if (e) s.add(e);
+  // Ensure we handle the case when posts are empty or unavailable
+  const railItems = useMemo(() => {
+    if (posts.length === 0) {
+      return mockPeople; // Return mock data if no posts are available
     }
-    return Array.from(s);
+
+    const seen = new Set<string>();
+    const out: PersonRailItem[] = [];
+
+    for (const p of posts) {
+      const email = String(p.userEmail || "").trim().toLowerCase();
+      if (!email || seen.has(email)) continue;
+      seen.add(email);
+
+      out.push({
+        email,
+        imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
+        displayName: displayNameFromEmail(email),
+        tick: p.verificationTier ?? null,
+      });
+
+      if (out.length >= 20) break;
+    }
+
+    return out;
   }, [posts]);
-
-const railItems = useMemo(() => {
-  const seen = new Set<string>();
-  const out: PersonRailItem[] = [];
-  
-  if (posts.length === 0) {
-    return mockPeople;  // Return mock data if no posts are available
-  }
-
-  for (const p of posts) {
-    const email = String(p.userEmail || "").trim().toLowerCase();
-    if (!email || seen.has(email)) continue;
-    seen.add(email);
-    
-    out.push({
-      email,
-      imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
-      displayName: displayNameFromEmail(email),
-      tick: p.verificationTier ?? null,
-    });
-
-    if (out.length >= 20) break;
-  }
-
-  return out;
-}, [posts]);
-
-
 
   useEffect(() => {
     let cancelled = false;
@@ -105,9 +90,7 @@ const railItems = useMemo(() => {
           return;
         }
 
-        const rows = Array.isArray(json)
-          ? json
-          : json?.posts || [];
+        const rows = Array.isArray(json) ? json : json?.posts || [];
 
         if (!cancelled) setPosts(rows);
       } catch (e: unknown) {
@@ -139,7 +122,7 @@ const railItems = useMemo(() => {
   }
 
   function onToggleFollow(email: string) {
-    setFollowMap((prev) => { 
+    setFollowMap((prev) => {
       const newMap = { ...prev };
       newMap[email] = !newMap[email];
       return newMap;
@@ -274,4 +257,3 @@ const railItems = useMemo(() => {
     </FeedLayout>
   );
 }
-
