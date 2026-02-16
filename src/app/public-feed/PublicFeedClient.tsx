@@ -8,7 +8,8 @@ import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
-import { isValidImageUrl } from "@/utils/imageUtils"; // adjust import path
+import { isValidImageUrl } from "@/utils/imageUtils";  // Ensure this path is correct
+
 
 
 // Mock data for users
