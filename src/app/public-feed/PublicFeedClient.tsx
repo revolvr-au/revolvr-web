@@ -34,7 +34,7 @@ type Post = {
   } | null;
 };
 
-export default function PublicFeedClient() {
+export function PublicFeedClient() {  // Updated function declaration without default
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -110,15 +110,6 @@ export default function PublicFeedClient() {
       cancelled = true;
     };
   }, []);
-  // Function to check if an image URL is valid
-function isValidImageUrl(url: string | undefined): boolean {
-  if (!url) return false;
-  return /^https?:\/\/.*\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
-}
-
-export default function PublicFeedClient() {
-  // Component logic here...
-}
 
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
@@ -248,9 +239,7 @@ export default function PublicFeedClient() {
                     </div>
                     <div className="shrink-0 relative z-20 flex items-center gap-2">
                       {showFollow && (
-                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFollow(email); }} disabled={Boolean(followBusy[email])} className={["rounded-full px-4 py-1 text-xs font-semibold transition select-none", followMap[email] ? "bg-white/10 text-white hover:bg-white/15 border border-white/15" : "bg-blue-500 text-white hover:bg-blue-400", followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer"].join(" ")}>
-                          {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
-                        </button>
+                        <button type="button" onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleFollow(email); }} disabled={Boolean(followBusy[email])} className={["rounded-full px-4 py-1 text-xs font-semibold transition select-none", followMap[email] ? "bg-white/10 text-white hover:bg-white/15 border border-white/15" : "bg-blue-500 text-white hover:bg-blue-400", followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer"].join(" ")}>{followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}</button>
                       )}
                       {email && (
                         <Link href={`/u/${encodeURIComponent(email)}`} className="text-xs text-white/60 hover:text-white underline" onClick={(e) => { e.stopPropagation(); }}>
