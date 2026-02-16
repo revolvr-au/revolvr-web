@@ -58,27 +58,33 @@ export default function PublicFeedClient() {
     return Array.from(s);
   }, [posts]);
 
-  const railItems: PersonRailItem[] = useMemo(() => {
-    const seen = new Set<string>();
-    const out: PersonRailItem[] = [];
+const railItems = useMemo(() => {
+  const seen = new Set<string>();
+  const out: PersonRailItem[] = [];
+  
+  if (posts.length === 0) {
+    return mockPeople;  // Return mock data if no posts are available
+  }
 
-    for (const p of posts) {
-      const email = String(p.userEmail || "").trim().toLowerCase();
-      if (!email || seen.has(email)) continue;
-      seen.add(email);
+  for (const p of posts) {
+    const email = String(p.userEmail || "").trim().toLowerCase();
+    if (!email || seen.has(email)) continue;
+    seen.add(email);
+    
+    out.push({
+      email,
+      imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
+      displayName: displayNameFromEmail(email),
+      tick: p.verificationTier ?? null,
+    });
 
-      out.push({
-        email,
-        imageUrl: p.imageUrl || null,
-        displayName: p.creator?.displayName || displayNameFromEmail(email),
-        tick: (p as any).verificationTier ?? null,
-      });
+    if (out.length >= 20) break;
+  }
 
-      if (out.length >= 20) break;
-    }
+  return out;
+}, [posts]);
 
-    return out;
-  }, [posts]);
+
 
   useEffect(() => {
     let cancelled = false;
@@ -133,7 +139,7 @@ export default function PublicFeedClient() {
   }
 
   function onToggleFollow(email: string) {
-    setFollowMap((prev) => {
+    setFollowMap((prev) => { 
       const newMap = { ...prev };
       newMap[email] = !newMap[email];
       return newMap;
