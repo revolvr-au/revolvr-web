@@ -8,6 +8,8 @@ import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
+import { isValidImageUrl } from "@/utils/imageUtils"; // adjust import path
+
 
 // Mock data for users
 const mockPeople: PersonRailItem[] = [
@@ -108,6 +110,15 @@ export default function PublicFeedClient() {
       cancelled = true;
     };
   }, []);
+  // Function to check if an image URL is valid
+function isValidImageUrl(url: string | undefined): boolean {
+  if (!url) return false;
+  return /^https?:\/\/.*\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
+}
+
+export default function PublicFeedClient() {
+  // Component logic here...
+}
 
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
