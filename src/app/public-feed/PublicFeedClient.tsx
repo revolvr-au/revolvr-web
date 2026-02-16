@@ -11,8 +11,6 @@ import { MediaCarousel } from "@/components/media/MediaCarousel";
 import { isValidImageUrl, displayNameFromEmail, isValidEmail } from "@/utils/imageUtils";
 
 
-
-
 // Define the PublicFeedClient component
 export function PublicFeedClient() { 
   const [activePostId, setActivePostId] = useState<string | null>(null);
