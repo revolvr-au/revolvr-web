@@ -409,8 +409,8 @@ export default function PublicFeedClient() {
     )}
   </div>
 
-  {/* Action bar for like, comment, share (adjusted for vertical alignment on mobile) */}
-  <div className="absolute right-4 sm:right-3 bottom-4 flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-2">
+  {/* Action bar (like, comment, share) */}
+  <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-2 absolute right-4 sm:right-3 bottom-4">
     <button
       type="button"
       onClick={() => toggleLike(post.id)}
@@ -454,6 +454,7 @@ export default function PublicFeedClient() {
       🎁 Reward
     </button>
   </div>
+
                   <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
                     <div className="min-w-0 flex items-center gap-2">
                       <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
