@@ -99,7 +99,6 @@ function isValidEmail(v: unknown): v is string {
   return s.includes("@");
 }
 
-
 function formatMoneyFromCents(amountCents: number, currency: string) {
   const cur = String(currency || "aud").toUpperCase();
   try {
@@ -222,7 +221,6 @@ function actionMeta(mode: ActionMode): ActionMeta {
 }
 
 export default function PublicFeedClient() {
-
   // ===== ALL HOOKS FIRST =====
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
@@ -233,8 +231,8 @@ export default function PublicFeedClient() {
   const [currencyByEmail, setCurrencyByEmail] = useState<Record<string, string>>({});
   const [activeAction, setActiveAction] = useState<ActiveAction | null>(null);
   const [returnBanner, setReturnBanner] = useState<
-  { type: "success" | "cancel"; mode: string; targetId?: string } | null
->(null);
+    { type: "success" | "cancel"; mode: string; targetId?: string } | null
+  >(null);
   const [brokenPostImages, setBrokenPostImages] = useState<Record<string, boolean>>({});
 
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
@@ -242,9 +240,6 @@ export default function PublicFeedClient() {
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const lastTapRef = useRef<Record<string, number>>({});
-
-  // ===== FUNCTIONS AFTER =====
-
 
   // TEMP until auth wiring
   const viewerEmail = "test@revolvr.net";
@@ -281,34 +276,6 @@ export default function PublicFeedClient() {
     return out;
   }, [posts]);
 
-  // Stripe return banner
-  useEffect(() => {
-    try {
-      const url = new URL(window.location.href);
-      const success = url.searchParams.get("success") === "1";
-      const canceled = url.searchParams.get("canceled") === "1";
-      const mode = url.searchParams.get("mode") || "";
-      const targetId = url.searchParams.get("targetId") || undefined;
-
-      if (success || canceled) {
-        setReturnBanner({
-          type: success ? "success" : "cancel",
-          mode,
-          targetId,
-        });
-
-        url.searchParams.delete("success");
-        url.searchParams.delete("canceled");
-        url.searchParams.delete("mode");
-        url.searchParams.delete("targetId");
-        window.history.replaceState({}, "", url.toString());
-      }
-    } catch {
-      // no-op
-    }
-  }, []);
-
-  // Load posts
   useEffect(() => {
     let cancelled = false;
 
@@ -336,8 +303,8 @@ export default function PublicFeedClient() {
         const rows = Array.isArray(json)
           ? json
           : hasPostsArray(json)
-            ? (json as PostsResponseShape).posts ?? []
-            : [];
+          ? (json as PostsResponseShape).posts ?? []
+          : [];
 
         if (!cancelled) setPosts(normalizePosts(rows));
       } catch (e: unknown) {
@@ -356,186 +323,7 @@ export default function PublicFeedClient() {
       cancelled = true;
     };
   }, []);
-
-  // Load follow status for authors
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      if (!viewer || !emails.length) return;
-
-      const next: Record<string, boolean> = {};
-
-      await Promise.all(
-        emails.map(async (target) => {
-          if (!target || target === viewerEmail) return;
-          try {
-            const res = await fetch(
-              `/api/follow/status?viewer=${encodeURIComponent(viewer)}&target=${encodeURIComponent(
-                target
-              )}`,
-              { cache: "no-store" }
-            );
-            const json = await res.json().catch(() => null);
-            next[target] = Boolean((json as any)?.following);
-          } catch {
-            next[target] = false;
-          }
-        })
-      );
-
-      if (!cancelled) setFollowMap((prev) => ({ ...prev, ...next }));
-    }
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [emails, viewer]);
-
-  // Load verified + currency map for authors
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      try {
-        if (!emails.length) {
-          if (!cancelled) setCurrencyByEmail({});
-          return;
-        }
-
-        const batch = emails.slice(0, 200);
-        const qs = encodeURIComponent(batch.join(","));
-
-        const res = await fetch(`/api/creator/verified?emails=${qs}`, { cache: "no-store" });
-        const json = (await res.json().catch(() => null)) as unknown;
-
-        if (!res.ok) {
-          console.warn("[public-feed] verified lookup failed", res.status, json);
-          return;
-        }
-
-        const verifiedRaw = hasVerifiedArray(json)
-          ? (json as VerifiedResponseShape).verified ?? []
-          : [];
-        normalizeVerifiedEmails(verifiedRaw); // kept for later
-
-        const currenciesRaw =
-          isRecord(json) && "currencies" in json ? (json as any).currencies : undefined;
-        const currencies = normalizeCurrencyMap(currenciesRaw);
-
-        if (!cancelled) setCurrencyByEmail(currencies);
-      } catch (e: unknown) {
-        console.warn("[public-feed] verified lookup error", e);
-      }
-    }
-
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [emails]);
-
-  const activePost = useMemo(() => {
-    if (!activeAction) return null;
-    return posts.find((p) => p.id === activeAction.postId) ?? null;
-  }, [activeAction, posts]);
-
-  const activeCreatorEmail = useMemo(() => {
-    return String(activePost?.userEmail ?? "").trim().toLowerCase();
-  }, [activePost]);
-
-  const activeCurrency = useMemo(() => {
-    const e = String(activeCreatorEmail || "").toLowerCase();
-    return currencyByEmail[e] ?? "aud";
-  }, [activeCreatorEmail, currencyByEmail]);
-
-  const activeMeta = useMemo(() => {
-    if (!activeAction) return null;
-    return actionMeta(activeAction.mode);
-  }, [activeAction]);
-
-  const activePresets: Preset[] = useMemo(() => {
-    if (!activeMeta) return [{ label: formatMoneyFromCents(150, activeCurrency), amountCents: 150 }];
-    return activeMeta.presetsCents.map((c) => ({
-      amountCents: c,
-      label: formatMoneyFromCents(c, activeCurrency),
-    }));
-  }, [activeMeta, activeCurrency]);
-
-  async function onToggleFollow(targetEmail: string) {
-    const target = String(targetEmail || "").trim().toLowerCase();
-    if (!viewer.includes("@") || !target.includes("@")) return;
-    if (viewer === target) return;
-
-    const currentlyFollowing = Boolean(followMap[target]);
-    const nextValue = !currentlyFollowing;
-
-    setFollowBusy((p) => ({ ...p, [target]: true }));
-    setFollowMap((p) => ({ ...p, [target]: nextValue }));
-
-    try {
-      const res = await fetch("/api/follow", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          viewerEmail: viewer,
-          targetEmail: target,
-          action: nextValue ? "follow" : "unfollow",
-        }),
-      });
-
-      const json = await res.json().catch(() => null);
-      if (!res.ok || !(json as any)?.ok) {
-        setFollowMap((p) => ({ ...p, [target]: currentlyFollowing }));
-      }
-    } catch {
-      setFollowMap((p) => ({ ...p, [target]: currentlyFollowing }));
-    } finally {
-      setFollowBusy((p) => ({ ...p, [target]: false }));
-    }
-  }
-async function toggleLike(postId: string) {
-  const res = await fetch("/api/likes/toggle", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ postId, userEmail: viewer }),
-  });
-
-  const json = await res.json().catch(() => null);
-  if (!res.ok || !json?.ok) return;
-
-  setLikedMap((p) => ({ ...p, [postId]: Boolean(json.liked) }));
-  setLikeCounts((p) => ({ ...p, [postId]: Number(json.count ?? 0) }));
-}
-
-function handleTapLike(postId: string) {
-  const now = Date.now();
-  const last = lastTapRef.current[postId] ?? 0;
-  lastTapRef.current[postId] = now;
-
-  if (now - last < 280) {
-    toggleLike(postId);
-  }
-}
-
-  async function beginCheckout(mode: ActionMode, postId: string, creatorEmail: string, amountCents: number) {
-    if (!creatorEmail) throw new Error("Missing creator email");
-
-    const { url } = await createCheckout({
-      mode,
-      creatorEmail,
-      userEmail: null,
-      targetId: postId,
-      postId,
-      source: "FEED",
-      returnPath: "/public-feed",
-      amountCents,
-    });
-
-    window.location.href = url;
-  }
-
+  
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
       <div className="space-y-6">
@@ -581,14 +369,57 @@ function handleTapLike(postId: string) {
               const showFallback = brokenPostImages[post.id] || !isValidImageUrl(post.imageUrl);
 
               const showFollow = Boolean(email) && viewer.includes("@") && email !== viewer;
-return (
-              
-                  <article
-                 key={post.id}
-                onPointerEnter={() => setActivePostId(post.id)}
-                onPointerDown={() => setActivePostId(post.id)}
-                className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
+
+              return (
+                <article
+                  key={post.id}
+                  onPointerEnter={() => setActivePostId(post.id)}
+                  onPointerDown={() => setActivePostId(post.id)}
+                  className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
                 >
+                  <div className="px-4 py-3 border-t border-white/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleLike(post.id)}
+                        className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
+                        aria-label="Like"
+                      >
+                        <span>{likedMap[post.id] ? "❤️" : "🤍"}</span>
+                        <span>{likeCounts[post.id] ?? 0}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCommentsOpenFor(post.id)}
+                        className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
+                        aria-label="Comments"
+                      >
+                        💬 <span className="hidden sm:inline">Comment</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = `${window.location.origin}/public-feed`;
+                          navigator.clipboard?.writeText(url).catch(() => {});
+                        }}
+                        className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
+                        aria-label="Share"
+                      >
+                        ↗ <span className="hidden sm:inline">Share</span>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveAction({ postId: post.id, mode: "tip" })}
+                      className="rounded-xl px-3 py-2 bg-white/10 text-white text-sm font-semibold hover:bg-white/15"
+                      aria-label="Reward"
+                    >
+                      🎁 Reward
+                    </button>
+                  </div>
 
                   <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
                     <div className="min-w-0 flex items-center gap-2">
@@ -617,38 +448,38 @@ return (
                     </div>
 
                     <div className="shrink-0 relative z-20 flex items-center gap-2">
-  {showFollow ? (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onToggleFollow(email);
-      }}
-      disabled={Boolean(followBusy[email])}
-      className={[
-        "rounded-full px-4 py-1 text-xs font-semibold transition select-none",
-        followMap[email]
-          ? "bg-white/10 text-white hover:bg-white/15 border border-white/15"
-          : "bg-blue-500 text-white hover:bg-blue-400",
-        followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
-      ].join(" ")}
-    >
-      {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
-    </button>
-  ) : null}
-  {email ? (
-    <Link
-      href={`/u/${encodeURIComponent(email)}`}
-      className="text-xs text-white/60 hover:text-white underline"
-      onClick={(e) => {
-        e.stopPropagation();
-      }}
-    >
-      View
-    </Link>
-  ) : null}
-</div>
+                      {showFollow ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onToggleFollow(email);
+                          }}
+                          disabled={Boolean(followBusy[email])}
+                          className={[
+                            "rounded-full px-4 py-1 text-xs font-semibold transition select-none",
+                            followMap[email]
+                              ? "bg-white/10 text-white hover:bg-white/15 border border-white/15"
+                              : "bg-blue-500 text-white hover:bg-blue-400",
+                            followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
+                          ].join(" ")}
+                        >
+                          {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
+                        </button>
+                      ) : null}
+                      {email ? (
+                        <Link
+                          href={`/u/${encodeURIComponent(email)}`}
+                          className="text-xs text-white/60 hover:text-white underline"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          View
+                        </Link>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="relative w-full">
@@ -687,72 +518,6 @@ return (
             })}
           </div>
         )}
-        <PublicFeedDock
-  activePostId={activePostId}
-  likeCount={activePostId ? (likeCounts[activePostId] ?? 0) : 0}
-  liked={activePostId ? Boolean(likedMap[activePostId]) : false}
-  onToggleLike={(postId) => toggleLike(postId)}
-  onOpenComments={(postId) => setCommentsOpenFor(postId)}
-  onShare={(postId) => {
-    // quick placeholder: you can wire a real share sheet later
-    const url = `${window.location.origin}/public-feed`;
-    navigator.clipboard?.writeText(url).catch(() => {});
-  }}
-  onOpenReward={(mode, postId) => setActiveAction({ postId, mode })}
-/>
-{commentsOpenFor ? (
-  <div className="fixed inset-0 z-50">
-    <button
-      type="button"
-      className="absolute inset-0 bg-black/60"
-      onClick={() => setCommentsOpenFor(null)}
-      aria-label="Close comments"
-    />
-    <div className="absolute left-0 right-0 bottom-0 rounded-t-3xl border border-white/10 bg-black/70 backdrop-blur p-4">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold text-white">Comments</div>
-        <button
-          type="button"
-          onClick={() => setCommentsOpenFor(null)}
-          className="text-white/70 hover:text-white"
-        >
-          ✕
-        </button>
-      </div>
-      <div className="mt-3 text-sm text-white/60">
-        (Stub) Thread UI goes here for post: <span className="text-white/80">{commentsOpenFor}</span>
-      </div>
-      <div className="mt-4 flex gap-2">
-        <input
-          className="flex-1 rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm text-white outline-none"
-          placeholder="Write a comment…"
-        />
-        <button className="rounded-xl px-4 py-2 bg-blue-500 text-white text-sm font-semibold">
-          Send
-        </button>
-      </div>
-    </div>
-  </div>
-) : null}
-
-        <PostActionModal
-          open={Boolean(activeAction && activePost && activeMeta)}
-          onClose={() => setActiveAction(null)}
-          title={activeMeta?.title ?? "Action"}
-          subtitle={activeMeta?.subtitle ?? ""}
-          icon={activeMeta?.icon ?? "✨"}
-          isAuthed={true}
-          loginHref="/login"
-          allowCustom={activeMeta?.allowCustom ?? true}
-          presets={activePresets}
-          defaultAmountCents={activeMeta?.defaultAmountCents ?? 150}
-          confirmLabel={activeMeta?.confirmLabel ?? "Confirm"}
-          currency={activeCurrency}
-          onConfirm={async (amountCents) => {
-            if (!activeAction || !activePost) return;
-            await beginCheckout(activeAction.mode, activePost.id, activePost.userEmail, amountCents);
-          }}
-        />
       </div>
     </FeedLayout>
   );
