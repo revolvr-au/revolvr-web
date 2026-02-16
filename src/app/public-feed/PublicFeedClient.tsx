@@ -377,70 +377,9 @@ export default function PublicFeedClient() {
   onPointerDown={() => setActivePostId(post.id)}
   className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden shadow-lg shadow-black/40"
 >
-  {/* Top Section (Creator Info and Post) */}
-  <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-white/10">
-    <div className="min-w-0 flex items-center gap-2">
-      <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-emerald-500/20 flex items-center justify-center text-xs font-semibold text-emerald-300 uppercase">
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt=""
-            referrerPolicy="no-referrer"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          (email || "r")[0].toUpperCase()
-        )}
-      </div>
-
-      <div className="min-w-0 flex flex-col">
-        <span className="text-sm font-medium truncate max-w-[180px] sm:max-w-[240px] inline-flex items-center">
-          {displayName}
-          {isVerified ? <VerifiedBadge /> : null}
-        </span>
-        <span className="text-[11px] text-white/40">
-          {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
-        </span>
-      </div>
-    </div>
-
-    <div className="shrink-0 relative z-20 flex items-center gap-2">
-      {showFollow ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onToggleFollow(email);
-          }}
-          disabled={Boolean(followBusy[email])}
-          className={[
-            "rounded-full px-4 py-1 text-xs font-semibold transition select-none",
-            followMap[email]
-              ? "bg-white/10 text-white hover:bg-white/15 border border-white/15"
-              : "bg-blue-500 text-white hover:bg-blue-400",
-            followBusy[email] ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
-          ].join(" ")}
-        >
-          {followBusy[email] ? "…" : followMap[email] ? "Following" : "Follow"}
-        </button>
-      ) : null}
-      {email ? (
-        <Link
-          href={`/u/${encodeURIComponent(email)}`}
-          className="text-xs text-white/60 hover:text-white underline"
-          onClick={(e) => {
-            e.stopPropagation();
-          }}
-        >
-          View
-        </Link>
-      ) : null}
-    </div>
-  </div>
-
-  {/* Media Section */}
+  {/* Post Content */}
   <div className="relative w-full">
+    {/* Post Media */}
     {showFallback ? (
       <div className="w-full h-[320px] sm:h-[420px] bg-white/5 border-t border-white/10 flex items-center justify-center">
         <span className="text-xs text-white/50">Media unavailable</span>
@@ -470,46 +409,41 @@ export default function PublicFeedClient() {
     )}
   </div>
 
-  {/* Post Caption */}
-  {post.caption ? <p className="px-4 py-3 text-sm text-white/90">{post.caption}</p> : null}
+  {/* Action bar for like, comment, share (adjusted for vertical alignment on mobile) */}
+  <div className="absolute right-4 sm:right-3 bottom-4 flex flex-col sm:flex-row sm:items-center sm:gap-3 gap-2">
+    <button
+      type="button"
+      onClick={() => toggleLike(post.id)}
+      className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
+      aria-label="Like"
+    >
+      <span>{likedMap[post.id] ? "❤️" : "🤍"}</span>
+      <span>{likeCounts[post.id] ?? 0}</span>
+    </button>
 
-  {/* Action Bar (Likes, Comments, Share - Right on Desktop, Vertical on Mobile) */}
-  <div className="absolute right-3 bottom-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 sm:bottom-4 sm:right-3">
-    <div className="flex flex-col sm:flex-row sm:gap-2 sm:items-start">
-      <button
-        type="button"
-        onClick={() => toggleLike(post.id)}
-        className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
-        aria-label="Like"
-      >
-        <span>{likedMap[post.id] ? "❤️" : "🤍"}</span>
-        <span>{likeCounts[post.id] ?? 0}</span>
-      </button>
+    <button
+      type="button"
+      onClick={() => setCommentsOpenFor(post.id)}
+      className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
+      aria-label="Comments"
+    >
+      💬 <span className="hidden sm:inline">Comment</span>
+    </button>
 
-      <button
-        type="button"
-        onClick={() => setCommentsOpenFor(post.id)}
-        className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
-        aria-label="Comments"
-      >
-        💬 <span className="hidden sm:inline">Comment</span>
-      </button>
-
-      <button
-        type="button"
-        onClick={() => {
-          const url = `${window.location.origin}/public-feed`;
-          navigator.clipboard?.writeText(url).catch(() => {});
-        }}
-        className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
-        aria-label="Share"
-      >
-        ↗ <span className="hidden sm:inline">Share</span>
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={() => {
+        const url = `${window.location.origin}/public-feed`;
+        navigator.clipboard?.writeText(url).catch(() => {});
+      }}
+      className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
+      aria-label="Share"
+    >
+      ↗ <span className="hidden sm:inline">Share</span>
+    </button>
   </div>
 
-  {/* Reward button (Bottom left corner) */}
+  {/* Reward button (fixed to bottom-left corner) */}
   <div className="absolute left-4 bottom-4">
     <button
       type="button"
