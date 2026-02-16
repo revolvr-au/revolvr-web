@@ -8,7 +8,7 @@ import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
 import PostActionModal from "@/components/PostActionModal";
 import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
-import { isValidImageUrl } from "@/utils/imageUtils";  // Ensure this path is correct
+import { isValidImageUrl } from "@/utils/imageUtils"; // Ensure this path is correct
 // Add this at the top of PublicFeedClient.tsx
 import { isValidImageUrl, displayNameFromEmail, isValidEmail } from "@/utils/imageUtils"; // adjust path if necessary
 
@@ -36,8 +36,6 @@ function isValidImageUrl(url: string | undefined): boolean {
   if (!url) return false;
   return /^https?:\/\/.*\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
 }
-
-
 
 // Mock data for users
 const mockPeople: PersonRailItem[] = [
@@ -76,31 +74,30 @@ export function PublicFeedClient() {  // Updated function declaration without de
 
   // Ensure we handle the case when posts are empty or unavailable
   const railItems = useMemo(() => {
-  if (posts.length === 0) {
-    return mockPeople; // Return mock data if no posts are available
-  }
+    if (posts.length === 0) {
+      return mockPeople; // Return mock data if no posts are available
+    }
 
-  const seen = new Set<string>();
-  const out: PersonRailItem[] = [];
+    const seen = new Set<string>();
+    const out: PersonRailItem[] = [];
 
-  for (const p of posts) {
-    const email = String(p.userEmail || "").trim().toLowerCase();
-    if (!email || seen.has(email)) continue;
-    seen.add(email);
+    for (const p of posts) {
+      const email = String(p.userEmail || "").trim().toLowerCase();
+      if (!email || seen.has(email)) continue;
+      seen.add(email);
 
-    out.push({
-      email,
-      imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null, // Validate image URL
-      displayName: displayNameFromEmail(email),
-      tick: p.verificationTier ?? null,
-    });
+      out.push({
+        email,
+        imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null, // Validate image URL
+        displayName: displayNameFromEmail(email),
+        tick: p.verificationTier ?? null,
+      });
 
-    if (out.length >= 20) break;
-  }
+      if (out.length >= 20) break;
+    }
 
-  return out;
-}, [posts]);
-
+    return out;
+  }, [posts]);
 
   useEffect(() => {
     let cancelled = false;
@@ -167,8 +164,8 @@ export function PublicFeedClient() {  // Updated function declaration without de
 
         {returnBanner ? (
           <div
-            className={[
-              "rounded-xl border px-3 py-2 text-sm",
+            className={[ 
+              "rounded-xl border px-3 py-2 text-sm", 
               returnBanner.type === "success"
                 ? "bg-emerald-500/10 border-emerald-400/20 text-emerald-200"
                 : "bg-white/5 border-white/10 text-white/70",
