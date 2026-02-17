@@ -21,6 +21,7 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [brokenMedia, setBrokenMedia] = useState<Record<string, boolean>>({});
 
   // Temporary until auth wiring
   const viewerEmail = "test@revolvr.net";
@@ -160,50 +161,65 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length === 0 && (
         <div className="p-4 opacity-70">No posts yet.</div>
       )}
-
       {!loading && !err && posts.length > 0 && (
-        <div>
-          {posts.map((p) => {
-            const url = String(p.imageUrl || "").trim();
-            const lower = url.toLowerCase();
-            const isVideo =
-              lower.endsWith(".mov") || lower.endsWith(".mp4") || lower.endsWith(".webm");
+  <div>
+    {posts.map((p) => {
+      const url = String(p.imageUrl || "").trim();
+      const lower = url.toLowerCase();
+      const isVideo =
+        lower.endsWith(".mov") ||
+        lower.endsWith(".mp4") ||
+        lower.endsWith(".webm");
 
-            return (
-              <div key={p.id} className="p-4">
-                <div className="text-sm opacity-70">{p.userEmail}</div>
+      const broken = brokenMedia[p.id] === true;
 
-                {url ? (
-                  <div className="mt-2">
-                    <MediaCarousel
-                      items={[
-                        {
-                          type: isVideo ? "video" : "image",
-                          url,
-                        },
-                      ]}
-                    />
-                  </div>
-                ) : (
-                  <div className="mt-2 text-sm opacity-70">No media.</div>
-                )}
+      return (
+        <div key={p.id} className="p-4">
+          <div className="text-sm opacity-70">{p.userEmail}</div>
 
-                {p.caption && <div className="mt-2">{p.caption}</div>}
+          {url && !broken ? (
+            <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+              {isVideo ? (
+                <video
+                  src={url}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="block w-full h-auto"
+                  onError={() =>
+                    setBrokenMedia((m) => ({ ...m, [p.id]: true }))
+                  }
+                />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={url}
+                  alt={p.caption ?? "Post media"}
+                  className="block w-full h-auto"
+                  loading="lazy"
+                  onError={() =>
+                    setBrokenMedia((m) => ({ ...m, [p.id]: true }))
+                  }
+                />
+              )}
+            </div>
+          ) : (
+            <div className="mt-2 text-sm opacity-70">No media.</div>
+          )}
 
-                <div className="mt-3 flex items-center gap-3 text-sm opacity-80">
-                  <button
-                    type="button"
-                    className="rounded px-2 py-1 hover:bg-white/5"
-                    onClick={() => toggleLike(p.id)}
-                  >
-                    {likedMap[p.id] ? "♥" : "♡"} {likeCounts[p.id] ?? 0}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+          {p.caption && <div className="mt-2">{p.caption}</div>}
+
+          <div className="mt-3 flex items-center gap-3 text-sm opacity-80">
+            <button
+              type="button"
+              className="rounded px-2 py-1 hover:bg-white/5"
+              onClick={() => toggleLike(p.id)}
+            >
+              {likedMap[p.id] ? "♥" : "♡"} {likeCounts[p.id] ?? 0}
+            </button>
+          </div>
         </div>
-      )}
-    </FeedLayout>
-  );
-}
+      );
+    })}
+  </div>
+)}
