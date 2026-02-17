@@ -6,7 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 export type PersonRailItem = {
-  email: string;
+  id: string;          // stable identifier
+  handle: string;      // public handle
   imageUrl?: string | null;
   displayName?: string | null;
   tick?: "blue" | "gold" | null;
@@ -16,8 +17,9 @@ export type PersonRailItem = {
 function displayNameFromEmail(email: string) {
   const [localPart] = String(email || "").split("@");
   const cleaned = localPart.replace(/\W+/g, " ").trim();
-  return cleaned || email;
+  return cleaned || "User";
 }
+
 
 function LivePill() {
   return (
@@ -115,7 +117,7 @@ export default function PeopleRail({
             return (
               <Link
                 key={email}
-                href={`/u/${encodeURIComponent(email)}`}
+                href={`/u/${encodeURIComponent(name.toLowerCase())}`}
                 className="flex-none"
                 aria-label={`View ${name}`}
                 title={name}

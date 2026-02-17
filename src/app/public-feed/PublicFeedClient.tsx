@@ -172,6 +172,11 @@ export function PublicFeedClient() {
             lower.endsWith(".mp4") ||
             lower.endsWith(".webm");
 
+            const email = String(p.userEmail || "").trim().toLowerCase();
+            const display = email ? displayNameFromEmail(email) : "Unknown";
+
+          <div className="text-sm opacity-70">{display}</div>
+
           const broken = brokenMedia[p.id] === true;
 
           return (
