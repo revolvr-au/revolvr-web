@@ -1,47 +1,44 @@
 "use client";
 
-import PublicFeedDock from "@/components/feed/PublicFeedDock";
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { type PersonRailItem } from "@/components/PeopleRail";
-import PostActionModal from "@/components/PostActionModal";
-import { createCheckout, type CheckoutMode } from "@/lib/actionsClient";
 import { MediaCarousel } from "@/components/media/MediaCarousel";
-import { isValidImageUrl, displayNameFromEmail, isValidEmail } from "@/utils/imageUtils";
+import { isValidImageUrl, displayNameFromEmail } from "@/utils/imageUtils";
 
+type ApiPost = {
+  id: string;
+  userEmail: string | null;
+  imageUrl: string | null;
+  caption: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  likeCount: number;
+  likedByCurrentUser: boolean;
+};
 
-// Define the PublicFeedClient component
-export function PublicFeedClient() { 
-  const [activePostId, setActivePostId] = useState<string | null>(null);
-  const [commentsOpenFor, setCommentsOpenFor] = useState<string | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
+export function PublicFeedClient() {
+  const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [returnBanner, setReturnBanner] = useState<null | { type: "success" | "cancel"; mode: string; targetId?: string }>(null);
 
   // Temporary until auth wiring
   const viewerEmail = "test@revolvr.net";
   const viewer = viewerEmail.trim().toLowerCase();
 
-  // Declare state variables inside the component
-  const [likedMap, setLikedMap] = useState<{ [key: string]: boolean }>({});
-  const [likeCounts, setLikeCounts] = useState<{ [key: string]: number }>({});
-  const [followMap, setFollowMap] = useState<{ [key: string]: boolean }>({});
-  const [followBusy, setFollowBusy] = useState<{ [key: string]: boolean }>({});
-  const [brokenPostImages, setBrokenPostImages] = useState<{ [key: string]: boolean }>({});  // Optional: Track which posts have broken images
+  const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
+  const [followBusy, setFollowBusy] = useState<Record<string, boolean>>({});
 
-  // Mock data for users
   const mockPeople: PersonRailItem[] = [
     { email: "singaporeair@revolvr.net", tick: "gold", isLive: true },
     { email: "mangusta@yachts.com", tick: "blue", isLive: false },
     { email: "feadship@revolvr.net", tick: null, isLive: true },
   ];
 
-  const railItems = useMemo(() => {
-    if (posts.length === 0) {
-      return mockPeople; // Return mock data if no posts are available
-    }
+  const railItems = useMemo<PersonRailItem[]>(() => {
+    if (posts.length === 0) return mockPeople;
 
     const seen = new Set<string>();
     const out: PersonRailItem[] = [];
@@ -51,11 +48,12 @@ export function PublicFeedClient() {
       if (!email || seen.has(email)) continue;
       seen.add(email);
 
+      const img = String(p.imageUrl || "");
       out.push({
         email,
-        imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null, // Validate image URL
+        imageUrl: isValidImageUrl(img) ? img : null,
         displayName: displayNameFromEmail(email),
-        tick: p.verificationTier ?? null,
+        tick: null, // not returned by API yet
       });
 
       if (out.length >= 20) break;
@@ -64,19 +62,25 @@ export function PublicFeedClient() {
     return out;
   }, [posts]);
 
-  // useEffect for loading posts
   useEffect(() => {
     let cancelled = false;
+
     async function run() {
       try {
         setLoading(true);
         setErr(null);
 
-        const res = await fetch("/api/posts", { cache: "no-store" });
-        const json = (await res.json().catch(() => null)) as unknown;
+        const res = await fetch(`/api/posts?userEmail=${encodeURIComponent(viewer)}`, {
+          cache: "no-store",
+        });
+
+        const json = (await res.json().catch(() => null)) as any;
 
         if (!res.ok) {
-          const msg = `Failed to load posts (${res.status})`;
+          const msg =
+            typeof json?.error === "string"
+              ? json.error
+              : `Failed to load posts (${res.status})`;
           if (!cancelled) {
             setErr(msg);
             setPosts([]);
@@ -84,9 +88,24 @@ export function PublicFeedClient() {
           return;
         }
 
-        const rows = Array.isArray(json) ? json : json?.posts || [];
-        if (!cancelled) setPosts(rows);
-      } catch (e: unknown) {
+        const incomingPosts: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
+
+        if (cancelled) return;
+
+        setPosts(incomingPosts);
+
+        // seed UI state from server truth
+        const nextLiked: Record<string, boolean> = {};
+        const nextCounts: Record<string, number> = {};
+
+        for (const p of incomingPosts) {
+          nextLiked[p.id] = Boolean(p.likedByCurrentUser);
+          nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
+        }
+
+        setLikedMap(nextLiked);
+        setLikeCounts(nextCounts);
+      } catch (e) {
         console.error("[public-feed] load posts error", e);
         if (!cancelled) {
           setErr("Failed to load public feed.");
@@ -96,35 +115,95 @@ export function PublicFeedClient() {
         if (!cancelled) setLoading(false);
       }
     }
+
     run();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [viewer]);
 
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
-      const newMap = { ...prev };
-      newMap[postId] = !newMap[postId];
+      const next = { ...prev, [postId]: !prev[postId] };
+
       setLikeCounts((counts) => ({
         ...counts,
-        [postId]: (counts[postId] || 0) + (newMap[postId] ? 1 : -1),
+        [postId]: Math.max(0, (counts[postId] || 0) + (next[postId] ? 1 : -1)),
       }));
-      return newMap;
+
+      return next;
     });
+
+    // UI-only for now (no API call yet)
   }
 
   function onToggleFollow(email: string) {
-    setFollowMap((prev) => {
-      const newMap = { ...prev };
-      newMap[email] = !newMap[email];
-      return newMap;
-    });
+    const key = email.trim().toLowerCase();
+    setFollowMap((prev) => ({ ...prev, [key]: !prev[key] }));
+    // UI-only for now
   }
 
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
-      {/* The JSX markup and rendering of posts */}
+      <div className="px-4 pt-4">
+        <PeopleRail
+          items={railItems}
+          onToggleFollow={onToggleFollow}
+          followMap={followMap}
+          followBusy={followBusy}
+        />
+      </div>
+
+      {loading && <div className="p-4 opacity-70">Loading…</div>}
+      {err && <div className="p-4 text-red-400">{err}</div>}
+
+      {!loading && !err && posts.length === 0 && (
+        <div className="p-4 opacity-70">No posts yet.</div>
+      )}
+
+      {!loading && !err && posts.length > 0 && (
+        <div>
+          {posts.map((p) => {
+            const url = String(p.imageUrl || "").trim();
+            const lower = url.toLowerCase();
+            const isVideo =
+              lower.endsWith(".mov") || lower.endsWith(".mp4") || lower.endsWith(".webm");
+
+            return (
+              <div key={p.id} className="p-4">
+                <div className="text-sm opacity-70">{p.userEmail}</div>
+
+                {url ? (
+                  <div className="mt-2">
+                    <MediaCarousel
+                      items={[
+                        {
+                          type: isVideo ? "video" : "image",
+                          url,
+                        },
+                      ]}
+                    />
+                  </div>
+                ) : (
+                  <div className="mt-2 text-sm opacity-70">No media.</div>
+                )}
+
+                {p.caption && <div className="mt-2">{p.caption}</div>}
+
+                <div className="mt-3 flex items-center gap-3 text-sm opacity-80">
+                  <button
+                    type="button"
+                    className="rounded px-2 py-1 hover:bg-white/5"
+                    onClick={() => toggleLike(p.id)}
+                  >
+                    {likedMap[p.id] ? "♥" : "♡"} {likeCounts[p.id] ?? 0}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </FeedLayout>
   );
 }
