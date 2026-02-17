@@ -145,81 +145,85 @@ export function PublicFeedClient() {
   }
 
   return (
-    <FeedLayout title="Revolvr" subtitle="Public feed">
-      <div className="px-4 pt-4">
-        <PeopleRail
-          items={railItems}
-          onToggleFollow={onToggleFollow}
-          followMap={followMap}
-          followBusy={followBusy}
-        />
-      </div>
+  <FeedLayout title="Revolvr" subtitle="Public feed">
+    <div className="px-4 pt-4">
+      <PeopleRail
+        items={railItems}
+        onToggleFollow={onToggleFollow}
+        followMap={followMap}
+        followBusy={followBusy}
+      />
+    </div>
 
-      {loading && <div className="p-4 opacity-70">Loading…</div>}
-      {err && <div className="p-4 text-red-400">{err}</div>}
+    {loading && <div className="p-4 opacity-70">Loading…</div>}
+    {err && <div className="p-4 text-red-400">{err}</div>}
 
-      {!loading && !err && posts.length === 0 && (
-        <div className="p-4 opacity-70">No posts yet.</div>
-      )}
-      {!loading && !err && posts.length > 0 && (
-  <div>
-    {posts.map((p) => {
-      const url = String(p.imageUrl || "").trim();
-      const lower = url.toLowerCase();
-      const isVideo =
-        lower.endsWith(".mov") ||
-        lower.endsWith(".mp4") ||
-        lower.endsWith(".webm");
+    {!loading && !err && posts.length === 0 && (
+      <div className="p-4 opacity-70">No posts yet.</div>
+    )}
 
-      const broken = brokenMedia[p.id] === true;
+    {!loading && !err && posts.length > 0 && (
+      <div>
+        {posts.map((p) => {
+          const url = String(p.imageUrl || "").trim();
+          const lower = url.toLowerCase();
+          const isVideo =
+            lower.endsWith(".mov") ||
+            lower.endsWith(".mp4") ||
+            lower.endsWith(".webm");
 
-      return (
-        <div key={p.id} className="p-4">
-          <div className="text-sm opacity-70">{p.userEmail}</div>
+          const broken = brokenMedia[p.id] === true;
 
-          {url && !broken ? (
-            <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
-              {isVideo ? (
-                <video
-                  src={url}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="block w-full h-auto"
-                  onError={() =>
-                    setBrokenMedia((m) => ({ ...m, [p.id]: true }))
-                  }
-                />
+          return (
+            <div key={p.id} className="p-4">
+              <div className="text-sm opacity-70">{p.userEmail}</div>
+
+              {url && !broken ? (
+                <div className="mt-3 overflow-hidden rounded-2xl border border-white/10 bg-white/5">
+                  {isVideo ? (
+                    <video
+                      src={url}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="block w-full h-auto"
+                      onError={() =>
+                        setBrokenMedia((m) => ({ ...m, [p.id]: true }))
+                      }
+                    />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={url}
+                      alt={p.caption ?? "Post media"}
+                      className="block w-full h-auto"
+                      loading="lazy"
+                      onError={() =>
+                        setBrokenMedia((m) => ({ ...m, [p.id]: true }))
+                      }
+                    />
+                  )}
+                </div>
               ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={url}
-                  alt={p.caption ?? "Post media"}
-                  className="block w-full h-auto"
-                  loading="lazy"
-                  onError={() =>
-                    setBrokenMedia((m) => ({ ...m, [p.id]: true }))
-                  }
-                />
+                <div className="mt-2 text-sm opacity-70">No media.</div>
               )}
+
+              {p.caption && <div className="mt-2">{p.caption}</div>}
+
+              <div className="mt-3 flex items-center gap-3 text-sm opacity-80">
+                <button
+                  type="button"
+                  className="rounded px-2 py-1 hover:bg-white/5"
+                  onClick={() => toggleLike(p.id)}
+                >
+                  {likedMap[p.id] ? "♥" : "♡"} {likeCounts[p.id] ?? 0}
+                </button>
+              </div>
             </div>
-          ) : (
-            <div className="mt-2 text-sm opacity-70">No media.</div>
-          )}
-
-          {p.caption && <div className="mt-2">{p.caption}</div>}
-
-          <div className="mt-3 flex items-center gap-3 text-sm opacity-80">
-            <button
-              type="button"
-              className="rounded px-2 py-1 hover:bg-white/5"
-              onClick={() => toggleLike(p.id)}
-            >
-              {likedMap[p.id] ? "♥" : "♡"} {likeCounts[p.id] ?? 0}
-            </button>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-)}
+          );
+        })}
+      </div>
+    )}
+  </FeedLayout>
+);
+}
