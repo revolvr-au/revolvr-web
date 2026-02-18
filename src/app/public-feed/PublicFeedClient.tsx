@@ -26,6 +26,9 @@ export function PublicFeedClient() {
 
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [rewardOpen, setRewardOpen] = useState(false);
+  const [rewardPostId, setRewardPostId] = useState<string | null>(null);
+
 
   // Temporary until auth wiring
   const viewer = "test@revolvr.net";
