@@ -19,13 +19,10 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
-
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
 
-  // Temporary until auth wiring
   const viewer = "test@revolvr.net";
 
   const railItems = useMemo<PersonRailItem[]>(() => {
@@ -38,13 +35,11 @@ export function PublicFeedClient() {
 
       seen.add(email);
 
-      const img = String(p.imageUrl || "");
-
       out.push({
         id: email,
         email,
         handle: displayNameFromEmail(email).toLowerCase().replace(/\s+/g, ""),
-        imageUrl: isValidImageUrl(img) ? img : null,
+        imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
         displayName: displayNameFromEmail(email),
         tick: null,
         isLive: false,
@@ -65,7 +60,7 @@ export function PublicFeedClient() {
         setErr(null);
 
         const res = await fetch(
-          `/api/posts?userEmail=${encodeURIComponent(viewer)}`,
+          `/api/posts?userEmail=\${encodeURIComponent(viewer)}`,
           { cache: "no-store" }
         );
 
@@ -75,7 +70,7 @@ export function PublicFeedClient() {
           const msg =
             typeof json?.error === "string"
               ? json.error
-              : `Failed to load posts (${res.status})`;
+              : `Failed to load posts (\${res.status})`;
 
           if (!cancelled) {
             setErr(msg);
@@ -84,26 +79,27 @@ export function PublicFeedClient() {
           return;
         }
 
-        const incomingPosts: ApiPost[] = Array.isArray(json?.posts)
+        const incoming: ApiPost[] = Array.isArray(json?.posts)
           ? json.posts
           : [];
 
         if (cancelled) return;
 
-        setPosts(incomingPosts);
+        setPosts(incoming);
 
         const nextLiked: Record<string, boolean> = {};
         const nextCounts: Record<string, number> = {};
 
-        for (const p of incomingPosts) {
+        for (const p of incoming) {
           nextLiked[p.id] = Boolean(p.likedByCurrentUser);
-          nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
+          nextCounts[p.id] = Number.isFinite(p.likeCount)
+            ? p.likeCount
+            : 0;
         }
 
         setLikedMap(nextLiked);
         setLikeCounts(nextCounts);
-      } catch (e) {
-        console.error("[public-feed] load posts error", e);
+      } catch {
         if (!cancelled) {
           setErr("Failed to load public feed.");
           setPosts([]);
@@ -114,7 +110,6 @@ export function PublicFeedClient() {
     }
 
     run();
-
     return () => {
       cancelled = true;
     };
@@ -134,15 +129,13 @@ export function PublicFeedClient() {
 
       return next;
     });
-
-    // UI-only for now (no API call yet)
   }
 
   function onToggleFollow(email: string) {
-    const key = email.trim().toLowerCase();
-    setFollowMap((prev) => ({ ...prev, [key]: !prev[key] }));
-
-    // UI-only for now
+    setFollowMap((prev) => ({
+      ...prev,
+      [email]: !prev[email],
+    }));
   }
 
   return (
@@ -155,21 +148,34 @@ export function PublicFeedClient() {
         />
       </div>
 
-      {loading && <div className="p-4 opacity-70">Loading…</div>}
-      {err && <div className="p-4 text-red-400">{err}</div>}
+      {loading && (
+        <div className="p-4 opacity-70">Loading…</div>
+      )}
+
+      {err && (
+        <div className="p-4 text-red-400">{err}</div>
+      )}
 
       {!loading && !err && posts.length === 0 && (
-        <div className="p-4 opacity-70">No posts yet.</div>
+        <div className="p-4 opacity-70">
+          No posts yet.
+        </div>
       )}
 
       {!loading &&
         !err &&
         posts.map((p) => {
-          const email = String(p.userEmail || "").trim().toLowerCase();
-          const display = email ? displayNameFromEmail(email) : "User";
+          const email = String(p.userEmail || "")
+            .trim()
+            .toLowerCase();
+
+          const display = email
+            ? displayNameFromEmail(email)
+            : "User";
 
           const url = String(p.imageUrl || "").trim();
           const lower = url.toLowerCase();
+
           const isVideo =
             lower.endsWith(".mov") ||
             lower.endsWith(".mp4") ||
@@ -181,6 +187,7 @@ export function PublicFeedClient() {
                 <div className="text-sm font-semibold text-white">
                   {display}
                 </div>
+
                 {email && (
                   <div className="text-xs text-white/40">
                     @{email.split("@")[0]}
@@ -188,12 +195,14 @@ export function PublicFeedClient() {
                 )}
               </div>
 
-              {/* MEDIA + OVERLAY */}
               <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/10 bg-black/20">
-                {/* MEDIA */}
                 {url ? (
                   isVideo ? (
-                    <video src={url} controls className="w-full h-auto block" />
+                    <video
+                      src={url}
+                      controls
+                      className="w-full h-auto block"
+                    />
                   ) : (
                     <img
                       src={url}
@@ -202,60 +211,62 @@ export function PublicFeedClient() {
                     />
                   )
                 ) : (
-                  <div className="p-6 text-sm opacity-70">No media.</div>
+                  <div className="p-6 text-sm opacity-70">
+                    No media.
+                  </div>
                 )}
 
-                {/* LEFT LOWER REWARDS */}
                 <button
                   type="button"
-                  className="absolute left-3 bottom-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-2 text-xs text-white shadow hover:bg-black/70"
+                  className="absolute left-4 bottom-[90px] md:bottom-6 flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
                 >
                   <Gift size={16} />
                   Rewards
                 </button>
 
-                {/* RIGHT LOWER ACTIONS */}
-                <div className="absolute right-3 bottom-3 flex flex-col items-center gap-4">
-                  {/* LIKE */}
+                <div className="absolute right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
                   <button
                     type="button"
                     onClick={() => toggleLike(p.id)}
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
                   >
                     <Heart
-                      size={24}
+                      size={26}
                       className={
-                        likedMap[p.id] ? "fill-red-500 text-red-500" : ""
+                        likedMap[p.id]
+                          ? "fill-red-500 text-red-500"
+                          : ""
                       }
                     />
-                    <span className="text-[11px]">
+                    <span className="text-[12px]">
                       {likeCounts[p.id] ?? 0}
                     </span>
                   </button>
 
-                  {/* COMMENT */}
                   <button
                     type="button"
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
                   >
-                    <MessageCircle size={24} />
-                    <span className="text-[11px]">0</span>
+                    <MessageCircle size={26} />
+                    <span className="text-[12px]">0</span>
                   </button>
 
-                  {/* SHARE */}
                   <button
                     type="button"
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
                   >
-                    <Share2 size={24} />
-                    <span className="text-[11px]">Share</span>
+                    <Share2 size={26} />
+                    <span className="text-[12px]">
+                      Share
+                    </span>
                   </button>
                 </div>
               </div>
 
-              {/* CAPTION */}
               {p.caption && (
-                <div className="mt-3 text-sm text-white/90">{p.caption}</div>
+                <div className="mt-3 text-sm text-white/90">
+                  {p.caption}
+                </div>
               )}
             </div>
           );
