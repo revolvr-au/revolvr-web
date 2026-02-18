@@ -24,6 +24,9 @@ export function PublicFeedClient() {
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
 
+  const [activePostId, setActivePostId] = useState<string | null>(null);
+  const [commentsOpen, setCommentsOpen] = useState(false);
+
   const viewer = "test@revolvr.net";
 
   const railItems = useMemo<PersonRailItem[]>(() => {
@@ -132,6 +135,86 @@ export function PublicFeedClient() {
     }
   }
 
+  function openComments(postId: string) {
+  setActivePostId(postId);
+  setCommentsOpen(true);
+}
+
+function closeComments() {
+  setCommentsOpen(false);
+  setActivePostId(null);
+}
+
+{commentsOpen && (
+  <div className="fixed inset-0 z-50">
+    {/* backdrop */}
+    <button
+      type="button"
+      className="absolute inset-0 bg-black/60"
+      aria-label="Close comments"
+      onClick={closeComments}
+    />
+
+    {/* sheet */}
+    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[50vh] overflow-hidden">
+         {/* GRAB HANDLE */}
+         <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
+
+      <div className="flex items-center justify-between px-5 py-4">
+        <div className="text-sm font-semibold text-white">Comments</div>
+        <button
+          type="button"
+          onClick={closeComments}
+          className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white hover:bg-white/5"
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
+        {/* mock comments for feel */}
+        <div className="space-y-4">
+          <div>
+            <div className="text-xs text-white/50">@captain</div>
+            <div className="text-sm text-white/90">This is clean 🔥</div>
+          </div>
+          <div>
+            <div className="text-xs text-white/50">@luna</div>
+            <div className="text-sm text-white/90">Love this angle.</div>
+          </div>
+          <div>
+            <div className="text-xs text-white/50">@revolvr</div>
+            <div className="text-sm text-white/90">First comment 😉</div>
+          </div>
+        </div>
+      </div>
+
+      {/* input row (UI only) */}
+      <div className="border-t border-white/10 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <input
+            placeholder="Add a comment…"
+            className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-white/10"
+          />
+          <button
+            type="button"
+            disabled
+            className="h-11 rounded-full bg-white/10 px-4 text-sm text-white/40"
+            title="Coming soon"
+          >
+            Post
+          </button>
+        </div>
+        {activePostId && (
+          <div className="mt-2 text-[11px] text-white/30">
+            Post: {activePostId}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
       <div className="px-4 pt-4">
@@ -198,7 +281,7 @@ export function PublicFeedClient() {
                   {/* COMMENT */}
                   <button
                     type="button"
-                    onClick={() => alert("Comments coming soon")}
+                    onClick={() => openComments(p.id)}
                     className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
                   >
                     <MessageCircle size={26} />
