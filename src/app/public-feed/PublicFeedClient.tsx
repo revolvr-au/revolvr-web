@@ -15,6 +15,8 @@ type ApiPost = {
   likedByCurrentUser: boolean;
 };
 
+type RewardMode = "applause" | "fire" | "love" | "respect";
+
 export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,14 +26,23 @@ export function PublicFeedClient() {
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
 
+  // Comments sheet
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
+
+  // Rewards tray (per post)
   const [rewardOpen, setRewardOpen] = useState(false);
   const [rewardPostId, setRewardPostId] = useState<string | null>(null);
 
-
   // Temporary until auth wiring
   const viewer = "test@revolvr.net";
+
+  const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
+    { mode: "applause", label: "Applause", icon: "👏" },
+    { mode: "fire", label: "Fire", icon: "🔥" },
+    { mode: "love", label: "Love", icon: "❤️" },
+    { mode: "respect", label: "Respect", icon: "🫡" },
+  ];
 
   const railItems = useMemo<PersonRailItem[]>(() => {
     const seen = new Set<string>();
@@ -40,7 +51,6 @@ export function PublicFeedClient() {
     for (const p of posts) {
       const email = String(p.userEmail || "").trim().toLowerCase();
       if (!email || seen.has(email)) continue;
-
       seen.add(email);
 
       out.push({
@@ -69,7 +79,6 @@ export function PublicFeedClient() {
 
         const url = "/api/posts?userEmail=" + encodeURIComponent(viewer);
         const res = await fetch(url, { cache: "no-store" });
-
         const json = await res.json().catch(() => null);
 
         if (!res.ok) {
@@ -77,7 +86,6 @@ export function PublicFeedClient() {
             typeof json?.error === "string"
               ? json.error
               : "Failed to load posts (" + res.status + ")";
-
           if (!cancelled) {
             setErr(msg);
             setPosts([]);
@@ -92,12 +100,10 @@ export function PublicFeedClient() {
 
         const nextLiked: Record<string, boolean> = {};
         const nextCounts: Record<string, number> = {};
-
         for (const p of incoming) {
           nextLiked[p.id] = Boolean(p.likedByCurrentUser);
           nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
         }
-
         setLikedMap(nextLiked);
         setLikeCounts(nextCounts);
       } catch (e) {
@@ -112,7 +118,6 @@ export function PublicFeedClient() {
     }
 
     run();
-
     return () => {
       cancelled = true;
     };
@@ -121,12 +126,10 @@ export function PublicFeedClient() {
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
       const next = { ...prev, [postId]: !prev[postId] };
-
       setLikeCounts((counts) => ({
         ...counts,
         [postId]: Math.max(0, (counts[postId] || 0) + (next[postId] ? 1 : -1)),
       }));
-
       return next;
     });
   }
@@ -156,6 +159,26 @@ export function PublicFeedClient() {
     setActivePostId(null);
   }
 
+  function toggleRewards(postId: string) {
+    setRewardPostId(postId);
+    setRewardOpen((prev) => {
+      // If switching posts, force open
+      if (rewardPostId && rewardPostId !== postId) return true;
+      return !prev;
+    });
+  }
+
+  function closeRewards() {
+    setRewardOpen(false);
+    setRewardPostId(null);
+  }
+
+  function onOpenReward(mode: RewardMode, postId: string) {
+    // UI only for now (wire API later)
+    closeRewards();
+    alert(`Rewarded (${mode}) on post ${postId}`);
+  }
+
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
       <div className="px-4 pt-4">
@@ -175,26 +198,24 @@ export function PublicFeedClient() {
 
       {!loading &&
         !err &&
+        posts.length > 0 &&
         posts.map((p) => {
           const email = String(p.userEmail || "").trim().toLowerCase();
           const display = email ? displayNameFromEmail(email) : "User";
 
           const mediaUrl = String(p.imageUrl || "").trim();
           const lower = mediaUrl.toLowerCase();
-
           const isVideo =
-            lower.endsWith(".mov") ||
-            lower.endsWith(".mp4") ||
-            lower.endsWith(".webm");
+            lower.endsWith(".mov") || lower.endsWith(".mp4") || lower.endsWith(".webm");
+
+          const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
 
           return (
             <div key={p.id} className="p-4">
               <div className="mb-2">
                 <div className="text-sm font-semibold text-white">{display}</div>
                 {email && (
-                  <div className="text-xs text-white/40">
-                    @{email.split("@")[0]}
-                  </div>
+                  <div className="text-xs text-white/40">@{email.split("@")[0]}</div>
                 )}
               </div>
 
@@ -215,18 +236,43 @@ export function PublicFeedClient() {
                 )}
 
                 {/* LEFT LOWER REWARDS */}
-                <button
-  type="button"
-  onClick={() => alert("Reward clicked")}
-  className="absolute z-30 left-4 bottom-[90px] md:bottom-6 flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
->
-  <Gift size={16} />
-  Rewards
-</button>
+                <div className="absolute z-40 left-4 bottom-[90px] md:bottom-6">
+                  <button
+                    type="button"
+                    onClick={() => toggleRewards(p.id)}
+                    className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
+                  >
+                    <Gift size={16} />
+                    Rewards
+                  </button>
 
+                  {/* Reward tray (floats) */}
+                  {rewardsOpenForThisPost ? (
+                    <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
+                      <div className="text-[11px] text-white/60 px-2 pb-2">
+                        Reward this post
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {rewardItems.map((it) => (
+                          <button
+                            key={it.mode}
+                            type="button"
+                            onClick={() => onOpenReward(it.mode, p.id)}
+                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
+                          >
+                            <div className="text-base">{it.icon}</div>
+                            <div className="text-xs text-white/90 font-semibold">
+                              {it.label}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
 
                 {/* RIGHT LOWER ACTIONS */}
-                <div className="absolute z-30 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
+                <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
                   {/* LIKE */}
                   <button
                     type="button"
@@ -262,14 +308,12 @@ export function PublicFeedClient() {
                 </div>
               </div>
 
-              {p.caption && (
-                <div className="mt-3 text-sm text-white/90">{p.caption}</div>
-              )}
+              {p.caption && <div className="mt-3 text-sm text-white/90">{p.caption}</div>}
             </div>
           );
         })}
 
-      {/* COMMENTS SHEET */}
+      {/* COMMENTS SHEET (global, at end of layout so it's not inside map) */}
       {commentsOpen && (
         <div className="fixed inset-0 z-50">
           {/* backdrop */}
@@ -282,10 +326,10 @@ export function PublicFeedClient() {
 
           {/* sheet */}
           <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[50vh] overflow-hidden">
-            {/* GRAB HANDLE */}
+            {/* grab handle */}
             <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
-            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+            <div className="flex items-center justify-between px-5 py-4">
               <div className="text-sm font-semibold text-white">Comments</div>
               <button
                 type="button"
@@ -296,20 +340,20 @@ export function PublicFeedClient() {
               </button>
             </div>
 
-            <div className="max-h-[34vh] overflow-y-auto px-5 py-4 space-y-4">
-              <div>
-                <div className="text-xs text-white/50">@captain</div>
-                <div className="text-sm text-white/90">This is clean 🔥</div>
-              </div>
-
-              <div>
-                <div className="text-xs text-white/50">@luna</div>
-                <div className="text-sm text-white/90">Love this angle.</div>
-              </div>
-
-              <div>
-                <div className="text-xs text-white/50">@revolvr</div>
-                <div className="text-sm text-white/90">First comment 😉</div>
+            <div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
+              <div className="space-y-4">
+                <div>
+                  <div className="text-xs text-white/50">@captain</div>
+                  <div className="text-sm text-white/90">This is clean 🔥</div>
+                </div>
+                <div>
+                  <div className="text-xs text-white/50">@luna</div>
+                  <div className="text-sm text-white/90">Love this angle.</div>
+                </div>
+                <div>
+                  <div className="text-xs text-white/50">@revolvr</div>
+                  <div className="text-sm text-white/90">First comment 😉</div>
+                </div>
               </div>
             </div>
 
@@ -330,14 +374,15 @@ export function PublicFeedClient() {
               </div>
 
               {activePostId && (
-                <div className="mt-2 text-[11px] text-white/30">
-                  Post: {activePostId}
-                </div>
+                <div className="mt-2 text-[11px] text-white/30">Post: {activePostId}</div>
               )}
             </div>
           </div>
         </div>
       )}
+
+      {/* Close rewards if comments opened (optional guard) */}
+      {commentsOpen && rewardOpen ? closeRewards() : null}
     </FeedLayout>
   );
 }
