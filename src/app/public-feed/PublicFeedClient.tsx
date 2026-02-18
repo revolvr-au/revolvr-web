@@ -216,12 +216,14 @@ export function PublicFeedClient() {
 
                 {/* LEFT LOWER REWARDS */}
                 <button
-                  type="button"
-                  className="absolute z-30 left-4 bottom-[90px] md:bottom-6 flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
-                >
-                  <Gift size={16} />
-                  Rewards
-                </button>
+  type="button"
+  onClick={() => alert("Reward clicked")}
+  className="absolute z-30 left-4 bottom-[90px] md:bottom-6 flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
+>
+  <Gift size={16} />
+  Rewards
+</button>
+
 
                 {/* RIGHT LOWER ACTIONS */}
                 <div className="absolute z-30 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
