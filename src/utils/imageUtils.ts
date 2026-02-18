@@ -1,17 +1,18 @@
 // src/utils/imageUtils.ts
 
-// If you still need this, ensure it's defined:
-export function isValidImageUrl(url: string | undefined): boolean {
-  if (!url) return false;
-  return /^https?:\/\/.*\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(url);
-}
-
-// Ensure other functions are present too:
 export function displayNameFromEmail(email: string): string {
-  return email.split('@')[0];
+  const [localPart] = String(email || "").split("@");
+  const cleaned = localPart.replace(/\W+/g, " ").trim();
+  return cleaned || "User";
 }
 
-export function isValidEmail(email: string): boolean {
-  const regex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return regex.test(email);
+export function isValidImageUrl(url: unknown): url is string {
+  if (typeof url !== "string") return false;
+  const u = url.trim();
+  if (!u) return false;
+  return (
+    u.startsWith("http://") ||
+    u.startsWith("https://") ||
+    u.startsWith("/")
+  );
 }
