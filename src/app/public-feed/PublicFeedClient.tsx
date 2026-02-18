@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
+import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
+
 
 type ApiPost = {
   id: string;
@@ -112,58 +114,116 @@ export function PublicFeedClient() {
       {err && <div className="p-4 text-red-400">{err}</div>}
 
       {!loading &&
-        posts.map((p) => {
-          const email = String(p.userEmail || "").trim().toLowerCase();
-          const display = email
-            ? displayNameFromEmail(email)
-            : "User";
+  posts.map((p) => {
+    const email = String(p.userEmail || "").trim().toLowerCase();
+    const display = email
+      ? displayNameFromEmail(email)
+      : "User";
 
-          const url = p.imageUrl || "";
-          const isVideo =
-            url.endsWith(".mov") ||
-            url.endsWith(".mp4") ||
-            url.endsWith(".webm");
+    const url = p.imageUrl || "";
+    const isVideo =
+      url.endsWith(".mov") ||
+      url.endsWith(".mp4") ||
+      url.endsWith(".webm");
 
-          return (
-            <div key={p.id} className="p-4">
-              <div className="text-sm opacity-70">{display}</div>
+    return (
+      <div key={p.id} className="p-4">
 
-              {url ? (
-                <div className="mt-3 rounded-2xl overflow-hidden border border-white/10">
-                  {isVideo ? (
-                    <video
-                      src={url}
-                      controls
-                      className="w-full"
-                    />
-                  ) : (
-                    <img
-                      src={url}
-                      alt="Post media"
-                      className="w-full"
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="mt-2 text-sm opacity-70">
-                  No media.
-                </div>
-              )}
-
-              {p.caption && (
-                <div className="mt-2">{p.caption}</div>
-              )}
-
-              <button
-                onClick={() => toggleLike(p.id)}
-                className="mt-2 text-sm"
-              >
-                {likedMap[p.id] ? "♥" : "♡"}{" "}
-                {likeCounts[p.id] ?? 0}
-              </button>
+        {/* HEADER */}
+        <div className="mb-2">
+          <div className="text-sm font-semibold text-white">
+            {display}
+          </div>
+          {email && (
+            <div className="text-xs text-white/40">
+              @{email.split("@")[0]}
             </div>
-          );
-        })}
-    </FeedLayout>
-  );
-}
+          )}
+        </div>
+
+        {/* MEDIA + OVERLAY */}
+        <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/10 bg-black/20">
+
+          {/* MEDIA */}
+          {url ? (
+            isVideo ? (
+              <video
+                src={url}
+                controls
+                className="w-full h-auto block"
+              />
+            ) : (
+              <img
+                src={url}
+                alt="Post media"
+                className="w-full h-auto block object-cover"
+              />
+            )
+          ) : (
+            <div className="p-6 text-sm opacity-70">
+              No media.
+            </div>
+          )}
+
+          {/* LEFT LOWER REWARDS */}
+          <button
+            type="button"
+            className="absolute left-3 bottom-3 flex items-center gap-2 rounded-full bg-black/60 px-3 py-2 text-xs text-white shadow hover:bg-black/70"
+          >
+            <Gift size={16} />
+            Rewards
+          </button>
+
+          {/* RIGHT LOWER ACTIONS */}
+          <div className="absolute right-3 bottom-3 flex flex-col items-center gap-4">
+
+            {/* LIKE */}
+            <button
+              type="button"
+              onClick={() => toggleLike(p.id)}
+              className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+            >
+              <Heart
+                size={24}
+                className={
+                  likedMap[p.id]
+                    ? "fill-red-500 text-red-500"
+                    : ""
+                }
+              />
+              <span className="text-[11px]">
+                {likeCounts[p.id] ?? 0}
+              </span>
+            </button>
+
+            {/* COMMENT */}
+            <button
+              type="button"
+              className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+            >
+              <MessageCircle size={24} />
+              <span className="text-[11px]">0</span>
+            </button>
+
+            {/* SHARE */}
+            <button
+              type="button"
+              className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+            >
+              <Share2 size={24} />
+              <span className="text-[11px]">Share</span>
+            </button>
+
+          </div>
+        </div>
+
+        {/* CAPTION */}
+        {p.caption && (
+          <div className="mt-3 text-sm text-white/90">
+            {p.caption}
+          </div>
+        )}
+
+      </div>
+    );
+  })}
