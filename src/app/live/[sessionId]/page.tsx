@@ -810,28 +810,19 @@ function LiveRewardsSheet({
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center relative overflow-visible">
 
-                  <span
+              <span
+  className="text-2xl leading-none"
   style={{
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: 24,
-    lineHeight: "24px",
-    // Put Windows first (you’re testing on Windows)
-    fontFamily:
-      "Segoe UI Emoji, Segoe UI Symbol, Apple Color Emoji, Noto Color Emoji, Noto Emoji, sans-serif",
-    color: "#fff",
-    WebkitTextFillColor: "#fff",
-    opacity: 1,
-    filter: "none",
-    // Force a paint layer to bypass weird compositor edge-cases
-    transform: "translateZ(0)",
-    textShadow: "0 0 6px rgba(0,0,0,0.6)",
+    fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"',
+    fontFeatureSettings: '"liga" 0',
+    display: "inline-block",
+    lineHeight: "1",
   }}
 >
-  {r.icon}{" AA"}
-
+  {r.icon}
 </span>
+
+
 
 
                 </div>
