@@ -42,12 +42,13 @@ const REWARD_ICON = {
   respect: BadgeCheck,
 } as const;
 
-const LIVE_REWARDS: { id: RewardKind; label: string; iconKey: RewardKind }[] = [
-  { id: "applause", label: "Applause", iconKey: "applause" },
-  { id: "fire", label: "Fire", iconKey: "fire" },
-  { id: "love", label: "Love", iconKey: "love" },
-  { id: "respect", label: "Respect", iconKey: "respect" },
+const LIVE_REWARDS: { id: RewardKind; label: string; icon: string }[] = [
+  { id: "applause", label: "Applause", icon: "👏" },
+  { id: "fire", label: "Fire", icon: "🔥" },
+  { id: "love", label: "Love", icon: "❤️" },
+  { id: "respect", label: "Respect", icon: "🫡" }, // or "✅" / "🏅"
 ];
+
 
 
 export default function LiveRoomPage() {
@@ -590,11 +591,12 @@ export default function LiveRoomPage() {
   <LiveRewardsSheet
     rewards={LIVE_REWARDS}
     onClose={() => setRewardsOpen(false)}
-    onPick={async () => {
-      // SAFE launch: reuse existing checkout
-      await startPayment("reaction", "single");
-      setRewardsOpen(false);
-    }}
+    onPick={async (id) => {
+  // you can store `id` later in Supabase if you want analytics
+  await startPayment("reaction", "single");
+  setRewardsOpen(false);
+}}
+
   />
 )}
       </main>
@@ -779,9 +781,9 @@ function LiveRewardsSheet({
   onClose,
   onPick,
 }: {
-  rewards: { id: string; label: string; icon: string }[];
+  rewards: { id: RewardKind; label: string; icon: string }[];
   onClose: () => void;
-  onPick: (id: string) => void | Promise<void>;
+  onPick: (id: RewardKind) => void | Promise<void>;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
@@ -807,15 +809,16 @@ function LiveRewardsSheet({
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center">
                   <span
-                    className="text-2xl leading-none text-white"
+                    className="text-2xl leading-none"
                     style={{
                       fontFamily:
                         "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif",
                     }}
                   >
-                    {r.icon ?? "🎁"}
+                    {r.icon}
                   </span>
                 </div>
+
                 <div>
                   <div className="text-sm font-semibold">{r.label}</div>
                   <div className="text-[11px] text-white/60">A$0.50</div>
@@ -835,4 +838,4 @@ function LiveRewardsSheet({
       </div>
     </div>
   );
-}
+}}
