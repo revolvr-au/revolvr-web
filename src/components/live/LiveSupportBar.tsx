@@ -6,6 +6,15 @@ import { createCheckout } from "@/lib/actionsClient";
 
 type Mode = "tip" | "boost" | "spin";
 
+type RewardKind = "applause" | "fire" | "love" | "respect";
+
+const LIVE_REWARDS: { id: RewardKind; label: string; asset: string }[] = [
+  { id: "applause", label: "Applause", asset: "/rewards/applause.webm" },
+  { id: "fire", label: "Fire", asset: "/rewards/fire.webm" },
+  { id: "love", label: "Love", asset: "/rewards/love.webm" },
+  { id: "respect", label: "Respect", asset: "/rewards/respect.webm" },
+];
+
 type Meta = {
   title: string;
   subtitle: string;
@@ -62,8 +71,6 @@ function metaFor(mode: Mode): Meta {
   }
 }
 
-
-
 function ActionButton({
   icon,
   label,
@@ -102,6 +109,7 @@ export default function LiveSupportBar({
   currency?: string;
 }) {
   const [activeMode, setActiveMode] = useState<Mode | null>(null);
+  const [rewardsOpen, setRewardsOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const activeMeta = useMemo(() => {
@@ -145,23 +153,29 @@ export default function LiveSupportBar({
 
       <div className="w-full flex items-center justify-center gap-2">
         <ActionButton
-  icon="🌼"
-  label="React"
-  disabled={!creatorReady}
-  onClick={() => creatorReady && setActiveMode("tip")}
-/>
-<ActionButton
-  icon="⭐"
-  label="Highlight"
-  disabled={!creatorReady}
-  onClick={() => creatorReady && setActiveMode("boost")}
-/>
-<ActionButton
-  icon="💫"
-  label="Pulse"
-  disabled={!creatorReady}
-  onClick={() => creatorReady && setActiveMode("spin")}
-/>
+          icon="🌼"
+          label="React"
+          disabled={!creatorReady}
+          onClick={() => creatorReady && setActiveMode("tip")}
+        />
+        <ActionButton
+          icon="⭐"
+          label="Highlight"
+          disabled={!creatorReady}
+          onClick={() => creatorReady && setActiveMode("boost")}
+        />
+        <ActionButton
+          icon="💫"
+          label="Pulse"
+          disabled={!creatorReady}
+          onClick={() => creatorReady && setActiveMode("spin")}
+        />
+        <ActionButton
+          icon="🎁"
+          label="Rewards"
+          disabled={!creatorReady}
+          onClick={() => setRewardsOpen(true)}
+        />
       </div>
 
       <PostActionModal
@@ -183,6 +197,62 @@ export default function LiveSupportBar({
           await begin(activeMode, amountCents);
         }}
       />
+
+      {rewardsOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-lg shadow-black/40">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold">Rewards</h2>
+              <button
+                onClick={() => setRewardsOpen(false)}
+                className="text-xs text-white/50 hover:text-white"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              {LIVE_REWARDS.map((r) => (
+                <button
+                  key={r.id}
+                  disabled={!creatorReady}
+                  onClick={async () => {
+                    // SAFE: reuse "tip" checkout plumbing
+                    await begin("tip", 150);
+                    setRewardsOpen(false);
+                  }}
+                  className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-3 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 overflow-hidden grid place-items-center">
+                      <video
+                        src={r.asset}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold">{r.label}</div>
+                      <div className="text-[11px] text-white/60">A$1.50</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setRewardsOpen(false)}
+              className="w-full text-[11px] text-white/45 hover:text-white/70 mt-3"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

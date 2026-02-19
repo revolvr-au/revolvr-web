@@ -156,7 +156,7 @@ export default function PublicFeedDock({
           aria-label="Reward"
           title="Reward"
         >
-          <span className="text-lg leading-none">🎁</span>
+          <GiftAnimation />
           <span className="text-sm font-semibold text-white">Reward</span>
         </button>
 

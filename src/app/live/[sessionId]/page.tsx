@@ -31,7 +31,17 @@ type PendingPurchase = { mode: PurchaseMode };
 type LiveMode = PurchaseMode | "reaction" | "vote";
 type CheckoutResponse = { url?: string; error?: string };
 
+type RewardKind = "applause" | "fire" | "love" | "respect"; // add 2 more later if needed
+
+const LIVE_REWARDS: { id: RewardKind; label: string; asset: string }[] = [
+  { id: "applause", label: "Applause", asset: "/rewards/applause.webm" },
+  { id: "fire", label: "Fire", asset: "/rewards/fire.webm" },
+  { id: "love", label: "Love", asset: "/rewards/love.webm" },
+  { id: "respect", label: "Respect", asset: "/rewards/respect.webm" },
+];
+
 export default function LiveRoomPage() {
+  const [rewardsOpen, setRewardsOpen] = useState(false);
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -490,7 +500,7 @@ export default function LiveRoomPage() {
                     : "No credits yet – your first support will open a quick checkout."}
                 </p>
 
-                <div className="mt-2 grid grid-cols-5 gap-2 text-[11px] sm:text-xs">
+                <div className="mt-2 grid grid-cols-6 gap-2 text-[11px] sm:text-xs">
                   <button
                     type="button"
                     disabled={supportBusy}
@@ -522,14 +532,15 @@ export default function LiveRoomPage() {
                   </button>
 
                   <button
-                    type="button"
-                    disabled={supportBusy}
-                    onClick={() => handleSupportClick("reaction")}
-                    className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
+                  type="button"
+                  disabled={supportBusy}
+                  onClick={() => setRewardsOpen(true)}
+                  className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
                   >
-                    <div className="font-semibold">React</div>
-                    <div className="text-white/70 mt-0.5">A$0.50</div>
+                  <div className="font-semibold">Rewards</div>
+                  <div className="text-white/70 mt-0.5">A$0.50</div>
                   </button>
+
 
                   <button
                     type="button"
@@ -557,13 +568,25 @@ export default function LiveRoomPage() {
         </div>
 
         {pendingPurchase && (
-          <LivePurchaseChoiceSheet
-            mode={pendingPurchase.mode}
-            onClose={() => setPendingPurchase(null)}
-            onSingle={() => handleSingle(pendingPurchase.mode)}
-            onPack={() => handlePack(pendingPurchase.mode)}
-          />
-        )}
+  <LivePurchaseChoiceSheet
+    mode={pendingPurchase.mode}
+    onClose={() => setPendingPurchase(null)}
+    onSingle={() => handleSingle(pendingPurchase.mode)}
+    onPack={() => handlePack(pendingPurchase.mode)}
+  />
+)}
+
+{rewardsOpen && (
+  <LiveRewardsSheet
+    rewards={LIVE_REWARDS}
+    onClose={() => setRewardsOpen(false)}
+    onPick={async () => {
+      // SAFE launch: reuse existing checkout
+      await startPayment("reaction", "single");
+      setRewardsOpen(false);
+    }}
+  />
+)}
       </main>
     </div>
   );
@@ -734,6 +757,67 @@ function LivePurchaseChoiceSheet({
           type="button"
           onClick={onClose}
           className="w-full text-[11px] text-white/45 hover:text-white/70 mt-1"
+        >
+          Maybe later
+        </button>
+      </div>
+    </div>
+  );
+}
+function LiveRewardsSheet({
+  rewards,
+  onClose,
+  onPick,
+}: {
+  rewards: { id: string; label: string; asset: string }[];
+  onClose: () => void;
+  onPick: (id: string) => void | Promise<void>;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+      <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-lg shadow-black/40">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Rewards</h2>
+          <button onClick={onClose} className="text-xs text-white/50 hover:text-white">
+            Close
+          </button>
+        </div>
+
+        <div className="mt-3 text-[11px] text-white/55">
+          Reward this live. You’ll be taken straight to checkout.
+        </div>
+
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {rewards.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => onPick(r.id)}
+              className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-3 text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 overflow-hidden grid place-items-center">
+                  <video
+                    src={r.asset}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div>
+                  <div className="text-sm font-semibold">{r.label}</div>
+                  <div className="text-[11px] text-white/60">A$0.50</div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full text-[11px] text-white/45 hover:text-white/70 mt-3"
         >
           Maybe later
         </button>
