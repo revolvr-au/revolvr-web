@@ -175,7 +175,41 @@ export function PublicFeedClient() {
 
   async function onOpenReward(mode: RewardMode, postId: string) {
   try {
+    const post = posts.find((x) => x.id === postId);
+    const creatorEmail = String(post?.userEmail ?? "").trim().toLowerCase();
+    if (!creatorEmail) {
+      alert("Creator missing for this post.");
+      return;
+    }
+
+    const res = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "reaction",            // safe-launch: rewards map to reaction
+        creatorEmail,
+        userEmail: viewer,           // TODO: replace with real authed viewer
+        source: "FEED",
+        targetId: postId,
+        returnPath: "/public-feed",
+        // amountCents: 150,         // optional (only if you want to force A$1.50)
+        viewerCurrency: "aud",
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.url) {
+      console.error("[PF reward checkout] failed", data);
+      alert(data?.error || "Checkout failed. Try again.");
+      return;
+    }
+
+    window.location.href = data.url;
+  } finally {
     closeRewards();
+  }
+}
+
 
     const post = posts.find((x) => x.id === postId);
     const creatorEmail = String(post?.userEmail || "").trim().toLowerCase();
