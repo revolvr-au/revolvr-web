@@ -34,13 +34,17 @@ type CheckoutResponse = { url?: string; error?: string };
 
 type RewardKind = "applause" | "fire" | "love" | "respect";
 
+const REWARD_ICON_URL: Record<RewardKind, string> = {
+  applause:
+    "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f44f.svg", // 👏
+  fire:
+    "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f525.svg", // 🔥
+  love:
+    "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2764.svg", // ❤️
+  respect:
+    "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2705.svg", // ✅ safest
+};
 
-const REWARD_ICON = {
-  applause: Hand,
-  fire: Flame,
-  love: Heart,
-  respect: BadgeCheck,
-} as const;
 
 const LIVE_REWARDS: { id: RewardKind; label: string; icon: string }[] = [
   { id: "applause", label: "Applause", icon: "\u{1F44F}" }, // 👏
@@ -810,17 +814,19 @@ function LiveRewardsSheet({
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center relative overflow-visible">
 
-              <span
-  className="text-2xl leading-none"
+              <img
+  src={REWARD_ICON_URL[r.id]}
+  alt=""
+  width={24}
+  height={24}
+  className="block"
   style={{
-    fontFamily: '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"',
-    fontFeatureSettings: '"liga" 0',
-    display: "inline-block",
-    lineHeight: "1",
+    transform: "translateZ(0)",
+    filter: "drop-shadow(0 0 6px rgba(0,0,0,0.6))",
   }}
->
-  {r.icon}
-</span>
+/>
+
+
 
 
 
