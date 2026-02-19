@@ -40,7 +40,7 @@ const REWARD_ICON_URL: Record<RewardKind, string> = {
   fire:
     "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f525.svg", // 🔥
   love:
-    "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2764.svg", // ❤️
+    "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2764-fe0f.svg", // ❤️
   respect:
     "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/2705.svg", // ✅ safest
 };
@@ -812,10 +812,18 @@ function LiveRewardsSheet({
               className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-3 text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center relative overflow-visible">
-
-              <img
-  src={REWARD_ICON_URL[r.id]}
+            <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center relative overflow-visible">
+  <div
+    className="text-2xl leading-none"
+    style={{
+      fontFamily:
+        '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI Symbol",sans-serif',
+      transform: "translateZ(0)",
+    }}
+  >
+    {r.icon}
+  </div>
+</div>
   alt=""
   width={24}
   height={24}
@@ -825,12 +833,6 @@ function LiveRewardsSheet({
     filter: "drop-shadow(0 0 6px rgba(0,0,0,0.6))",
   }}
 />
-
-
-
-
-
-
                 </div>
 
                 <div>
