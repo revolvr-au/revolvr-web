@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Hand, Flame, Heart, BadgeCheck } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import LiveChatPanel from "@/components/live/LiveChatPanel";
@@ -34,11 +35,18 @@ type CheckoutResponse = { url?: string; error?: string };
 type RewardKind = "applause" | "fire" | "love" | "respect";
 
 
-const LIVE_REWARDS: { id: RewardKind; label: string; icon: string }[] = [
-  { id: "applause", label: "Applause", icon: "👏" },
-  { id: "fire", label: "Fire", icon: "🔥" },
-  { id: "love", label: "Love", icon: "❤️" },
-  { id: "respect", label: "Respect", icon: "🫡" },
+const REWARD_ICON = {
+  applause: Hand,
+  fire: Flame,
+  love: Heart,
+  respect: BadgeCheck,
+} as const;
+
+const LIVE_REWARDS: { id: RewardKind; label: string; iconKey: RewardKind }[] = [
+  { id: "applause", label: "Applause", iconKey: "applause" },
+  { id: "fire", label: "Fire", iconKey: "fire" },
+  { id: "love", label: "Love", iconKey: "love" },
+  { id: "respect", label: "Respect", iconKey: "respect" },
 ];
 
 
