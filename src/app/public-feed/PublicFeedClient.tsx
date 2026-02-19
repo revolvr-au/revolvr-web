@@ -37,12 +37,15 @@ export function PublicFeedClient() {
   // Temporary until auth wiring
   const viewer = "test@revolvr.net";
 
-  const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
-    { mode: "applause", label: "Applause", icon: "👏" },
-    { mode: "fire", label: "Fire", icon: "🔥" },
-    { mode: "love", label: "Love", icon: "❤️" },
-    { mode: "respect", label: "Respect", icon: "🫡" },
-  ];
+ const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
+  { mode: "applause", label: "Applause", icon: "\u{1F44F}" },        // 👏
+  { mode: "fire", label: "Fire", icon: "\u{1F525}" },                // 🔥
+  { mode: "love", label: "Love", icon: "\u{2764}\u{FE0F}" },         // ❤️ (VS16)
+  { mode: "respect", label: "Respect", icon: "\u{1FAE1}" },          // 🫡 (saluting face)
+  // If 🫡 is still flaky on some Windows installs, swap to:
+  // { mode: "respect", label: "Respect", icon: "\u{2705}" },        // ✅
+];
+
 
   const railItems = useMemo<PersonRailItem[]>(() => {
     const seen = new Set<string>();
@@ -70,58 +73,59 @@ export function PublicFeedClient() {
   }, [posts]);
 
   useEffect(() => {
-    let cancelled = false;
+  let cancelled = false;
 
-    async function run() {
-      try {
-        setLoading(true);
-        setErr(null);
+  async function run() {
+    try {
+      setLoading(true);
+      setErr(null);
 
-        const url = "/api/posts?userEmail=" + encodeURIComponent(viewer);
-        const res = await fetch(url, { cache: "no-store" });
-        const json = await res.json().catch(() => null);
+      const url = "/api/posts?userEmail=" + encodeURIComponent(viewer);
+      const res = await fetch(url, { cache: "no-store" });
+      const json = await res.json().catch(() => null);
 
-        if (!res.ok) {
-          const msg =
-            typeof json?.error === "string"
-              ? json.error
-              : "Failed to load posts (" + res.status + ")";
-          if (!cancelled) {
-            setErr(msg);
-            setPosts([]);
-          }
-          return;
-        }
-
-        const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
-        if (cancelled) return;
-
-        setPosts(incoming);
-
-        const nextLiked: Record<string, boolean> = {};
-        const nextCounts: Record<string, number> = {};
-        for (const p of incoming) {
-          nextLiked[p.id] = Boolean(p.likedByCurrentUser);
-          nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
-        }
-        setLikedMap(nextLiked);
-        setLikeCounts(nextCounts);
-      } catch (e) {
-        console.error("[public-feed] load posts error", e);
+      if (!res.ok) {
+        const msg =
+          typeof json?.error === "string"
+            ? json.error
+            : "Failed to load posts (" + res.status + ")";
         if (!cancelled) {
-          setErr("Failed to load public feed.");
+          setErr(msg);
           setPosts([]);
         }
-      } finally {
-        if (!cancelled) setLoading(false);
+        return;
       }
-    }
 
-    run();
-    return () => {
-      cancelled = true;
-    };
-  }, [viewer]);
+      const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
+      if (cancelled) return;
+
+      setPosts(incoming);
+
+      const nextLiked: Record<string, boolean> = {};
+      const nextCounts: Record<string, number> = {};
+      for (const p of incoming) {
+        nextLiked[p.id] = Boolean(p.likedByCurrentUser);
+        nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
+      }
+      setLikedMap(nextLiked);
+      setLikeCounts(nextCounts);
+    } catch (e) {
+      console.error("[public-feed] load posts error", e);
+      if (!cancelled) {
+        setErr("Failed to load public feed.");
+        setPosts([]);
+      }
+    } finally {
+      if (!cancelled) setLoading(false);
+    }
+  }
+
+  run();
+  return () => {
+    cancelled = true;
+  };
+}, [viewer]);
+
 
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
@@ -293,30 +297,40 @@ export function PublicFeedClient() {
                     Rewards
                   </button>
 
-                  {/* Reward tray (floats) */}
-                  {rewardsOpenForThisPost ? (
-                    <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
-                      <div className="text-[11px] text-white/60 px-2 pb-2">
-                        Reward this post
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {rewardItems.map((it) => (
-                          <button
-                            key={it.mode}
-                            type="button"
-                            onClick={() => onOpenReward(it.mode, p.id)}
-                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
-                          >
-                            <div className="text-base">{it.icon}</div>
-                            <div className="text-xs text-white/90 font-semibold">
-                              {it.label}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                {/* Reward tray (floats) */}
+{rewardsOpenForThisPost ? (
+  <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
+    <div className="text-[11px] text-white/60 px-2 pb-2">Reward this post</div>
+
+    <div className="grid grid-cols-2 gap-2">
+      {rewardItems.map((it) => (
+        <button
+          key={it.mode}
+          type="button"
+          onClick={() => onOpenReward(it.mode, p.id)}
+          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
+        >
+          <span
+            className="text-xl leading-none inline-flex"
+            style={{
+              fontFamily:
+                '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI Symbol",sans-serif',
+              transform: "translateZ(0)", // force its own paint layer
+              WebkitTextFillColor: "white",
+            }}
+          >
+            {it.icon}
+          </span>
+
+          <div className="text-xs text-white/90 font-semibold mt-1">
+            {it.label}
+          </div>
+        </button>
+      ))}
+    </div>
+  </div>
+) : null}
+</div>
 
                 {/* RIGHT LOWER ACTIONS */}
                 <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
@@ -428,8 +442,6 @@ export function PublicFeedClient() {
         </div>
       )}
 
-      {/* Close rewards if comments opened (optional guard) */}
-      {commentsOpen && rewardOpen ? closeRewards() : null}
     </FeedLayout>
   );
 }
