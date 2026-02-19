@@ -838,4 +838,4 @@ function LiveRewardsSheet({
       </div>
     </div>
   );
-}}
+}
