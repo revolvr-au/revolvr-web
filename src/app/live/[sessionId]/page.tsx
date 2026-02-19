@@ -804,9 +804,7 @@ function LiveRewardsSheet({
             >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 overflow-hidden grid place-items-center">
-                  <span className="text-2xl leading-none text-white">
-                    {REWARD_EMOJI[r.id as RewardKind] ?? "🎁"}
-                  </span>
+                  <span className="text-lg leading-none">{REWARD_EMOJI[r.id as any] ?? "🎁"}</span>
                 </div>
                 <div>
                   <div className="text-sm font-semibold">{r.label}</div>
