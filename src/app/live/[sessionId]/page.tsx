@@ -31,14 +31,15 @@ type PendingPurchase = { mode: PurchaseMode };
 type LiveMode = PurchaseMode | "reaction" | "vote";
 type CheckoutResponse = { url?: string; error?: string };
 
-type RewardKind = "applause" | "fire" | "love" | "respect"; // add 2 more later if needed
+type RewardKind = "applause" | "fire" | "love" | "respect";
 
-const LIVE_REWARDS: { id: RewardKind; label: string; asset: string }[] = [
-  { id: "applause", label: "Applause", asset: "/rewards/applause.webm" },
-  { id: "fire", label: "Fire", asset: "/rewards/fire.webm" },
-  { id: "love", label: "Love", asset: "/rewards/love.webm" },
-  { id: "respect", label: "Respect", asset: "/rewards/respect.webm" },
+const LIVE_REWARDS: { id: RewardKind; label: string; icon: string }[] = [
+  { id: "applause", label: "Applause", icon: "👏" },
+  { id: "fire", label: "Fire", icon: "🔥" },
+  { id: "love", label: "Love", icon: "❤️" },
+  { id: "respect", label: "Respect", icon: "🫡" },
 ];
+
 
 export default function LiveRoomPage() {
   const [rewardsOpen, setRewardsOpen] = useState(false);
@@ -769,7 +770,7 @@ function LiveRewardsSheet({
   onClose,
   onPick,
 }: {
-  rewards: { id: string; label: string; asset: string }[];
+  rewards: { id: string; label: string; icon: string }[];
   onClose: () => void;
   onPick: (id: string) => void | Promise<void>;
 }) {
@@ -796,15 +797,8 @@ function LiveRewardsSheet({
             >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 overflow-hidden grid place-items-center">
-                  <video
-                    src={r.asset}
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+                  <span className="text-2xl leading-none">{r.icon}</span>
+</div>
                 <div>
                   <div className="text-sm font-semibold">{r.label}</div>
                   <div className="text-[11px] text-white/60">A$0.50</div>
