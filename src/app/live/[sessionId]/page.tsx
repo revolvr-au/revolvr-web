@@ -798,7 +798,15 @@ function LiveRewardsSheet({
             >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center">
-                  <span className="text-lg leading-none">{r.icon ?? "🎁"}</span>
+                  <span
+                    className="text-2xl leading-none text-white"
+                    style={{
+                      fontFamily:
+                        "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif",
+                    }}
+                  >
+                    {r.icon ?? "🎁"}
+                  </span>
                 </div>
                 <div>
                   <div className="text-sm font-semibold">{r.label}</div>
