@@ -43,11 +43,12 @@ const REWARD_ICON = {
 } as const;
 
 const LIVE_REWARDS: { id: RewardKind; label: string; icon: string }[] = [
-  { id: "applause", label: "Applause", icon: "👏" },
-  { id: "fire", label: "Fire", icon: "🔥" },
-  { id: "love", label: "Love", icon: "❤️" },
-  { id: "respect", label: "Respect", icon: "🫡" }, // or "✅" / "🏅"
+  { id: "applause", label: "Applause", icon: "\u{1F44F}" }, // 👏
+  { id: "fire", label: "Fire", icon: "\u{1F525}" },         // 🔥
+  { id: "love", label: "Love", icon: "\u{2764}\u{FE0F}" },  // ❤️ (include VS16)
+  { id: "respect", label: "Respect", icon: "\u{2705}" },    // ✅ (very widely supported)
 ];
+
 
 
 
@@ -786,7 +787,7 @@ function LiveRewardsSheet({
   onPick: (id: RewardKind) => void | Promise<void>;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-sm mb-6 mx-4 rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Rewards</h2>
@@ -807,16 +808,32 @@ function LiveRewardsSheet({
               className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-3 text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center">
+                <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center relative overflow-visible">
+
                   <span
-                    className="text-2xl leading-none"
-                    style={{
-                      fontFamily:
-                        "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, sans-serif",
-                    }}
-                  >
-                    {r.icon}
-                  </span>
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 24,
+    lineHeight: "24px",
+    // Put Windows first (you’re testing on Windows)
+    fontFamily:
+      "Segoe UI Emoji, Segoe UI Symbol, Apple Color Emoji, Noto Color Emoji, Noto Emoji, sans-serif",
+    color: "#fff",
+    WebkitTextFillColor: "#fff",
+    opacity: 1,
+    filter: "none",
+    // Force a paint layer to bypass weird compositor edge-cases
+    transform: "translateZ(0)",
+    textShadow: "0 0 6px rgba(0,0,0,0.6)",
+  }}
+>
+  {r.icon}{" AA"}
+
+</span>
+
+
                 </div>
 
                 <div>
