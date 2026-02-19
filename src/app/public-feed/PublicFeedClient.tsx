@@ -173,11 +173,52 @@ export function PublicFeedClient() {
     setRewardPostId(null);
   }
 
-  function onOpenReward(mode: RewardMode, postId: string) {
-    // UI only for now (wire API later)
+  async function onOpenReward(mode: RewardMode, postId: string) {
+  try {
     closeRewards();
-    alert(`Rewarded (${mode}) on post ${postId}`);
+
+    const post = posts.find((x) => x.id === postId);
+    const creatorEmail = String(post?.userEmail || "").trim().toLowerCase();
+
+    if (!creatorEmail) {
+      alert("Creator not found for this post.");
+      return;
+    }
+
+    const res = await fetch("/api/payments/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        mode: "reaction",
+        creatorEmail,
+        userEmail: viewer,
+        source: "FEED",
+        targetId: postId,
+        returnPath: "/public-feed",
+      }),
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.error("[public-feed] reward checkout failed", txt);
+      alert("Checkout failed. Try again.");
+      return;
+    }
+
+    const data = await res.json().catch(() => null);
+
+    if (data?.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    alert("Stripe did not return a checkout URL.");
+  } catch (err) {
+    console.error("[public-feed] reward error", err);
+    alert("Could not start checkout.");
   }
+}
+
 
   return (
     <FeedLayout title="Revolvr" subtitle="Public feed">
