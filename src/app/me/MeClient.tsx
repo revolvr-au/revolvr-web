@@ -598,7 +598,7 @@ const payload = await res.json().catch(() => null);
                   </button>
 
                   <a
-                    href={`/u/${encodeURIComponent(email)}`}
+                    href={`/u/${handle}`
                     className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
                   >
                     View public profile
