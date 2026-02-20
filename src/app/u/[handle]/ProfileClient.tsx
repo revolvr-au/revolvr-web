@@ -41,11 +41,11 @@ export default function ProfileClient({
 
   return (
     <div className="space-y-5 pb-12">
-      {/* Top card */}
       <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
         <div className="p-5 flex items-start gap-4">
           <div className="h-16 w-16 shrink-0 rounded-full overflow-hidden bg-white/10 border border-white/10 flex items-center justify-center text-lg font-semibold">
             {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
             ) : (
               initial
@@ -71,7 +71,6 @@ export default function ProfileClient({
           </div>
         </div>
 
-        {/* Stats row */}
         <div className="px-5 pb-5">
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
@@ -90,7 +89,6 @@ export default function ProfileClient({
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
         <div className="grid grid-cols-3 border-b border-white/10">
           <TabButton active={tab === "posts"} onClick={() => setTab("posts")}>
@@ -116,6 +114,7 @@ export default function ProfileClient({
                     className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10"
                   >
                     {p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
                     ) : null}
                   </div>
@@ -136,6 +135,7 @@ export default function ProfileClient({
                     key={p.id}
                     className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10"
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.imageUrl!} alt="" className="h-full w-full object-cover" />
                   </div>
                 ))}

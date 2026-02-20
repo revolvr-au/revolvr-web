@@ -14,17 +14,16 @@ export default async function ProfilePage({
   if (!handle) return notFound();
 
   // 1️⃣ Find creator by handle
-  const creator = await prisma.creatorProfile.findUnique({
-    where: { handle },
-    select: {
-      email: true,
-      displayName: true,
-      handle: true,
-      avatarUrl: true,
-      bio: true,
-      isVerified: true,
-    },
-  });
+  const user = await prisma.creatorProfile.findUnique({
+  where: { handle },
+  select: {
+    email: true,
+    displayName: true,
+    handle: true,
+    avatarUrl: true,
+    bio: true,
+  },
+});
 
   if (!creator || !creator.email) {
     return notFound();

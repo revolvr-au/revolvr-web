@@ -139,7 +139,7 @@ export default function CommandClient() {
           title="Public profile"
           desc={email ? "View how others see you." : "Loading your profile…"}
           disabled={!email}
-          onClick={() => router.push("/me")
+          onClick={() => router.push("/me")}
         />
       </div>
 
