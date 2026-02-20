@@ -1,4 +1,4 @@
-import ProfileClient from "@/components/profile/ProfileClient";
+import ProfileClient from "./ProfileClient";
 
 export const dynamic = "force-dynamic"; // profile data changes often
 
