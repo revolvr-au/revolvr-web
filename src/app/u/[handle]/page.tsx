@@ -14,16 +14,17 @@ export default async function ProfilePage({
   if (!handle) return notFound();
 
   // 1️⃣ Find creator by handle
-  const user = await prisma.creatorProfile.findUnique({
-  where: { handle },
-  select: {
-    email: true,
-    displayName: true,
-    handle: true,
-    avatarUrl: true,
-    bio: true,
-  },
-});
+  const creator = await prisma.creatorProfile.findUnique({
+    where: { handle },
+    select: {
+      email: true,
+      displayName: true,
+      handle: true,
+      avatarUrl: true,
+      bio: true,
+      isVerified: true,
+    },
+  });
 
   if (!creator || !creator.email) {
     return notFound();
@@ -58,8 +59,7 @@ export default async function ProfilePage({
         <ProfileClient
           profile={{
             email: creator.email,
-            displayName:
-              creator.displayName ?? creator.handle ?? creator.email,
+            displayName: creator.displayName ?? creator.handle ?? creator.email,
             handle: creator.handle ?? "",
             avatarUrl: creator.avatarUrl,
             bio: creator.bio,
