@@ -1,46 +1,75 @@
-// src/app/u/[handle]/page.tsx
-
+import { prisma } from "@/lib/prisma";
 import ProfileClient from "./ProfileClient";
-import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 
-export const dynamic = "force-dynamic"; // profile data changes often
+export const dynamic = "force-dynamic";
 
 export default async function ProfilePage({
   params,
 }: {
   params: { handle: string };
 }) {
-  const handle = decodeURIComponent(params.handle || "").trim();
+  const handle = decodeURIComponent(params.handle || "").trim().toLowerCase();
 
-  // ✅ Build correct base URL dynamically (works on Vercel + local)
-  const h = headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const protocol = h.get("x-forwarded-proto") ?? "https";
+  if (!handle) return notFound();
 
-  const baseUrl = `${protocol}://${host}`;
+  // 1️⃣ Find creator by handle
+  const creator = await prisma.creatorProfile.findUnique({
+    where: { handle },
+    select: {
+      email: true,
+      displayName: true,
+      handle: true,
+      avatarUrl: true,
+      bio: true,
+      isVerified: true,
+    },
+  });
 
-  const res = await fetch(
-    `${baseUrl}/api/public/profile?handle=${encodeURIComponent(handle)}`,
-    { cache: "no-store" }
-  );
-
-  if (!res.ok) {
-    return (
-      <div className="min-h-screen bg-[#050814] text-white p-6">
-        <div className="max-w-xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-5">
-          <div className="text-lg font-semibold">Profile not found</div>
-          <div className="text-sm text-white/60 mt-1">/{handle}</div>
-        </div>
-      </div>
-    );
+  if (!creator || !creator.email) {
+    return notFound();
   }
 
-  const { profile, posts } = await res.json();
+  // 2️⃣ Get posts
+  const posts = await prisma.post.findMany({
+    where: { userEmail: creator.email },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      imageUrl: true,
+      caption: true,
+      createdAt: true,
+    },
+    take: 60,
+  });
+
+  // 3️⃣ Get follow counts
+  const [followersCount, followingCount] = await Promise.all([
+    prisma.follow.count({
+      where: { followingEmail: creator.email },
+    }),
+    prisma.follow.count({
+      where: { followerEmail: creator.email },
+    }),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#050814] text-white">
       <main className="max-w-3xl mx-auto px-4 py-6">
-        <ProfileClient profile={profile} posts={posts} />
+        <ProfileClient
+          profile={{
+            email: creator.email,
+            displayName:
+              creator.displayName ?? creator.handle ?? creator.email,
+            handle: creator.handle ?? "",
+            avatarUrl: creator.avatarUrl,
+            bio: creator.bio,
+            followersCount,
+            followingCount,
+            isVerified: creator.isVerified ?? false,
+          }}
+          posts={posts}
+        />
       </main>
     </div>
   );
