@@ -164,7 +164,7 @@ export default function BottomBar({
                 return;
               }
 
-              router.push(`/u/${handle}`);
+              router.push("/me");
             }),
         };
       }
