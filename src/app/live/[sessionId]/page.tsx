@@ -809,35 +809,34 @@ function LiveRewardsSheet({
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          {rewards.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => onPick(r.id)}
-              className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-3 text-left"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center relative overflow-visible">
-                  <div
-                    className="text-2xl leading-none"
-                    style={{
-                      fontFamily:
-                        '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI Symbol",sans-serif',
-                      transform: "translateZ(0)",
-                    }}
-                  >
-                    {r.icon}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="text-sm font-semibold">{r.label}</div>
-                  <div className="text-[11px] text-white/60">A$0.50</div>
-                </div>
-              </div>
-            </button>
-          ))}
+  {rewards.map((r) => (
+    <button
+      key={r.id}
+      type="button"
+      onClick={() => onPick(r.id)}
+      className="rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-3 text-left"
+    >
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 grid place-items-center">
+          <span
+            className="text-2xl leading-none"
+            style={{
+              fontFamily:
+                '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI Symbol",sans-serif',
+            }}
+          >
+            {r.icon}
+          </span>
         </div>
+
+        <div>
+          <div className="text-sm font-semibold">{r.label}</div>
+          <div className="text-[11px] text-white/60">A$0.50</div>
+        </div>
+      </div>
+    </button>
+  ))}
+</div>
 
         <button
           type="button"
