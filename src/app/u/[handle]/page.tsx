@@ -15,7 +15,12 @@ export default async function ProfilePage({
 
   // 1️⃣ Find creator by handle
   const creator = await prisma.creatorProfile.findFirst({
-  where: { handle },
+  where: {
+    handle: {
+      equals: handle,
+      mode: "insensitive",
+    },
+  },
   select: {
     email: true,
     displayName: true,
@@ -26,9 +31,13 @@ export default async function ProfilePage({
   },
 });
 
-  if (!creator || !creator.email) {
-    return notFound();
-  }
+  if (!creator) {
+  return (
+    <div style={{ padding: 40, color: "white" }}>
+      Creator not found. Handle: {handle}
+    </div>
+  );
+}
 
   // 2️⃣ Get posts
   const posts = await prisma.post.findMany({
