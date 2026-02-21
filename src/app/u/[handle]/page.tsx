@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import ProfileClient from "./ProfileClient";
-import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 export const dynamicParams = true;
@@ -9,18 +8,24 @@ export const revalidate = 0;
 export default async function ProfilePage({
   params,
 }: {
-  params: { handle: string };
+  params: Promise<{ handle: string }>;
 }) {
-  const handle = decodeURIComponent(params.handle || "")
-    .trim()
-    .toLowerCase();
+  const { handle: rawHandle } = await params;
 
-  if (!handle) return notFound();
+  const handle = decodeURIComponent(rawHandle || "").trim();
 
-  // Clean, simple query — no OR logic, no case tricks
+  console.log("Profile route hit with handle:", handle);
+
+  if (!handle) {
+    return <div style={{ padding: 40 }}>Handle missing</div>;
+  }
+
   const creator = await prisma.creatorProfile.findFirst({
     where: {
-      handle,
+      handle: {
+        equals: handle,
+        mode: "insensitive",
+      },
     },
     select: {
       email: true,
