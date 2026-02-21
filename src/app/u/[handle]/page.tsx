@@ -9,66 +9,70 @@ export default async function ProfilePage({
 }: {
   params: { handle: string };
 }) {
-  const handle = decodeURIComponent(params.handle || "").trim().toLowerCase();
+  const handle = decodeURIComponent(params.handle || "")
+    .trim()
+    .toLowerCase();
 
   if (!handle) return notFound();
 
-  // 1️⃣ Find creator by handle
   const creator = await prisma.creatorProfile.findFirst({
-  where: {
-    handle: {
-      equals: handle,
-      mode: "insensitive",
+    where: {
+      handle: {
+        equals: handle,
+        mode: "insensitive",
+      },
     },
-  },
-  select: {
-    email: true,
-    displayName: true,
-    handle: true,
-    avatarUrl: true,
-    bio: true,
-    isVerified: true,
-  },
-});
-
-  if (!creator) {
-  return (
-    <div style={{ padding: 40, color: "white" }}>
-      Creator not found. Handle: {handle}
-    </div>
-  );
-}
-
-  // 2️⃣ Get posts
-  const posts = await prisma.post.findMany({
-    where: { userEmail: creator.email },
-    orderBy: { createdAt: "desc" },
     select: {
-      id: true,
-      imageUrl: true,
-      caption: true,
-      createdAt: true,
+      email: true,
+      displayName: true,
+      handle: true,
+      avatarUrl: true,
+      bio: true,
+      isVerified: true,
     },
-    take: 60,
   });
 
-  // 3️⃣ Get follow counts
-  const [followersCount, followingCount] = await Promise.all([
-    prisma.follow.count({
-      where: { followingEmail: creator.email },
-    }),
-    prisma.follow.count({
-      where: { followerEmail: creator.email },
-    }),
-  ]);
+  if (!creator) {
+    return (
+      <div style={{ padding: 40, color: "white" }}>
+        Creator not found. Handle: {handle}
+      </div>
+    );
+  }
+
+  const posts = creator.email
+    ? await prisma.post.findMany({
+        where: { userEmail: creator.email },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          imageUrl: true,
+          caption: true,
+          createdAt: true,
+        },
+        take: 60,
+      })
+    : [];
+
+  const [followersCount, followingCount] = creator.email
+    ? await Promise.all([
+        prisma.follow.count({
+          where: { followingEmail: creator.email },
+        }),
+        prisma.follow.count({
+          where: { followerEmail: creator.email },
+        }),
+      ])
+    : [0, 0];
 
   return (
     <div className="min-h-screen bg-[#050814] text-white">
       <main className="max-w-3xl mx-auto px-4 py-6">
         <ProfileClient
           profile={{
-            email: creator.email,
-            displayName: creator.displayName ?? creator.handle ?? creator.email,
+            email: creator.email ?? "",
+            displayName:
+              creator.displayName ?? creator.handle ?? creator.email ?? "",
             handle: creator.handle ?? "",
             avatarUrl: creator.avatarUrl,
             bio: creator.bio,
