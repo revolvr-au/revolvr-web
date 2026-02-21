@@ -15,12 +15,10 @@ export default async function ProfilePage({
 
   if (!handle) return notFound();
 
+  // Clean, simple query — no OR logic, no case tricks
   const creator = await prisma.creatorProfile.findFirst({
     where: {
-      handle: {
-        equals: handle,
-        mode: "insensitive",
-      },
+      handle,
     },
     select: {
       email: true,
@@ -40,39 +38,35 @@ export default async function ProfilePage({
     );
   }
 
-  const posts = creator.email
-    ? await prisma.post.findMany({
-        where: { userEmail: creator.email },
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          imageUrl: true,
-          caption: true,
-          createdAt: true,
-        },
-        take: 60,
-      })
-    : [];
+  const posts = await prisma.post.findMany({
+    where: { userEmail: creator.email },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      imageUrl: true,
+      caption: true,
+      createdAt: true,
+    },
+    take: 60,
+  });
 
-  const [followersCount, followingCount] = creator.email
-    ? await Promise.all([
-        prisma.follow.count({
-          where: { followingEmail: creator.email },
-        }),
-        prisma.follow.count({
-          where: { followerEmail: creator.email },
-        }),
-      ])
-    : [0, 0];
+  const [followersCount, followingCount] = await Promise.all([
+    prisma.follow.count({
+      where: { followingEmail: creator.email },
+    }),
+    prisma.follow.count({
+      where: { followerEmail: creator.email },
+    }),
+  ]);
 
   return (
     <div className="min-h-screen bg-[#050814] text-white">
       <main className="max-w-3xl mx-auto px-4 py-6">
         <ProfileClient
           profile={{
-            email: creator.email ?? "",
+            email: creator.email,
             displayName:
-              creator.displayName ?? creator.handle ?? creator.email ?? "",
+              creator.displayName ?? creator.handle ?? creator.email,
             handle: creator.handle ?? "",
             avatarUrl: creator.avatarUrl,
             bio: creator.bio,
