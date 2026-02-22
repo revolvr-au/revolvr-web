@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
-import { BAR_HEIGHT_PX } from "@/components/bottomBarConstants";
 import { supabase } from "@/lib/supabaseClients";
 
 /**
