@@ -5,6 +5,8 @@ import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
+import LiveCard from "@/components/LiveCard";
+
 
 type ApiPost = {
   id: string;
@@ -46,6 +48,10 @@ export function PublicFeedClient() {
   // { mode: "respect", label: "Respect", icon: "\u{2705}" },        // ✅
 ];
 
+  const [liveData, setLiveData] = useState<null | {
+  sessionId: string;
+  creatorName: string;
+}>(null);
 
   const railItems = useMemo<PersonRailItem[]>(() => {
     const seen = new Set<string>();
@@ -137,6 +143,31 @@ export function PublicFeedClient() {
       return next;
     });
   }
+
+  useEffect(() => {
+  const fetchLive = async () => {
+    try {
+      const res = await fetch("/api/live/active");
+      const data = await res.json();
+
+      if (data.isLive) {
+        setLiveData({
+          sessionId: data.sessionId,
+          creatorName: data.creatorName,
+        });
+      } else {
+        setLiveData(null);
+      }
+    } catch {
+      setLiveData(null);
+    }
+  };
+
+  fetchLive();
+  const interval = setInterval(fetchLive, 15000);
+
+  return () => clearInterval(interval);
+}, []);
 
   function onToggleFollow(email: string) {
     const key = email.trim().toLowerCase();
@@ -232,13 +263,23 @@ export function PublicFeedClient() {
 
   return (
     <FeedLayout title="REVOLVR">
-      <div className="px-4 pt-4">
-        <PeopleRail
-          items={railItems}
-          onToggleFollow={onToggleFollow}
-          followMap={followMap}
-        />
-      </div>
+  <div className="px-4 pt-4">
+    <PeopleRail
+      items={railItems}
+      onToggleFollow={onToggleFollow}
+      followMap={followMap}
+    />
+  </div>
+
+  {/* 🔴 LIVE BROADCAST */}
+  {liveData && (
+    <div className="px-4">
+      <LiveCard
+        creatorName={liveData.creatorName}
+        sessionId={liveData.sessionId}
+      />
+    </div>
+  )}
 
       {loading && <div className="p-4 opacity-70">Loading…</div>}
       {err && <div className="p-4 text-red-400">{err}</div>}
