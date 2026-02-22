@@ -1,7 +1,6 @@
 import "@livekit/components-styles";
 import type { Metadata } from "next";
 import "./globals.css";
-import { FloatingLiveButton } from "@/components/FloatingLiveButton";
 import BottomNav from "@/components/navigation/BottomNav";
 
 export const metadata: Metadata = {
@@ -26,7 +25,6 @@ export default function RootLayout({
         </div>
 
         <BottomNav />
-        <FloatingLiveButton />
       </body>
     </html>
   );
