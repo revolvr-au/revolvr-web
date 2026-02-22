@@ -3,7 +3,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Radio } from "lucide-react";
+import { useState } from "react";
 import { useGoLive } from "@/hooks/useGoLive";
+import LiveStartOverlay from "@/components/LiveStartOverlay";
 
 export default function FeedLayout({
   children,
@@ -18,7 +20,11 @@ export default function FeedLayout({
   showMenu?: boolean;
   menuHref?: string;
 }) {
-  const goLive = useGoLive();
+  const [liveOverlayOpen, setLiveOverlayOpen] = useState(false);
+
+  const goLive = useGoLive(() => {
+    setLiveOverlayOpen(true);
+  });
 
   return (
     <div className="min-h-screen bg-[#050814] text-white">
@@ -27,19 +33,21 @@ export default function FeedLayout({
 
           {/* Brand */}
           <div className="min-w-0">
-            <h1 className="
-              text-xl font-semibold tracking-wider
-              bg-gradient-to-r from-white via-white/90 to-white/60
-              bg-clip-text text-transparent
-            ">
+            <h1
+              className="
+                text-xl font-semibold tracking-wider
+                bg-gradient-to-r from-white via-white/90 to-white/60
+                bg-clip-text text-transparent
+              "
+            >
               {(title ?? "REVOLVR").toUpperCase()}
             </h1>
           </div>
 
-          {/* Right Side Controls */}
+          {/* Right Controls */}
           <div className="flex items-center gap-2">
 
-            {/* Go Live Icon */}
+            {/* Go Live */}
             <button
               onClick={goLive}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10"
@@ -51,7 +59,7 @@ export default function FeedLayout({
 
             {right ?? null}
 
-            {showMenu ? (
+            {showMenu && (
               <Link
                 href={menuHref}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10"
@@ -60,7 +68,7 @@ export default function FeedLayout({
               >
                 ☰
               </Link>
-            ) : null}
+            )}
           </div>
         </div>
       </header>
@@ -70,6 +78,18 @@ export default function FeedLayout({
           {children}
         </div>
       </main>
+
+      {/* 🔴 LIVE OVERLAY */}
+      {liveOverlayOpen && (
+        <LiveStartOverlay
+          profileImage="/your-profile-image.jpg"
+          onClose={() => setLiveOverlayOpen(false)}
+          onStart={() => {
+            setLiveOverlayOpen(false);
+            window.location.href = "/live/create";
+          }}
+        />
+      )}
     </div>
   );
 }
