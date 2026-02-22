@@ -14,17 +14,19 @@ export default function BottomNav() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const activeIndex =
-    NAV_ITEMS.findIndex((item) => pathname.startsWith(item.path)) || 0;
+  const foundIndex = NAV_ITEMS.findIndex((item) =>
+    pathname.startsWith(item.path)
+  );
+  const activeIndex = foundIndex === -1 ? 0 : foundIndex;
 
   return (
     <div className="fixed bottom-0 left-0 w-full z-50">
       {/* Top fade gradient */}
       <div className="absolute -top-8 h-8 w-full bg-gradient-to-t from-[#050814] to-transparent pointer-events-none" />
 
-      <div className="relative backdrop-blur-2xl bg-[#050814]/55 border-t border-white/10">
+      <div className="relative backdrop-blur-md bg-white/10 border-t border-white/10">
         <div className="relative flex justify-around items-center py-3">
-          
+
           {/* Sliding Pill */}
           <motion.div
             layout
@@ -34,7 +36,7 @@ export default function BottomNav() {
               damping: 36,
               mass: 0.8,
             }}
-            className="absolute h-10 w-16 rounded-full bg-white/5 backdrop-blur-lg border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.35)]"
+            className="absolute h-10 w-16 rounded-xl bg-white/10"
             style={{
               left: `calc(${activeIndex * 33.333}% + 16.66% - 32px)`,
             }}
