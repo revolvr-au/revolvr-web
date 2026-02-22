@@ -32,7 +32,7 @@ export default function FeedLayout({
               bg-gradient-to-r from-white via-white/90 to-white/60
               bg-clip-text text-transparent
             ">
-              {title ?? "REVOLVR"}
+              {(title ?? "REVOLVR").toUpperCase()}
             </h1>
           </div>
 

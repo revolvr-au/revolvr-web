@@ -231,7 +231,7 @@ export function PublicFeedClient() {
 
 
   return (
-    <FeedLayout title="Revolvr" subtitle="Public feed">
+    <FeedLayout title="REVOLVR">
       <div className="px-4 pt-4">
         <PeopleRail
           items={railItems}
