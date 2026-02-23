@@ -8,6 +8,7 @@ import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
 import LiveCard from "@/components/LiveCard";
 
 
+
 type ApiPost = {
   id: string;
   userEmail: string | null;
@@ -23,7 +24,12 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [liveStage, setLiveStage] = useState<
+  "idle" | "creator-prelive" | "viewer-live"
+>("idle");
 
+
+  const [liveOverlayOpen, setLiveOverlayOpen] = useState(false);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
@@ -260,9 +266,11 @@ export function PublicFeedClient() {
     }
   }
 
-
   return (
-    <FeedLayout title="REVOLVR">
+    <FeedLayout
+  title="REVOLVR"
+  onGoLive={() => setLiveStage("creator-prelive")}
+>
   <div className="px-4 pt-4">
     <PeopleRail
       items={railItems}
@@ -482,7 +490,43 @@ export function PublicFeedClient() {
           </div>
         </div>
       )}
+    {/* 🔴 CREATOR PRE-LIVE */}
+{liveStage === "creator-prelive" && (
+  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center">
+    <div className="w-full max-w-md p-8 text-center">
+      <div className="text-3xl font-bold mb-6">Go Live</div>
 
+      <button
+        onClick={() => setLiveStage("viewer-live")}
+        className="w-full py-4 rounded-2xl bg-red-600 hover:bg-red-700 transition text-lg font-semibold"
+      >
+        Start Broadcast
+      </button>
+
+      <button
+        onClick={() => setLiveStage("idle")}
+        className="mt-4 text-white/60 hover:text-white"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+
+{/* 🔴 VIEWER LIVE */}
+{liveStage === "viewer-live" && (
+  <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
+    <div className="text-white text-xl">
+      🔴 LIVE STREAM RUNNING
+      <button
+        onClick={() => setLiveStage("idle")}
+        className="block mt-6 text-sm text-white/60"
+      >
+        Exit
+      </button>
+    </div>
+  </div>
+)}
     </FeedLayout>
   );
 }

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClients";
 
-export function useGoLive() {
+export function useGoLive(onAllowed: () => void) {
   const router = useRouter();
 
   const goLive = async () => {
@@ -12,7 +12,7 @@ export function useGoLive() {
     } = await supabase.auth.getUser();
 
     if (!user) {
-      router.push("/login?redirectTo=/go-live");
+      router.push("/login?redirectTo=/public-feed");
       return;
     }
 
@@ -21,7 +21,8 @@ export function useGoLive() {
       return;
     }
 
-    router.push("/go-live");
+    // If authenticated creator → trigger overlay
+    onAllowed();
   };
 
   return goLive;

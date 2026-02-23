@@ -3,29 +3,22 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Radio } from "lucide-react";
-import { useState } from "react";
-import { useGoLive } from "@/hooks/useGoLive";
-import LiveStartOverlay from "@/components/LiveStartOverlay";
 
 export default function FeedLayout({
   children,
   title,
   right,
+  onGoLive,
   showMenu = false,
   menuHref = "/command",
 }: {
   children: ReactNode;
   title?: string;
   right?: ReactNode;
+  onGoLive?: () => void;
   showMenu?: boolean;
   menuHref?: string;
 }) {
-  const [liveOverlayOpen, setLiveOverlayOpen] = useState(false);
-
-  const goLive = useGoLive(() => {
-    setLiveOverlayOpen(true);
-  });
-
   return (
     <div className="min-h-screen bg-[#050814] text-white">
       <header className="sticky top-0 z-30 border-b border-white/10 bg-black/40 backdrop-blur-md">
@@ -33,13 +26,7 @@ export default function FeedLayout({
 
           {/* Brand */}
           <div className="min-w-0">
-            <h1
-              className="
-                text-xl font-semibold tracking-wider
-                bg-gradient-to-r from-white via-white/90 to-white/60
-                bg-clip-text text-transparent
-              "
-            >
+            <h1 className="text-xl font-semibold tracking-wider bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
               {(title ?? "REVOLVR").toUpperCase()}
             </h1>
           </div>
@@ -49,7 +36,7 @@ export default function FeedLayout({
 
             {/* Go Live */}
             <button
-              onClick={goLive}
+              onClick={onGoLive}
               className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10"
               aria-label="Go Live"
             >
@@ -64,7 +51,6 @@ export default function FeedLayout({
                 href={menuHref}
                 className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10"
                 aria-label="Menu"
-                title="Menu"
               >
                 ☰
               </Link>
@@ -78,18 +64,6 @@ export default function FeedLayout({
           {children}
         </div>
       </main>
-
-      {/* 🔴 LIVE OVERLAY */}
-      {liveOverlayOpen && (
-        <LiveStartOverlay
-          profileImage="/your-profile-image.jpg"
-          onClose={() => setLiveOverlayOpen(false)}
-          onStart={() => {
-            setLiveOverlayOpen(false);
-            window.location.href = "/live/create";
-          }}
-        />
-      )}
     </div>
   );
 }
