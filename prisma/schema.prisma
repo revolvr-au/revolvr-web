@@ -28,6 +28,16 @@ model Post {
   @@schema("public")
 }
 
+model liveSession {
+  id          String   @id @default(uuid())
+  creatorName String
+  isActive    Boolean  @default(true)
+  startedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@schema("public")
+}
 model Like {
   id        String   @id @default(uuid())
   postId    String
