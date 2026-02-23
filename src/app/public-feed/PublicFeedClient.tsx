@@ -492,20 +492,40 @@ export function PublicFeedClient() {
       )}
     {/* 🔴 CREATOR PRE-LIVE */}
 {liveStage === "creator-prelive" && (
-  <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xl flex items-center justify-center">
-    <div className="w-full max-w-md p-8 text-center">
-      <div className="text-3xl font-bold mb-6">Go Live</div>
+  <div className="fixed inset-0 z-50 overflow-hidden">
+
+    {/* Background image */}
+    <div
+      className="absolute inset-0 bg-cover bg-center scale-110 blur-2xl opacity-40"
+      style={{ backgroundImage: `url(/your-profile-image.jpg)` }}
+    />
+
+    {/* Dark overlay */}
+    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" />
+
+    <div className="relative flex h-full flex-col items-center justify-center text-center px-6">
+
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-4 h-4 bg-red-600 rounded-full animate-pulse" />
+        <div className="text-sm tracking-widest text-white/70">
+          GOING LIVE
+        </div>
+      </div>
+
+      <h1 className="text-4xl font-bold mb-8">
+        You're about to broadcast
+      </h1>
 
       <button
         onClick={() => setLiveStage("viewer-live")}
-        className="w-full py-4 rounded-2xl bg-red-600 hover:bg-red-700 transition text-lg font-semibold"
+        className="px-10 py-5 rounded-3xl bg-red-600 hover:bg-red-700 transition text-lg font-semibold shadow-[0_0_30px_rgba(255,0,0,0.5)]"
       >
         Start Broadcast
       </button>
 
       <button
         onClick={() => setLiveStage("idle")}
-        className="mt-4 text-white/60 hover:text-white"
+        className="mt-6 text-white/50 hover:text-white text-sm"
       >
         Cancel
       </button>
@@ -515,16 +535,28 @@ export function PublicFeedClient() {
 
 {/* 🔴 VIEWER LIVE */}
 {liveStage === "viewer-live" && (
-  <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-    <div className="text-white text-xl">
-      🔴 LIVE STREAM RUNNING
-      <button
-        onClick={() => setLiveStage("idle")}
-        className="block mt-6 text-sm text-white/60"
-      >
-        Exit
-      </button>
+  <div className="fixed inset-0 z-50 bg-black">
+
+    {/* LIVE badge */}
+    <div className="absolute top-6 left-6 flex items-center gap-2">
+      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+      <span className="text-white font-semibold tracking-wide">
+        LIVE
+      </span>
     </div>
+
+    {/* Fake stream placeholder */}
+    <div className="flex items-center justify-center h-full text-white/80 text-xl">
+      Live Stream Running
+    </div>
+
+    {/* Exit */}
+    <button
+      onClick={() => setLiveStage("idle")}
+      className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 text-sm"
+    >
+      Exit
+    </button>
   </div>
 )}
     </FeedLayout>
