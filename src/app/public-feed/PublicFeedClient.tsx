@@ -7,8 +7,6 @@ import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
 import LiveCard from "@/components/LiveCard";
 
-
-
 type ApiPost = {
   id: string;
   userEmail: string | null;
@@ -24,40 +22,33 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [liveStage, setLiveStage] = useState<
-  "idle" | "creator-prelive" | "viewer-live"
->("idle");
 
+  // 🔴 LIVE STATE (cleaned)
+  const [liveStage, setLiveStage] = useState<"idle" | "live">("idle");
 
-  const [liveOverlayOpen, setLiveOverlayOpen] = useState(false);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
 
-  // Comments sheet
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
 
-  // Rewards tray (per post)
   const [rewardOpen, setRewardOpen] = useState(false);
   const [rewardPostId, setRewardPostId] = useState<string | null>(null);
 
-  // Temporary until auth wiring
   const viewer = "test@revolvr.net";
 
- const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
-  { mode: "applause", label: "Applause", icon: "\u{1F44F}" },        // 👏
-  { mode: "fire", label: "Fire", icon: "\u{1F525}" },                // 🔥
-  { mode: "love", label: "Love", icon: "\u{2764}\u{FE0F}" },         // ❤️ (VS16)
-  { mode: "respect", label: "Respect", icon: "\u{1FAE1}" },          // 🫡 (saluting face)
-  // If 🫡 is still flaky on some Windows installs, swap to:
-  // { mode: "respect", label: "Respect", icon: "\u{2705}" },        // ✅
-];
+  const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
+    { mode: "applause", label: "Applause", icon: "👏" },
+    { mode: "fire", label: "Fire", icon: "🔥" },
+    { mode: "love", label: "Love", icon: "❤️" },
+    { mode: "respect", label: "Respect", icon: "🫡" },
+  ];
 
   const [liveData, setLiveData] = useState<null | {
-  sessionId: string;
-  creatorName: string;
-}>(null);
+    sessionId: string;
+    creatorName: string;
+  }>(null);
 
   const railItems = useMemo<PersonRailItem[]>(() => {
     const seen = new Set<string>();
@@ -84,110 +75,99 @@ export function PublicFeedClient() {
     return out;
   }, [posts]);
 
+  // Load posts
   useEffect(() => {
-  let cancelled = false;
+    let cancelled = false;
 
-  async function run() {
-    try {
-      setLoading(true);
-      setErr(null);
+    async function run() {
+      try {
+        setLoading(true);
+        setErr(null);
 
-      const url = "/api/posts?userEmail=" + encodeURIComponent(viewer);
-      const res = await fetch(url, { cache: "no-store" });
-      const json = await res.json().catch(() => null);
+        const res = await fetch(
+          "/api/posts?userEmail=" + encodeURIComponent(viewer),
+          { cache: "no-store" }
+        );
+        const json = await res.json();
 
-      if (!res.ok) {
-        const msg =
-          typeof json?.error === "string"
-            ? json.error
-            : "Failed to load posts (" + res.status + ")";
+        if (!res.ok) {
+          if (!cancelled) {
+            setErr("Failed to load feed.");
+            setPosts([]);
+          }
+          return;
+        }
+
+        const incoming: ApiPost[] = Array.isArray(json?.posts)
+          ? json.posts
+          : [];
+
+        if (cancelled) return;
+
+        setPosts(incoming);
+
+        const nextLiked: Record<string, boolean> = {};
+        const nextCounts: Record<string, number> = {};
+        for (const p of incoming) {
+          nextLiked[p.id] = Boolean(p.likedByCurrentUser);
+          nextCounts[p.id] = p.likeCount ?? 0;
+        }
+
+        setLikedMap(nextLiked);
+        setLikeCounts(nextCounts);
+      } catch {
         if (!cancelled) {
-          setErr(msg);
+          setErr("Failed to load public feed.");
           setPosts([]);
         }
-        return;
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
-      if (cancelled) return;
-
-      setPosts(incoming);
-
-      const nextLiked: Record<string, boolean> = {};
-      const nextCounts: Record<string, number> = {};
-      for (const p of incoming) {
-        nextLiked[p.id] = Boolean(p.likedByCurrentUser);
-        nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
-      }
-      setLikedMap(nextLiked);
-      setLikeCounts(nextCounts);
-    } catch (e) {
-      console.error("[public-feed] load posts error", e);
-      if (!cancelled) {
-        setErr("Failed to load public feed.");
-        setPosts([]);
-      }
-    } finally {
-      if (!cancelled) setLoading(false);
     }
-  }
 
-  run();
-  return () => {
-    cancelled = true;
-  };
-}, [viewer]);
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewer]);
 
+  // Fetch active live session
+  useEffect(() => {
+    const fetchLive = async () => {
+      try {
+        const res = await fetch("/api/live/active");
+        const data = await res.json();
+
+        if (data.isLive) {
+          setLiveData({
+            sessionId: data.sessionId,
+            creatorName: data.creatorName,
+          });
+        } else {
+          setLiveData(null);
+        }
+      } catch {
+        setLiveData(null);
+      }
+    };
+
+    fetchLive();
+    const interval = setInterval(fetchLive, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
       const next = { ...prev, [postId]: !prev[postId] };
       setLikeCounts((counts) => ({
         ...counts,
-        [postId]: Math.max(0, (counts[postId] || 0) + (next[postId] ? 1 : -1)),
+        [postId]: Math.max(
+          0,
+          (counts[postId] || 0) + (next[postId] ? 1 : -1)
+        ),
       }));
       return next;
     });
-  }
-
-  useEffect(() => {
-  const fetchLive = async () => {
-    try {
-      const res = await fetch("/api/live/active");
-      const data = await res.json();
-
-      if (data.isLive) {
-        setLiveData({
-          sessionId: data.sessionId,
-          creatorName: data.creatorName,
-        });
-      } else {
-        setLiveData(null);
-      }
-    } catch {
-      setLiveData(null);
-    }
-  };
-
-  fetchLive();
-  const interval = setInterval(fetchLive, 15000);
-
-  return () => clearInterval(interval);
-}, []);
-
-  function onToggleFollow(email: string) {
-    const key = email.trim().toLowerCase();
-    setFollowMap((prev) => ({ ...prev, [key]: !prev[key] }));
-  }
-
-  function sharePost(postId: string) {
-    try {
-      const link = window.location.origin + "/post/" + postId;
-      navigator.clipboard.writeText(link);
-      alert("Link copied!");
-    } catch {
-      alert("Could not copy link.");
-    }
   }
 
   function openComments(postId: string) {
@@ -200,363 +180,150 @@ export function PublicFeedClient() {
     setActivePostId(null);
   }
 
-  function toggleRewards(postId: string) {
-    setRewardPostId(postId);
-    setRewardOpen((prev) => {
-      // If switching posts, force open
-      if (rewardPostId && rewardPostId !== postId) return true;
-      return !prev;
-    });
-  }
-
-  function closeRewards() {
-    setRewardOpen(false);
-    setRewardPostId(null);
-  }
-
-  async function onOpenReward(mode: RewardMode, postId: string) {
-    try {
-      // Creator = the post owner (p.userEmail)
-      const creatorEmail = String(
-        posts.find((x) => x.id === postId)?.userEmail ?? ""
-      )
-        .trim()
-        .toLowerCase();
-
-      if (!creatorEmail) {
-        alert("Creator not found for this post.");
-        return;
-      }
-
-      // Viewer/payer email (temporary until full auth wiring)
-      const userEmail = String(viewer || "").trim().toLowerCase();
-
-      const res = await fetch("/api/payments/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode: "reaction",                 // SAFE LAUNCH: rewards piggyback reaction checkout
-          creatorEmail,
-          userEmail,
-          source: "FEED",
-          targetId: postId,
-          returnPath: "/public-feed",
-          // Optional: you can set a fixed price here if you want:
-          // amountCents: 100,
-        }),
-      });
-
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        console.error("[public-feed] reward checkout failed", txt);
-        alert("Checkout failed. Try again.");
-        return;
-      }
-
-      const data = await res.json().catch(() => null);
-      if (data?.url) {
-        window.location.href = data.url;
-        return;
-      }
-
-      alert("Stripe did not return a checkout URL.");
-    } catch (err) {
-      console.error("[public-feed] reward error", err);
-      alert("Could not start checkout.");
-    }
-  }
-
   return (
     <FeedLayout
-  title="REVOLVR"
-  onGoLive={() => setLiveStage("creator-prelive")}
->
-  <div className="px-4 pt-4">
-    <PeopleRail
-      items={railItems}
-      onToggleFollow={onToggleFollow}
-      followMap={followMap}
-    />
-  </div>
+      title="REVOLVR"
+      onGoLive={() => setLiveStage("live")} // 🔴 ONE TAP LIVE
+    >
+      <div className="px-4 pt-4">
+        <PeopleRail
+          items={railItems}
+          onToggleFollow={() => {}}
+          followMap={{}}
+        />
+      </div>
 
-  {/* 🔴 LIVE BROADCAST */}
-  {liveData && (
-    <div className="px-4">
-      <LiveCard
-        creatorName={liveData.creatorName}
-        sessionId={liveData.sessionId}
-      />
-    </div>
-  )}
+      {liveData && (
+        <div className="px-4">
+          <LiveCard
+  creatorName={liveData.creatorName}
+  sessionId={liveData.sessionId}
+  onJoin={(id) => {
+    setLiveStage("live");
+  }}
+/>
+        </div>
+      )}
 
       {loading && <div className="p-4 opacity-70">Loading…</div>}
       {err && <div className="p-4 text-red-400">{err}</div>}
 
-      {!loading && !err && posts.length === 0 && (
-        <div className="p-4 opacity-70">No posts yet.</div>
-      )}
-
       {!loading &&
         !err &&
-        posts.length > 0 &&
         posts.map((p) => {
           const email = String(p.userEmail || "").trim().toLowerCase();
-          const display = email ? displayNameFromEmail(email) : "User";
+          const display = email
+            ? displayNameFromEmail(email)
+            : "User";
 
           const mediaUrl = String(p.imageUrl || "").trim();
-          const lower = mediaUrl.toLowerCase();
           const isVideo =
-            lower.endsWith(".mov") || lower.endsWith(".mp4") || lower.endsWith(".webm");
-
-          const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
+            mediaUrl.endsWith(".mp4") ||
+            mediaUrl.endsWith(".webm");
 
           return (
             <div key={p.id} className="p-4">
-              <div className="mb-2">
-                <div className="text-sm font-semibold text-white">{display}</div>
-                {email && (
-                  <div className="text-xs text-white/40">@{email.split("@")[0]}</div>
-                )}
+              <div className="text-sm font-semibold text-white">
+                {display}
               </div>
 
               <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/10 bg-black/20">
                 {mediaUrl ? (
                   isVideo ? (
-                    <video src={mediaUrl} controls className="w-full h-auto block" />
+                    <video
+                      src={mediaUrl}
+                      controls
+                      className="w-full"
+                    />
                   ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={mediaUrl}
-                      alt="Post media"
-                      className="w-full h-auto block object-cover"
+                      alt=""
+                      className="w-full object-cover"
                     />
                   )
-                ) : (
-                  <div className="p-6 text-sm opacity-70">No media.</div>
-                )}
+                ) : null}
 
-                {/* LEFT LOWER REWARDS */}
-                <div className="absolute z-40 left-4 bottom-[90px] md:bottom-6">
+                <div className="absolute right-4 bottom-6 flex flex-col gap-5">
                   <button
-                    type="button"
-                    onClick={() => toggleRewards(p.id)}
-                    className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
-                  >
-                    <Gift size={16} />
-                    Rewards
-                  </button>
-
-                {/* Reward tray (floats) */}
-{rewardsOpenForThisPost ? (
-  <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
-    <div className="text-[11px] text-white/60 px-2 pb-2">Reward this post</div>
-
-    <div className="grid grid-cols-2 gap-2">
-      {rewardItems.map((it) => (
-        <button
-          key={it.mode}
-          type="button"
-          onClick={() => onOpenReward(it.mode, p.id)}
-          className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
-        >
-          <span
-            className="text-xl leading-none inline-flex"
-            style={{
-              fontFamily:
-                '"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Segoe UI Symbol",sans-serif',
-              transform: "translateZ(0)", // force its own paint layer
-              WebkitTextFillColor: "white",
-            }}
-          >
-            {it.icon}
-          </span>
-
-          <div className="text-xs text-white/90 font-semibold mt-1">
-            {it.label}
-          </div>
-        </button>
-      ))}
-    </div>
-  </div>
-) : null}
-</div>
-
-                {/* RIGHT LOWER ACTIONS */}
-                <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
-                  {/* LIKE */}
-                  <button
-                    type="button"
                     onClick={() => toggleLike(p.id)}
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+                    className="flex flex-col items-center"
                   >
                     <Heart
                       size={26}
-                      className={likedMap[p.id] ? "fill-red-500 text-red-500" : ""}
+                      className={
+                        likedMap[p.id]
+                          ? "fill-red-500 text-red-500"
+                          : ""
+                      }
                     />
-                    <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
+                    <span className="text-xs">
+                      {likeCounts[p.id] ?? 0}
+                    </span>
                   </button>
 
-                  {/* COMMENT */}
                   <button
-                    type="button"
                     onClick={() => openComments(p.id)}
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+                    className="flex flex-col items-center"
                   >
                     <MessageCircle size={26} />
-                    <span className="text-[12px]">0</span>
                   </button>
 
-                  {/* SHARE */}
-                  <button
-                    type="button"
-                    onClick={() => sharePost(p.id)}
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-                  >
+                  <button className="flex flex-col items-center">
                     <Share2 size={26} />
-                    <span className="text-[12px]">Share</span>
                   </button>
                 </div>
               </div>
 
-              {p.caption && <div className="mt-3 text-sm text-white/90">{p.caption}</div>}
+              {p.caption && (
+                <div className="mt-3 text-sm text-white/90">
+                  {p.caption}
+                </div>
+              )}
             </div>
           );
         })}
 
-      {/* COMMENTS SHEET (global, at end of layout so it's not inside map) */}
-      {commentsOpen && (
-        <div className="fixed inset-0 z-50">
-          {/* backdrop */}
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/60"
-            aria-label="Close comments"
-            onClick={closeComments}
-          />
+     {/* 🔴 FULLSCREEN LIVE OVERLAY */}
+{liveStage === "live" && (
+  <div className="fixed inset-0 z-50 bg-black overflow-hidden">
 
-          {/* sheet */}
-          <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[50vh] overflow-hidden">
-            {/* grab handle */}
-            <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
+    {/* Subtle animated red ambient glow */}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,60,0.15),transparent_60%)] animate-pulse pointer-events-none" />
 
-            <div className="flex items-center justify-between px-5 py-4">
-              <div className="text-sm font-semibold text-white">Comments</div>
-              <button
-                type="button"
-                onClick={closeComments}
-                className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white hover:bg-white/5"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
-              <div className="space-y-4">
-                <div>
-                  <div className="text-xs text-white/50">@captain</div>
-                  <div className="text-sm text-white/90">This is clean 🔥</div>
-                </div>
-                <div>
-                  <div className="text-xs text-white/50">@luna</div>
-                  <div className="text-sm text-white/90">Love this angle.</div>
-                </div>
-                <div>
-                  <div className="text-xs text-white/50">@revolvr</div>
-                  <div className="text-sm text-white/90">First comment 😉</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-white/10 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <input
-                  placeholder="Add a comment…"
-                  className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-white/10"
-                />
-                <button
-                  type="button"
-                  disabled
-                  className="h-11 rounded-full bg-white/10 px-4 text-sm text-white/40"
-                  title="Coming soon"
-                >
-                  Post
-                </button>
-              </div>
-
-              {activePostId && (
-                <div className="mt-2 text-[11px] text-white/30">Post: {activePostId}</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    {/* 🔴 CREATOR PRE-LIVE */}
-{liveStage === "creator-prelive" && (
-  <div className="fixed inset-0 z-50 overflow-hidden">
-
-    {/* Background image */}
-    <div
-      className="absolute inset-0 bg-cover bg-center scale-110 blur-2xl opacity-40"
-      style={{ backgroundImage: `url(/your-profile-image.jpg)` }}
-    />
-
-    {/* Dark overlay */}
-    <div className="absolute inset-0 bg-black/70 backdrop-blur-xl" />
-
-    <div className="relative flex h-full flex-col items-center justify-center text-center px-6">
-
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-4 h-4 bg-red-600 rounded-full animate-pulse" />
-        <div className="text-sm tracking-widest text-white/70">
-          GOING LIVE
-        </div>
-      </div>
-
-      <h1 className="text-4xl font-bold mb-8">
-        You're about to broadcast
-      </h1>
-
-      <button
-        onClick={() => setLiveStage("viewer-live")}
-        className="px-10 py-5 rounded-3xl bg-red-600 hover:bg-red-700 transition text-lg font-semibold shadow-[0_0_30px_rgba(255,0,0,0.5)]"
-      >
-        Start Broadcast
-      </button>
-
-      <button
-        onClick={() => setLiveStage("idle")}
-        className="mt-6 text-white/50 hover:text-white text-sm"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-)}
-
-{/* 🔴 VIEWER LIVE */}
-{liveStage === "viewer-live" && (
-  <div className="fixed inset-0 z-50 bg-black">
-
-    {/* LIVE badge */}
-    <div className="absolute top-6 left-6 flex items-center gap-2">
+    {/* LIVE Header */}
+    <div className="absolute top-6 left-6 flex items-center gap-3 z-10">
       <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-      <span className="text-white font-semibold tracking-wide">
+      <span className="text-white font-semibold tracking-widest text-sm">
         LIVE
+      </span>
+
+      {/* Viewer count placeholder */}
+      <span className="ml-4 text-white/60 text-sm">
+        128 watching
       </span>
     </div>
 
-    {/* Fake stream placeholder */}
+    {/* Exit Button */}
+    <button
+      onClick={() => setLiveStage("idle")}
+      className="
+        absolute top-6 right-6 z-10
+        px-4 py-2 rounded-full
+        bg-white/10 backdrop-blur
+        text-white text-sm
+        hover:bg-white/20
+        transition
+      "
+    >
+      Exit
+    </button>
+
+    {/* Stream Placeholder */}
     <div className="flex items-center justify-center h-full text-white/80 text-xl">
       Live Stream Running
     </div>
 
-    {/* Exit */}
-    <button
-      onClick={() => setLiveStage("idle")}
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 text-sm"
-    >
-      Exit
-    </button>
   </div>
 )}
     </FeedLayout>

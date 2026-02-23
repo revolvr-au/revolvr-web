@@ -34,13 +34,22 @@ export default function FeedLayout({
           {/* Right Controls */}
           <div className="flex items-center gap-2">
 
-            {/* Go Live */}
+            {/* 🔴 Go Live */}
             <button
-              onClick={onGoLive}
-              className="relative inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10"
+              type="button"
+              onClick={() => onGoLive?.()}
+              disabled={!onGoLive}
+              className="
+                relative inline-flex h-10 w-10 items-center justify-center
+                rounded-xl bg-white/5 transition
+                hover:bg-white/10 active:scale-95
+                disabled:opacity-40 disabled:cursor-not-allowed
+              "
               aria-label="Go Live"
             >
               <Radio className="w-5 h-5 text-white" />
+
+              {/* Live pulse dot */}
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             </button>
 
@@ -49,7 +58,7 @@ export default function FeedLayout({
             {showMenu && (
               <Link
                 href={menuHref}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10 active:scale-95"
                 aria-label="Menu"
               >
                 ☰

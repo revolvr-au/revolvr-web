@@ -95,7 +95,17 @@ export default function PeopleRail({
                     {p.isLive && <LivePill />}
                     {p.tick && <Tick tick={p.tick} />}
 
-                    <div className="relative w-full h-full rounded-full overflow-hidden bg-white/5">
+                    <div
+  className={`
+    relative w-full h-full rounded-full overflow-hidden
+    ${p.isLive
+      ? "ring-2 ring-red-500 shadow-[0_0_35px_rgba(255,0,85,0.7)]"
+      : "bg-white/5"}
+  `}
+>
+  {p.isLive && (
+    <div className="absolute inset-0 rounded-full ring-4 ring-red-500/30 animate-ping pointer-events-none" />
+  )}
                       {showImage ? (
                         <Image
                           src={p.imageUrl as string}
