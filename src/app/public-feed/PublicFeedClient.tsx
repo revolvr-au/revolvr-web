@@ -285,43 +285,47 @@ export function PublicFeedClient() {
         })}
 
      {/* 🔴 FULLSCREEN LIVE OVERLAY */}
-{liveStage === "live" && (
+        {liveStage === "live" && (
   <div className="fixed inset-0 z-50 bg-black overflow-hidden">
 
-    {/* Subtle animated red ambient glow */}
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,60,0.15),transparent_60%)] animate-pulse pointer-events-none" />
+    {/* Ambient Glow */}
+    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,60,0.18),transparent_60%)] pointer-events-none" />
 
-    {/* LIVE Header */}
-    <div className="absolute top-6 left-6 flex items-center gap-3 z-10">
-      <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-      <span className="text-white font-semibold tracking-widest text-sm">
-        LIVE
-      </span>
+    {/* Header */}
+    <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
+      <div className="flex items-center gap-3">
+        <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+        <span className="text-white font-semibold tracking-widest text-sm">
+          LIVE
+        </span>
+        <span className="text-white/60 text-sm ml-3">
+          128 watching
+        </span>
+      </div>
 
-      {/* Viewer count placeholder */}
-      <span className="ml-4 text-white/60 text-sm">
-        128 watching
-      </span>
+      <button
+        onClick={() => setLiveStage("idle")}
+        className="px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
+      >
+        Exit
+      </button>
     </div>
 
-    {/* Exit Button */}
-    <button
-      onClick={() => setLiveStage("idle")}
-      className="
-        absolute top-6 right-6 z-10
-        px-4 py-2 rounded-full
-        bg-white/10 backdrop-blur
-        text-white text-sm
-        hover:bg-white/20
-        transition
-      "
-    >
-      Exit
-    </button>
-
-    {/* Stream Placeholder */}
+    {/* Stream Area */}
     <div className="flex items-center justify-center h-full text-white/80 text-xl">
       Live Stream Running
+    </div>
+
+    {/* Bottom Interaction Bar */}
+    <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center gap-3">
+      <input
+        placeholder="Say something..."
+        className="flex-1 h-12 rounded-full bg-white/10 backdrop-blur px-4 text-white placeholder:text-white/40 outline-none"
+      />
+
+      <button className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center shadow-[0_0_25px_rgba(255,0,60,0.6)]">
+        ❤️
+      </button>
     </div>
 
   </div>
