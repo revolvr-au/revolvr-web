@@ -124,18 +124,6 @@ async function openLive(room: string, role: "host" | "viewer") {
     setLiveToken(null);
   }
 }
-<FeedLayout
-  title="REVOLVR"
-  onGoLive={() => openLive("revolvr-global", "host")} // OR sessionId if you create it
-  isLive={liveStage === "live"}
-></FeedLayout>
-
-<LiveCard
-  creatorName={liveData.creatorName}
-  sessionId={liveData.sessionId}
-  onJoin={(id) => openLive(id, "viewer")}
-/>
-
   // Load posts
   useEffect(() => {
     let cancelled = false;
