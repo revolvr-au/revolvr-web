@@ -6,7 +6,7 @@ import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
 import LiveCard from "@/components/LiveCard";
-
+import { LiveKitRoom, RoomAudioRenderer, VideoConference } from "@livekit/components-react";
 
 type ApiPost = {
   id: string;
@@ -23,6 +23,9 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [liveRoom, setLiveRoom] = useState<string | null>(null);
+  const [liveToken, setLiveToken] = useState<string | null>(null);
+  const [liveRole, setLiveRole] = useState<"host" | "viewer">("viewer");
 
   // 🔴 LIVE STATE (cleaned)
   const [liveStage, setLiveStage] = useState<"idle" | "live">("idle");
@@ -86,6 +89,52 @@ export function PublicFeedClient() {
 
     return out;
   }, [posts]);
+
+async function openLive(room: string, role: "host" | "viewer") {
+  try {
+    setLiveRole(role);
+    setLiveRoom(room);
+
+    const res = await fetch("/api/live/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        room,
+        role,
+        identity: viewer,           // later swap to real auth user id/email
+        name: viewer.split("@")[0], // optional
+      }),
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.token) {
+      console.error("[live] token error", data);
+      alert("Could not start LIVE session (token).");
+      setLiveRoom(null);
+      setLiveToken(null);
+      return;
+    }
+
+    setLiveToken(data.token);
+    setLiveStage("live");
+  } catch (e) {
+    console.error("[live] open error", e);
+    alert("LIVE failed to start.");
+    setLiveRoom(null);
+    setLiveToken(null);
+  }
+}
+<FeedLayout
+  title="REVOLVR"
+  onGoLive={() => openLive("revolvr-global", "host")} // OR sessionId if you create it
+  isLive={liveStage === "live"}
+></FeedLayout>
+
+<LiveCard
+  creatorName={liveData.creatorName}
+  sessionId={liveData.sessionId}
+  onJoin={(id) => openLive(id, "viewer")}
+/>
 
   // Load posts
   useEffect(() => {
@@ -298,49 +347,52 @@ export function PublicFeedClient() {
         })}
 
      {/* 🔴 FULLSCREEN LIVE OVERLAY */}
-        {liveStage === "live" && (
+       {liveStage === "live" && (
   <div className="fixed inset-0 z-50 bg-black overflow-hidden">
-
-    {/* Ambient Glow */}
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,60,0.18),transparent_60%)] pointer-events-none" />
 
-    {/* Header */}
     <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
       <div className="flex items-center gap-3">
         <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-        <span className="text-white font-semibold tracking-widest text-sm">
-          LIVE
-        </span>
-        <span className="text-white/60 text-sm ml-3">
-          128 watching
-        </span>
+        <span className="text-white font-semibold tracking-widest text-sm">LIVE</span>
+        <span className="text-white/60 text-sm ml-3">128 watching</span>
       </div>
 
       <button
-        onClick={() => setLiveStage("idle")}
+        onClick={() => {
+          setLiveStage("idle");
+          setLiveToken(null);
+          setLiveRoom(null);
+        }}
         className="px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
       >
         Exit
       </button>
     </div>
 
-    {/* Stream Area */}
-    <div className="flex items-center justify-center h-full text-white/80 text-xl">
-      Live Stream Running
+    {/* STREAM */}
+    <div className="h-full w-full">
+      {liveToken && liveRoom ? (
+        <LiveKitRoom
+          serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+          token={liveToken}
+          connect
+          video={liveRole === "host"}
+          audio={liveRole === "host"}
+          className="h-full"
+          data-lk-theme="default"
+        >
+          <VideoConference />
+          <RoomAudioRenderer />
+        </LiveKitRoom>
+      ) : (
+        <div className="flex h-full items-center justify-center text-white/70">
+          Connecting…
+        </div>
+      )}
     </div>
 
-    {/* Bottom Interaction Bar */}
-    <div className="absolute bottom-6 left-6 right-6 z-20 flex items-center gap-3">
-      <input
-        placeholder="Say something..."
-        className="flex-1 h-12 rounded-full bg-white/10 backdrop-blur px-4 text-white placeholder:text-white/40 outline-none"
-      />
-
-      <button className="h-12 w-12 rounded-full bg-red-600 flex items-center justify-center shadow-[0_0_25px_rgba(255,0,60,0.6)]">
-        ❤️
-      </button>
-    </div>
-
+    {/* Bottom bar can stay on top later */}
   </div>
 )}
     </FeedLayout>
