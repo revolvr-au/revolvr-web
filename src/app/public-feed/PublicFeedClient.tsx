@@ -182,9 +182,10 @@ export function PublicFeedClient() {
 
   return (
     <FeedLayout
-      title="REVOLVR"
-      onGoLive={() => setLiveStage("live")} // 🔴 ONE TAP LIVE
-    >
+  title="REVOLVR"
+  onGoLive={() => setLiveStage("live")}
+  isLive={liveStage === "live"}
+>
       <div className="px-4 pt-4">
         <PeopleRail
           items={railItems}
