@@ -7,6 +7,7 @@ import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
 import LiveCard from "@/components/LiveCard";
 
+
 type ApiPost = {
   id: string;
   userEmail: string | null;
@@ -25,6 +26,17 @@ export function PublicFeedClient() {
 
   // 🔴 LIVE STATE (cleaned)
   const [liveStage, setLiveStage] = useState<"idle" | "live">("idle");
+  useEffect(() => {
+  if (liveStage === "live") {
+    document.body.classList.add("live-mode");
+  } else {
+    document.body.classList.remove("live-mode");
+  }
+
+  return () => {
+    document.body.classList.remove("live-mode");
+  };
+}, [liveStage]);
 
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
