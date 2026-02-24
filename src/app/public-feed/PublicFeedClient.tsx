@@ -345,9 +345,9 @@ export function PublicFeedClient() {
           );
         })}
 
-     {/* 🔴 FULLSCREEN LIVE OVERLAY */}
+    {/* 🔴 FULLSCREEN LIVE OVERLAY */}
 {liveStage === "live" && (
-  <div className="fixed inset-0 z-50 bg-black overflow-hidden">
+  <div className="fixed inset-0 z-[9999] bg-black overflow-hidden">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,60,0.18),transparent_60%)] pointer-events-none" />
 
     {/* Header */}
