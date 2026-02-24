@@ -346,36 +346,41 @@ export function PublicFeedClient() {
         })}
 
      {/* 🔴 FULLSCREEN LIVE OVERLAY */}
-       {liveStage === "live" && (
+{liveStage === "live" && (
   <div className="fixed inset-0 z-50 bg-black overflow-hidden">
     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,0,60,0.18),transparent_60%)] pointer-events-none" />
 
+    {/* Header */}
     <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-20">
       <div className="flex items-center gap-3">
         <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-        <span className="text-white font-semibold tracking-widest text-sm">LIVE</span>
-        <span className="text-white/60 text-sm ml-3">128 watching</span>
+        <span className="text-white font-semibold tracking-widest text-sm">
+          LIVE
+        </span>
+        <span className="text-white/60 text-sm ml-3">
+          128 watching
+        </span>
       </div>
-        <button
-  onClick={async () => {
-    try {
-      // 🟥 If this user is the host, stop the live session in DB
-      if (liveRole === "host") {
-        await fetch("/api/live/stop", { method: "POST" });
-      }
-    } catch (err) {
-      console.error("LIVE STOP ERROR:", err);
-    }
 
-    // 🔵 Always reset local state
-    setLiveStage("idle");
-    setLiveToken(null);
-    setLiveRoom(null);
-  }}
-  className="px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
->
-  Exit
-</button>
+      <button
+        onClick={async () => {
+          try {
+            if (liveRole === "host") {
+              await fetch("/api/live/stop", { method: "POST" });
+            }
+          } catch (err) {
+            console.error("LIVE STOP ERROR:", err);
+          }
+
+          setLiveStage("idle");
+          setLiveToken(null);
+          setLiveRoom(null);
+        }}
+        className="px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
+      >
+        Exit
+      </button>
+    </div>
 
     {/* STREAM */}
     <div className="h-full w-full">
@@ -398,8 +403,6 @@ export function PublicFeedClient() {
         </div>
       )}
     </div>
-
-    {/* Bottom bar can stay on top later */}
   </div>
 )}
     </FeedLayout>
