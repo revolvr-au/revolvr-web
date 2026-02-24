@@ -10,8 +10,6 @@ import LiveSupportBar from "@/components/live/LiveSupportBar";
 import LiveChatOverlay from "@/components/live/LiveChatOverlay";
 
 import {
-  ControlBar,
-  GridLayout,
   LiveKitRoom,
   ParticipantTile,
   RoomAudioRenderer,
@@ -425,165 +423,110 @@ export default function LiveRoomPage() {
     );
   }
 
-  /** ===================== DESKTOP: TWO COLUMN ===================== */
-  return (
-    <div className="live-room min-h-screen bg-[#050814] text-white flex flex-col">
-      <main className="flex-1 w-full px-4 py-4 pb-24">
-        <div className="mx-auto w-full max-w-6xl grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-          {/* LEFT */}
-          <div className="min-w-0 flex flex-col gap-4">
-            {!userEmail && (
-              <div className="w-full max-w-xl mb-1 text-xs text-white/70">
-                <a
-                  className="underline"
-                  href={`/login?redirectTo=${encodeURIComponent(liveHrefForRedirect)}`}
-                >
-                  Login to support this stream
-                </a>
-              </div>
-            )}
+  /** ===================== DESKTOP: VERTICAL CENTERED ===================== */
+return (
+  <div className="live-room min-h-screen bg-[#050814] text-white flex items-center justify-center px-4 py-6">
+    <div className="relative w-full max-w-[480px] aspect-[9/16] rounded-2xl overflow-hidden border border-white/10 bg-black/30 shadow-2xl shadow-black/50">
 
-            {error && (
-              <div className="w-full max-w-xl mb-1 rounded-xl bg-red-500/10 text-red-200 text-sm px-3 py-2 flex justify-between items-center">
-                <span>{error}</span>
-                <button className="text-xs underline" onClick={() => setError(null)}>
-                  Dismiss
-                </button>
-              </div>
-            )}
+      {/* Back button */}
+      <div className="absolute top-4 right-4 z-40">
+        <button
+          onClick={() => router.push("/public-feed")}
+          className="text-xs px-3 py-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10"
+        >
+          Back
+        </button>
+      </div>
 
-            <header className="w-full max-w-xl mb-2 flex items-center justify-between">
-              <div>
-                <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">
-                  Live on Revolvr
-                </h1>
-                <p className="text-xs text-white/50 mt-1">
-                  {isHost ? "Host mode " : ""}
-                </p>
-              </div>
-              <button
-                onClick={() => router.push("/public-feed")}
-                className="text-xs px-3 py-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10"
-              >
-                Back to feed
-              </button>
-            </header>
+      {/* Video Surface */}
+      <VideoStage
+        token={activeToken}
+        serverUrl={lkUrl}
+        isMobile={false}
+        isHost={isHost}
+        joined={joined}
+      />
 
-            {isHost && !joined && (
-              <div className="w-full max-w-xl">
-                <button
-                  className="rounded-xl bg-emerald-400 px-4 py-2 text-black font-medium hover:bg-emerald-300"
-                  onClick={() => setJoined(true)}
-                >
-                  Go Live
-                </button>
-                <p className="mt-2 text-xs text-white/60">
-                  Required on mobile to enable camera/microphone permissions.
-                </p>
-              </div>
-            )}
+      {/* Floating chat overlay (optional – keeps desktop consistent with mobile) */}
+      <div className="absolute inset-0 pointer-events-none">
+        <LiveChatOverlay roomId={sessionId} />
+      </div>
 
-            <VideoStage
-              token={activeToken}
-              serverUrl={lkUrl}
-              isMobile={false}
-              isHost={isHost}
-              joined={joined}
-            />
+      {/* Bottom support + composer pinned */}
+      <div className="absolute inset-x-0 bottom-0 z-50 px-3 pb-4 space-y-2">
+        <LiveSupportBar
+          creatorEmail={creatorEmail}
+          userEmail={userEmail}
+          sessionId={sessionId}
+          liveHrefForRedirect={liveHrefForRedirect}
+        />
 
-            {!isHost && (
-              <section className="w-full max-w-xl rounded-2xl bg-[#070b1b] border border-white/10 p-4 shadow-md shadow-black/40 space-y-3">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="text-sm sm:text-base font-semibold">
-                    Support this stream
-                  </h2>
-                  {userEmail && (
-                    <span className="text-[11px] text-white/45 truncate max-w-[160px] text-right">
-                      Signed in as {userEmail}
-                    </span>
-                  )}
-                </div>
+        <LiveChatPanel
+          roomId={sessionId}
+          liveHrefForRedirect={liveHrefForRedirect}
+          userEmail={userEmail}
+          variant="composer"
+        />
+      </div>
 
-                <p className="text-xs text-white/60">
-                  Use your credits first. If you run out, you’ll be taken straight to Stripe to top up.
-                </p>
-
-                <p className="text-[11px] text-white/55 mt-1">
-                  {creditsLoading
-                    ? "Checking your credits…"
-                    : creditsSummary
-                    ? `Credits available: ${creditsSummary}.`
-                    : "No credits yet – your first support will open a quick checkout."}
-                </p>
-
-                <div className="mt-2 grid grid-cols-6 gap-2 text-[11px] sm:text-xs">
-                  <button
-                    type="button"
-                    disabled={supportBusy}
-                    onClick={() => handleSupportClick("tip")}
-                    className="rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-400/60 px-3 py-2 text-left transition disabled:opacity-60"
-                  >
-                    <div className="font-semibold">Tip</div>
-                    <div className="text-emerald-200/80 mt-0.5">From A$2</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={supportBusy}
-                    onClick={() => handleSupportClick("boost")}
-                    className="rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-400/60 px-3 py-2 text-left transition disabled:opacity-60"
-                  >
-                    <div className="font-semibold">Boost</div>
-                    <div className="text-indigo-200/80 mt-0.5">From A$5</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={supportBusy}
-                    onClick={() => handleSupportClick("spin")}
-                    className="rounded-xl bg-pink-500/10 hover:bg-pink-500/20 border border-pink-400/60 px-3 py-2 text-left transition disabled:opacity-60"
-                  >
-                    <div className="font-semibold">Spin</div>
-                    <div className="text-pink-200/80 mt-0.5">From A$1</div>
-                  </button>
-
-                  <button
-                  type="button"
-                  disabled={supportBusy}
-                  onClick={() => setRewardsOpen(true)}
-                  className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
-                  >
-                  <div className="font-semibold">Rewards</div>
-                  <div className="text-white/70 mt-0.5">A$0.50</div>
-                  </button>
-
-
-                  <button
-                    type="button"
-                    disabled={supportBusy}
-                    onClick={() => handleSupportClick("vote")}
-                    className="rounded-xl bg-white/5 hover:bg-white/10 border border-white/20 px-3 py-2 text-left transition disabled:opacity-60"
-                  >
-                    <div className="font-semibold">Vote</div>
-                    <div className="text-white/70 mt-0.5">A$0.50</div>
-                  </button>
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* RIGHT: chat panel */}
-          <aside className="hidden lg:block h-full">
-            <LiveChatPanel
-              roomId={sessionId}
-              liveHrefForRedirect={liveHrefForRedirect}
-              userEmail={userEmail}
-              variant="panel"
-            />
-          </aside>
+      {/* Host Join Button (desktop) */}
+      {isHost && !joined && (
+        <div className="absolute inset-x-0 bottom-24 z-50 px-4">
+          <button
+            className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-black font-semibold hover:bg-emerald-300"
+            onClick={() => setJoined(true)}
+          >
+            Go Live
+          </button>
         </div>
+      )}
+    </div>
+  </div>
+);
+<VideoStage
+  token={activeToken}
+  serverUrl={lkUrl}
+  isMobile={false}
+  isHost={isHost}
+  joined={joined}
+/>
 
-        {pendingPurchase && (
+{/* Floating chat overlay (desktop matches mobile now) */}
+<div className="absolute inset-0 pointer-events-none">
+  <LiveChatOverlay roomId={sessionId} />
+</div>
+
+{/* Bottom support + composer (same pattern as mobile) */}
+<div className="absolute inset-x-0 bottom-0 z-50 px-3 pb-4 space-y-2">
+  <LiveSupportBar
+    creatorEmail={creatorEmail}
+    userEmail={userEmail}
+    sessionId={sessionId}
+    liveHrefForRedirect={liveHrefForRedirect}
+  />
+
+  <LiveChatPanel
+    roomId={sessionId}
+    liveHrefForRedirect={liveHrefForRedirect}
+    userEmail={userEmail}
+    variant="composer"
+  />
+</div>
+
+{/* Host Join Button */}
+{isHost && !joined && (
+  <div className="absolute inset-x-0 bottom-24 z-50 px-4">
+    <button
+      className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-black font-semibold hover:bg-emerald-300"
+      onClick={() => setJoined(true)}
+    >
+      Go Live
+    </button>
+  </div>
+)}
+
+{/* Purchase Sheet */}
+{pendingPurchase && (
   <LivePurchaseChoiceSheet
     mode={pendingPurchase.mode}
     onClose={() => setPendingPurchase(null)}
@@ -592,23 +535,17 @@ export default function LiveRoomPage() {
   />
 )}
 
+{/* Rewards Sheet */}
 {rewardsOpen && (
   <LiveRewardsSheet
     rewards={LIVE_REWARDS}
     onClose={() => setRewardsOpen(false)}
     onPick={async (id) => {
-  // you can store `id` later in Supabase if you want analytics
-  await startPayment("reaction", "single");
-  setRewardsOpen(false);
-}}
-
+      await startPayment("reaction", "single");
+      setRewardsOpen(false);
+    }}
   />
 )}
-      </main>
-    </div>
-  );
-}
-
 /* ---------------------- Video Stage ---------------------- */
 
 function VideoStage({
@@ -625,82 +562,57 @@ function VideoStage({
   joined: boolean;
 }) {
   const ready = Boolean(token && serverUrl);
+  const shouldConnect = isHost ? joined : true;
 
-  function StageConference({ isMobile }: { isMobile: boolean }) {
+  function StageVideo() {
     const tracks = useTracks(
-      [
-        { source: Track.Source.ScreenShare, withPlaceholder: false },
-        { source: Track.Source.Camera, withPlaceholder: false },
-      ],
-      // host should see local as well
-      { onlySubscribed: !isHost }
+      [{ source: Track.Source.Camera, withPlaceholder: false }],
+      { onlySubscribed: true }
     );
 
-    if (isMobile) {
-      const active =
-        tracks.find((t) => (t as any)?.source === Track.Source.ScreenShare) ||
-        tracks.find((t) => (t as any)?.source === Track.Source.Camera) ||
-        null;
+    // Prefer host track if identity contains "host"
+    const hostTrack =
+      tracks.find((t) =>
+        (t.participant as any)?.identity?.toLowerCase().includes("host")
+      ) || tracks[0];
 
+    if (!hostTrack) {
       return (
-        <div className="h-full w-full">
-          {active ? (
-            <ParticipantTile trackRef={active as any} className="h-full w-full" />
-          ) : (
-            <div className="h-full w-full grid place-items-center text-white/50 text-sm">
-              Waiting for video…
-            </div>
-          )}
+        <div className="h-full w-full grid place-items-center text-white/40 text-sm">
+          Waiting for host…
         </div>
       );
     }
 
     return (
-      <div className="h-full flex flex-col">
-        <div className="flex-1 min-h-0">
-          <GridLayout tracks={tracks as any} className="h-full">
-            <ParticipantTile />
-          </GridLayout>
-        </div>
-        <div className="shrink-0">
-          <ControlBar />
-        </div>
-      </div>
+      <ParticipantTile
+        trackRef={hostTrack as any}
+        className="h-full w-full object-cover"
+      />
     );
   }
 
-  // Host should not connect until joined
-  const shouldConnect = isHost ? joined : true;
-
   return (
-    <section className={isMobile ? "w-full h-full" : "w-full max-w-xl"}>
-      <div className="relative w-full h-full overflow-hidden rounded-2xl border border-white/10 bg-black/30">
-        <div
-          className={
-            isMobile
-              ? "relative w-full h-[100dvh]"
-              : "relative aspect-video w-full max-h-[72vh] min-h-[320px]"
-          }
-        >
-          {ready ? (
-            <LiveKitRoom
-              token={token}
-              serverUrl={serverUrl}
-              connect={shouldConnect}
-              audio={isHost && joined}
-              video={isHost && joined}
-              data-lk-theme="default"
-              className="h-full"
-            >
-              <RoomAudioRenderer />
-              <StageConference isMobile={isMobile} />
-            </LiveKitRoom>
-          ) : (
-            <div className="h-full w-full grid place-items-center text-white/50 text-sm">
-              Connecting…
-            </div>
-          )}
-        </div>
+    <section className="w-full h-full">
+      <div className="relative w-full h-full overflow-hidden">
+        {ready ? (
+          <LiveKitRoom
+            token={token}
+            serverUrl={serverUrl}
+            connect={shouldConnect}
+            audio={true}
+            video={isHost && joined}
+            data-lk-theme="default"
+            className="h-full"
+          >
+            <RoomAudioRenderer />
+            <StageVideo />
+          </LiveKitRoom>
+        ) : (
+          <div className="h-full w-full grid place-items-center text-white/40 text-sm">
+            Connecting…
+          </div>
+        )}
       </div>
     </section>
   );
