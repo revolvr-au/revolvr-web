@@ -1,5 +1,7 @@
-import LiveRoom from "@/components/live/LiveRoom";
+import LiveClient from "@/components/live/LiveClient";
 
-export default function LiveIndexPage() {
-  return <LiveRoom />;
+export const dynamic = "force-dynamic"; // Important
+
+export default function LivePage() {
+  return <LiveClient />;
 }
