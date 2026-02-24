@@ -90,23 +90,36 @@ export function PublicFeedClient() {
     return out;
   }, [posts]);
 
-async function openLive(room: string, role: "host" | "viewer") {
+    async function openLive(room: string, role: "host" | "viewer") {
   try {
     setLiveRole(role);
     setLiveRoom(room);
 
+    // 🟥 If host → create DB session
+    if (role === "host") {
+      await fetch("/api/live/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          creatorName: viewer.split("@")[0],
+          roomId: room,
+        }),
+      });
+    }
+
+    // 🔵 Get token
     const res = await fetch("/api/live/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         room,
+        identity: viewer,
         role,
-        identity: viewer,           // later swap to real auth user id/email
-        name: viewer.split("@")[0], // optional
       }),
     });
 
     const data = await res.json().catch(() => null);
+
     if (!res.ok || !data?.token) {
       console.error("[live] token error", data);
       alert("Could not start LIVE session (token).");
@@ -232,7 +245,7 @@ async function openLive(room: string, role: "host" | "viewer") {
   return (
     <FeedLayout
   title="REVOLVR"
-  onGoLive={() => setLiveStage("live")}
+  onGoLive={() => openLive("revolvr-global", "host")}
   isLive={liveStage === "live"}
 >
       <div className="px-4 pt-4">
@@ -248,9 +261,7 @@ async function openLive(room: string, role: "host" | "viewer") {
           <LiveCard
   creatorName={liveData.creatorName}
   sessionId={liveData.sessionId}
-  onJoin={(id) => {
-    setLiveStage("live");
-  }}
+  onJoin={(id) => openLive(id, "viewer")}
 />
         </div>
       )}
@@ -345,18 +356,26 @@ async function openLive(room: string, role: "host" | "viewer") {
         <span className="text-white font-semibold tracking-widest text-sm">LIVE</span>
         <span className="text-white/60 text-sm ml-3">128 watching</span>
       </div>
+        <button
+  onClick={async () => {
+    try {
+      // 🟥 If this user is the host, stop the live session in DB
+      if (liveRole === "host") {
+        await fetch("/api/live/stop", { method: "POST" });
+      }
+    } catch (err) {
+      console.error("LIVE STOP ERROR:", err);
+    }
 
-      <button
-        onClick={() => {
-          setLiveStage("idle");
-          setLiveToken(null);
-          setLiveRoom(null);
-        }}
-        className="px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
-      >
-        Exit
-      </button>
-    </div>
+    // 🔵 Always reset local state
+    setLiveStage("idle");
+    setLiveToken(null);
+    setLiveRoom(null);
+  }}
+  className="px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
+>
+  Exit
+</button>
 
     {/* STREAM */}
     <div className="h-full w-full">
