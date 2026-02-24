@@ -399,3 +399,17 @@ body.live-mode .bottom-nav-wrapper {
 body.live-mode .app-content {
   padding-bottom: 0 !important;
 }
+@keyframes heartFloat {
+  0% {
+    transform: translateY(0) scale(0.9);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-300px) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-heart {
+  animation: heartFloat 3s ease-out forwards;
+}

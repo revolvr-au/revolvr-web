@@ -66,29 +66,35 @@ export function PublicFeedClient() {
   }>(null);
 
   const railItems = useMemo<PersonRailItem[]>(() => {
-    const seen = new Set<string>();
-    const out: PersonRailItem[] = [];
+  const seen = new Set<string>();
+  const out: PersonRailItem[] = [];
 
-    for (const p of posts) {
-      const email = String(p.userEmail || "").trim().toLowerCase();
-      if (!email || seen.has(email)) continue;
-      seen.add(email);
+  for (const p of posts) {
+    const email = String(p.userEmail || "").trim().toLowerCase();
+    if (!email || seen.has(email)) continue;
+    seen.add(email);
 
-      out.push({
-        id: email,
-        email,
-        handle: displayNameFromEmail(email).toLowerCase().replace(/\s+/g, ""),
-        imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
-        displayName: displayNameFromEmail(email),
-        tick: null,
-        isLive: false,
-      });
+    const handle = displayNameFromEmail(email)
+      .toLowerCase()
+      .replace(/\s+/g, "");
 
-      if (out.length >= 20) break;
-    }
+    out.push({
+      id: email,
+      email,
+      handle,
+      imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
+      displayName: displayNameFromEmail(email),
+      tick: null,
+      isLive:
+        liveData &&
+        liveData.creatorName.toLowerCase() === handle,
+    });
 
-    return out;
-  }, [posts]);
+    if (out.length >= 20) break;
+  }
+
+  return out;
+}, [posts, liveData]);
 
     async function openLive(room: string, role: "host" | "viewer") {
   try {
