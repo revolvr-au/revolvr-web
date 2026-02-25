@@ -1,3 +1,4 @@
+// src/app/live/[sessionId]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -23,38 +24,49 @@ export default function LiveRoomPage() {
   const [token, setToken] = useState("");
   const [joined, setJoined] = useState(!isHost);
 
+  // Fetch LiveKit token
   useEffect(() => {
     async function initLive() {
-      const res = await fetch("/api/live/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          room: sessionId,
-          identity: (isHost ? "host-" : "viewer-") + crypto.randomUUID(),
-          role: isHost ? "host" : "viewer",
-        }),
-      });
+      try {
+        const res = await fetch("/api/live/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            room: sessionId,
+            identity:
+              (isHost ? "host-" : "viewer-") + crypto.randomUUID(),
+            role: isHost ? "host" : "viewer",
+          }),
+        });
 
-      const data = await res.json();
-      if (!res.ok || !data?.token) return;
+        const data = await res.json();
+        if (!res.ok || !data?.token) {
+          console.error("Token fetch failed", data);
+          return;
+        }
 
-      setLkUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL || "");
-      setToken(data.token);
+        setLkUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL || "");
+        setToken(data.token);
+      } catch (err) {
+        console.error("Live init error", err);
+      }
     }
 
-    if (sessionId) initLive();
+    if (sessionId) {
+      initLive();
+    }
   }, [sessionId, isHost]);
 
   return (
-    <div className="bg-black h-[100dvh] w-full relative">
+    <div className="fixed inset-0 bg-black overflow-hidden">
       {token && lkUrl ? (
         <LiveKitRoom
           token={token}
           serverUrl={lkUrl}
           connect={isHost ? joined : true}
           video={isHost && joined}
-          audio={true}
-          className="h-full"
+          audio
+          className="h-full w-full"
         >
           <RoomAudioRenderer />
           <StageVideo />
@@ -66,10 +78,10 @@ export default function LiveRoomPage() {
       )}
 
       {isHost && !joined && (
-        <div className="absolute inset-x-0 bottom-10 px-6">
+        <div className="absolute inset-x-0 bottom-12 px-6 z-50">
           <button
             onClick={() => setJoined(true)}
-            className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-black font-semibold"
+            className="w-full rounded-2xl bg-emerald-400 py-4 text-black font-semibold text-lg"
           >
             Go Live
           </button>

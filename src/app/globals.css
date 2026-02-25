@@ -485,3 +485,10 @@ body.live-mode .app-content {
 .animate-floatUp {
   animation: floatUp 2s ease-out forwards;
 }
+.lk-participant-metadata {
+  display: none !important;
+}
+
+.lk-focus-layout {
+  background: black !important;
+}
