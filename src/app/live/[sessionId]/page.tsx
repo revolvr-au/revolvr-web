@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import RevolvrChatFeed from "@/components/live/RevolvrChatFeed";
+import RevolvrComposer from "@/components/live/RevolvrComposer";
+
 
 import {
   LiveKitRoom,
