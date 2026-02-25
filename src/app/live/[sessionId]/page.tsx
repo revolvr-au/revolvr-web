@@ -3,11 +3,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
-import LiveChatPanel from "@/components/live/LiveChatPanel";
-import LiveSupportBar from "@/components/live/LiveSupportBar";
-import LiveChatOverlay from "@/components/live/LiveChatOverlay";
-import LiveReactionLayer from "@/components/live/LiveReactionLayer";
-
 import {
   LiveKitRoom,
   ParticipantTile,
@@ -16,162 +11,91 @@ import {
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 
-import { supabase } from "@/lib/supabaseClients";
-
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
 
   const sessionId = decodeURIComponent(params?.sessionId ?? "");
-  const creatorEmail = searchParams?.get("creator") ?? null;
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
 
   const [lkUrl, setLkUrl] = useState("");
   const [token, setToken] = useState("");
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [joined, setJoined] = useState(!isHost);
 
-  // Detect mobile
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1023px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
+    async function initLive() {
+      const res = await fetch("/api/live/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room: sessionId,
+          identity: (isHost ? "host-" : "viewer-") + crypto.randomUUID(),
+          role: isHost ? "host" : "viewer",
+        }),
+      });
 
-  // Load logged-in user
-  useEffect(() => {
-    const loadUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUserEmail(user?.email ?? null);
-    };
-    loadUser();
-  }, []);
+      const data = await res.json();
+      if (!res.ok || !data?.token) return;
 
-  // Fetch LiveKit token
-  useEffect(() => {
-    async function init() {
-      try {
-        const res = await fetch("/api/live/token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            room: sessionId,
-            identity: isHost
-              ? "host-" + crypto.randomUUID()
-              : "viewer-" + crypto.randomUUID(),
-            role: isHost ? "host" : "viewer",
-          }),
-        });
-
-        const data = await res.json();
-        if (!res.ok || !data?.token) {
-          console.error("Token fetch failed", data);
-          return;
-        }
-
-        setLkUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL || "");
-        setToken(data.token);
-      } catch (err) {
-        console.error("Live init error", err);
-      }
+      setLkUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL || "");
+      setToken(data.token);
     }
 
-    if (sessionId) init();
+    if (sessionId) initLive();
   }, [sessionId, isHost]);
 
   return (
-    <div className="live-room bg-[#050814] text-white h-[100dvh] w-full overflow-hidden relative">
-      {/* VIDEO */}
-      <div className="absolute inset-0">
-        <VideoStage
+    <div className="bg-black h-[100dvh] w-full relative">
+      {token && lkUrl ? (
+        <LiveKitRoom
           token={token}
           serverUrl={lkUrl}
-          isHost={isHost}
-        />
-        <LiveReactionLayer />
-      </div>
+          connect={isHost ? joined : true}
+          video={isHost && joined}
+          audio={true}
+          className="h-full"
+        >
+          <RoomAudioRenderer />
+          <StageVideo />
+        </LiveKitRoom>
+      ) : (
+        <div className="h-full w-full grid place-items-center text-white/40 text-sm">
+          Connecting…
+        </div>
+      )}
 
-      {/* CHAT FLOATING */}
-      <LiveChatOverlay roomId={sessionId} />
-
-      {/* SUPPORT + COMPOSER */}
-      <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[90px]">
-        <LiveSupportBar
-          creatorEmail={creatorEmail}
-          userEmail={userEmail}
-          sessionId={sessionId}
-          liveHrefForRedirect={`/live/${sessionId}`}
-        />
-
-        <LiveChatPanel
-          roomId={sessionId}
-          liveHrefForRedirect={`/live/${sessionId}`}
-          userEmail={userEmail}
-          variant="composer"
-        />
-      </div>
+      {isHost && !joined && (
+        <div className="absolute inset-x-0 bottom-10 px-6">
+          <button
+            onClick={() => setJoined(true)}
+            className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-black font-semibold"
+          >
+            Go Live
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function VideoStage({
-  token,
-  serverUrl,
-  isHost,
-}: {
-  token: string;
-  serverUrl: string;
-  isHost: boolean;
-}) {
-  const ready = Boolean(token && serverUrl);
+function StageVideo() {
+  const tracks = useTracks(
+    [{ source: Track.Source.Camera, withPlaceholder: false }],
+    { onlySubscribed: true }
+  );
 
-  function StageVideo() {
-    const tracks = useTracks(
-      [{ source: Track.Source.Camera, withPlaceholder: false }],
-      { onlySubscribed: true }
-    );
+  const hostTrack =
+    tracks.find((t) =>
+      (t.participant as any)?.identity?.toLowerCase().includes("host")
+    ) || tracks[0];
 
-    const hostTrack =
-      tracks.find((t) =>
-        (t.participant as any)?.identity?.toLowerCase().includes("host")
-      ) || tracks[0];
-
-    if (!hostTrack) return null;
-
-    return (
-      <ParticipantTile
-        trackRef={hostTrack as any}
-        className="h-full w-full object-cover"
-      />
-    );
-  }
+  if (!hostTrack) return null;
 
   return (
-    <section className="w-full h-full">
-      <div className="relative w-full h-full overflow-hidden">
-        {ready ? (
-          <LiveKitRoom
-            token={token}
-            serverUrl={serverUrl}
-            connect={true}
-            audio={true}
-            video={isHost}
-            className="h-full"
-          >
-            <RoomAudioRenderer />
-            <StageVideo />
-          </LiveKitRoom>
-        ) : (
-          <div className="h-full w-full grid place-items-center text-white/40 text-sm">
-            Connecting…
-          </div>
-        )}
-      </div>
-    </section>
+    <ParticipantTile
+      trackRef={hostTrack as any}
+      className="h-full w-full object-cover"
+    />
   );
 }
