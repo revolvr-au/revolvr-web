@@ -76,7 +76,25 @@ export default function LiveRoomPage() {
           Connecting…
         </div>
       )}
+    {/* Revolvr LIVE Header */}
+<div className="absolute top-[env(safe-area-inset-top)] pt-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-none">
+  <div className="flex items-center gap-3 pointer-events-auto">
+    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+    <span className="text-white font-semibold tracking-widest text-sm">
+      LIVE
+    </span>
+    <span className="text-white/60 text-sm ml-2">
+      128 watching
+    </span>
+  </div>
 
+  <button
+    onClick={() => window.history.back()}
+    className="pointer-events-auto px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
+  >
+    Exit
+  </button>
+</div>
       {isHost && !joined && (
         <div className="absolute inset-x-0 bottom-12 px-6 z-50">
           <button
