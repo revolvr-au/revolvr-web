@@ -483,71 +483,6 @@ return (
     </div>
   </div>
 );
-<VideoStage
-  token={activeToken}
-  serverUrl={lkUrl}
-  isMobile={false}
-  isHost={isHost}
-  joined={joined}
-/>
-
-{/* Floating chat overlay (desktop matches mobile now) */}
-<div className="absolute inset-0 pointer-events-none">
-  <LiveChatOverlay roomId={sessionId} />
-</div>
-
-{/* Bottom support + composer (same pattern as mobile) */}
-<div className="absolute inset-x-0 bottom-0 z-50 px-3 pb-4 space-y-2">
-  <LiveSupportBar
-    creatorEmail={creatorEmail}
-    userEmail={userEmail}
-    sessionId={sessionId}
-    liveHrefForRedirect={liveHrefForRedirect}
-  />
-
-  <LiveChatPanel
-    roomId={sessionId}
-    liveHrefForRedirect={liveHrefForRedirect}
-    userEmail={userEmail}
-    variant="composer"
-  />
-</div>
-
-{/* Host Join Button */}
-{isHost && !joined && (
-  <div className="absolute inset-x-0 bottom-24 z-50 px-4">
-    <button
-      className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-black font-semibold hover:bg-emerald-300"
-      onClick={() => setJoined(true)}
-    >
-      Go Live
-    </button>
-  </div>
-)}
-
-{/* Purchase Sheet */}
-{pendingPurchase && (
-  <LivePurchaseChoiceSheet
-    mode={pendingPurchase.mode}
-    onClose={() => setPendingPurchase(null)}
-    onSingle={() => handleSingle(pendingPurchase.mode)}
-    onPack={() => handlePack(pendingPurchase.mode)}
-  />
-)}
-
-{/* Rewards Sheet */}
-{rewardsOpen && (
-  <LiveRewardsSheet
-    rewards={LIVE_REWARDS}
-    onClose={() => setRewardsOpen(false)}
-    onPick={async (id) => {
-      await startPayment("reaction", "single");
-      setRewardsOpen(false);
-    }}
-  />
-)}
-/* ---------------------- Video Stage ---------------------- */
-
 function VideoStage({
   token,
   serverUrl,
@@ -760,4 +695,5 @@ function LiveRewardsSheet({
       </div>
     </div>
   );
+}
 }
