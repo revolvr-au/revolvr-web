@@ -61,14 +61,40 @@ export default function LiveRoomPage() {
   useEffect(() => {
     setJoined(!isHost);
   }, [isHost]);
-
-  useEffect(() => {
+useEffect(() => {
+  async function initLive() {
     try {
-      setLkUrl(sessionStorage.getItem("lk_url") ?? "");
-      setHostToken(sessionStorage.getItem("lk_host_token") ?? "");
-      setViewerToken(sessionStorage.getItem("lk_viewer_token") ?? "");
-    } catch {}
-  }, []);
+      const res = await fetch("/api/live/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          room: sessionId,
+          identity: "viewer-" + crypto.randomUUID(),
+          role: isHost ? "host" : "viewer",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.token) {
+        console.error("Token fetch failed", data);
+        return;
+      }
+
+      setLkUrl(process.env.NEXT_PUBLIC_LIVEKIT_URL || "");
+      if (isHost) {
+        setHostToken(data.token);
+      } else {
+        setViewerToken(data.token);
+      }
+    } catch (err) {
+      console.error("Live init error", err);
+    }
+  }
+
+  if (sessionId) {
+    initLive();
+  }
+}, [sessionId, isHost]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023px)");
