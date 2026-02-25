@@ -44,20 +44,20 @@ export default function LiveChatOverlay({ roomId }: { roomId: string }) {
   }, [roomId]);
 
   return (
-    <div className="absolute left-4 top-1/3 space-y-2 pointer-events-none max-w-[70%]">
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className="animate-fadeUp text-[13px] leading-tight tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)]"
-        >
-          <span className="font-semibold text-white/70 mr-1">
-            {msg.user}
-          </span>
-          <span className="text-white/90">
-            {msg.text}
-          </span>
-        </div>
-      ))}
+    <div className="absolute left-4 top-1/3 space-y-3 pointer-events-none max-w-[70%] z-40">
+     {messages.map((msg) => (
+  <div
+    key={msg.id}
+    className="animate-fadeUp bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl text-[13px] leading-tight tracking-tight shadow-lg"
+  >
+    <span className="font-semibold text-white/70 mr-1">
+      {msg.user}
+    </span>
+    <span className="text-white/90">
+      {msg.text}
+    </span>
+  </div>
+))}
     </div>
   );
 }

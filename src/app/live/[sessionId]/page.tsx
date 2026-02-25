@@ -139,7 +139,12 @@ export default function LiveRoomPage() {
   return (
     <div className="live-room min-h-screen bg-[#050814] text-white flex items-center justify-center px-4 py-6">
       <div className="relative w-full max-w-[480px] aspect-[9/16] rounded-2xl overflow-hidden border border-white/10 bg-black/30">
-
+      <button
+  onClick={() => alert("Rewards triggered")}
+  className="absolute top-4 right-4 z-50 bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-full text-xs"
+>
+  🎁 Reward
+</button>
         <VideoStage
           token={activeToken}
           serverUrl={lkUrl}

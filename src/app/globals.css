@@ -469,3 +469,19 @@ body.live-mode .app-content {
 .animate-floatHeart {
   animation: floatHeart 3s ease-out forwards;
 }
+/* globals.css */
+
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-200px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+.animate-floatUp {
+  animation: floatUp 2s ease-out forwards;
+}
