@@ -44,7 +44,7 @@ export default function RevolvrChatFeed() {
         {messages.map((msg, index) => (
           <motion.div
             key={msg.id}
-            initial={{ x: -60, y: 12, opacity: 0, scale: 0.95 }}
+            initial={{ x: -40, y: 8, opacity: 0, scale: 0.97 }}
             animate={{
               x: 0,
               y: -60 - index * 8,
@@ -53,8 +53,8 @@ export default function RevolvrChatFeed() {
             }}
             exit={{ opacity: 0 }}
             transition={{
-              duration: 14,
-              ease: "easeOut",
+            duration: 9,
+            ease: [0.22, 1, 0.36, 1], // custom cubic-bezier (premium ease)
             }}
             className="relative backdrop-blur-md bg-white/10 border border-white/15 rounded-2xl px-4 py-3 shadow-xl overflow-hidden"
           >
