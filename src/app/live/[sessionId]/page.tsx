@@ -1,8 +1,8 @@
-// src/app/live/[sessionId]/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import { motion } from "framer-motion";
 import RevolvrChatFeed from "@/components/live/RevolvrChatFeed";
 
 import {
@@ -25,7 +25,6 @@ export default function LiveRoomPage() {
   const [token, setToken] = useState("");
   const [joined, setJoined] = useState(!isHost);
 
-  // Fetch LiveKit token
   useEffect(() => {
     async function initLive() {
       try {
@@ -60,6 +59,19 @@ export default function LiveRoomPage() {
 
   return (
     <div className="fixed inset-0 bg-black overflow-hidden">
+
+      {/* Ambient energy glow */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none z-10"
+        animate={{ opacity: [0.03, 0.06, 0.03] }}
+        transition={{ duration: 6, repeat: Infinity }}
+        style={{
+          background:
+            "radial-gradient(circle at 30% 60%, rgba(16,185,129,0.4), transparent 40%)",
+          filter: "blur(120px)",
+        }}
+      />
+
       {token && lkUrl ? (
         <LiveKitRoom
           token={token}
@@ -77,25 +89,28 @@ export default function LiveRoomPage() {
           Connecting…
         </div>
       )}
-    {/* Revolvr LIVE Header */}
-<div className="absolute top-[env(safe-area-inset-top)] pt-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-none">
-  <div className="flex items-center gap-3 pointer-events-auto">
-    <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
-    <span className="text-white font-semibold tracking-widest text-sm">
-      LIVE
-    </span>
-    <span className="text-white/60 text-sm ml-2">
-      128 watching
-    </span>
-  </div>
 
-  <button
-    onClick={() => window.history.back()}
-    className="pointer-events-auto px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
-  >
-    Exit
-  </button>
-</div>
+      {/* Revolvr LIVE Header */}
+      <div className="absolute top-[env(safe-area-inset-top)] pt-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
+          <span className="text-white font-semibold tracking-widest text-sm">
+            LIVE
+          </span>
+          <span className="text-white/60 text-sm ml-2">
+            128 watching
+          </span>
+        </div>
+
+        <button
+          onClick={() => window.history.back()}
+          className="pointer-events-auto px-4 py-2 rounded-full bg-white/10 backdrop-blur text-white text-sm hover:bg-white/20 transition"
+        >
+          Exit
+        </button>
+      </div>
+
+      {/* Host Go Live button */}
       {isHost && !joined && (
         <div className="absolute inset-x-0 bottom-12 px-6 z-50">
           <button
@@ -106,6 +121,10 @@ export default function LiveRoomPage() {
           </button>
         </div>
       )}
+
+      {/* Revolvr Chat Feed */}
+      <RevolvrChatFeed />
+
     </div>
   );
 }

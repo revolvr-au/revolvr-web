@@ -12,7 +12,6 @@ type Message = {
 export default function RevolvrChatFeed() {
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Simulated feed for now
   useEffect(() => {
     const interval = setInterval(() => {
       const id = crypto.randomUUID();
@@ -22,7 +21,7 @@ export default function RevolvrChatFeed() {
         {
           id,
           user: "user" + Math.floor(Math.random() * 100),
-          text: "Revolvr LIVE is different 🔥",
+          text: "Revolvr LIVE energy 🔥",
         },
       ]);
 
@@ -35,7 +34,12 @@ export default function RevolvrChatFeed() {
   }, []);
 
   return (
-    <div className="absolute left-4 bottom-[28%] w-[min(85%,360px)] z-40 pointer-events-none space-y-4">
+    <div
+      className="absolute left-4 bottom-[28%] w-[min(85%,360px)] z-40 pointer-events-none space-y-4 overflow-hidden"
+      style={{
+        maskImage: "linear-gradient(to top, black 80%, transparent 100%)",
+      }}
+    >
       <AnimatePresence>
         {messages.map((msg, index) => (
           <motion.div
@@ -43,8 +47,8 @@ export default function RevolvrChatFeed() {
             initial={{ x: -60, y: 12, opacity: 0, scale: 0.95 }}
             animate={{
               x: 0,
-              y: -40 - index * 4,
-              opacity: [0, 1, 1, 0],
+              y: -60 - index * 8,
+              opacity: [0, 1, 0.8, 0],
               scale: 1,
             }}
             exit={{ opacity: 0 }}
@@ -52,12 +56,20 @@ export default function RevolvrChatFeed() {
               duration: 14,
               ease: "easeOut",
             }}
-            className="backdrop-blur-md bg-white/10 border border-white/15 rounded-2xl px-4 py-3 shadow-xl"
+            className="relative backdrop-blur-md bg-white/10 border border-white/15 rounded-2xl px-4 py-3 shadow-xl overflow-hidden"
           >
-            <div className="text-emerald-400 text-xs font-semibold">
+            {/* Arrival energy pulse */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0.4, 0] }}
+              transition={{ duration: 0.8 }}
+              className="absolute inset-0 bg-emerald-400/10 rounded-2xl blur-xl"
+            />
+
+            <div className="text-emerald-400 text-xs font-semibold relative z-10">
               {msg.user}
             </div>
-            <div className="text-white text-sm leading-snug">
+            <div className="text-white text-sm leading-snug relative z-10">
               {msg.text}
             </div>
           </motion.div>
