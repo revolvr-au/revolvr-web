@@ -97,22 +97,27 @@ export default function LiveRoomPage() {
         }}
       />
 
-      {/* ❤️ Floating Hearts */}
-      <AnimatePresence>
-        {hearts.map((h) => (
-          <motion.div
-            key={h.id}
-            initial={{ opacity: 0, y: 0, scale: 0.8 }}
-            animate={{ opacity: 1, y: -180, scale: 1.3 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2 }}
-            className="absolute bottom-28 text-pink-500 text-2xl pointer-events-none z-40"
-            style={{ right: 40 + h.x }}
-          >
-            ❤️
-          </motion.div>
-        ))}
-      </AnimatePresence>
+    {/* ❤️ Floating Hearts */}
+<AnimatePresence>
+  {hearts.map((h) => (
+    <motion.div
+      key={h.id}
+      initial={{ opacity: 0, y: 0, scale: 0.8 }}
+      animate={{
+        opacity: 1,
+        y: -220,
+        scale: [1, 1.4, 1.1],
+        rotate: [-10, 10, -5],
+      }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 2.2, ease: "easeOut" }}
+      className="absolute bottom-28 text-pink-500 text-2xl pointer-events-none z-40"
+      style={{ right: 40 + h.x }}
+    >
+      ❤️
+    </motion.div>
+  ))}
+</AnimatePresence>
 
       {/* 🎥 Video Stage */}
       {token && lkUrl ? (

@@ -1,34 +1,61 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 
 export default function RevolvrComposer() {
-  const [value, setValue] = useState("");
+  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const sendMessage = async () => {
+    if (!message.trim()) return;
+
+    try {
+      setLoading(true);
+
+      await fetch("/api/live/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+        }),
+      });
+
+      setMessage("");
+    } catch (err) {
+      console.error("Chat send failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <motion.div
-      initial={{ y: 40, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.4 }}
-      className="absolute left-4 right-4 bottom-[calc(env(safe-area-inset-bottom)+16px)] z-50"
-    >
-      <div className="flex items-center gap-3 backdrop-blur-xl bg-white/10 border border-white/15 rounded-full px-4 py-3 shadow-2xl">
+    <div className="absolute bottom-6 left-4 right-4 z-50">
+      <div className="flex items-center gap-2 backdrop-blur-xl bg-white/10 border border-white/20 rounded-full px-4 py-3">
         <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
           placeholder="Say something..."
-          className="flex-1 bg-transparent text-white placeholder-white/50 focus:outline-none text-sm"
+          className="flex-1 bg-transparent outline-none text-white placeholder-white/50"
         />
 
-        <button className="text-white/60 hover:text-white transition">
-          😊
+        {/* Emoji Button */}
+        {/* Gift Icon */}
+        <button
+        onClick={() => console.log("Gift clicked")}
+        className="text-xl"
+        >
+        🎁
         </button>
 
-        <button className="bg-emerald-500 hover:bg-emerald-400 transition text-black font-semibold text-sm px-4 py-2 rounded-full">
+        {/* Send Button */}
+        <button
+          onClick={sendMessage}
+          disabled={loading}
+          className="bg-emerald-500 text-black px-5 py-2 rounded-full font-semibold"
+        >
           Send
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
