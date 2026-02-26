@@ -55,22 +55,37 @@ export default function LiveRoomPage() {
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
 
-  // ---- LiveKit creds (loaded from sessionStorage) ----
-  const [lkUrl, setLkUrl] = useState<string>("");
-  const [hostToken, setHostToken] = useState<string>("");
-  const [viewerToken, setViewerToken] = useState<string>("");
+ const [lkUrl, setLkUrl] = useState<string>("");
+const [activeToken, setActiveToken] = useState<string>("");
 
-  useEffect(() => {
+useEffect(() => {
+  const loadToken = async () => {
     try {
-      setLkUrl(sessionStorage.getItem("lk_url") ?? "");
-      setHostToken(sessionStorage.getItem("lk_host_token") ?? "");
-      setViewerToken(sessionStorage.getItem("lk_viewer_token") ?? "");
-    } catch {
-      // no-op
-    }
-  }, []);
+      const res = await fetch("/api/live/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId,
+          role: isHost ? "host" : "viewer",
+        }),
+      });
 
-  const activeToken = isHost ? hostToken : viewerToken;
+      if (!res.ok) {
+        console.error("[live] failed to fetch token");
+        return;
+      }
+
+      const data = await res.json();
+      setLkUrl(data.url);
+      setActiveToken(data.token);
+    } catch (err) {
+      console.error("[live] token error", err);
+    }
+  };
+
+  if (sessionId) loadToken();
+}, [sessionId, isHost]);
+
 
   // Gate host join behind a user gesture for iOS reliability
   const [joined, setJoined] = useState<boolean>(() => !isHost);
@@ -282,34 +297,7 @@ export default function LiveRoomPage() {
     return parts.join(" • ");
   }, [credits]);
 
-  // Missing creds screen (host)
-  if (isHost && (!activeToken || !lkUrl)) {
-    return (
-      <main className="live-room min-h-screen bg-[#05070C] text-white flex items-center justify-center px-6">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black/30 p-6">
-          <h1 className="text-xl font-semibold">Go Live</h1>
-          <p className="mt-2 text-white/70">
-            Missing host credentials. Please start again from{" "}
-            <span className="font-mono">/go-live</span>.
-          </p>
-
-          <button
-            className="mt-5 w-full rounded-xl bg-emerald-400 px-5 py-3 text-center font-medium text-black hover:bg-emerald-300"
-            onClick={() => router.push("/go-live")}
-          >
-            Back to Go Live
-          </button>
-
-          <button
-            className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-center font-medium text-white/90 hover:bg-white/10"
-            onClick={() => router.push("/public-feed")}
-          >
-            Back to feed
-          </button>
-        </div>
-      </main>
-    );
-  }
+ 
 
   /** ===================== MOBILE: ONE SCREEN ===================== */
   if (isMobile) {
