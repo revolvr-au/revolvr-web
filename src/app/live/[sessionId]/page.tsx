@@ -228,7 +228,6 @@ export default function LiveRoomPage() {
 }
 
 /* ================= VIDEO STAGE ================= */
-
 function VideoStage({
   token,
   serverUrl,
@@ -249,7 +248,7 @@ function VideoStage({
     const tracks = useTracks(
       [
         { source: Track.Source.ScreenShare, withPlaceholder: false },
-        { source: Track.Source.Camera, withPlaceholder: false },
+        { source: Track.Source.Camera, withPlaceholder: true },
       ],
       { onlySubscribed: !isHost }
     );
@@ -268,12 +267,15 @@ function VideoStage({
     }
 
     return (
-      <ParticipantTile trackRef={active as any} className="h-full w-full" />
+      <ParticipantTile
+        trackRef={active as any}
+        className="h-full w-full"
+      />
     );
   }
 
   return (
-    <section className={isMobile ? "w-full h-full" : "w-full"}>
+    <section className={isMobile ? "w-full h-full" : "w-full max-w-xl"}>
       <div className="relative w-full h-full overflow-hidden rounded-2xl border border-white/10 bg-black">
         <div className="relative w-full h-full">
           {ready ? (
@@ -281,8 +283,13 @@ function VideoStage({
               token={token}
               serverUrl={serverUrl}
               connect={shouldConnect}
-              audio={isHost && joined}
-              video={isHost && joined}
+              audio
+              video
+              onConnected={(room) => {
+                if (isHost) {
+                  room.localParticipant.enableCameraAndMicrophone();
+                }
+              }}
               className="h-full"
             >
               <RoomAudioRenderer />
