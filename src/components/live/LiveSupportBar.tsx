@@ -225,12 +225,14 @@ export default function LiveSupportBar({
                 >
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-black/30 border border-white/10 overflow-hidden grid place-items-center">
-                      <div className="text-2xl leading-none">
-                      {r.id === "applause" ? "👏" : ""}
-                      {r.id === "fire" ? "🔥" : ""}
-                      {r.id === "love" ? "❤️" : ""}
-                      {r.id === "respect" ? "✅" : ""}
-                      </div>
+                      <video
+                        src={r.asset}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
                     </div>
                     <div>
                       <div className="text-sm font-semibold">{r.label}</div>
