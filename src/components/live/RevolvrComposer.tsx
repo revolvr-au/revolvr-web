@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-export default function RevolvrComposer() {
+export default function RevolvrComposer({ roomId }: { roomId: string }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -12,11 +12,19 @@ export default function RevolvrComposer() {
     try {
       setLoading(true);
 
-      await fetch("/api/live/chat", {
+      const res = await fetch("/api/live/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({
+          roomId,
+          message,
+        }),
       });
+
+      if (!res.ok) {
+        console.error("Chat send failed");
+        return;
+      }
 
       setMessage("");
     } catch (err) {
@@ -30,7 +38,6 @@ export default function RevolvrComposer() {
     <div className="absolute bottom-6 left-4 right-4 z-50">
       <div className="flex items-center gap-3 backdrop-blur-xl bg-white/10 border border-white/20 rounded-full px-4 py-3">
 
-        {/* Input */}
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -38,7 +45,6 @@ export default function RevolvrComposer() {
           className="flex-1 bg-transparent outline-none text-white placeholder-white/50"
         />
 
-        {/* Emoji */}
         <button
           onClick={() => setMessage((prev) => prev + " 😊")}
           className="text-xl"
@@ -46,7 +52,6 @@ export default function RevolvrComposer() {
           😊
         </button>
 
-        {/* Gift (inline only) */}
         <button
           onClick={() => console.log("Gift clicked")}
           className="text-xl"
@@ -54,7 +59,6 @@ export default function RevolvrComposer() {
           🎁
         </button>
 
-        {/* Send */}
         <button
           onClick={sendMessage}
           disabled={loading}

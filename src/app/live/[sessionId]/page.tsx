@@ -162,8 +162,8 @@ export default function LiveRoomPage() {
         </div>
       )}
 
-      <RevolvrChatFeed />
-      <RevolvrComposer />
+      <RevolvrChatFeed roomId={sessionId} />
+      <RevolvrComposer roomId={sessionId} />
     </div>
   );
 }
