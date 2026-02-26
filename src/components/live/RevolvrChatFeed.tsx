@@ -52,12 +52,12 @@ export default function RevolvrChatFeed({ roomId }: { roomId: string }) {
     <div className="absolute inset-0 pointer-events-none z-40">
       {floating.map((msg, index) => (
         <motion.div
-          key={msg.id}
-          initial={{ opacity: 0, x: -40, y: 80 }}
-          animate={{ opacity: 1, x: 20, y: -220 }}
-          transition={{ duration: 4, ease: "easeOut" }}
-          className="absolute left-6 bottom-24 max-w-xs backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl px-4 py-2 text-white text-sm"
-        >
+  key={msg.id}
+  initial={{ opacity: 0, x: -60, y: 120 }}
+  animate={{ opacity: 1, x: 80, y: -260 }}
+  transition={{ duration: 4.5, ease: "easeOut" }}
+  className="absolute left-4 top-1/2 max-w-xs backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl px-4 py-2 text-white text-sm"
+>
           <span className="text-emerald-400 font-medium">
             {msg.display_name || "user"}
           </span>{" "}

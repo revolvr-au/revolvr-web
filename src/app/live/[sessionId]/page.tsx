@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import RevolvrChatFeed from "@/components/live/RevolvrChatFeed";
 import RevolvrComposer from "@/components/live/RevolvrComposer";
+import { useRoomContext } from "@livekit/components-react";
 
 import {
   LiveKitRoom,
@@ -114,13 +115,13 @@ export default function LiveRoomPage() {
       {/* Video Stage */}
       {token && lkUrl ? (
         <LiveKitRoom
-        token={token}
-        serverUrl={lkUrl}
-        connect={true}
-        video={joined}
-        audio
-      className="h-full w-full"
-      >
+  token={token}
+  serverUrl={lkUrl}
+  connect={true}
+  video={true}
+  audio
+  className="h-full w-full"
+>
           <RoomAudioRenderer />
           <StageVideo />
         </LiveKitRoom>
