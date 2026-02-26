@@ -177,6 +177,7 @@ export function PublicFeedClient() {
   try {
     const post = posts.find((x) => x.id === postId);
     const creatorEmail = String(post?.userEmail ?? "").trim().toLowerCase();
+
     if (!creatorEmail) {
       alert("Creator missing for this post.");
       return;
@@ -186,25 +187,34 @@ export function PublicFeedClient() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        mode: "reaction",            // safe-launch: rewards map to reaction
+        mode: "reaction",
         creatorEmail,
-        userEmail: viewer,           // TODO: replace with real authed viewer
+        userEmail: viewer,
         source: "FEED",
         targetId: postId,
         returnPath: "/public-feed",
-        // amountCents: 150,         // optional (only if you want to force A$1.50)
         viewerCurrency: "aud",
       }),
     });
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data?.url) {
-      console.error("[PF reward checkout] failed", data);
-      alert(data?.error || "Checkout failed. Try again.");
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      console.error("[public-feed] reward checkout failed", txt);
+      alert("Checkout failed. Try again.");
       return;
     }
 
-    window.location.href = data.url;
+    const data = await res.json().catch(() => null);
+
+    if (data?.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    alert("Stripe did not return a checkout URL.");
+  } catch (err) {
+    console.error("[public-feed] reward error", err);
+    alert("Could not start checkout.");
   } finally {
     closeRewards();
   }
