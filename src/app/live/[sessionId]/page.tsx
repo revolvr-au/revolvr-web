@@ -15,28 +15,12 @@ import {
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 
-const [cameraReady, setCameraReady] = useState(false);
 
-useEffect(() => {
-  if (!isHost) return;
-  if (typeof window === "undefined") return;
-  if (!navigator?.mediaDevices?.getUserMedia) return;
-
-  const warmCamera = async () => {
-    try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
-      setCameraReady(true);
-    } catch (err) {
-      console.error("Camera permission error", err);
-    }
-  };
-
-  warmCamera();
-}, [isHost]);
 
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
+  const [cameraReady, setCameraReady] = useState(false);
 
   const rawSessionId = params?.sessionId;
 const sessionId =
@@ -63,6 +47,23 @@ const sessionId =
   };
 
   useEffect(() => {
+  if (!isHost) return;
+  if (typeof window === "undefined") return;
+  if (!navigator?.mediaDevices?.getUserMedia) return;
+
+  const warmCamera = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraReady(true);
+    } catch (err) {
+      console.error("Camera permission error", err);
+    }
+  };
+
+  warmCamera();
+}, [isHost]);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       triggerHeart();
     }, 15000);
@@ -70,19 +71,6 @@ const sessionId =
     return () => clearInterval(interval);
   }, []);
 
-{cameraReady && token && lkUrl && (
-  <LiveKitRoom
-    token={token}
-    serverUrl={lkUrl}
-    connect={true}
-    video={true}
-    audio
-    className="h-full w-full"
-  >
-    <RoomAudioRenderer />
-    <StageVideo />
-  </LiveKitRoom>
-)}
 
   useEffect(() => {
     async function initLive() {
