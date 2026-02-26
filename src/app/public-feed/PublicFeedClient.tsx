@@ -5,6 +5,8 @@ import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useGoLive } from "@/hooks/useGoLive";
 
 type ApiPost = {
   id: string;
@@ -44,6 +46,12 @@ export function PublicFeedClient() {
     { mode: "respect", label: "Respect", icon: "🫡" },
   ];
 
+  const router = useRouter();
+
+  const goLive = useGoLive(() => {
+  const sessionId = crypto.randomUUID();
+  router.push(`/live/${sessionId}?role=host`);
+});
   const railItems = useMemo<PersonRailItem[]>(() => {
     const seen = new Set<string>();
     const out: PersonRailItem[] = [];
@@ -223,7 +231,11 @@ export function PublicFeedClient() {
 
 
   return (
-    <FeedLayout title="Revolvr" subtitle="Public feed">
+    <FeedLayout
+  title="Revolvr"
+  subtitle="Public feed"
+  onGoLive={goLive}
+>
       <div className="px-4 pt-4">
         <PeopleRail
           items={railItems}
