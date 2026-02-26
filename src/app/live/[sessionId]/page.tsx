@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import RevolvrChatFeed from "@/components/live/RevolvrChatFeed";
 import RevolvrComposer from "@/components/live/RevolvrComposer";
-
 
 import {
   LiveKitRoom,
@@ -27,6 +26,30 @@ export default function LiveRoomPage() {
   const [token, setToken] = useState("");
   const [joined, setJoined] = useState(!isHost);
 
+  const [hearts, setHearts] = useState<{ id: string; x: number }[]>([]);
+
+  // 💓 Trigger heart
+  const triggerHeart = () => {
+    const id = crypto.randomUUID();
+    const randomX = Math.floor(Math.random() * 120); // slight horizontal variance
+
+    setHearts((prev) => [...prev, { id, x: randomX }]);
+
+    setTimeout(() => {
+      setHearts((prev) => prev.filter((h) => h.id !== id));
+    }, 2500);
+  };
+
+  // 🔁 Periodic ambient hearts
+  useEffect(() => {
+    const interval = setInterval(() => {
+      triggerHeart();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 🎥 Fetch LiveKit token
   useEffect(() => {
     async function initLive() {
       try {
@@ -54,15 +77,15 @@ export default function LiveRoomPage() {
       }
     }
 
-    if (sessionId) {
-      initLive();
-    }
+    if (sessionId) initLive();
   }, [sessionId, isHost]);
 
   return (
-    <div className="fixed inset-0 bg-black overflow-hidden">
-
-      {/* Ambient energy glow */}
+    <div
+      className="fixed inset-0 bg-black overflow-hidden"
+      onDoubleClick={triggerHeart}
+    >
+      {/* 💡 Ambient glow */}
       <motion.div
         className="absolute inset-0 pointer-events-none z-10"
         animate={{ opacity: [0.03, 0.06, 0.03] }}
@@ -74,6 +97,24 @@ export default function LiveRoomPage() {
         }}
       />
 
+      {/* ❤️ Floating Hearts */}
+      <AnimatePresence>
+        {hearts.map((h) => (
+          <motion.div
+            key={h.id}
+            initial={{ opacity: 0, y: 0, scale: 0.8 }}
+            animate={{ opacity: 1, y: -180, scale: 1.3 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2 }}
+            className="absolute bottom-28 text-pink-500 text-2xl pointer-events-none z-40"
+            style={{ right: 40 + h.x }}
+          >
+            ❤️
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
+      {/* 🎥 Video Stage */}
       {token && lkUrl ? (
         <LiveKitRoom
           token={token}
@@ -92,7 +133,15 @@ export default function LiveRoomPage() {
         </div>
       )}
 
-      {/* Revolvr LIVE Header */}
+      {/* 🎁 Gift Button */}
+      <button
+        onClick={() => console.log("Gift clicked")}
+        className="absolute right-6 bottom-32 z-50 backdrop-blur-md bg-white/10 border border-white/20 rounded-full p-4 shadow-xl hover:bg-white/20 transition"
+      >
+        🎁
+      </button>
+
+      {/* 🔴 Header */}
       <div className="absolute top-[env(safe-area-inset-top)] pt-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-none">
         <div className="flex items-center gap-3 pointer-events-auto">
           <div className="w-3 h-3 bg-red-600 rounded-full animate-pulse" />
@@ -112,7 +161,7 @@ export default function LiveRoomPage() {
         </button>
       </div>
 
-      {/* Host Go Live button */}
+      {/* 🎥 Host Go Live */}
       {isHost && !joined && (
         <div className="absolute inset-x-0 bottom-12 px-6 z-50">
           <button
@@ -124,9 +173,9 @@ export default function LiveRoomPage() {
         </div>
       )}
 
-      {/* Revolvr Chat Feed */}
+      {/* 💬 Chat + Composer */}
       <RevolvrChatFeed />
-
+      <RevolvrComposer />
     </div>
   );
 }
