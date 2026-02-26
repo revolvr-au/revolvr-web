@@ -114,13 +114,13 @@ export default function LiveRoomPage() {
       {/* Video Stage */}
       {token && lkUrl ? (
         <LiveKitRoom
-          token={token}
-          serverUrl={lkUrl}
-          connect={isHost ? joined : true}
-          video={isHost && joined}
-          audio
-          className="h-full w-full"
-        >
+        token={token}
+        serverUrl={lkUrl}
+        connect={true}
+        video={joined}
+        audio
+      className="h-full w-full"
+      >
           <RoomAudioRenderer />
           <StageVideo />
         </LiveKitRoom>
@@ -152,15 +152,15 @@ export default function LiveRoomPage() {
 
       {/* Host Button */}
       {isHost && !joined && (
-        <div className="absolute inset-x-0 bottom-12 px-6 z-50">
-          <button
-            onClick={() => setJoined(true)}
-            className="w-full rounded-2xl bg-emerald-400 py-4 text-black font-semibold text-lg"
-          >
-            Go Live
-          </button>
-        </div>
-      )}
+  <div className="absolute inset-0 flex items-center justify-center z-50">
+    <button
+      onClick={() => setJoined(true)}
+      className="px-8 py-4 rounded-full backdrop-blur-xl bg-white/10 border border-white/20 text-white text-lg tracking-wide hover:bg-white/20 transition"
+    >
+      Go LIVE
+    </button>
+  </div>
+)}
 
       <RevolvrChatFeed roomId={sessionId} />
       <RevolvrComposer roomId={sessionId} />
