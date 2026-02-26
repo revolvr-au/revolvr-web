@@ -86,6 +86,9 @@ useEffect(() => {
   if (sessionId) loadToken();
 }, [sessionId, isHost]);
 
+<div className="fixed top-2 left-2 z-[9999] rounded bg-red-600 px-2 py-1 text-[10px] font-bold text-white">
+  LIVE_NEW_UI 32f5766
+</div>
 
   // Gate host join behind a user gesture for iOS reliability
   const [joined, setJoined] = useState<boolean>(() => !isHost);

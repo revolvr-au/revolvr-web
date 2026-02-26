@@ -1,7 +1,5 @@
-import LiveClient from "@/components/live/LiveClient";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic"; // Important
-
-export default function LivePage() {
-  return <LiveClient />;
+export default function LiveIndex() {
+  redirect("/public-feed");
 }
