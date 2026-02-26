@@ -76,8 +76,23 @@ export default function LiveRoomPage() {
 
   /* ================= JOIN GATE ================= */
 
-  const [joined, setJoined] = useState<boolean>(() => !isHost);
-  useEffect(() => setJoined(!isHost), [isHost]);
+  const [joined, setJoined] = useState<boolean>(false);
+
+useEffect(() => {
+  if (!isHost) {
+    setJoined(true);
+    return;
+  }
+
+  // Desktop auto-join
+  const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(
+    navigator.userAgent
+  );
+
+  if (!isMobileDevice) {
+    setJoined(true);
+  }
+}, [isHost]);
 
   /* ================= AUTH ================= */
 
@@ -186,7 +201,7 @@ export default function LiveRoomPage() {
           />
         </div>
 
-        {isHost && !joined && (
+        {isHost && !joined && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && (
           <div className="absolute inset-x-0 bottom-[86px] z-50 px-3">
             <button
               className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-black font-semibold"
