@@ -38,7 +38,11 @@ export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
 
-  const sessionId = decodeURIComponent(params?.sessionId ?? "");
+  const rawSessionId = params?.sessionId;
+const sessionId =
+  typeof rawSessionId === "string"
+    ? decodeURIComponent(rawSessionId)
+    : "";
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
 
@@ -201,7 +205,6 @@ export default function LiveRoomPage() {
     </div>
   );
 }
-
 function StageVideo() {
   const tracks = useTracks(
     [{ source: Track.Source.Camera, withPlaceholder: false }],
@@ -209,9 +212,11 @@ function StageVideo() {
   );
 
   const hostTrack =
-    tracks.find((t) =>
-      (t.participant as any)?.identity?.toLowerCase().includes("host")
-    ) || tracks[0];
+    tracks.find((t) => {
+      const identity = (t.participant as any)?.identity;
+      if (!identity) return false;
+      return identity.toLowerCase().includes("host");
+    }) || tracks[0];
 
   if (!hostTrack) return null;
 
