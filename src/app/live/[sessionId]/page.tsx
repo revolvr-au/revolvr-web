@@ -25,8 +25,6 @@ import {
   PurchaseMode,
 } from "@/lib/credits";
 
-/* ============================== */
-
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
@@ -280,22 +278,34 @@ function VideoStage({
         <div className="relative w-full h-full">
           {ready ? (
             <LiveKitRoom
-              token={token}
-              serverUrl={serverUrl}
-              connect={shouldConnect}
-              audio
-              video
-              onConnected={(room) => {
-                if (isHost) {
-                  room.localParticipant.enableCameraAndMicrophone();
-                }
-              }}
-              className="h-full"
-            >
-              <RoomAudioRenderer />
-              <StageConference />
-              {!isMobile && <ControlBar />}
-            </LiveKitRoom>
+  token={token}
+  serverUrl={serverUrl}
+  connect={shouldConnect}
+  audio
+  video
+  onConnected={(room) => {
+    console.log("ROOM CONNECTED");
+    console.log("ROLE:", isHost);
+
+    if (isHost) {
+      setTimeout(async () => {
+        try {
+          console.log("Attempting camera enable...");
+          await room.localParticipant.setCameraEnabled(true);
+          await room.localParticipant.setMicrophoneEnabled(true);
+          console.log("Camera enabled");
+        } catch (err) {
+          console.error("Camera failed:", err);
+        }
+      }, 300); // small Safari-safe delay
+    }
+  }}
+  className="h-full"
+>
+  <RoomAudioRenderer />
+  <StageConference />
+  {!isMobile && <ControlBar />}
+</LiveKitRoom>
           ) : (
             <div className="h-full w-full grid place-items-center text-white/50 text-sm">
               Connecting…
