@@ -36,9 +36,8 @@ export default function LiveRoomPage() {
     setHearts((prev) => [...prev, { id, x: randomX }]);
 
     setTimeout(() => {
-      setHearts((prev) => prev.filter((h) => h.id !== id));
-    }, 2500);
-  };
+  setHearts((prev) => prev.filter((h) => h.id !== id));
+}, 1400);
 
   // 🔁 Periodic ambient hearts
   useEffect(() => {
@@ -102,15 +101,14 @@ export default function LiveRoomPage() {
   {hearts.map((h) => (
     <motion.div
       key={h.id}
-      initial={{ opacity: 0, y: 0, scale: 0.8 }}
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{
         opacity: 1,
-        y: -220,
-        scale: [1, 1.4, 1.1],
-        rotate: [-10, 10, -5],
+        y: -200,
+        scale: [1, 1.3, 1],
       }}
       exit={{ opacity: 0 }}
-      transition={{ duration: 2.2, ease: "easeOut" }}
+      transition={{ duration: 1.4, ease: "easeOut" }}
       className="absolute bottom-28 text-pink-500 text-2xl pointer-events-none z-40"
       style={{ right: 40 + h.x }}
     >
@@ -137,14 +135,6 @@ export default function LiveRoomPage() {
           Connecting…
         </div>
       )}
-
-      {/* 🎁 Gift Button */}
-      <button
-        onClick={() => console.log("Gift clicked")}
-        className="absolute right-6 bottom-32 z-50 backdrop-blur-md bg-white/10 border border-white/20 rounded-full p-4 shadow-xl hover:bg-white/20 transition"
-      >
-        🎁
-      </button>
 
       {/* 🔴 Header */}
       <div className="absolute top-[env(safe-area-inset-top)] pt-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-none">

@@ -15,9 +15,7 @@ export default function RevolvrComposer() {
       await fetch("/api/live/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-        }),
+        body: JSON.stringify({ message }),
       });
 
       setMessage("");
@@ -30,7 +28,9 @@ export default function RevolvrComposer() {
 
   return (
     <div className="absolute bottom-6 left-4 right-4 z-50">
-      <div className="flex items-center gap-2 backdrop-blur-xl bg-white/10 border border-white/20 rounded-full px-4 py-3">
+      <div className="flex items-center gap-3 backdrop-blur-xl bg-white/10 border border-white/20 rounded-full px-4 py-3">
+
+        {/* Input */}
         <input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -38,16 +38,23 @@ export default function RevolvrComposer() {
           className="flex-1 bg-transparent outline-none text-white placeholder-white/50"
         />
 
-        {/* Emoji Button */}
-        {/* Gift Icon */}
+        {/* Emoji */}
         <button
-        onClick={() => console.log("Gift clicked")}
-        className="text-xl"
+          onClick={() => setMessage((prev) => prev + " 😊")}
+          className="text-xl"
         >
-        🎁
+          😊
         </button>
 
-        {/* Send Button */}
+        {/* Gift (inline only) */}
+        <button
+          onClick={() => console.log("Gift clicked")}
+          className="text-xl"
+        >
+          🎁
+        </button>
+
+        {/* Send */}
         <button
           onClick={sendMessage}
           disabled={loading}
