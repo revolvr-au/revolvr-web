@@ -19,6 +19,8 @@ const [cameraReady, setCameraReady] = useState(false);
 
 useEffect(() => {
   if (!isHost) return;
+  if (typeof window === "undefined") return;
+  if (!navigator?.mediaDevices?.getUserMedia) return;
 
   const warmCamera = async () => {
     try {
