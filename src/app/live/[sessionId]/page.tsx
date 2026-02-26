@@ -15,6 +15,23 @@ import {
 } from "@livekit/components-react";
 import { Track } from "livekit-client";
 
+const [cameraReady, setCameraReady] = useState(false);
+
+useEffect(() => {
+  if (!isHost) return;
+
+  const warmCamera = async () => {
+    try {
+      await navigator.mediaDevices.getUserMedia({ video: true });
+      setCameraReady(true);
+    } catch (err) {
+      console.error("Camera permission error", err);
+    }
+  };
+
+  warmCamera();
+}, [isHost]);
+
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
@@ -46,6 +63,20 @@ export default function LiveRoomPage() {
 
     return () => clearInterval(interval);
   }, []);
+
+{cameraReady && token && lkUrl && (
+  <LiveKitRoom
+    token={token}
+    serverUrl={lkUrl}
+    connect={true}
+    video={true}
+    audio
+    className="h-full w-full"
+  >
+    <RoomAudioRenderer />
+    <StageVideo />
+  </LiveKitRoom>
+)}
 
   useEffect(() => {
     async function initLive() {
@@ -153,13 +184,13 @@ export default function LiveRoomPage() {
 
       {/* Host Button */}
       {isHost && !joined && (
-  <div className="absolute inset-0 flex items-center justify-center z-50">
-    <button
+  <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+    <div
       onClick={() => setJoined(true)}
-      className="px-8 py-4 rounded-full backdrop-blur-xl bg-white/10 border border-white/20 text-white text-lg tracking-wide hover:bg-white/20 transition"
+      className="pointer-events-auto text-white text-2xl tracking-widest font-semibold cursor-pointer select-none"
     >
       Go LIVE
-    </button>
+    </div>
   </div>
 )}
 

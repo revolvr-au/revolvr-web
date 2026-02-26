@@ -56,13 +56,13 @@ export default function RevolvrChatFeed({ roomId }: { roomId: string }) {
   initial={{ opacity: 0, x: -60, y: 120 }}
   animate={{ opacity: 1, x: 80, y: -260 }}
   transition={{ duration: 4.5, ease: "easeOut" }}
-  className="absolute left-4 top-1/2 max-w-xs backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl px-4 py-2 text-white text-sm"
+  className="absolute left-4 top-1/2 max-w-xs backdrop-blur-xl bg-black/30 border border-white/10 rounded-2xl px-4 py-2 text-white text-sm"
 >
-          <span className="text-emerald-400 font-medium">
-            {msg.display_name || "user"}
-          </span>{" "}
-          {msg.message}
-        </motion.div>
+  <span className="font-bold drop-shadow-md">
+    {msg.display_name || "user"}
+  </span>{" "}
+  {msg.message}
+</motion.div>
       ))}
     </div>
   );
