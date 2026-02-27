@@ -6,6 +6,7 @@ import TopBar from "@/components/live/TopBar";
 import VideoCanvas from "@/components/live/VideoCanvas";
 import LiveChatOverlay from "@/components/live/LiveChatOverlay";
 import RevolvrComposer from "@/components/live/RevolvrComposer";
+import { useRoomContext } from "@livekit/components-react";
 import {
   ControlBar,
   GridLayout,
@@ -263,23 +264,7 @@ function VideoStage({
   connect={shouldConnect}
   audio
   video
-  onConnected={(room) => {
-    console.log("ROOM CONNECTED");
-    console.log("ROLE:", isHost);
 
-    if (isHost) {
-      setTimeout(async () => {
-        try {
-          console.log("Attempting camera enable...");
-          await room.localParticipant.setCameraEnabled(true);
-          await room.localParticipant.setMicrophoneEnabled(true);
-          console.log("Camera enabled");
-        } catch (err) {
-          console.error("Camera failed:", err);
-        }
-      }, 300); // small Safari-safe delay
-    }
-  }}
   className="h-full"
 >
   <RoomAudioRenderer />
