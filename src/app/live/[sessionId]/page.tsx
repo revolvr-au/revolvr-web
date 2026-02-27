@@ -114,21 +114,6 @@ useEffect(() => {
     return qs || null;
   }, [searchParams]);
 
-  // AUTO-HEAL: if host and creator missing → inject it
-  useEffect(() => {
-    if (!isHost) return;
-    if (!sessionId) return;
-    if (!userEmail) return;
-    if (creatorEmail) return;
-
-    const qs = new URLSearchParams(searchParams?.toString());
-    qs.set("creator", userEmail.toLowerCase());
-    qs.set("role", "host");
-
-    router.replace(`/live/${encodeURIComponent(sessionId)}?${qs.toString()}`);
-  }, [isHost, sessionId, userEmail, creatorEmail, router, searchParams]);
-
-
 
   /* ================= MOBILE DETECT ================= */
 
