@@ -1,20 +1,27 @@
 "use client";
 
-import VideoCanvas from "./VideoCanvas";
-import TopBar from "./TopBar";
-import CommentRail from "./CommentRail";
-import HeartStream from "./HeartStream";
-import BottomBar from "./BottomBar";
+import TopBar from "@/components/live/TopBar";
+import VideoCanvas from "@/components/live/VideoCanvas";
+import LiveChatOverlay from "@/components/live/LiveChatOverlay";
+import RevolvrComposer from "@/components/live/RevolvrComposer";
 
-export default function LiveRoom() {
+export default function LiveRoomPage() {
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
+    <div className="relative h-[100dvh] w-full bg-black overflow-hidden text-white">
+      
+      {/* Video */}
       <VideoCanvas />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 z-5" />
+
+      {/* Top */}
       <TopBar />
-      <CommentRail />
-      <HeartStream />
-      <BottomBar />
+
+      {/* Chat Overlay */}
+      <LiveChatOverlay />
+
+      {/* Bottom Composer */}
+      <div className="absolute bottom-0 inset-x-0 px-4 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+        <RevolvrComposer />
+      </div>
     </div>
   );
 }
