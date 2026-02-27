@@ -363,7 +363,18 @@ export default function DashboardClient() {
   }
 
   // If not logged in, we’re redirecting—don’t render the dashboard
-  if (!userEmail) return null;
+  if (!ready) {
+  return (
+    <div className="min-h-screen bg-[#050816] text-white p-8">
+      Loading your session...
+    </div>
+  );
+}
+
+if (!userEmail) {
+  router.replace("/login");
+  return null;
+}
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
