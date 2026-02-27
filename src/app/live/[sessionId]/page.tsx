@@ -17,12 +17,7 @@ import {
 import { Track } from "livekit-client";
 
 import { supabase } from "@/lib/supabaseClients";
-import {
-  CreditBalances,
-  loadCreditsForUser,
-  spendOneCredit,
-  PurchaseMode,
-} from "@/lib/credits";
+
 
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
@@ -132,27 +127,7 @@ useEffect(() => {
     router.replace(`/live/${encodeURIComponent(sessionId)}?${qs.toString()}`);
   }, [isHost, sessionId, userEmail, creatorEmail, router, searchParams]);
 
-  /* ================= CREDITS (NON BLOCKING) ================= */
 
-  const [credits, setCredits] = useState<CreditBalances | null>(null);
-
-  useEffect(() => {
-    if (!userEmail) {
-      setCredits(null);
-      return;
-    }
-
-    const fetchCredits = async () => {
-      try {
-        const balances = await loadCreditsForUser(userEmail);
-        setCredits(balances);
-      } catch {
-        setCredits({ tip: 0, boost: 0, spin: 0 });
-      }
-    };
-
-    fetchCredits();
-  }, [userEmail]);
 
   /* ================= MOBILE DETECT ================= */
 
