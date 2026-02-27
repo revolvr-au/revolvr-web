@@ -9,7 +9,7 @@ export default function LayoutShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const isLiveRoute = pathname?.startsWith("/live");
+  
 
   return (
     <>
@@ -22,8 +22,6 @@ export default function LayoutShell({
       >
         {children}
       </div>
-
-      {!isLiveRoute && <BottomNav />}
     </>
   );
 }
