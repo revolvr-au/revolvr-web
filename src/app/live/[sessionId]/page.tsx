@@ -187,17 +187,8 @@ useEffect(() => {
 
         <LiveChatOverlay roomId={sessionId} />
 
-        <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+90px)]">
-          <LiveSupportBar
-            creatorEmail={creatorEmail}
-            userEmail={userEmail}
-            sessionId={sessionId}
-          />
-          <LiveChatPanel
-            roomId={sessionId}
-            userEmail={userEmail}
-            variant="composer"
-          />
+        <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+20px)]">
+        <RevolvrComposer roomId={sessionId} />
         </div>
 
         {isHost && !joined && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && (
