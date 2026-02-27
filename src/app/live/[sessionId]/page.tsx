@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-
-import LiveChatPanel from "@/components/live/LiveChatPanel";
-import LiveSupportBar from "@/components/live/LiveSupportBar";
+import TopBar from "@/components/live/TopBar";
+import VideoCanvas from "@/components/live/VideoCanvas";
 import LiveChatOverlay from "@/components/live/LiveChatOverlay";
-
+import RevolvrComposer from "@/components/live/RevolvrComposer";
 import {
   ControlBar,
   GridLayout,
