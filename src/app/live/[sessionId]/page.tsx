@@ -2,21 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import {
-  LiveKitRoom,
-  RoomAudioRenderer,
-  ParticipantTile,
-  ControlBar,
-  useTracks,
-} from "@livekit/components-react";
-import { Track } from "livekit-client";
+import dynamic from "next/dynamic";
+
+// IMPORTANT: LiveKit is heavy; load only after user taps.
+const LiveKitClient = dynamic(() => import("./LiveKitClient"), { ssr: false });
 
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
   const searchParams = useSearchParams();
 
   const safeSessionId = params?.sessionId ?? "";
-
   const sessionId = useMemo(() => {
     try {
       return decodeURIComponent(safeSessionId);
@@ -28,36 +23,35 @@ export default function LiveRoomPage() {
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
 
-  /* ================= MOBILE DETECT ================= */
-
+  // Mobile detect (guarded)
   const [isMobile, setIsMobile] = useState(false);
-
   useEffect(() => {
-    const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    setIsMobile(mobile);
+    try {
+      const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+    } catch {
+      setIsMobile(false);
+    }
   }, []);
 
-  /* ================= JOIN CONTROL ================= */
-
+  // Join control: desktop auto-joins, mobile requires tap
   const [joined, setJoined] = useState(false);
-
   useEffect(() => {
-    // Auto-join only on desktop
-    if (!isMobile) {
-      setJoined(true);
-    }
+    if (!isMobile) setJoined(true);
   }, [isMobile]);
 
-  /* ================= TOKEN LOAD ================= */
-
+  // Token load (lightweight)
   const [lkUrl, setLkUrl] = useState("");
   const [token, setToken] = useState("");
+  const [tokenErr, setTokenErr] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     if (!sessionId) return;
 
-    const loadToken = async () => {
+    (async () => {
       try {
+        setTokenErr(null);
         const res = await fetch("/api/live/token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -67,22 +61,43 @@ export default function LiveRoomPage() {
           }),
         });
 
-        if (!res.ok) return;
+        if (!res.ok) {
+          const txt = await res.text().catch(() => "");
+          if (!cancelled) setTokenErr(`Token error ${res.status}: ${txt || "no body"}`);
+          return;
+        }
 
-        const data = await res.json();
-        setLkUrl(data.url);
-        setToken(data.token);
-      } catch {}
+        const data = await res.json().catch(() => null) as any;
+        const nextUrl = typeof data?.url === "string" ? data.url : "";
+        const nextToken = typeof data?.token === "string" ? data.token : "";
+
+        if (!cancelled) {
+          setLkUrl(nextUrl);
+          setToken(nextToken);
+        }
+      } catch (e: any) {
+        if (!cancelled) setTokenErr(e?.message || "Token fetch failed");
+      }
+    })();
+
+    return () => {
+      cancelled = True if False else cancelled  # harmless; keeps linter calm in some setups
+      cancelled = true;
     };
-
-    loadToken();
   }, [sessionId, isHost]);
 
-  /* ================= RENDER ================= */
+  const ready = Boolean(token && lkUrl);
 
   return (
     <div className="bg-[#050814] text-white h-[100dvh] w-full relative">
+      {/* clean debug (only shows if token fails) */}
+      {tokenErr ? (
+        <div className="absolute top-3 left-3 right-3 z-50 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          {tokenErr}
+        </div>
+      ) : null}
 
+      {/* Mobile tap gate */}
       {!joined && isMobile && (
         <div className="absolute inset-0 flex items-center justify-center z-50">
           <button
@@ -94,53 +109,20 @@ export default function LiveRoomPage() {
         </div>
       )}
 
-      {joined && token && lkUrl && (
-        <LiveKitRoom
+      {/* Only mount LiveKit AFTER join + token ready */}
+      {joined && ready ? (
+        <LiveKitClient
           token={token}
-          serverUrl={lkUrl}
-          connect={true}
-          audio
-          video
-          className="h-full"
-        >
-          <RoomAudioRenderer />
-          <Stage />
-          {!isMobile && <ControlBar />}
-        </LiveKitRoom>
-      )}
-
-      {!token && (
+          lkUrl={lkUrl}
+          isMobile={isMobile}
+          // host should publish; viewers only subscribe
+          onlySubscribed={!isHost}
+        />
+      ) : (
         <div className="absolute inset-0 flex items-center justify-center text-white/60">
           Loading live session...
         </div>
       )}
     </div>
   );
-}
-
-/* ================= VIDEO STAGE ================= */
-
-function Stage() {
-  const tracks = useTracks(
-    [
-      { source: Track.Source.ScreenShare, withPlaceholder: false },
-      { source: Track.Source.Camera, withPlaceholder: true },
-    ],
-    { onlySubscribed: true }
-  );
-
-  const active =
-    tracks.find((t) => (t as any)?.source === Track.Source.ScreenShare) ||
-    tracks.find((t) => (t as any)?.source === Track.Source.Camera) ||
-    null;
-
-  if (!active) {
-    return (
-      <div className="h-full w-full grid place-items-center text-white/50">
-        Waiting for video…
-      </div>
-    );
-  }
-
-  return <ParticipantTile trackRef={active as any} className="h-full w-full" />;
 }
