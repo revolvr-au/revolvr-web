@@ -5,8 +5,14 @@ export function proxy(req: NextRequest) {
   const host = req.headers.get("host") || "";
   const url = req.nextUrl.clone();
 
-  // Force canonical domain for auth/session consistency (PKCE is origin-bound)
-  if (host.endsWith(".vercel.app") && host !== "www.revolvr.net") {
+  const isLiveRoute = url.pathname.startsWith("/live");
+
+  // Skip canonical redirect for live routes (prevents mobile bounce)
+  if (
+    !isLiveRoute &&
+    host.endsWith(".vercel.app") &&
+    host !== "www.revolvr.net"
+  ) {
     url.protocol = "https:";
     url.host = "www.revolvr.net";
     return NextResponse.redirect(url, 307);
