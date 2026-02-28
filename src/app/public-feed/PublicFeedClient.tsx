@@ -48,9 +48,29 @@ export function PublicFeedClient() {
 
   const router = useRouter();
 
-  const goLive = useGoLive(() => {
-  const sessionId = crypto.randomUUID();
-  router.push(`/live/${sessionId}?role=host`);
+  const safeUUID = () => {
+  try {
+    // iOS/PWA/Private modes can be weird here — always guard.
+    // @ts-ignore
+    if (typeof crypto !== "undefined" && crypto?.randomUUID) return crypto.randomUUID();
+  } catch {}
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const isIOS =
+  typeof navigator !== "undefined" && /iPad|iPhone|iPod/i.test(navigator.userAgent);
+
+const goLive = useGoLive(() => {
+  const sessionId = safeUUID();
+  const url = `/live/${encodeURIComponent(sessionId)}?role=host`;
+
+  // iOS Safari: force a hard navigation to stop “bounce” / soft-router weirdness.
+  if (isIOS) {
+    window.location.assign(url);
+    return;
+  }
+
+  router.push(url);
 });
   const railItems = useMemo<PersonRailItem[]>(() => {
     const seen = new Set<string>();
