@@ -8,8 +8,12 @@ export function useGoLive(onAllowed: () => void) {
 
   const goLive = async () => {
     const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  data: { user },
+} = await supabase.auth.getUser();
+
+console.log("USER", user);
+alert("USER: " + JSON.stringify(user));
+alert("META: " + JSON.stringify(user?.user_metadata));
 
     alert(
       user
