@@ -7,33 +7,29 @@ export function useGoLive(onAllowed: () => void) {
   const router = useRouter();
 
   const goLive = async () => {
-    try {
-      // Use getSession first (more reliable on iOS)
-      const { data: sessionData } = await supabase.auth.getSession();
-      let user = sessionData.session?.user ?? null;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      // If no session yet, wait briefly and retry (hydration guard)
-      if (!user) {
-        await new Promise((r) => setTimeout(r, 300));
-        const { data: retryData } = await supabase.auth.getSession();
-        user = retryData.session?.user ?? null;
-      }
+    alert(
+      user
+        ? "User detected: " + user.email
+        : "No user session detected on this device"
+    );
 
-      if (!user) {
-        router.push("/login?redirectTo=/public-feed");
-        return;
-      }
-
-      if (!user.user_metadata?.is_creator) {
-        router.push("/creator/onboard");
-        return;
-      }
-
-      onAllowed();
-    } catch (err) {
-      console.error("goLive auth error", err);
+    if (!user) {
       router.push("/login?redirectTo=/public-feed");
+      return;
     }
+
+    if (!user.user_metadata?.is_creator) {
+      alert("User is not a creator");
+      router.push("/creator/onboard");
+      return;
+    }
+
+    alert("Creator OK — going live");
+    onAllowed();
   };
 
   return goLive;
