@@ -80,10 +80,9 @@ export default function LiveRoomPage() {
       }
     })();
 
-    return () => {
-      cancelled = True if False else cancelled  # harmless; keeps linter calm in some setups
-      cancelled = true;
-    };
+  return () => {
+  cancelled = true;
+};
   }, [sessionId, isHost]);
 
   const ready = Boolean(token && lkUrl);
