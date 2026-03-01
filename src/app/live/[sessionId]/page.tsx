@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import dynamic from "next/dynamic";
 import LiveClient from "./LiveClient";
 
 export default function LiveRoomPage() {
@@ -21,7 +20,6 @@ export default function LiveRoomPage() {
   const role = searchParams?.get("role") || "";
   const isHost = role === "host";
 
-  // Mobile detect (guarded)
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     try {
@@ -32,13 +30,11 @@ export default function LiveRoomPage() {
     }
   }, []);
 
-  // Join control: desktop auto-joins, mobile requires tap
   const [joined, setJoined] = useState(false);
   useEffect(() => {
     if (!isMobile) setJoined(true);
   }, [isMobile]);
 
-  // Token load (lightweight)
   const [lkUrl, setLkUrl] = useState("");
   const [token, setToken] = useState("");
   const [tokenErr, setTokenErr] = useState<string | null>(null);
@@ -61,11 +57,12 @@ export default function LiveRoomPage() {
 
         if (!res.ok) {
           const txt = await res.text().catch(() => "");
-          if (!cancelled) setTokenErr(`Token error ${res.status}: ${txt || "no body"}`);
+          if (!cancelled)
+            setTokenErr(`Token error ${res.status}: ${txt || "no body"}`);
           return;
         }
 
-        const data = await res.json().catch(() => null) as any;
+        const data = (await res.json().catch(() => null)) as any;
         const nextUrl = typeof data?.url === "string" ? data.url : "";
         const nextToken = typeof data?.token === "string" ? data.token : "";
 
@@ -78,45 +75,46 @@ export default function LiveRoomPage() {
       }
     })();
 
-  return () => {
-  cancelled = true;
-};
+    return () => {
+      cancelled = true;
+    };
   }, [sessionId, isHost]);
 
   const ready = Boolean(token && lkUrl);
 
-return (
-  <div className="bg-[#050814] text-white h-[100dvh] w-full relative">
+  return (
+    <div className="bg-[#050814] text-white h-[100dvh] w-full relative">
 
-    {tokenErr && (
-      <div className="absolute top-3 left-3 right-3 z-50 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-        {tokenErr}
-      </div>
-    )}
+      {tokenErr && (
+        <div className="absolute top-3 left-3 right-3 z-50 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+          {tokenErr}
+        </div>
+      )}
 
-    {!joined && isMobile && (
-      <div className="absolute inset-0 flex items-center justify-center z-50">
-        <button
-          onClick={() => setJoined(true)}
-          className="px-6 py-4 rounded-2xl bg-emerald-400 text-black font-semibold text-lg"
-        >
-          Tap to Join Live
-        </button>
-      </div>
-    )}
+      {!joined && isMobile && (
+        <div className="absolute inset-0 flex items-center justify-center z-50">
+          <button
+            onClick={() => setJoined(true)}
+            className="px-6 py-4 rounded-2xl bg-emerald-400 text-black font-semibold text-lg"
+          >
+            Tap to Join Live
+          </button>
+        </div>
+      )}
 
-    {joined && ready ? (
-      <LiveClient
-        token={token}
-        lkUrl={lkUrl}
-        isMobile={isMobile}
-        isHost={isHost}
-      />
-    ) : (
-      <div className="absolute inset-0 flex items-center justify-center text-white/60">
-        Loading live session...
-      </div>
-    )}
+      {joined && ready ? (
+        <LiveClient
+          token={token}
+          lkUrl={lkUrl}
+          isMobile={isMobile}
+          isHost={isHost}
+        />
+      ) : (
+        <div className="absolute inset-0 flex items-center justify-center text-white/60">
+          Loading live session...
+        </div>
+      )}
 
-  </div>
-);
+    </div>
+  );
+}
