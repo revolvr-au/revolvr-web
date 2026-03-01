@@ -85,44 +85,38 @@ export default function LiveRoomPage() {
 
   const ready = Boolean(token && lkUrl);
 
-  return (
-    <div className="bg-[#050814] text-white h-[100dvh] w-full relative">
-      {/* clean debug (only shows if token fails) */}
-      {tokenErr ? (
-        <div className="absolute top-3 left-3 right-3 z-50 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-          {tokenErr}
-        </div>
-      ) : null}
+return (
+  <div className="bg-[#050814] text-white h-[100dvh] w-full relative">
 
-      {/* Mobile tap gate */}
-      {!joined && isMobile && (
-        <div className="absolute inset-0 flex items-center justify-center z-50">
-          <button
-            onClick={() => setJoined(true)}
-            className="px-6 py-4 rounded-2xl bg-emerald-400 text-black font-semibold text-lg"
-          >
-            Tap to Join Live
-          </button>
-        </div>
-      )}
+    {tokenErr && (
+      <div className="absolute top-3 left-3 right-3 z-50 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+        {tokenErr}
+      </div>
+    )}
 
-      {/* Only mount LiveKit AFTER join + token ready */}
-      {joined && ready ? (
-  <LiveClient
-    token={token}
-    lkUrl={lkUrl}
-    isMobile={isMobile}
-    isHost={isHost}
-  />
-) : (
-  <div className="absolute inset-0 flex items-center justify-center text-white/60">
-    Loading live session...
+    {!joined && isMobile && (
+      <div className="absolute inset-0 flex items-center justify-center z-50">
+        <button
+          onClick={() => setJoined(true)}
+          className="px-6 py-4 rounded-2xl bg-emerald-400 text-black font-semibold text-lg"
+        >
+          Tap to Join Live
+        </button>
+      </div>
+    )}
+
+    {joined && ready ? (
+      <LiveClient
+        token={token}
+        lkUrl={lkUrl}
+        isMobile={isMobile}
+        isHost={isHost}
+      />
+    ) : (
+      <div className="absolute inset-0 flex items-center justify-center text-white/60">
+        Loading live session...
+      </div>
+    )}
+
   </div>
-)}
-        <div className="absolute inset-0 flex items-center justify-center text-white/60">
-          Loading live session...
-        </div>
-      )}
-    </div>
-  );
-}
+);
