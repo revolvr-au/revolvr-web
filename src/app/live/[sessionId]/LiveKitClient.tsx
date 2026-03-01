@@ -4,10 +4,11 @@ import {
   LiveKitRoom,
   RoomAudioRenderer,
   ParticipantTile,
-  ControlBar,
   useTracks,
+  useConnectionState,
 } from "@livekit/components-react";
-import { Track } from "livekit-client";
+import { Track, ConnectionState } from "livekit-client";
+import { useState } from "react";
 
 export default function LiveKitClient({
   token,
@@ -20,19 +21,32 @@ export default function LiveKitClient({
   isMobile: boolean;
   onlySubscribed: boolean;
 }) {
+  const [connectionState, setConnectionState] = useState<string>("connecting");
+
   return (
     <LiveKitRoom
       token={token}
       serverUrl={lkUrl}
       connect={true}
-      // iOS behaves better if we only request devices after user gesture (we only render this after tap)
       audio
       video
       className="h-full"
+      onConnected={() => setConnectionState("connected")}
+      onDisconnected={() => setConnectionState("disconnected")}
+      onReconnecting={() => setConnectionState("reconnecting")}
+      onReconnected={() => setConnectionState("connected")}
     >
       <RoomAudioRenderer />
+
       <Stage onlySubscribed={onlySubscribed} />
-      {!isMobile && <ControlBar />}
+
+      {connectionState !== "connected" && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 text-xs bg-black/60 px-3 py-1 rounded-full">
+          {connectionState === "connecting" && "Connecting…"}
+          {connectionState === "reconnecting" && "Reconnecting…"}
+          {connectionState === "disconnected" && "Connection lost"}
+        </div>
+      )}
     </LiveKitRoom>
   );
 }
