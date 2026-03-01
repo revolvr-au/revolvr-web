@@ -3,9 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-
-// IMPORTANT: LiveKit is heavy; load only after user taps.
-const LiveKitClient = dynamic(() => import("./LiveKitClient"), { ssr: false });
+import LiveClient from "./LiveClient";
 
 export default function LiveRoomPage() {
   const params = useParams<{ sessionId: string }>();
@@ -110,14 +108,17 @@ export default function LiveRoomPage() {
 
       {/* Only mount LiveKit AFTER join + token ready */}
       {joined && ready ? (
-        <LiveKitClient
-          token={token}
-          lkUrl={lkUrl}
-          isMobile={isMobile}
-          // host should publish; viewers only subscribe
-          onlySubscribed={!isHost}
-        />
-      ) : (
+  <LiveClient
+    token={token}
+    lkUrl={lkUrl}
+    isMobile={isMobile}
+    isHost={isHost}
+  />
+) : (
+  <div className="absolute inset-0 flex items-center justify-center text-white/60">
+    Loading live session...
+  </div>
+)}
         <div className="absolute inset-0 flex items-center justify-center text-white/60">
           Loading live session...
         </div>

@@ -4,7 +4,19 @@ import { LiveKitRoom } from "@livekit/components-react";
 import { useEffect, useState } from "react";
 import LiveRoom from "./LiveRoom";
 
-export default function LiveClient() {
+import LiveKitClient from "./LiveKitClient";
+
+export default function LiveClient({
+  token,
+  lkUrl,
+  isMobile,
+  isHost,
+}: {
+  token: string;
+  lkUrl: string;
+  isMobile: boolean;
+  isHost: boolean;
+}) {
   const [token, setToken] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
 

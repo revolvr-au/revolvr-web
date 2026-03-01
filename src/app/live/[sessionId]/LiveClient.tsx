@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import LiveKitClient from "./LiveKitClient";
 
 type Comment = {
   id: string;
@@ -10,16 +11,26 @@ type Comment = {
   createdAt: number;
 };
 
-export default function LiveClient() {
+export default function LiveClient({
+  token,
+  lkUrl,
+  isMobile,
+  isHost,
+}: {
+  token: string;
+  lkUrl: string;
+  isMobile: boolean;
+  isHost: boolean;
+}) {
   const router = useRouter();
 
   const [comments, setComments] = useState<Comment[]>([]);
-  const [viewerCount, setViewerCount] = useState(174);
+  const [viewerCount] = useState(174);
   const [heartBurst, setHeartBurst] = useState(false);
 
   const lastTapRef = useRef(0);
 
-  // Demo comment engine (replace later with realtime)
+  // Demo comments (temporary)
   useEffect(() => {
     const interval = setInterval(() => {
       setComments((prev) => {
@@ -42,34 +53,27 @@ export default function LiveClient() {
   function handleTap() {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      triggerHeart();
+      setHeartBurst(true);
+      setTimeout(() => setHeartBurst(false), 600);
     }
     lastTapRef.current = now;
   }
 
-  function triggerHeart() {
-    setHeartBurst(true);
-    setTimeout(() => setHeartBurst(false), 600);
-  }
-
   return (
-    <div className="relative w-screen h-screen bg-black overflow-hidden">
+    <div className="relative w-screen h-[100dvh] bg-black overflow-hidden">
 
       {/* VIDEO LAYER */}
-      <div
-        className="absolute inset-0"
-        onClick={handleTap}
-      >
-        <video
-          autoPlay
-          muted
-          playsInline
-          className="w-full h-full object-cover"
+      <div className="absolute inset-0" onClick={handleTap}>
+        <LiveKitClient
+          token={token}
+          lkUrl={lkUrl}
+          isMobile={isMobile}
+          onlySubscribed={!isHost}
         />
       </div>
 
       {/* TOP BAR */}
-      <div className="absolute top-4 left-4 flex items-center gap-3 text-white">
+      <div className="absolute top-4 left-4 flex items-center gap-3 text-white z-20">
         <div className="w-10 h-10 rounded-full bg-white/20" />
         <div>
           <div className="font-semibold">revolvr au</div>
@@ -82,29 +86,26 @@ export default function LiveClient() {
       {/* CLOSE */}
       <button
         onClick={() => router.push("/public-feed")}
-        className="absolute top-4 right-4 text-white text-lg"
+        className="absolute top-4 right-4 text-white text-lg z-20"
       >
         ✕
       </button>
 
       {/* LEFT FLOATING COMMENTS */}
-      <div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none">
+      <div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none z-20">
         {comments.map((c) => (
           <div
             key={c.id}
             className="text-white text-sm animate-fadeUp"
-            style={{
-              textShadow: "0 1px 6px rgba(0,0,0,0.7)",
-            }}
+            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
           >
-            <span className="font-semibold">{c.user}</span>{" "}
-            {c.text}
+            <span className="font-semibold">{c.user}</span> {c.text}
           </div>
         ))}
       </div>
 
       {/* RIGHT ACTION STACK */}
-      <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6 text-white">
+      <div className="absolute right-4 bottom-32 flex flex-col items-center gap-6 text-white z-20">
         <button className="text-3xl">❤️</button>
         <button className="text-3xl">💬</button>
         <button className="text-3xl">🎁</button>
@@ -112,7 +113,7 @@ export default function LiveClient() {
       </div>
 
       {/* BOTTOM COMMENT BAR */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent">
+      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-20">
         <div className="flex items-center gap-3 text-white">
           <input
             placeholder="Add a comment..."
@@ -125,7 +126,7 @@ export default function LiveClient() {
 
       {/* HEART BURST */}
       {heartBurst && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
           <div className="text-red-500 text-6xl animate-heartPop">
             ❤️
           </div>
@@ -133,3 +134,4 @@ export default function LiveClient() {
       )}
     </div>
   );
+}
