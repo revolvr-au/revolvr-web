@@ -440,81 +440,80 @@ const goLive = useGoLive(() => {
         </button>
       </div>
 
-      {/* comments list (temporary static until we wire GET) */}
-      <div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
-        <div className="space-y-4">
-  {comments.length === 0 && (
-    <div className="text-sm text-white/40">No comments yet.</div>
-  )}
+     {/* comments list */}
+<div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
+  <div className="space-y-4">
+    {comments.length === 0 && (
+      <div className="text-sm text-white/40">No comments yet.</div>
+    )}
 
-  {comments.map((c) => (
-    <div key={c.id}>
-      <div className="text-xs text-white/50">
-        @{c.userEmail?.split("@")[0] || "user"}
+    {comments.map((c) => (
+      <div key={c.id}>
+        <div className="text-xs text-white/50">
+          @{c.userEmail?.split("@")[0] || "user"}
+        </div>
+        <div className="text-sm text-white/90">{c.body}</div>
       </div>
-      <div className="text-sm text-white/90">{c.body}</div>
-    </div>
-  ))}
+    ))}
+  </div>
 </div>
-            <div className="text-xs text-white/50">@luna</div>
-            <div className="text-sm text-white/90">Love this angle.</div>
-          </div>
-          <div>
-            <div className="text-xs text-white/50">@revolvr</div>
-            <div className="text-sm text-white/90">First comment 😉</div>
-          </div>
-        </div>
-      </div>
 
-      {/* input row */}
-      <div className="border-t border-white/10 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <input
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Add a comment…"
-            className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-white/10"
-          />
+{/* input row */}
+<div className="border-t border-white/10 px-4 py-3">
+  <div className="flex items-center gap-2">
+    <input
+      value={commentText}
+      onChange={(e) => setCommentText(e.target.value)}
+      placeholder="Add a comment…"
+      className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-white/10"
+    />
 
-          <button
-            type="button"
-            disabled={!commentText.trim()}
-            onClick={async () => {
-              if (!activePostId || !commentText.trim()) return;
+    <button
+      type="button"
+      disabled={!commentText.trim()}
+      onClick={async () => {
+        if (!activePostId || !commentText.trim()) return;
 
-              try {
-                const res = await fetch("/api/comments", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    postId: activePostId,
-                    userEmail: viewer,
-                    body: commentText.trim(),
-                  }),
-                });
+        try {
+          const res = await fetch("/api/comments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              postId: activePostId,
+              userEmail: viewer,
+              body: commentText.trim(),
+            }),
+          });
 
-                const data = await res.json();
+          const data = await res.json();
 
-                if (!res.ok || !data?.ok) {
-                  console.error("Comment failed", data);
-                  return;
-                }
+          if (!res.ok || !data?.ok) {
+            console.error("Comment failed", data);
+            return;
+          }
 
-                setCommentText("");
-                setComments((prev) => [...prev, data.comment]);
-              } catch (err) {
-                console.error("Comment error", err);
-              }
-            }}
-            className={`h-11 rounded-full px-4 text-sm transition ${
-              commentText.trim()
-                ? "bg-white text-black"
-                : "bg-white/10 text-white/40"
-            }`}
-          >
-            Post
-          </button>
-        </div>
+          setComments((prev) => [...prev, data.comment]);
+          setCommentText("");
+        } catch (err) {
+          console.error("Comment error", err);
+        }
+      }}
+      className={`h-11 rounded-full px-4 text-sm transition ${
+        commentText.trim()
+          ? "bg-white text-black"
+          : "bg-white/10 text-white/40"
+      }`}
+    >
+      Post
+    </button>
+  </div>
+
+  {activePostId && (
+    <div className="mt-2 text-[11px] text-white/30">
+      Post: {activePostId}
+    </div>
+  )}
+</div>
 
         {activePostId && (
           <div className="mt-2 text-[11px] text-white/30">
