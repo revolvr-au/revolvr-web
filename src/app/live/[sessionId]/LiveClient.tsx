@@ -105,14 +105,20 @@ export default function LiveClient({
     <div className="relative w-screen h-[100dvh] bg-black overflow-hidden">
 
       {/* VIDEO */}
-      <div className="absolute inset-0 z-0" onClick={handleTap}>
-        <LiveKitClient
-          token={token}
-          lkUrl={lkUrl}
-          isMobile={isMobile}
-          onlySubscribed={!isHost}
-        />
-      </div>
+<div className="absolute inset-0 z-0 pointer-events-auto">
+  <LiveKitClient
+    token={token}
+    lkUrl={lkUrl}
+    isMobile={isMobile}
+    onlySubscribed={!isHost}
+  />
+</div>
+
+{/* DOUBLE TAP OVERLAY (separate layer) */}
+<div
+  className="absolute inset-0 z-10"
+  onClick={handleTap}
+/>
 
       {/* TOP BAR */}
       <div className="absolute top-4 left-4 ... z-50">
@@ -152,7 +158,7 @@ export default function LiveClient({
       </div>
 
       {/* COMMENT BAR */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-50 pointer-events-auto">
+      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-100 pointer-events-auto">
         <div className="flex items-center gap-3 text-white">
           <input
             value={message}
