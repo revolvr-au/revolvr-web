@@ -22,8 +22,8 @@ type ChatMessage = {
   created_at: string;
 };
 
-export default function LiveClient(...) {
-  console.log("LIVE CLIENT V2 ACTIVE");
+  
+export default function LiveClient({
   token,
   lkUrl,
   isMobile,
@@ -36,7 +36,7 @@ export default function LiveClient(...) {
   isHost: boolean;
   roomId: string;
 }) {
-  const router = useRouter();
+  console.log("LIVE CLIENT V2 ACTIVE");
 
   const [comments, setComments] = useState<ChatMessage[]>([]);
   const [viewerCount] = useState(174);
