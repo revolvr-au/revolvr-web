@@ -22,7 +22,8 @@ type ChatMessage = {
   created_at: string;
 };
 
-export default function LiveClient({
+export default function LiveClient(...) {
+  console.log("LIVE CLIENT V2 ACTIVE");
   token,
   lkUrl,
   isMobile,
@@ -158,7 +159,7 @@ export default function LiveClient({
       </div>
 
       {/* COMMENT BAR */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-100 pointer-events-auto">
+      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-[100] pointer-events-auto">
         <div className="flex items-center gap-3 text-white">
           <input
             value={message}
