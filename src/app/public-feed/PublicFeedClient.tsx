@@ -7,6 +7,7 @@ import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
+import { Send } from "lucide-react";
 
 type ApiPost = {
   id: string;
@@ -271,7 +272,29 @@ useEffect(() => {
   }
 }
 
+async function handleSendComment() {
+  if (!activePostId || !commentText.trim()) return;
 
+  try {
+    const res = await fetch("/api/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: activePostId,
+        userEmail: viewer,
+        body: commentText.trim(),
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data?.ok) return;
+
+    setComments((prev) => [...prev, data.comment]);
+    setCommentText("");
+  } catch (err) {
+    console.error(err);
+  }
+}
   return (
     <FeedLayout
   title="Revolvr"
@@ -412,13 +435,13 @@ useEffect(() => {
         {/* COMMENTS SHEET */}
 {commentsOpen && (
   <div className="fixed inset-0 z-50">
-    <button
-      type="button"
-      className="absolute inset-0 bg-black/60"
-      onClick={closeComments}
-    />
+  <button
+    type="button"
+    className="absolute inset-0 bg-black/60"
+    onClick={closeComments}
+  />
 
-    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[50vh] overflow-hidden">
+  <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[80dvh] overflow-hidden"></div>
 
       <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
@@ -433,7 +456,7 @@ useEffect(() => {
         </button>
       </div>
 
-      <div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
+      <div className="max-h-[calc(80dvh-140px)] overflow-y-auto px-5 pb-4">
         <div className="space-y-4">
           {comments.length === 0 && (
             <div className="text-sm text-white/40">
@@ -453,57 +476,34 @@ useEffect(() => {
           ))}
         </div>
       </div>
-
       <div className="border-t border-white/10 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <input
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Add a comment…"
-            className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white outline-none"
-          />
+  <div className="flex items-center gap-2">
+    <input
+      value={commentText}
+      onChange={(e) => setCommentText(e.target.value)}
+      onKeyDown={async (e) => {
+        if (e.key === "Enter" && commentText.trim() && activePostId) {
+          e.preventDefault();
+          await handleSendComment();
+        }
+      }}
+      inputMode="text"
+      enterKeyHint="send"
+      placeholder="Add a comment…"
+      className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white outline-none"
+    />
 
-          <button
-            type="button"
-            disabled={!commentText.trim()}
-            onClick={async () => {
-              if (!activePostId || !commentText.trim()) return;
-
-              try {
-                const res = await fetch("/api/comments", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    postId: activePostId,
-                    userEmail: viewer,
-                    body: commentText.trim(),
-                  }),
-                });
-
-                const data = await res.json();
-
-                if (!res.ok || !data?.ok) return;
-
-                setComments((prev) => [...prev, data.comment]);
-                setCommentText("");
-              } catch (err) {
-                console.error(err);
-              }
-            }}
-            className={`h-11 rounded-full px-4 text-sm ${
-              commentText.trim()
-                ? "bg-white text-black"
-                : "bg-white/10 text-white/40"
-            }`}
-          >
-            Post
-          </button>
-        </div>
-      </div>
-    </div>
+    <button
+      type="button"
+      disabled={!commentText.trim()}
+      onClick={handleSendComment}
+      className={`h-11 w-11 flex items-center justify-center rounded-full transition ${
+        commentText.trim()
+          ? "bg-white text-black"
+          : "bg-white/10 text-white/40"
+      }`}
+    >
+      <Send size={18} />
+    </button>
   </div>
-)}
-
-</FeedLayout>
-);
-}
+</div>
