@@ -23,6 +23,7 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
 
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -435,16 +436,49 @@ const goLive = useGoLive(() => {
             <div className="border-t border-white/10 px-4 py-3">
               <div className="flex items-center gap-2">
                 <input
-                  placeholder="Add a comment…"
-                  className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-white/10"
-                />
-                <button
-                  type="button"
-                  disabled
-                  className="h-11 rounded-full bg-white/10 px-4 text-sm text-white/40"
-                  title="Coming soon"
-                >
-                  Post
+  value={commentText}
+  onChange={(e) => setCommentText(e.target.value)}
+  placeholder="Add a comment…"
+  className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-white/10"
+/>
+
+<button
+  type="button"
+  disabled={!commentText.trim()}
+  onClick={async () => {
+  if (!activePostId || !commentText.trim()) return;
+
+  try {
+    const res = await fetch("/api/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: activePostId,
+        userEmail: viewer,
+        body: commentText.trim(), // 🔥 MATCHES API
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data?.ok) {
+      console.error("Comment failed", data);
+      return;
+    }
+
+    setCommentText("");
+  } catch (err) {
+    console.error("Comment error", err);
+  }
+}}
+  className={`h-11 rounded-full px-4 text-sm transition ${
+    commentText.trim()
+      ? "bg-white text-black"
+      : "bg-white/10 text-white/40"
+  }`}
+>
+  Post
+</button>
                 </button>
               </div>
 
