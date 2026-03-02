@@ -7,7 +7,7 @@ import RevolvrComposer from "@/components/live/RevolvrComposer";
 
 export default function LiveRoomPage() {
   return (
-    <div className="relative h-[100dvh] w-full bg-black overflow-hidden text-white">
+    <div className="relative h-[100svh] w-full bg-black overflow-hidden text-white">
       
       {/* Video */}
       <VideoCanvas />

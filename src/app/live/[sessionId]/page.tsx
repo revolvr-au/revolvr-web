@@ -83,7 +83,7 @@ export default function LiveRoomPage() {
   const ready = Boolean(token && lkUrl);
 
   return (
-    <div className="bg-[#050814] text-white h-[100dvh] w-full relative">
+    <div className="bg-[#050814] text-white h-[100svh] w-full relative">
 
       {tokenErr && (
         <div className="absolute top-3 left-3 right-3 z-50 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">

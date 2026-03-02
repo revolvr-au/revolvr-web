@@ -103,7 +103,7 @@ export default function LiveClient({
   }
 
   return (
-    <div className="relative w-screen h-[100dvh] bg-black overflow-hidden">
+    <div className="relative w-screen h-[100svh] bg-black overflow-hidden">
 
       {/* VIDEO */}
 <div className="absolute inset-0 z-0 pointer-events-auto">

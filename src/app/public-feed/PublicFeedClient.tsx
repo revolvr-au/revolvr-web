@@ -102,6 +102,17 @@ const goLive = useGoLive(() => {
   }, [posts]);
 
   useEffect(() => {
+  if (!commentsOpen) return;
+
+  const original = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+
+  return () => {
+    document.body.style.overflow = original;
+  };
+}, [commentsOpen]);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function run() {
@@ -133,7 +144,7 @@ const goLive = useGoLive(() => {
 
         const nextCommentCounts: Record<string, number> = {};
         for (const p of incoming) {
-  nextCommentCounts[p.id] = 0; // default
+        nextCommentCounts[p.id] = 0; // default
         }
         setCommentCounts(nextCommentCounts);
 
@@ -466,7 +477,7 @@ async function handleSendComment() {
       onClick={closeComments}
     />
 
-    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl h-[80dvh] flex flex-col">
+    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl h-[85svh] flex flex-col">
 
       <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
