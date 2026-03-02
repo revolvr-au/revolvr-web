@@ -432,78 +432,86 @@ async function handleSendComment() {
             </div>
           );
         })}
-        {/* COMMENTS SHEET */}
-{commentsOpen && (
-  <div className="fixed inset-0 z-50">
-  <button
-    type="button"
-    className="absolute inset-0 bg-black/60"
-    onClick={closeComments}
-  />
+               {/* COMMENTS SHEET */}
+        {commentsOpen && (
+          <div className="fixed inset-0 z-50">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/60"
+              onClick={closeComments}
+            />
 
-  <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[80dvh] overflow-hidden"></div>
+            <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[80dvh] overflow-hidden">
 
-      <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
+              <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
-      <div className="flex items-center justify-between px-5 py-4">
-        <div className="text-sm font-semibold text-white">Comments</div>
-        <button
-          type="button"
-          onClick={closeComments}
-          className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
-        >
-          Close
-        </button>
-      </div>
-
-      <div className="max-h-[calc(80dvh-140px)] overflow-y-auto px-5 pb-4">
-        <div className="space-y-4">
-          {comments.length === 0 && (
-            <div className="text-sm text-white/40">
-              No comments yet.
-            </div>
-          )}
-
-          {comments.map((c) => (
-            <div key={c.id}>
-              <div className="text-xs text-white/50">
-                @{c.userEmail?.split("@")[0] || "user"}
+              <div className="flex items-center justify-between px-5 py-4">
+                <div className="text-sm font-semibold text-white">Comments</div>
+                <button
+                  type="button"
+                  onClick={closeComments}
+                  className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
+                >
+                  Close
+                </button>
               </div>
-              <div className="text-sm text-white/90">
-                {c.body}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="border-t border-white/10 px-4 py-3">
-  <div className="flex items-center gap-2">
-    <input
-      value={commentText}
-      onChange={(e) => setCommentText(e.target.value)}
-      onKeyDown={async (e) => {
-        if (e.key === "Enter" && commentText.trim() && activePostId) {
-          e.preventDefault();
-          await handleSendComment();
-        }
-      }}
-      inputMode="text"
-      enterKeyHint="send"
-      placeholder="Add a comment…"
-      className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white outline-none"
-    />
 
-    <button
-      type="button"
-      disabled={!commentText.trim()}
-      onClick={handleSendComment}
-      className={`h-11 w-11 flex items-center justify-center rounded-full transition ${
-        commentText.trim()
-          ? "bg-white text-black"
-          : "bg-white/10 text-white/40"
-      }`}
-    >
-      <Send size={18} />
-    </button>
-  </div>
-</div>
+              <div className="max-h-[calc(80dvh-140px)] overflow-y-auto px-5 pb-4">
+                <div className="space-y-4">
+                  {comments.length === 0 && (
+                    <div className="text-sm text-white/40">
+                      No comments yet.
+                    </div>
+                  )}
+
+                  {comments.map((c) => (
+                    <div key={c.id}>
+                      <div className="text-xs text-white/50">
+                        @{c.userEmail?.split("@")[0] || "user"}
+                      </div>
+                      <div className="text-sm text-white/90">
+                        {c.body}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-white/10 px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    onKeyDown={async (e) => {
+                      if (e.key === "Enter" && commentText.trim() && activePostId) {
+                        e.preventDefault();
+                        await handleSendComment();
+                      }
+                    }}
+                    inputMode="text"
+                    enterKeyHint="send"
+                    placeholder="Add a comment…"
+                    className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white outline-none"
+                  />
+
+                  <button
+                    type="button"
+                    disabled={!commentText.trim()}
+                    onClick={handleSendComment}
+                    className={`h-11 w-11 flex items-center justify-center rounded-full transition ${
+                      commentText.trim()
+                        ? "bg-white text-black"
+                        : "bg-white/10 text-white/40"
+                    }`}
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+            </FeedLayout>
+  );
+}
