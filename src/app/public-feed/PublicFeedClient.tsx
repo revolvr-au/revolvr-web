@@ -410,120 +410,101 @@ const goLive = useGoLive(() => {
             </div>
           );
         })}
-
-        {/* COMMENTS SHEET (global) */}
+        {/* COMMENTS SHEET */}
 {commentsOpen && (
   <div className="fixed inset-0 z-50">
-    {/* backdrop */}
     <button
       type="button"
       className="absolute inset-0 bg-black/60"
-      aria-label="Close comments"
       onClick={closeComments}
     />
 
-    {/* sheet */}
     <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[50vh] overflow-hidden">
 
-      {/* grab handle */}
       <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
-      {/* header */}
       <div className="flex items-center justify-between px-5 py-4">
         <div className="text-sm font-semibold text-white">Comments</div>
         <button
           type="button"
           onClick={closeComments}
-          className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white hover:bg-white/5"
+          className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
         >
           Close
         </button>
       </div>
 
-     {/* comments list */}
-<div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
-  <div className="space-y-4">
-    {comments.length === 0 && (
-      <div className="text-sm text-white/40">No comments yet.</div>
-    )}
+      <div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
+        <div className="space-y-4">
+          {comments.length === 0 && (
+            <div className="text-sm text-white/40">
+              No comments yet.
+            </div>
+          )}
 
-    {comments.map((c) => (
-      <div key={c.id}>
-        <div className="text-xs text-white/50">
-          @{c.userEmail?.split("@")[0] || "user"}
+          {comments.map((c) => (
+            <div key={c.id}>
+              <div className="text-xs text-white/50">
+                @{c.userEmail?.split("@")[0] || "user"}
+              </div>
+              <div className="text-sm text-white/90">
+                {c.body}
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="text-sm text-white/90">{c.body}</div>
       </div>
-    ))}
-  </div>
-</div>
 
-{/* input row */}
-<div className="border-t border-white/10 px-4 py-3">
-  <div className="flex items-center gap-2">
-    <input
-      value={commentText}
-      onChange={(e) => setCommentText(e.target.value)}
-      placeholder="Add a comment…"
-      className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-white/10"
-    />
+      <div className="border-t border-white/10 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Add a comment…"
+            className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white outline-none"
+          />
 
-    <button
-      type="button"
-      disabled={!commentText.trim()}
-      onClick={async () => {
-        if (!activePostId || !commentText.trim()) return;
+          <button
+            type="button"
+            disabled={!commentText.trim()}
+            onClick={async () => {
+              if (!activePostId || !commentText.trim()) return;
 
-        try {
-          const res = await fetch("/api/comments", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              postId: activePostId,
-              userEmail: viewer,
-              body: commentText.trim(),
-            }),
-          });
+              try {
+                const res = await fetch("/api/comments", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    postId: activePostId,
+                    userEmail: viewer,
+                    body: commentText.trim(),
+                  }),
+                });
 
-          const data = await res.json();
+                const data = await res.json();
 
-          if (!res.ok || !data?.ok) {
-            console.error("Comment failed", data);
-            return;
-          }
+                if (!res.ok || !data?.ok) return;
 
-          setComments((prev) => [...prev, data.comment]);
-          setCommentText("");
-        } catch (err) {
-          console.error("Comment error", err);
-        }
-      }}
-      className={`h-11 rounded-full px-4 text-sm transition ${
-        commentText.trim()
-          ? "bg-white text-black"
-          : "bg-white/10 text-white/40"
-      }`}
-    >
-      Post
-    </button>
-  </div>
-
-  {activePostId && (
-    <div className="mt-2 text-[11px] text-white/30">
-      Post: {activePostId}
-    </div>
-  )}
-</div>
-
-        {activePostId && (
-          <div className="mt-2 text-[11px] text-white/30">
-            Post: {activePostId}
-          </div>
-        )}
+                setComments((prev) => [...prev, data.comment]);
+                setCommentText("");
+              } catch (err) {
+                console.error(err);
+              }
+            }}
+            className={`h-11 rounded-full px-4 text-sm ${
+              commentText.trim()
+                ? "bg-white text-black"
+                : "bg-white/10 text-white/40"
+            }`}
+          >
+            Post
+          </button>
+        </div>
       </div>
     </div>
   </div>
 )}
-    </FeedLayout>
-  );
+
+</FeedLayout>
+);
 }
