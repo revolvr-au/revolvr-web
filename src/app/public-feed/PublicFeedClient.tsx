@@ -295,6 +295,10 @@ async function handleSendComment() {
     console.error(err);
   }
 }
+if (typeof document !== "undefined") {
+  const el = document.activeElement as HTMLElement | null;
+  el?.blur();
+}
   return (
     <FeedLayout
   title="Revolvr"
@@ -441,7 +445,7 @@ async function handleSendComment() {
               onClick={closeComments}
             />
 
-            <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[80dvh] overflow-hidden">
+            className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl h-[80vh] flex flex-col"
 
               <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
@@ -456,7 +460,7 @@ async function handleSendComment() {
                 </button>
               </div>
 
-              <div className="max-h-[calc(80dvh-140px)] overflow-y-auto px-5 pb-4">
+              <div className="flex-1 overflow-y-auto px-5 pb-4">
                 <div className="space-y-4">
                   {comments.length === 0 && (
                     <div className="text-sm text-white/40">
