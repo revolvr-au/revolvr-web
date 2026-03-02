@@ -26,6 +26,7 @@ export function PublicFeedClient() {
   const [err, setErr] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
 
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -130,6 +131,12 @@ const goLive = useGoLive(() => {
 
         setPosts(incoming);
 
+        const nextCommentCounts: Record<string, number> = {};
+        for (const p of incoming) {
+  nextCommentCounts[p.id] = 0; // default
+        }
+        setCommentCounts(nextCommentCounts);
+
         const nextLiked: Record<string, boolean> = {};
         const nextCounts: Record<string, number> = {};
         for (const p of incoming) {
@@ -166,6 +173,10 @@ useEffect(() => {
 
       if (res.ok && Array.isArray(data?.comments)) {
         setComments(data.comments);
+        setCommentCounts((prev) => ({
+        ...prev,
+        [activePostId!]: data.comments.length,
+        }));
       }
     } catch (err) {
       console.error("Failed loading comments", err);
@@ -291,6 +302,10 @@ async function handleSendComment() {
 
     setComments((prev) => [...prev, data.comment]);
     setCommentText("");
+    setCommentCounts((prev) => ({
+    ...prev,
+    [activePostId]: (prev[activePostId!] || 0) + 1,
+    }));
 
     // Proper keyboard close
     if (typeof document !== "undefined") {
@@ -422,7 +437,9 @@ async function handleSendComment() {
                     className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
                   >
                     <MessageCircle size={26} />
-                    <span className="text-[12px]">0</span>
+                    <span className="text-[12px]">
+                    {commentCounts[p.id] ?? 0}
+                    </span>
                   </button>
 
                   {/* SHARE */}
@@ -449,7 +466,7 @@ async function handleSendComment() {
       onClick={closeComments}
     />
 
-    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl max-h-[80dvh] overflow-hidden">
+    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl h-[80dvh] flex flex-col">
 
       <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
@@ -464,7 +481,7 @@ async function handleSendComment() {
         </button>
       </div>
 
-      <div className="max-h-[calc(80dvh-140px)] overflow-y-auto px-5 pb-4">
+      <div className="flex-1 overflow-y-auto px-5 pb-4">
         <div className="space-y-4">
           {comments.length === 0 && (
             <div className="text-sm text-white/40">
