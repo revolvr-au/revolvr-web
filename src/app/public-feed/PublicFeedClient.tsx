@@ -415,7 +415,10 @@ async function handleSendComment() {
                   {/* COMMENT */}
                   <button
                     type="button"
-                    onClick={() => openComments(p.id)}
+                    onClick={() => {
+                    console.log("COMMENT CLICKED", p.id);
+                    openComments(p.id);
+                    }}
                     className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
                   >
                     <MessageCircle size={26} />
