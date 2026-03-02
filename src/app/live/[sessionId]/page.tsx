@@ -104,11 +104,12 @@ export default function LiveRoomPage() {
 
       {joined && ready ? (
         <LiveClient
-          token={token}
-          lkUrl={lkUrl}
-          isMobile={isMobile}
-          isHost={isHost}
-        />
+  token={token}
+  lkUrl={lkUrl}
+  isMobile={isMobile}
+  isHost={isHost}
+  roomId={sessionId}
+/>
       ) : (
         <div className="absolute inset-0 flex items-center justify-center text-white/60">
           Loading live session...

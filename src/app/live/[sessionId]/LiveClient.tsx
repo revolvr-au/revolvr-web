@@ -3,14 +3,23 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { createClient } from "@supabase/supabase-js";
 
 const LiveKitClient = dynamic(() => import("./LiveKitClient"), { ssr: false });
 
-type Comment = {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+type ChatMessage = {
   id: string;
-  user: string;
-  text: string;
-  createdAt: number;
+  room_id: string;
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  message: string;
+  created_at: string;
 };
 
 export default function LiveClient({
@@ -18,74 +27,84 @@ export default function LiveClient({
   lkUrl,
   isMobile,
   isHost,
+  roomId,
 }: {
   token: string;
   lkUrl: string;
   isMobile: boolean;
   isHost: boolean;
+  roomId: string;
 }) {
   const router = useRouter();
 
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [comments, setComments] = useState<ChatMessage[]>([]);
   const [viewerCount] = useState(174);
   const [heartBurst, setHeartBurst] = useState(false);
   const [message, setMessage] = useState("");
 
   const lastTapRef = useRef(0);
 
-  // Demo floating comments (temporary)
+  // 🔥 INITIAL FETCH
   useEffect(() => {
-    const interval = setInterval(() => {
-      setComments((prev) => {
-        const next = [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            user: "User" + Math.floor(Math.random() * 100),
-            text: "🔥 Loving this",
-            createdAt: Date.now(),
-          },
-        ];
-        return next.slice(-4);
-      });
-    }, 4000);
+    async function loadInitial() {
+      const res = await fetch(`/api/live/chat?roomId=${roomId}&limit=50`);
+      const data = await res.json();
+      if (data?.ok) {
+        setComments(data.messages || []);
+      }
+    }
+    loadInitial();
+  }, [roomId]);
 
-    return () => clearInterval(interval);
-  }, []);
+  // 🔥 REALTIME SUBSCRIPTION
+  useEffect(() => {
+    const channel = supabase
+      .channel("live-chat-" + roomId)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "live_chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          setComments((prev) => [...prev, payload.new as ChatMessage]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomId]);
 
   function handleTap() {
     const now = Date.now();
     if (now - lastTapRef.current < 300) {
-      triggerHeart();
+      setHeartBurst(true);
+      setTimeout(() => setHeartBurst(false), 600);
     }
     lastTapRef.current = now;
   }
 
-  function triggerHeart() {
-    setHeartBurst(true);
-    setTimeout(() => setHeartBurst(false), 600);
-  }
-
-  function handleSend() {
+  async function handleSend() {
     if (!message.trim()) return;
 
-    setComments((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        user: "You",
-        text: message,
-        createdAt: Date.now(),
-      },
-    ]);
-
+    const text = message;
     setMessage("");
+
+    await fetch("/api/live/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId, message: text }),
+    });
   }
 
   return (
     <div className="relative w-screen h-[100dvh] bg-black overflow-hidden">
 
-      {/* VIDEO LAYER */}
+      {/* VIDEO */}
       <div className="absolute inset-0" onClick={handleTap}>
         <LiveKitClient
           token={token}
@@ -98,24 +117,16 @@ export default function LiveClient({
       {/* TOP BAR */}
       <div className="absolute top-4 left-4 flex items-start gap-3 text-white z-40">
         <div className="w-10 h-10 rounded-full bg-white/20" />
-
         <div className="leading-tight">
           <div className="font-semibold text-sm">revolvr au</div>
-
-          <div className="text-xs opacity-90 mt-1">
-            <span className="mr-2">🔴 LIVE</span>
-            <span className="font-semibold">{viewerCount}</span>{" "}
-            <span className="opacity-70">watching</span>
+          <div className="text-xs mt-1">
+            🔴 LIVE • <span className="font-semibold">{viewerCount}</span> watching
           </div>
         </div>
       </div>
 
-      {/* FOLLOW + CLOSE */}
-      <div className="absolute top-4 right-4 flex items-center gap-3 z-40">
-        <button className="text-xs px-3 py-1 rounded-full border border-white/30 bg-white/10 backdrop-blur-sm">
-          + Follow
-        </button>
-
+      {/* CLOSE */}
+      <div className="absolute top-4 right-4 z-40">
         <button
           onClick={() => router.push("/public-feed")}
           className="text-white text-lg"
@@ -124,18 +135,18 @@ export default function LiveClient({
         </button>
       </div>
 
-      {/* FLOATING COMMENTS */}
+      {/* COMMENTS */}
       <div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none z-30">
-        {comments.map((c) => (
+        {comments.slice(-6).map((c) => (
           <div
             key={c.id}
-            className="text-white text-sm animate-fadeUp"
-            style={{
-              textShadow: "0 1px 6px rgba(0,0,0,0.7)",
-            }}
+            className="text-white text-sm"
+            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
           >
-            <span className="font-semibold">{c.user}</span>{" "}
-            {c.text}
+            <span className="font-semibold">
+              {c.display_name || "user"}
+            </span>{" "}
+            {c.message}
           </div>
         ))}
       </div>
@@ -150,8 +161,6 @@ export default function LiveClient({
             className="flex-1 bg-white/10 rounded-full px-4 py-2 text-sm outline-none"
           />
 
-          <button className="text-lg opacity-80">🙂</button>
-
           <button
             onClick={handleSend}
             disabled={!message.trim()}
@@ -164,12 +173,9 @@ export default function LiveClient({
         </div>
       </div>
 
-      {/* HEART BURST */}
       {heartBurst && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-          <div className="text-red-500 text-6xl animate-heartPop">
-            ❤️
-          </div>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-red-500 text-6xl">❤️</div>
         </div>
       )}
     </div>
