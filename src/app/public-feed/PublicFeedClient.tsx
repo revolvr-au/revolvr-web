@@ -122,27 +122,7 @@ const goLive = useGoLive(() => {
           }
           return;
         }
-
-        useEffect(() => {
-  if (!commentsOpen || !activePostId) return;
-
-  async function loadComments() {
-    try {
-      const res = await fetch(
-        `/api/comments?postId=${encodeURIComponent(activePostId)}`
-      );
-      const data = await res.json();
-
-      if (res.ok && Array.isArray(data?.comments)) {
-        setComments(data.comments);
-      }
-    } catch (err) {
-      console.error("Failed loading comments", err);
-    }
-  }
-
-  loadComments();
-}, [commentsOpen, activePostId]);
+        
 
         const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
         if (cancelled) return;
@@ -173,7 +153,26 @@ const goLive = useGoLive(() => {
       cancelled = true;
     };
   }, [viewer]);
+useEffect(() => {
+  if (!commentsOpen || !activePostId) return;
 
+  async function loadComments() {
+    try {
+      const res = await fetch(
+        `/api/comments?postId=${encodeURIComponent(activePostId)}`
+      );
+      const data = await res.json();
+
+      if (res.ok && Array.isArray(data?.comments)) {
+        setComments(data.comments);
+      }
+    } catch (err) {
+      console.error("Failed loading comments", err);
+    }
+  }
+
+  loadComments();
+}, [commentsOpen, activePostId]);
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
       const next = { ...prev, [postId]: !prev[postId] };
