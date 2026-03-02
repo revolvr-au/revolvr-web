@@ -105,7 +105,7 @@ export default function LiveClient({
     <div className="relative w-screen h-[100dvh] bg-black overflow-hidden">
 
       {/* VIDEO */}
-      <div className="absolute inset-0" onClick={handleTap}>
+      <div className="absolute inset-0 z-0" onClick={handleTap}>
         <LiveKitClient
           token={token}
           lkUrl={lkUrl}
@@ -115,7 +115,7 @@ export default function LiveClient({
       </div>
 
       {/* TOP BAR */}
-      <div className="absolute top-4 left-4 flex items-start gap-3 text-white z-40">
+      <div className="absolute top-4 left-4 ... z-50">
         <div className="w-10 h-10 rounded-full bg-white/20" />
         <div className="leading-tight">
           <div className="font-semibold text-sm">revolvr au</div>
@@ -152,7 +152,7 @@ export default function LiveClient({
       </div>
 
       {/* COMMENT BAR */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-40">
+      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-50 pointer-events-auto">
         <div className="flex items-center gap-3 text-white">
           <input
             value={message}
