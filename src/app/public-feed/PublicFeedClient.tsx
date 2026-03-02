@@ -24,6 +24,7 @@ export function PublicFeedClient() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState<any[]>([]);
 
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
@@ -121,6 +122,27 @@ const goLive = useGoLive(() => {
           }
           return;
         }
+
+        useEffect(() => {
+  if (!commentsOpen || !activePostId) return;
+
+  async function loadComments() {
+    try {
+      const res = await fetch(
+        `/api/comments?postId=${encodeURIComponent(activePostId)}`
+      );
+      const data = await res.json();
+
+      if (res.ok && Array.isArray(data?.comments)) {
+        setComments(data.comments);
+      }
+    } catch (err) {
+      console.error("Failed loading comments", err);
+    }
+  }
+
+  loadComments();
+}, [commentsOpen, activePostId]);
 
         const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
         if (cancelled) return;
@@ -421,11 +443,19 @@ const goLive = useGoLive(() => {
       {/* comments list (temporary static until we wire GET) */}
       <div className="max-h-[34vh] overflow-y-auto px-5 pb-4">
         <div className="space-y-4">
-          <div>
-            <div className="text-xs text-white/50">@captain</div>
-            <div className="text-sm text-white/90">This is clean 🔥</div>
-          </div>
-          <div>
+  {comments.length === 0 && (
+    <div className="text-sm text-white/40">No comments yet.</div>
+  )}
+
+  {comments.map((c) => (
+    <div key={c.id}>
+      <div className="text-xs text-white/50">
+        @{c.userEmail?.split("@")[0] || "user"}
+      </div>
+      <div className="text-sm text-white/90">{c.body}</div>
+    </div>
+  ))}
+</div>
             <div className="text-xs text-white/50">@luna</div>
             <div className="text-sm text-white/90">Love this angle.</div>
           </div>
@@ -471,6 +501,7 @@ const goLive = useGoLive(() => {
                 }
 
                 setCommentText("");
+                setComments((prev) => [...prev, data.comment]);
               } catch (err) {
                 console.error("Comment error", err);
               }
