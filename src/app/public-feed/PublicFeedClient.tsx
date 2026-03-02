@@ -494,7 +494,6 @@ const goLive = useGoLive(() => {
     </div>
   </div>
 )}
-      )}
     </FeedLayout>
   );
 }
