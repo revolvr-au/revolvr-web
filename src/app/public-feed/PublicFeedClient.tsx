@@ -392,113 +392,134 @@ async function handleSendComment() {
           const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
 
           return (
-            <div key={p.id} className="p-4">
-              <div className="px-4 mb-2">
-                <div className="text-sm font-semibold text-white">{display}</div>
-                {email && (
-                  <div className="text-xs text-white/40">@{email.split("@")[0]}</div>
-                )}
-              </div>
+  <div key={p.id} className="pt-4">
 
-              <div className="mt-3 relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-black">
-                {mediaUrl ? (
-                  isVideo ? (
-                    <video src={mediaUrl} controls className="w-full h-auto block" />
-                  ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={mediaUrl}
-                      alt="Post media"
-                      className="w-full h-auto block object-cover"
-                    />
-                  )
-                ) : (
-                  <div className="p-6 text-sm opacity-70">No media.</div>
-                )}
+    {/* MEDIA (FULL BLEED) */}
+    <div className="relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-black">
 
-                {/* LEFT LOWER REWARDS */}
-                <div className="absolute z-40 left-4 bottom-[90px] md:bottom-6">
-                  <button
-                    type="button"
-                    onClick={() => toggleRewards(p.id)}
-                    className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
-                  >
-                    <Gift size={16} />
-                    Rewards
-                  </button>
+      {/* TOP GRADIENT FOR READABILITY */}
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
-                  {/* Reward tray (floats) */}
-                  {rewardsOpenForThisPost ? (
-                    <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
-                      <div className="text-[11px] text-white/60 px-2 pb-2">
-                        Reward this post
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        {rewardItems.map((it) => (
-                          <button
-                            key={it.mode}
-                            type="button"
-                            onClick={() => onOpenReward(it.mode, p.id)}
-                            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
-                          >
-                            <div className="text-base">{it.icon}</div>
-                            <div className="text-xs text-white/90 font-semibold">
-                              {it.label}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+      {/* TOP OVERLAY HEADER */}
+      <div className="absolute top-4 left-4 right-4 z-40 flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-white drop-shadow-md">
+            {display}
+          </div>
+          {email && (
+            <div className="text-xs text-white/80 drop-shadow-md">
+              @{email.split("@")[0]}
+            </div>
+          )}
+        </div>
 
-                {/* RIGHT LOWER ACTIONS */}
-                <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
-                  {/* LIKE */}
-                  <button
-                    type="button"
-                    onClick={() => toggleLike(p.id)}
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-                  >
-                    <Heart
-                      size={26}
-                      className={likedMap[p.id] ? "fill-red-500 text-red-500" : ""}
-                    />
-                    <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
-                  </button>
+        <button
+          type="button"
+          onClick={() => onToggleFollow(email)}
+          className="rounded-full bg-white/15 backdrop-blur px-3 py-1 text-xs text-white hover:bg-white/25 transition"
+        >
+          Follow
+        </button>
+      </div>
 
-                  {/* COMMENT */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                    console.log("COMMENT CLICKED", p.id);
-                    openComments(p.id);
-                    }}
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-                  >
-                    <MessageCircle size={26} />
-                    <span className="text-[12px]">
-                    {commentCounts[p.id] ?? 0}
-                    </span>
-                  </button>
+      {mediaUrl ? (
+        isVideo ? (
+          <video
+            src={mediaUrl}
+            controls
+            className="w-full h-auto block"
+          />
+        ) : (
+          <img
+            src={mediaUrl}
+            alt="Post media"
+            className="w-full h-auto block object-cover"
+          />
+        )
+      ) : (
+        <div className="p-6 text-sm opacity-70 text-white">
+          No media.
+        </div>
+      )}
 
-                  {/* SHARE */}
-                  <button
-                    type="button"
-                    onClick={() => sharePost(p.id)}
-                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-                  >
-                    <Share2 size={26} />
-                    <span className="text-[12px]">Share</span>
-                  </button>
-                </div>
-              </div>
+      {/* LEFT LOWER REWARDS */}
+      <div className="absolute z-40 left-4 bottom-[90px] md:bottom-6">
+        <button
+          type="button"
+          onClick={() => toggleRewards(p.id)}
+          className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
+        >
+          <Gift size={16} />
+          Rewards
+        </button>
 
-              {p.caption && (
-  <div className="px-4 mt-3 text-sm text-white/90">
-    {p.caption}
+        {rewardsOpenForThisPost && (
+          <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
+            <div className="text-[11px] text-white/60 px-2 pb-2">
+              Reward this post
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {rewardItems.map((it) => (
+                <button
+                  key={it.mode}
+                  type="button"
+                  onClick={() => onOpenReward(it.mode, p.id)}
+                  className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
+                >
+                  <div className="text-base">{it.icon}</div>
+                  <div className="text-xs text-white/90 font-semibold">
+                    {it.label}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* RIGHT LOWER ACTIONS */}
+      <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
+        <button
+          type="button"
+          onClick={() => toggleLike(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+        >
+          <Heart
+            size={26}
+            className={likedMap[p.id] ? "fill-red-500 text-red-500" : ""}
+          />
+          <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => openComments(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+        >
+          <MessageCircle size={26} />
+          <span className="text-[12px]">
+            {commentCounts[p.id] ?? 0}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => sharePost(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+        >
+          <Share2 size={26} />
+          <span className="text-[12px]">Share</span>
+        </button>
+      </div>
+    </div>
+
+    {p.caption && (
+      <div className="px-4 mt-3 text-sm text-white/90">
+        {p.caption}
+      </div>
+    )}
   </div>
-)}
+);
             </div>
           );
         })}
