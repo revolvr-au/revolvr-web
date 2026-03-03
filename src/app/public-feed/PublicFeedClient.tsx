@@ -414,12 +414,16 @@ async function handleSendComment() {
         </div>
 
         <button
-          type="button"
-          onClick={() => onToggleFollow(email)}
-          className="rounded-full bg-white/15 backdrop-blur px-3 py-1 text-xs text-white hover:bg-white/25 transition"
-        >
-          Follow
-        </button>
+  type="button"
+  onClick={() => onToggleFollow(email)}
+  className={`rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+  followMap[email]
+    ? "bg-white text-black"
+    : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+}`}
+>
+  {followMap[email] ? "Following" : "Follow"}
+</button>
       </div>
 
       {mediaUrl ? (
