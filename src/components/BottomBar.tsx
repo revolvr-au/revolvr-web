@@ -182,19 +182,18 @@ export default function BottomBar({
     paddingBottom: safeArea ? "env(safe-area-inset-bottom)" : undefined,
   }}
 >
-    >
       <div className="mx-auto flex h-full max-w-screen-sm items-center justify-around px-2">
         {resolvedTabs.map((tab) => {
           const active = isActive(pathname, tab);
 
-          const baseClasses = [
-            "flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-1",
-            active 
-          ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
-            : "text-white/60"
-            "hover:text-white",
-            "focus:outline-none focus:ring-2 focus:ring-white/20",
-          ].join(" ");
+        const baseClasses = [
+  "flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-1",
+  active
+    ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+    : "text-white/60",
+  "hover:text-white",
+  "focus:outline-none focus:ring-2 focus:ring-white/20",
+].join(" ");
 
           const iconName =
             tab.key === "feed"
