@@ -175,16 +175,13 @@ export default function BottomBar({
 
   return (
     <nav
-      aria-label="Bottom navigation"
-      className={[
-        "fixed inset-x-0 bottom-0 z-50",
-        "border-t border-white/10",
-        "bg-[#050814]/90 backdrop-blur",
-      ].join(" ")}
-      style={{
-        height: BAR_HEIGHT_PX,
-        paddingBottom: safeArea ? "env(safe-area-inset-bottom)" : undefined,
-      }}
+  aria-label="Bottom navigation"
+  className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#050814]/70 backdrop-blur-xl"
+  style={{
+    height: BAR_HEIGHT_PX,
+    paddingBottom: safeArea ? "env(safe-area-inset-bottom)" : undefined,
+  }}
+>
     >
       <div className="mx-auto flex h-full max-w-screen-sm items-center justify-around px-2">
         {resolvedTabs.map((tab) => {
@@ -192,7 +189,9 @@ export default function BottomBar({
 
           const baseClasses = [
             "flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-1",
-            active ? "text-white" : "text-white/70",
+            active 
+          ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+            : "text-white/60"
             "hover:text-white",
             "focus:outline-none focus:ring-2 focus:ring-white/20",
           ].join(" ");

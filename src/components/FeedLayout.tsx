@@ -29,8 +29,8 @@ export default function FeedLayout({
 
       {/* HEADER (hidden during LIVE) */}
       {!isLive && (
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-black/40 backdrop-blur-md">
-          <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
+        <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/10 bg-[#050814]/70 backdrop-blur-xl">
+        <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
 
             {/* Brand */}
             <div className="min-w-0">
@@ -80,7 +80,7 @@ export default function FeedLayout({
       )}
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 w-full px-4 py-6 pb-24">
+      <main className="flex-1 w-full px-4 py-6 pt-20 pb-24">
         <div className="mx-auto w-full max-w-[720px]">
           {children}
         </div>
