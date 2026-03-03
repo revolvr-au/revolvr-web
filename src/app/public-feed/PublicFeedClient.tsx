@@ -393,14 +393,14 @@ async function handleSendComment() {
 
           return (
             <div key={p.id} className="p-4">
-              <div className="mb-2">
+              <div className="px-4 mb-2">
                 <div className="text-sm font-semibold text-white">{display}</div>
                 {email && (
                   <div className="text-xs text-white/40">@{email.split("@")[0]}</div>
                 )}
               </div>
 
-              <div className="mt-3 relative rounded-2xl overflow-hidden border border-white/10 bg-black/20">
+              <div className="mt-3 relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-black">
                 {mediaUrl ? (
                   isVideo ? (
                     <video src={mediaUrl} controls className="w-full h-auto block" />
@@ -494,7 +494,11 @@ async function handleSendComment() {
                 </div>
               </div>
 
-              {p.caption && <div className="mt-3 text-sm text-white/90">{p.caption}</div>}
+              {p.caption && (
+  <div className="px-4 mt-3 text-sm text-white/90">
+    {p.caption}
+  </div>
+)}
             </div>
           );
         })}
