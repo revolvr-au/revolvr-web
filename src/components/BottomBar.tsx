@@ -100,27 +100,23 @@ function Icon({
         </svg>
       );
     case "command":
-      return (
-        <svg {...common}>
-          <path
-            d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-            stroke="currentColor"
-            strokeWidth="2"
-          />
-          <path
-            d="M19.4 15a8 8 0 0 0 .1-6M4.5 9a8 8 0 0 0 0 6"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-          <path
-            d="M12 2v2M12 20v2M2 12h2M20 12h2"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
-      );
+  return (
+    <svg {...common}>
+      <path
+        d="M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+      <path
+        d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+    
   }
 }
 
@@ -187,9 +183,9 @@ export default function BottomBar({
           const active = isActive(pathname, tab);
 
         const baseClasses = [
-  "flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-1",
+  "flex min-w-[72px] flex-col items-center justify-center gap-1 rounded-lg px-2 py-1 transition",
   active
-    ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+    ? "text-white"
     : "text-white/60",
   "hover:text-white",
   "focus:outline-none focus:ring-2 focus:ring-white/20",
