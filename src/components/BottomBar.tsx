@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import { supabase } from "@/lib/supabaseClients";
 
+const BAR_HEIGHT_PX = 72;
 /**
  * Keep this in sync with the layout padding-bottom so content never hides behind the bar.
  * If you change BAR_HEIGHT, update the layout padding too.
