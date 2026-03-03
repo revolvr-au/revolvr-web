@@ -554,7 +554,7 @@ async function handleSendComment() {
               }
             }}
             placeholder="Add a comment…"
-            className="h-11 flex-1 rounded-full bg-white/5 px-4 text-sm text-white outline-none"
+            className="h-11 flex-1 rounded-full bg-white/5 px-4 text-base text-white outline-none"
           />
 
           <button
