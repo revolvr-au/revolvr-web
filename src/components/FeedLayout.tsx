@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Radio } from "lucide-react";
+import BottomBar from "@/components/BottomBar";
 
 type Props = {
   children: ReactNode;
@@ -11,7 +12,7 @@ type Props = {
   onGoLive?: () => void;
   showMenu?: boolean;
   menuHref?: string;
-  isLive?: boolean; // 🔴 NEW: allows layout to react to live state
+  isLive?: boolean;
 };
 
 export default function FeedLayout({
@@ -24,7 +25,7 @@ export default function FeedLayout({
   isLive = false,
 }: Props) {
   return (
-    <div className="min-h-screen bg-[#050814] text-white relative">
+    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
 
       {/* HEADER (hidden during LIVE) */}
       {!isLive && (
@@ -41,7 +42,7 @@ export default function FeedLayout({
             {/* Right Controls */}
             <div className="flex items-center gap-2">
 
-              {/* 🔴 Go Live */}
+              {/* Go Live */}
               <button
                 type="button"
                 onClick={() => onGoLive?.()}
@@ -59,8 +60,6 @@ export default function FeedLayout({
                 aria-label="Go Live"
               >
                 <Radio className="w-5 h-5 text-white" />
-
-                {/* Live pulse dot */}
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               </button>
 
@@ -81,11 +80,14 @@ export default function FeedLayout({
       )}
 
       {/* MAIN CONTENT */}
-      <main className={`${isLive ? "p-0" : "w-full px-4 py-6"}`}>
-        <div className={`${isLive ? "" : "mx-auto w-full max-w-[720px]"}`}>
+      <main className="flex-1 w-full px-4 py-6 pb-24">
+        <div className="mx-auto w-full max-w-[720px]">
           {children}
         </div>
       </main>
+
+      {/* BottomBar renders itself as fixed */}
+      {!isLive && <BottomBar />}
 
     </div>
   );
