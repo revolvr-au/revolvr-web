@@ -43,6 +43,8 @@ export default function LiveClient({
   const [heartBurst, setHeartBurst] = useState(false);
   const [message, setMessage] = useState("");
   const router = useRouter();
+  const [hostAvatar, setHostAvatar] = useState<string | null>(null);
+  
 
   const lastTapRef = useRef(0);
 
@@ -58,6 +60,22 @@ export default function LiveClient({
     loadInitial();
   }, [roomId]);
 
+useEffect(() => {
+  async function loadHost() {
+    try {
+      const res = await fetch(`/api/live/host?roomId=${roomId}`);
+      const data = await res.json();
+
+      if (data?.avatar_url) {
+        setHostAvatar(data.avatar_url);
+      }
+    } catch (err) {
+      console.error("Failed loading host avatar", err);
+    }
+  }
+
+  loadHost();
+}, [roomId]);
   // 🔥 REALTIME SUBSCRIPTION
   useEffect(() => {
     const channel = supabase
@@ -127,7 +145,7 @@ export default function LiveClient({
 
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
   <img
-    src={comments[0]?.avatar_url || "/default-avatar.png"}
+    src={hostAvatar || "/default-avatar.png"}
     className="w-full h-full object-cover"
     onError={(e) => {
       (e.currentTarget as HTMLImageElement).src = "/default-avatar.png";
