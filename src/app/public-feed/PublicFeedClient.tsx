@@ -393,7 +393,7 @@ async function handleSendComment() {
           const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
 
           return (
-  <div key={p.id} className="pt-4">
+  <div key={p.id} className="pt-4 -mx-4 md:mx-0">
 
     {/* MEDIA (FULL BLEED) */}
     <div className="relative w-full md:max-w-[640px] md:mx-auto aspect-[9/16] overflow-hidden bg-black">

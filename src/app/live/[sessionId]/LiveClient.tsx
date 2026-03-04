@@ -126,14 +126,10 @@ export default function LiveClient({
 <div className="absolute top-4 left-4 flex items-center gap-3 z-50">
 
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
-  {comments[0]?.avatar_url ? (
   <img
-    src={comments[0].avatar_url}
+    src={comments[0]?.avatar_url || "/avatar-placeholder.png"}
     className="w-full h-full object-cover"
   />
-) : (
-  <div className="w-full h-full bg-white/20" />
-)}
 </div>
 
   <div className="leading-tight">
