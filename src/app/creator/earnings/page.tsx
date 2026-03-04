@@ -14,7 +14,7 @@ export default async function CreatorEarningsPage() {
 
   if (!creatorEmail) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
+      <div className="mx-auto max-w-4xl p-6">
         <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
         <p className="mt-3 text-sm text-neutral-600">
           You must be logged in to view earnings.
@@ -26,7 +26,7 @@ export default async function CreatorEarningsPage() {
   const data = await getCreatorEarnings(creatorEmail);
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-4xl p-6">
       <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">

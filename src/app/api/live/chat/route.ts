@@ -122,10 +122,22 @@ export async function POST(req: Request) {
         u.user_metadata.full_name.trim()) ||
       (email ? email.split("@")[0] : "user");
 
-    const avatarUrl =
-      typeof u.user_metadata?.avatar_url === "string"
-        ? u.user_metadata.avatar_url
-        : null;
+    const { data: creator } = await supabase
+  .from("CreatorProfile")
+  .select("avatar_url")
+  .eq("email", email)
+  .single();
+
+let avatarUrl = null;
+const { data: creator } = await supabase
+  .from("CreatorProfile")
+  .select("avatar_url")
+  .eq("email", email)
+  .single();
+
+if (creator?.avatar_url) {
+  avatarUrl = creator.avatar_url;
+}
 
     const { data: inserted, error: insErr } = await supabase
       .from("live_chat_messages")

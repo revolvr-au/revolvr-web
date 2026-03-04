@@ -364,7 +364,7 @@ const payload = await res.json().catch(() => null);
   ];
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-6 py-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <a href="/feed" className="text-sm text-white/70 hover:text-white">

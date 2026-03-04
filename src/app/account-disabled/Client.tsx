@@ -42,7 +42,7 @@ export default function AccountDisabledClient() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
+    <main className="mx-auto max-w-4xl px-6 py-10">
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
         <h1 className="text-2xl font-semibold">{title}</h1>
         <p className="mt-2 text-sm text-white/70 leading-6">{body}</p>

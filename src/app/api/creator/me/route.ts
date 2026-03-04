@@ -42,6 +42,10 @@ export async function GET() {
           loggedIn: false,
           accessToken: null,
           creator: {
+          email: profile?.email ?? email,
+          displayName: profile?.displayName ?? null,
+          avatarUrl: profile?.avatarUrl ?? null,
+          bio: profile?.bio ?? null,
             isActive: false,
             handle: null,
             isVerified: false,
@@ -109,14 +113,23 @@ export async function GET() {
         accessToken: session?.access_token ?? null,
         user: { id: user.id, email: email || null },
         creator: {
-          isActive: profile?.status === "ACTIVE",
-          handle: profile?.handle ?? null,
-          isVerified,
-          verificationStatus: verificationStatusRaw,
-          verificationCurrentPeriodEnd,
-          verificationTier,
-          verificationPriceId,
-        },
+          email: profile?.email ?? email,
+          displayName: profile?.displayName ?? null,
+          avatarUrl: profile?.avatarUrl ?? null,
+          bio: profile?.bio ?? null,
+  isActive: profile?.status === "ACTIVE",
+  email: profile?.email ?? email,
+  handle: profile?.handle ?? null,
+  displayName: profile?.displayName ?? null,
+  avatarUrl: profile?.avatarUrl ?? null,
+  bio: profile?.bio ?? null,
+
+  isVerified,
+  verificationStatus: verificationStatusRaw,
+  verificationCurrentPeriodEnd,
+  verificationTier,
+  verificationPriceId,
+},
         profile,
         balance:
           balance ??
@@ -137,6 +150,10 @@ export async function GET() {
       {
         loggedIn: false,
         creator: {
+          email: profile?.email ?? email,
+          displayName: profile?.displayName ?? null,
+          avatarUrl: profile?.avatarUrl ?? null,
+          bio: profile?.bio ?? null,
           isActive: false,
           handle: null,
           isVerified: false,

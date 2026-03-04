@@ -1,7 +1,7 @@
 export default function MarketingPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-slate-50 flex items-center justify-center px-4">
-      <div className="max-w-3xl w-full space-y-6">
+      <div className="max-w-4xl w-full space-y-6">
         <div>
           <span className="inline-flex items-center rounded-full border border-slate-700 px-3 py-1 text-xs uppercase tracking-wide">
             Revolvr · Early Access
