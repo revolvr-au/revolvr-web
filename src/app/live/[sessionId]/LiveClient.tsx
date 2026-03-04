@@ -124,6 +124,7 @@ export default function LiveClient({
 
     {/* TOP BAR */}
 <div className="absolute top-4 left-4 flex items-center gap-3 z-50">
+
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
     {comments[0]?.avatar_url && (
       <img
@@ -139,8 +140,8 @@ export default function LiveClient({
       🔴 LIVE • <span className="font-semibold">{viewerCount}</span> watching
     </div>
   </div>
-</div>
 
+</div>
       {/* CLOSE */}
       <div className="absolute top-4 right-4 z-40">
         <button

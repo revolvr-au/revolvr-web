@@ -396,7 +396,7 @@ async function handleSendComment() {
   <div key={p.id} className="pt-4">
 
     {/* MEDIA (FULL BLEED) */}
-<div className="relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-black">
+    <div className="relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-black">
 
       {/* TOP GRADIENT FOR READABILITY */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
@@ -546,7 +546,7 @@ async function handleSendComment() {
       onClick={closeComments}
     />
 
-    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl flex flex-col h-[75vh] max-h-[75vh]">
+    <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-5xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl flex flex-col h-[75vh] max-h-[75vh]">
 
       <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
