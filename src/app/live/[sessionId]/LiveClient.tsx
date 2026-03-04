@@ -127,8 +127,11 @@ export default function LiveClient({
 
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
   <img
-    src={comments[0]?.avatar_url || "/avatar-placeholder.png"}
+    src={comments[0]?.avatar_url || "/default-avatar.png"}
     className="w-full h-full object-cover"
+    onError={(e) => {
+      (e.currentTarget as HTMLImageElement).src = "/default-avatar.png";
+    }}
   />
 </div>
 
