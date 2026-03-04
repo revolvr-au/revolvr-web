@@ -396,7 +396,7 @@ async function handleSendComment() {
   <div key={p.id} className="pt-4">
 
     {/* MEDIA (FULL BLEED) */}
-    <div className="relative w-screen left-1/2 -translate-x-1/2 overflow-hidden bg-black">
+    <div className="relative w-full md:max-w-[640px] mx-auto overflow-hidden bg-black">
 
       {/* TOP GRADIENT FOR READABILITY */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />

@@ -126,13 +126,11 @@ export default function LiveClient({
 <div className="absolute top-4 left-4 flex items-center gap-3 z-50">
 
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
-    {comments[0]?.avatar_url && (
-      <img
-        src={comments[0].avatar_url}
-        className="w-full h-full object-cover"
-      />
-    )}
-  </div>
+  <img
+    src="/default-avatar.png"
+    className="w-full h-full object-cover"
+  />
+</div>
 
   <div className="leading-tight">
     <div className="font-semibold text-sm">revolvr au</div>
@@ -162,13 +160,11 @@ export default function LiveClient({
         style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
       >
         <div className="w-7 h-7 rounded-full overflow-hidden bg-white/20 flex-shrink-0">
-          {c.avatar_url && (
-            <img
-              src={c.avatar_url}
-              className="w-full h-full object-cover"
-            />
-          )}
-        </div>
+  <img
+    src={c.avatar_url || "/default-avatar.png"}
+    className="w-full h-full object-cover"
+  />
+</div>
 
         <div>
           <span className="font-semibold">
