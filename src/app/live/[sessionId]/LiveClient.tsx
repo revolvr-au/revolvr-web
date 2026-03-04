@@ -42,6 +42,7 @@ export default function LiveClient({
   const [viewerCount] = useState(174);
   const [heartBurst, setHeartBurst] = useState(false);
   const [message, setMessage] = useState("");
+  const router = useRouter();
 
   const lastTapRef = useRef(0);
 
@@ -121,16 +122,24 @@ export default function LiveClient({
   onClick={handleTap}
 />
 
-      {/* TOP BAR */}
-      <div className="absolute top-4 left-4 ... z-50">
-        <div className="w-10 h-10 rounded-full bg-white/20" />
-        <div className="leading-tight">
-          <div className="font-semibold text-sm">revolvr au</div>
-          <div className="text-xs mt-1">
-            🔴 LIVE • <span className="font-semibold">{viewerCount}</span> watching
-          </div>
-        </div>
-      </div>
+    {/* TOP BAR */}
+<div className="absolute top-4 left-4 flex items-center gap-3 z-50">
+  <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+    {comments[0]?.avatar_url && (
+      <img
+        src={comments[0].avatar_url}
+        className="w-full h-full object-cover"
+      />
+    )}
+  </div>
+
+  <div className="leading-tight">
+    <div className="font-semibold text-sm">revolvr au</div>
+    <div className="text-xs mt-1">
+      🔴 LIVE • <span className="font-semibold">{viewerCount}</span> watching
+    </div>
+  </div>
+</div>
 
       {/* CLOSE */}
       <div className="absolute top-4 right-4 z-40">
@@ -146,17 +155,27 @@ export default function LiveClient({
       <div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none z-30">
         {comments.slice(-6).map((c) => (
           <div
-            key={c.id}
-            className="text-white text-sm"
-            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
-          >
-            <span className="font-semibold">
-              {c.display_name || "user"}
-            </span>{" "}
-            {c.message}
-          </div>
-        ))}
-      </div>
+  key={c.id}
+  className="flex items-start gap-2 text-white text-sm"
+  style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
+>
+  <div className="w-7 h-7 rounded-full overflow-hidden bg-white/20 flex-shrink-0">
+    {c.avatar_url && (
+      <img
+        src={c.avatar_url}
+        className="w-full h-full object-cover"
+      />
+    )}
+  </div>
+
+  <div>
+    <span className="font-semibold">
+      {c.display_name || "user"}
+    </span>{" "}
+    {c.message}
+  </div>
+</div>
+}
 
       {/* COMMENT BAR */}
       <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-[100] pointer-events-auto">

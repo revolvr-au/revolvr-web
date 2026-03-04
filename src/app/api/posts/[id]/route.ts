@@ -13,12 +13,16 @@ export async function GET(_req: Request, { params }: { params: any }) {
     }
 
     const p = await prisma.post.findUnique({
-      where: { id },
-      include: {
-        media: { orderBy: { order: "asc" } },
-        _count: { select: { likes: true } },
-      },
-    });
+  where: { id },
+  include: {
+    user: true,
+    media: { orderBy: { order: "asc" } },
+    _count: { select: { likes: true } },
+  },
+});
+const creator = await prisma.creatorProfile.findUnique({
+  where: { email: p.userEmail },
+});
 
     if (!p) {
       return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
@@ -27,6 +31,7 @@ export async function GET(_req: Request, { params }: { params: any }) {
     return NextResponse.json({
       id: p.id,
       userEmail: String(p.userEmail ?? "").trim().toLowerCase(),
+      avatarUrl: creator?.avatarUrl ?? null,
       imageUrl: (p as any).imageUrl ?? null, // legacy
       media: (p as any).media ?? [],
       caption: p.caption ?? "",

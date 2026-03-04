@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
 import { Send } from "lucide-react";
 
+
 type ApiPost = {
   id: string;
   userEmail: string | null;
@@ -401,17 +402,29 @@ async function handleSendComment() {
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
       {/* TOP OVERLAY HEADER */}
-      <div className="absolute top-4 left-4 right-4 z-40 flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold text-white drop-shadow-md">
-            {display}
-          </div>
-          {email && (
-            <div className="text-xs text-white/80 drop-shadow-md">
-              @{email.split("@")[0]}
-            </div>
-          )}
-        </div>
+     <div
+  className="flex items-center gap-3 cursor-pointer"
+  onClick={() => router.push(`/u/${email}`)}
+>
+  <div
+  className="flex items-center gap-3 cursor-pointer"
+  onClick={() => router.push(`/u/${email}`)}
+>
+  <img
+    src={p.imageUrl || "/avatar-placeholder.png"}
+    className="w-10 h-10 rounded-full object-cover"
+  />
+
+  <div>
+    <div className="text-sm font-semibold text-white drop-shadow-md">
+      {display}
+    </div>
+
+    <div className="text-xs text-white/80 drop-shadow-md">
+      @{email.split("@")[0]}
+    </div>
+  </div>
+</div>
 
         <button
   type="button"
