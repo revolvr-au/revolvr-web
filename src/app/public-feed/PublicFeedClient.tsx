@@ -402,42 +402,43 @@ async function handleSendComment() {
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
       {/* TOP OVERLAY HEADER */}
-     <div
-  className="flex items-center gap-3 cursor-pointer"
-  onClick={() => router.push(`/u/${email}`)}
->
-  <div
-  className="flex items-center gap-3 cursor-pointer"
-  onClick={() => router.push(`/u/${email}`)}
->
-  <img
-    src={p.imageUrl || "/avatar-placeholder.png"}
-    className="w-full h-full object-cover"
-  />
+<div className="absolute top-4 left-4 right-4 flex items-center justify-between z-40">
 
-  <div>
-    <div className="text-sm font-semibold text-white drop-shadow-md">
-      {display}
+  <div
+    className="flex items-center gap-3 cursor-pointer"
+    onClick={() => router.push(`/u/${email}`)}
+  >
+    <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+      <img
+        src={p.imageUrl || "/avatar-placeholder.png"}
+        className="w-full h-full object-cover"
+      />
     </div>
 
-    <div className="text-xs text-white/80 drop-shadow-md">
-      @{email.split("@")[0]}
+    <div>
+      <div className="text-sm font-semibold text-white drop-shadow-md">
+        {display}
+      </div>
+
+      <div className="text-xs text-white/80 drop-shadow-md">
+        @{email.split("@")[0]}
+      </div>
     </div>
   </div>
-</div>
 
-        <button
-  type="button"
-  onClick={() => onToggleFollow(email)}
-  className={`rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-  followMap[email]
-    ? "bg-white text-black"
-    : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-}`}
->
-  {followMap[email] ? "Following" : "Follow"}
-</button>
-      </div>
+  <button
+    type="button"
+    onClick={() => onToggleFollow(email)}
+    className={`rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+      followMap[email]
+        ? "bg-white text-black"
+        : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+    }`}
+  >
+    {followMap[email] ? "Following" : "Follow"}
+  </button>
+
+</div>
 
       {mediaUrl ? (
         isVideo ? (
