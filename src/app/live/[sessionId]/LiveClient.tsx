@@ -152,30 +152,33 @@ export default function LiveClient({
       </div>
 
       {/* COMMENTS */}
-      <div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none z-30">
-        {comments.slice(-6).map((c) => (
-          <div
-  key={c.id}
-  className="flex items-start gap-2 text-white text-sm"
-  style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
->
-  <div className="w-7 h-7 rounded-full overflow-hidden bg-white/20 flex-shrink-0">
-    {c.avatar_url && (
-      <img
-        src={c.avatar_url}
-        className="w-full h-full object-cover"
-      />
-    )}
-  </div>
+<div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none z-30">
+  {comments.slice(-6).map((c) => {
+    return (
+      <div
+        key={c.id}
+        className="flex items-start gap-2 text-white text-sm"
+        style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
+      >
+        <div className="w-7 h-7 rounded-full overflow-hidden bg-white/20 flex-shrink-0">
+          {c.avatar_url && (
+            <img
+              src={c.avatar_url}
+              className="w-full h-full object-cover"
+            />
+          )}
+        </div>
 
-  <div>
-    <span className="font-semibold">
-      {c.display_name || "user"}
-    </span>{" "}
-    {c.message}
-  </div>
+        <div>
+          <span className="font-semibold">
+            {c.display_name || "user"}
+          </span>{" "}
+          {c.message}
+        </div>
+      </div>
+    );
+  })}
 </div>
-}
 
       {/* COMMENT BAR */}
       <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-[100] pointer-events-auto">
