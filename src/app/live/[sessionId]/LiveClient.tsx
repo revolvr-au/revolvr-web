@@ -127,7 +127,7 @@ export default function LiveClient({
 
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
   <img
-    src="/default-avatar.png"
+    src={comments[0]?.avatar_url || "/default-avatar.png"}
     className="w-full h-full object-cover"
   />
 </div>

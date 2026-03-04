@@ -396,7 +396,7 @@ async function handleSendComment() {
   <div key={p.id} className="pt-4">
 
     {/* MEDIA (FULL BLEED) */}
-    <div className="relative w-full md:max-w-[640px] mx-auto overflow-hidden bg-black">
+    <div className="relative w-screen md:w-full md:max-w-[640px] mx-auto overflow-hidden bg-black">
 
       {/* TOP GRADIENT FOR READABILITY */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
@@ -412,7 +412,7 @@ async function handleSendComment() {
 >
   <img
     src={p.imageUrl || "/avatar-placeholder.png"}
-    className="w-10 h-10 rounded-full object-cover"
+    className="w-full h-full object-cover"
   />
 
   <div>
@@ -444,13 +444,13 @@ async function handleSendComment() {
           <video
             src={mediaUrl}
             controls
-            className="w-full h-auto block"
+            className="w-full h-full object-cover"
           />
         ) : (
           <img
             src={mediaUrl}
             alt="Post media"
-            className="w-full h-auto block object-cover"
+            className="w-full h-full object-cover"
           />
         )
       ) : (
