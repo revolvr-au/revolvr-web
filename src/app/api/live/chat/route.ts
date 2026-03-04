@@ -128,15 +128,16 @@ export async function POST(req: Request) {
   .eq("email", email)
   .single();
 
-let avatarUrl = null;
-const { data: creator } = await supabase
+  let avatarUrl: string | null = null;
+
+const { data: creatorProfile } = await supabase
   .from("CreatorProfile")
   .select("avatar_url")
   .eq("email", email)
   .single();
 
-if (creator?.avatar_url) {
-  avatarUrl = creator.avatar_url;
+if (creatorProfile?.avatar_url) {
+  avatarUrl = creatorProfile.avatar_url;
 }
 
     const { data: inserted, error: insErr } = await supabase
