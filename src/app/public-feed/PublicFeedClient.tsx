@@ -1,5 +1,6 @@
 "use client";
 
+import { BAR_HEIGHT_PX } from "@/components/bottomBarConstants";
 import { useEffect, useMemo, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
@@ -29,7 +30,7 @@ export function PublicFeedClient() {
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
-  const BAR_HEIGHT_PX = 64;
+  
 
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
