@@ -15,11 +15,15 @@ export async function GET(req: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("CreatorProfile")
     .select("avatar_url")
     .eq("email", email)
     .single();
+
+  if (error) {
+    console.error("CreatorProfile lookup error:", error);
+  }
 
   return NextResponse.json({
     avatar_url: data?.avatar_url ?? null
