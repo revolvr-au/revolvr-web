@@ -5,7 +5,10 @@ export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const email = (searchParams.get("email") || "").trim().toLowerCase();
+
+  const email = decodeURIComponent(
+    (searchParams.get("email") || "").trim().toLowerCase()
+  );
 
   if (!email) {
     return NextResponse.json({ avatar_url: null }, { status: 400 });
@@ -13,19 +16,13 @@ export async function GET(req: Request) {
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false
-      }
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
   const { data, error } = await supabase
     .from("CreatorProfile")
     .select("avatar_url")
-    .eq("email", email)
+    .ilike("email", email)
     .maybeSingle();
 
   if (error) {
