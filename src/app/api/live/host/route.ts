@@ -9,9 +9,15 @@ export async function GET(req: Request) {
     return NextResponse.json({ avatar_url: null }, { status: 400 });
   }
 
+  // 🔎 DEBUG CHECK
+  console.log(
+    "SERVICE ROLE PRESENT:",
+    !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! // <-- IMPORTANT: server-only env var
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
   const { data, error } = await supabase
