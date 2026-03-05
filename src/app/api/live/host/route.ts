@@ -1,40 +1,32 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
-  const cookieStore = cookies();
+  try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
+    const email = "wesbuhagiar@gmail.com"; // your host account
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const { data } = await supabase
+      .from("CreatorProfile")
+      .select('avatar_url, "displayName"')
+      .eq("email", email)
+      .single();
 
-  if (!user) {
-    return NextResponse.json({ avatar_url: null });
+    return NextResponse.json({
+      avatar_url: data?.avatar_url || null,
+      displayName: data?.displayName || "Creator",
+    });
+
+  } catch (err) {
+    console.error("LIVE HOST ERROR", err);
+
+    return NextResponse.json({
+      avatar_url: null,
+      displayName: "Creator",
+    });
   }
-
-  const email = user.email?.toLowerCase() || "";
-
-  const { data: profile } = await supabase
-    .from("CreatorProfile")
-    .select("avatar_url")
-    .eq("email", email)
-    .single();
-
-  return NextResponse.json({
-    avatar_url: profile?.avatar_url || null,
-  });
 }
