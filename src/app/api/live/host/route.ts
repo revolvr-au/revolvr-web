@@ -6,9 +6,9 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
-  const email = decodeURIComponent(
-    (searchParams.get("email") || "").trim().toLowerCase()
-  );
+  const email = (searchParams.get("email") || "")
+    .trim()
+    .toLowerCase();
 
   if (!email) {
     return NextResponse.json({ avatar_url: null }, { status: 400 });
@@ -23,7 +23,8 @@ export async function GET(req: Request) {
     .from("CreatorProfile")
     .select("avatar_url")
     .ilike("email", email)
-    .maybeSingle();
+    .limit(1)
+    .single();
 
   if (error) {
     console.error("CreatorProfile lookup error:", error);
