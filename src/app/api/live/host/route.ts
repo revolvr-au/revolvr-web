@@ -26,6 +26,6 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({
-    avatar_url: data?.avatar_url ?? null,
+    avatar_url: data?.avatar_url ?? null
   });
 }
