@@ -8,17 +8,19 @@ export async function GET() {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    const email = "wesbuhagiar@gmail.com"; // your host account
-
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("CreatorProfile")
       .select('avatar_url, "displayName"')
-      .eq("email", email)
+      .eq("email", "wesbuhagiar@gmail.com")
       .single();
 
+    if (error) {
+      console.error("Supabase error:", error);
+    }
+
     return NextResponse.json({
-      avatar_url: data?.avatar_url || null,
-      displayName: data?.displayName || "Creator",
+      avatar_url: data?.avatar_url ?? null,
+      displayName: data?.displayName ?? "Creator",
     });
 
   } catch (err) {
