@@ -63,7 +63,7 @@ export default function LiveClient({
 useEffect(() => {
   async function loadHost() {
     try {
-      const res = await fetch(`/api/live/host?roomId=${roomId}`);
+      const res = await fetch(`/api/live/host?email=revolvr.au@gmail.com`)
       const data = await res.json();
       if (data?.avatar_url) setHostAvatar(data.avatar_url);
     } catch (err) {

@@ -1,28 +1,27 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export async function GET() {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+export async function GET(req: Request) {
 
-  // Get the authenticated user
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { searchParams } = new URL(req.url);
+  const email = searchParams.get("email");
 
-  if (!user?.email) {
+  if (!email) {
     return NextResponse.json({ avatar_url: null });
   }
 
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
   const { data } = await supabase
     .from("CreatorProfile")
-    .select('avatar_url')
-    .eq("email", user.email)
+    .select("avatar_url")
+    .eq("email", email)
     .single();
 
   return NextResponse.json({
-    avatar_url: data?.avatar_url ?? null,
+    avatar_url: data?.avatar_url ?? null
   });
 }
