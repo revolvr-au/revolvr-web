@@ -65,10 +65,7 @@ useEffect(() => {
     try {
       const res = await fetch(`/api/live/host?roomId=${roomId}`);
       const data = await res.json();
-
-      if (data?.avatar_url) {
-        setHostAvatar(data.avatar_url);
-      }
+      if (data?.avatar_url) setHostAvatar(data.avatar_url);
     } catch (err) {
       console.error("Failed loading host avatar", err);
     }
@@ -145,12 +142,12 @@ useEffect(() => {
 
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
   <img
-    src={hostAvatar || "/default-avatar.png"}
-    className="w-full h-full object-cover"
-    onError={(e) => {
-      (e.currentTarget as HTMLImageElement).src = "/default-avatar.png";
-    }}
-  />
+  src={hostAvatar || "/default-avatar.png"}
+  className="w-full h-full object-cover"
+  onError={(e) => {
+    (e.currentTarget as HTMLImageElement).src = "/default-avatar.png";
+  }}
+/>
 </div>
 
   <div className="leading-tight">
