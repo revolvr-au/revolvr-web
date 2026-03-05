@@ -1,19 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-export async function GET(req: Request) {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
+export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const email = searchParams.get("email");
 
   if (!email) {
     return NextResponse.json({ avatar_url: null });
   }
-
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
 
   const { data, error } = await supabase
     .from("CreatorProfile")
@@ -23,9 +22,10 @@ export async function GET(req: Request) {
 
   if (error) {
     console.error("CreatorProfile lookup error:", error);
+    return NextResponse.json({ avatar_url: null });
   }
 
   return NextResponse.json({
-    avatar_url: data?.avatar_url ?? null
+    avatar_url: data?.avatar_url ?? null,
   });
 }
