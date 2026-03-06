@@ -380,11 +380,9 @@ async function handleSendComment() {
       {!loading && !err && posts.length === 0 && (
         <div className="p-4 opacity-70">No posts yet.</div>
       )}
-
-      {!loading &&
-        !err &&
-        posts.length > 0 &&
-        posts.map((p) => {
+      {!loading && !err && posts.length > 0 && (
+  <div className="h-[calc(100vh-64px)] overflow-y-scroll snap-y snap-mandatory scroll-smooth">
+    {posts.map((p) => {
           const email = String(p.userEmail || "").trim().toLowerCase();
           const display = email ? displayNameFromEmail(email) : "User";
 
@@ -396,7 +394,10 @@ async function handleSendComment() {
           const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
 
           return (
-  <div key={p.id} className="pt-4 -mx-4 md:mx-0">
+  <div
+    key={p.id}
+    className="snap-start h-[calc(100vh-64px)] flex flex-col justify-center pt-4 -mx-4 md:mx-0"
+  >
 
     {/* MEDIA (FULL BLEED) */}
     <div className="relative w-full md:max-w-[640px] md:mx-auto aspect-[9/16] overflow-hidden bg-black">
@@ -617,7 +618,7 @@ async function handleSendComment() {
       </div>
     </div>
   </div>
-)}
-            </FeedLayout>
+  )}
+    </FeedLayout>
   );
 }

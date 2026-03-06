@@ -530,3 +530,13 @@ html, body {
   width: 100%;
   max-width: 100%;
 }
+.feed-container {
+  height: 100vh;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+}
+
+.feed-post {
+  scroll-snap-align: start;
+  height: 100vh;
+}
