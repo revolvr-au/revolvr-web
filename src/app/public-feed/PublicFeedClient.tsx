@@ -1,16 +1,12 @@
 "use client";
 
-import { BAR_HEIGHT_PX } from "@/components/bottomBarConstants";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
 import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
-import { Heart, MessageCircle, Share2, Gift } from "lucide-react";
+import { Heart, MessageCircle, Share2, Gift, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
-import { Send } from "lucide-react";
-
-
 
 type ApiPost = {
   id: string;
@@ -27,25 +23,28 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
-  
-
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
 
-  // Comments sheet
   const [activePostId, setActivePostId] = useState<string | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
 
-  // Rewards tray (per post)
   const [rewardOpen, setRewardOpen] = useState(false);
   const [rewardPostId, setRewardPostId] = useState<string | null>(null);
 
-  // Temporary until auth wiring
+  const [activePost, setActivePost] = useState<string | null>(null);
+
+  const feedRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const scrollLock = useRef(false);
+
   const viewer = "test@revolvr.net";
+  const router = useRouter();
 
   const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
     { mode: "applause", label: "Applause", icon: "👏" },
@@ -54,32 +53,29 @@ export function PublicFeedClient() {
     { mode: "respect", label: "Respect", icon: "🫡" },
   ];
 
-  const router = useRouter();
-
   const safeUUID = () => {
-  try {
-    // iOS/PWA/Private modes can be weird here — always guard.
-    // @ts-ignore
-    if (typeof crypto !== "undefined" && crypto?.randomUUID) return crypto.randomUUID();
-  } catch {}
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
+    try {
+      // @ts-ignore
+      if (typeof crypto !== "undefined" && crypto?.randomUUID) return crypto.randomUUID();
+    } catch {}
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  };
 
-const isIOS =
-  typeof navigator !== "undefined" && /iPad|iPhone|iPod/i.test(navigator.userAgent);
+  const isIOS =
+    typeof navigator !== "undefined" && /iPad|iPhone|iPod/i.test(navigator.userAgent);
 
-const goLive = useGoLive(() => {
-  const sessionId = safeUUID();
-  const url = `/live/${encodeURIComponent(sessionId)}?role=host`;
+  const goLive = useGoLive(() => {
+    const sessionId = safeUUID();
+    const url = `/live/${encodeURIComponent(sessionId)}?role=host`;
 
-  // iOS Safari: force a hard navigation to stop “bounce” / soft-router weirdness.
-  if (isIOS) {
-    window.location.assign(url);
-    return;
-  }
+    if (isIOS) {
+      window.location.assign(url);
+      return;
+    }
 
-  router.push(url);
-});
+    router.push(url);
+  });
+
   const railItems = useMemo<PersonRailItem[]>(() => {
     const seen = new Set<string>();
     const out: PersonRailItem[] = [];
@@ -105,16 +101,36 @@ const goLive = useGoLive(() => {
     return out;
   }, [posts]);
 
+  function observePost(el: HTMLDivElement | null) {
+    if (!el) return;
+
+    if (!observerRef.current) {
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const postId = entry.target.getAttribute("data-postid");
+              if (postId) setActivePost(postId);
+            }
+          });
+        },
+        { threshold: 0.6 }
+      );
+    }
+
+    observerRef.current.observe(el);
+  }
+
   useEffect(() => {
-  if (!commentsOpen) return;
+    if (!commentsOpen) return;
 
-  const original = document.body.style.overflow;
-  document.body.style.overflow = "hidden";
+    const original = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
-  return () => {
-    document.body.style.overflow = original;
-  };
-}, [commentsOpen]);
+    return () => {
+      document.body.style.overflow = original;
+    };
+  }, [commentsOpen]);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,14 +148,14 @@ const goLive = useGoLive(() => {
           const msg =
             typeof json?.error === "string"
               ? json.error
-              : "Failed to load posts (" + res.status + ")";
+              : `Failed to load posts (${res.status})`;
+
           if (!cancelled) {
             setErr(msg);
             setPosts([]);
           }
           return;
         }
-        
 
         const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
         if (cancelled) return;
@@ -147,17 +163,16 @@ const goLive = useGoLive(() => {
         setPosts(incoming);
 
         const nextCommentCounts: Record<string, number> = {};
-        for (const p of incoming) {
-        nextCommentCounts[p.id] = 0; // default
-        }
-        setCommentCounts(nextCommentCounts);
-
         const nextLiked: Record<string, boolean> = {};
         const nextCounts: Record<string, number> = {};
+
         for (const p of incoming) {
+          nextCommentCounts[p.id] = 0;
           nextLiked[p.id] = Boolean(p.likedByCurrentUser);
           nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
         }
+
+        setCommentCounts(nextCommentCounts);
         setLikedMap(nextLiked);
         setLikeCounts(nextCounts);
       } catch (e) {
@@ -172,63 +187,106 @@ const goLive = useGoLive(() => {
     }
 
     run();
+
     return () => {
       cancelled = true;
     };
   }, [viewer]);
 
-useEffect(() => {
-  if (!commentsOpen) return;
+  useEffect(() => {
+    if (!commentsOpen) return;
 
-  const initialHeight = window.innerHeight;
+    const initialHeight = window.innerHeight;
 
-  const handleResize = () => {
-    // When keyboard opens, Safari shrinks viewport.
-    // We force the sheet to stay original height.
-    document.documentElement.style.setProperty(
-      "--locked-vh",
-      `${initialHeight}px`
-    );
-  };
+    const handleResize = () => {
+      document.documentElement.style.setProperty("--locked-vh", `${initialHeight}px`);
+    };
 
-  window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize);
+    document.documentElement.style.setProperty("--locked-vh", `${initialHeight}px`);
 
-  // Lock immediately
-  document.documentElement.style.setProperty(
-    "--locked-vh",
-    `${initialHeight}px`
-  );
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      document.documentElement.style.removeProperty("--locked-vh");
+    };
+  }, [commentsOpen]);
 
-  return () => {
-    window.removeEventListener("resize", handleResize);
-    document.documentElement.style.removeProperty("--locked-vh");
-  };
-}, [commentsOpen]);
+  useEffect(() => {
+    if (!commentsOpen || !activePostId) return;
 
-useEffect(() => {
-  if (!commentsOpen || !activePostId) return;
+    async function loadComments() {
+      try {
+        const res = await fetch(
+          `/api/comments?postId=${encodeURIComponent(activePostId)}`
+        );
+        const data = await res.json();
 
-  async function loadComments() {
-    try {
-      const res = await fetch(
-        `/api/comments?postId=${encodeURIComponent(activePostId)}`
-      );
-      const data = await res.json();
-
-      if (res.ok && Array.isArray(data?.comments)) {
-        setComments(data.comments);
-        setCommentCounts((prev) => ({
-        ...prev,
-        [activePostId!]: data.comments.length,
-        }));
+        if (res.ok && Array.isArray(data?.comments)) {
+          setComments(data.comments);
+          setCommentCounts((prev) => ({
+            ...prev,
+            [activePostId]: data.comments.length,
+          }));
+        }
+      } catch (err) {
+        console.error("Failed loading comments", err);
       }
-    } catch (err) {
-      console.error("Failed loading comments", err);
     }
-  }
 
-  loadComments();
-}, [commentsOpen, activePostId]);
+    loadComments();
+  }, [commentsOpen, activePostId]);
+
+  useEffect(() => {
+    const container = feedRef.current;
+    if (!container || posts.length === 0) return;
+
+    const items = Array.from(
+      container.querySelectorAll("[data-postid]")
+    ) as HTMLElement[];
+
+    function snapToClosest() {
+      if (scrollLock.current) return;
+
+      const containerTop = container.scrollTop;
+      let closest: HTMLElement | null = null;
+      let closestDist = Infinity;
+
+      items.forEach((item) => {
+        const dist = Math.abs(item.offsetTop - containerTop);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = item;
+        }
+      });
+
+      if (!closest) return;
+
+      scrollLock.current = true;
+      container.scrollTo({
+        top: closest.offsetTop,
+        behavior: "smooth",
+      });
+
+      window.setTimeout(() => {
+        scrollLock.current = false;
+      }, 250);
+    }
+
+    let scrollTimer: number | undefined;
+
+    function onScroll() {
+      if (scrollTimer) window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(snapToClosest, 80);
+    }
+
+    container.addEventListener("scroll", onScroll);
+
+    return () => {
+      container.removeEventListener("scroll", onScroll);
+      if (scrollTimer) window.clearTimeout(scrollTimer);
+    };
+  }, [posts]);
+
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
       const next = { ...prev, [postId]: !prev[postId] };
@@ -268,7 +326,6 @@ useEffect(() => {
   function toggleRewards(postId: string) {
     setRewardPostId(postId);
     setRewardOpen((prev) => {
-      // If switching posts, force open
       if (rewardPostId && rewardPostId !== postId) return true;
       return !prev;
     });
@@ -280,92 +337,86 @@ useEffect(() => {
   }
 
   async function onOpenReward(mode: RewardMode, postId: string) {
-  try {
-    const post = posts.find((x) => x.id === postId);
-    const creatorEmail = String(post?.userEmail || "")
-      .trim()
-      .toLowerCase();
+    try {
+      const post = posts.find((x) => x.id === postId);
+      const creatorEmail = String(post?.userEmail || "").trim().toLowerCase();
 
-    if (!creatorEmail) {
-      alert("Creator not found for this post.");
-      return;
+      if (!creatorEmail) {
+        alert("Creator not found for this post.");
+        return;
+      }
+
+      const res = await fetch("/api/payments/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "reaction",
+          creatorEmail,
+          userEmail: viewer,
+          source: "FEED",
+          targetId: postId,
+          returnPath: "/public-feed",
+        }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        console.error("[public-feed] reward checkout failed", txt);
+        alert("Checkout failed. Try again.");
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      alert("Stripe did not return a checkout URL.");
+    } catch (err) {
+      console.error("[public-feed] reward error", err);
+      alert("Could not start checkout.");
+    } finally {
+      closeRewards();
     }
-
-    const res = await fetch("/api/payments/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: "reaction",
-        creatorEmail,
-        userEmail: viewer,
-        source: "FEED",
-        targetId: postId,
-        returnPath: "/public-feed",
-      }),
-    });
-
-    if (!res.ok) {
-      const txt = await res.text().catch(() => "");
-      console.error("[public-feed] reward checkout failed", txt);
-      alert("Checkout failed. Try again.");
-      return;
-    }
-
-    const data = await res.json().catch(() => null);
-
-    if (data?.url) {
-      window.location.href = data.url;
-      return;
-    }
-
-    alert("Stripe did not return a checkout URL.");
-  } catch (err) {
-    console.error("[public-feed] reward error", err);
-    alert("Could not start checkout.");
-  } finally {
-    closeRewards();
   }
-}
 
-async function handleSendComment() {
-  if (!activePostId || !commentText.trim()) return;
+  async function handleSendComment() {
+    if (!activePostId || !commentText.trim()) return;
 
-  try {
-    const res = await fetch("/api/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        postId: activePostId,
-        userEmail: viewer,
-        body: commentText.trim(),
-      }),
-    });
+    try {
+      const res = await fetch("/api/comments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postId: activePostId,
+          userEmail: viewer,
+          body: commentText.trim(),
+        }),
+      });
 
-    const data = await res.json();
-    if (!res.ok || !data?.ok) return;
+      const data = await res.json();
+      if (!res.ok || !data?.ok) return;
 
-    setComments((prev) => [...prev, data.comment]);
-    setCommentText("");
-    setCommentCounts((prev) => ({
-    ...prev,
-    [activePostId]: (prev[activePostId!] || 0) + 1,
-    }));
+      setComments((prev) => [...prev, data.comment]);
+      setCommentText("");
+      setCommentCounts((prev) => ({
+        ...prev,
+        [activePostId]: (prev[activePostId] || 0) + 1,
+      }));
 
-    // Proper keyboard close
-    if (typeof document !== "undefined") {
-      const el = document.activeElement as HTMLElement | null;
-      el?.blur();
+      if (typeof document !== "undefined") {
+        const el = document.activeElement as HTMLElement | null;
+        el?.blur();
+      }
+    } catch (err) {
+      console.error(err);
     }
-  } catch (err) {
-    console.error(err);
   }
-}
+
   return (
-    <FeedLayout
-  title="Revolvr"
-  subtitle="Public feed"
-  onGoLive={goLive}
->
+    <FeedLayout title="Revolvr" subtitle="Public feed" onGoLive={goLive}>
       <div className="px-4 pt-4">
         <PeopleRail
           items={railItems}
@@ -377,99 +428,178 @@ async function handleSendComment() {
       {loading && <div className="p-4 opacity-70">Loading…</div>}
       {err && <div className="p-4 text-red-400">{err}</div>}
 
+      {!loading && !err && posts.length === 0 && (
+        <div className="p-4 opacity-70">No posts yet.</div>
+      )}
+
       {!loading && !err && posts.length > 0 && (
-  <div className="h-[calc(100vh-64px)] overflow-y-scroll snap-y snap-mandatory scroll-smooth">
-
-    {posts.map((p) => {
-      const email = String(p.userEmail || "").trim().toLowerCase();
-      const display = email ? displayNameFromEmail(email) : "User";
-
-      const mediaUrl = String(p.imageUrl || "").trim();
-      const lower = mediaUrl.toLowerCase();
-      const isVideo =
-        lower.endsWith(".mov") ||
-        lower.endsWith(".mp4") ||
-        lower.endsWith(".webm");
-
-      const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
-
-      return (
         <div
-          key={p.id}
-          className="snap-start h-[calc(100vh-64px)] flex flex-col justify-center pt-4 -mx-4 md:mx-0"
+          ref={feedRef}
+          className="h-[calc(100vh-64px)] overflow-y-auto overflow-x-hidden snap-y snap-mandatory touch-pan-y"
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
+          {posts.map((p) => {
+            const email = String(p.userEmail || "").trim().toLowerCase();
+            const display = email ? displayNameFromEmail(email) : "User";
 
-          {/* MEDIA */}
-          <div className="relative w-full md:max-w-[640px] md:mx-auto aspect-[9/16] overflow-hidden bg-black">
+            const mediaUrl = String(p.imageUrl || "").trim();
+            const lower = mediaUrl.toLowerCase();
+            const isVideo =
+              lower.endsWith(".mov") ||
+              lower.endsWith(".mp4") ||
+              lower.endsWith(".webm");
 
-            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
+            const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
+            const isActive = activePost === p.id;
 
-            <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-40">
-
+            return (
               <div
-                className="flex items-center gap-3 cursor-pointer"
-                onClick={() => router.push(`/u/${email}`)}
+                key={p.id}
+                data-postid={p.id}
+                ref={observePost}
+                className="snap-center min-h-[calc(100vh-64px)] flex flex-col justify-center pt-4 -mx-4 md:mx-0"
               >
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
-                  <img
-                    src={p.imageUrl || "/avatar-placeholder.png"}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                <div className="relative w-full md:max-w-[640px] md:mx-auto aspect-[9/16] overflow-hidden bg-black">
+                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
-                <div>
-                  <div className="text-sm font-semibold text-white drop-shadow-md">
-                    {display}
+                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-40">
+                    <div
+                      className="flex items-center gap-3 cursor-pointer"
+                      onClick={() => router.push(`/u/${email}`)}
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+                        <img
+                          src={p.imageUrl || "/avatar-placeholder.png"}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="text-sm font-semibold text-white drop-shadow-md">
+                          {display}
+                        </div>
+                        <div className="text-xs text-white/80 drop-shadow-md">
+                          @{email.split("@")[0]}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onToggleFollow(email)}
+                      className={`rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+                        followMap[email]
+                          ? "bg-white text-black"
+                          : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+                      }`}
+                    >
+                      {followMap[email] ? "Following" : "Follow"}
+                    </button>
                   </div>
 
-                  <div className="text-xs text-white/80 drop-shadow-md">
-                    @{email.split("@")[0]}
+                  {mediaUrl ? (
+                    isVideo ? (
+                      <video
+                        src={mediaUrl}
+                        controls
+                        playsInline
+                        muted={!isActive}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={mediaUrl}
+                        alt="Post media"
+                        className="w-full h-full object-cover"
+                      />
+                    )
+                  ) : (
+                    <div className="p-6 text-sm opacity-70 text-white">
+                      No media.
+                    </div>
+                  )}
+
+                  <div className="absolute z-40 left-4 bottom-[90px] md:bottom-6">
+                    <button
+                      type="button"
+                      onClick={() => toggleRewards(p.id)}
+                      className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
+                    >
+                      <Gift size={16} />
+                      Rewards
+                    </button>
+
+                    {rewardsOpenForThisPost && (
+                      <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
+                        <div className="text-[11px] text-white/60 px-2 pb-2">
+                          Reward this post
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {rewardItems.map((it) => (
+                            <button
+                              key={it.mode}
+                              type="button"
+                              onClick={() => onOpenReward(it.mode, p.id)}
+                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
+                            >
+                              <div className="text-base">{it.icon}</div>
+                              <div className="text-xs text-white/90 font-semibold">
+                                {it.label}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
+                    <button
+                      type="button"
+                      onClick={() => toggleLike(p.id)}
+                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+                    >
+                      <Heart
+                        size={26}
+                        className={likedMap[p.id] ? "fill-red-500 text-red-500" : ""}
+                      />
+                      <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openComments(p.id)}
+                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+                    >
+                      <MessageCircle size={26} />
+                      <span className="text-[12px]">
+                        {commentCounts[p.id] ?? 0}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => sharePost(p.id)}
+                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+                    >
+                      <Share2 size={26} />
+                      <span className="text-[12px]">Share</span>
+                    </button>
                   </div>
                 </div>
+
+                {p.caption && (
+                  <div className="px-4 mt-3 text-sm text-white/90">
+                    {p.caption}
+                  </div>
+                )}
               </div>
-
-              <button
-                type="button"
-                onClick={() => onToggleFollow(email)}
-                className={`rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-                  followMap[email]
-                    ? "bg-white text-black"
-                    : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-                }`}
-              >
-                {followMap[email] ? "Following" : "Follow"}
-              </button>
-
-            </div>
-
-            {mediaUrl ? (
-              isVideo ? (
-                <video src={mediaUrl} controls className="w-full h-full object-cover" />
-              ) : (
-                <img src={mediaUrl} alt="Post media" className="w-full h-full object-cover" />
-              )
-            ) : (
-              <div className="p-6 text-sm opacity-70 text-white">
-                No media.
-              </div>
-            )}
-
-          </div>
-
-          {p.caption && (
-            <div className="px-4 mt-3 text-sm text-white/90">
-              {p.caption}
-            </div>
-          )}
-
+            );
+          })}
         </div>
-      );
-    })}
+      )}
 
-  </div>
-)}
-        
-           {commentsOpen && (
+      {commentsOpen && (
         <div className="fixed inset-0 z-50">
           <button
             type="button"
@@ -478,7 +608,6 @@ async function handleSendComment() {
           />
 
           <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-5xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl flex flex-col h-[75vh] max-h-[75vh]">
-
             <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
             <div className="flex items-center justify-between px-5 py-4">
@@ -495,9 +624,7 @@ async function handleSendComment() {
             <div className="flex-1 overflow-y-auto px-5 pb-4">
               <div className="space-y-4">
                 {comments.length === 0 && (
-                  <div className="text-sm text-white/40">
-                    No comments yet.
-                  </div>
+                  <div className="text-sm text-white/40">No comments yet.</div>
                 )}
 
                 {comments.map((c) => (
@@ -505,9 +632,7 @@ async function handleSendComment() {
                     <div className="text-xs text-white/50">
                       @{c.userEmail?.split("@")[0] || "user"}
                     </div>
-                    <div className="text-sm text-white/90">
-                      {c.body}
-                    </div>
+                    <div className="text-sm text-white/90">{c.body}</div>
                   </div>
                 ))}
               </div>
@@ -542,11 +667,9 @@ async function handleSendComment() {
                 </button>
               </div>
             </div>
-
           </div>
         </div>
       )}
-
     </FeedLayout>
   );
 }
