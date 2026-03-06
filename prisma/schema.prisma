@@ -9,7 +9,6 @@ datasource db {
   schemas  = ["public"]
 }
 
-
 model Post {
   id        String   @id @default(uuid())
   userEmail String
@@ -21,10 +20,11 @@ model Post {
   likes Like[]      @relation("PostLikes")
   media PostMedia[] @relation("PostMedia")
 
-  // ✅ ADD THESE (inverse relation fields)
   reactions PostReaction[] @relation("PostReactions")
   comments  Comment[]      @relation("PostComments")
 
+  @@index([createdAt])
+  @@index([userEmail])
   @@schema("public")
 }
 
@@ -46,7 +46,8 @@ model Like {
 
   post Post @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userEmail]) // ✅ add this
+  @@unique([postId, userEmail])
+  @@index([postId])
   @@schema("public")
 }
 
@@ -219,7 +220,17 @@ model StripeCheckoutReceipt {
   @@map("stripe_checkout_receipts")
   @@schema("public")
 }
+model FeedSnapshot {
+  id          String   @id @default(uuid())
+  viewerEmail String   @map("viewer_email")
+  postId      String   @map("post_id")
+  rankScore   Float    @default(0) @map("rank_score")
+  payload     Json
+  createdAt   DateTime @default(now()) @map("created_at")
 
+  @@index([viewerEmail])
+  @@schema("public")
+}
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { buildFeedSnapshot } from "@/lib/feed/buildFeedSnapshot";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+
 
 type MediaIn = { type: "image" | "video"; url: string; order: number };
 
@@ -36,27 +37,44 @@ export async function GET(req: Request) {
     const userEmail = userEmailParam
       ? userEmailParam.trim().toLowerCase()
       : null;
+    // SNAP FEED CHECK
+if (userEmail) {
+  const snap = await prisma.feedSnapshot.findMany({
+    where: { viewerEmail: userEmail },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+  });
 
+  if (snap.length > 0) {
+    const posts = snap.map((s) => (s.payload as any).post);
+    return NextResponse.json({ posts });
+  }
+
+  // build snapshot if none exists
+  const posts = await buildFeedSnapshot(userEmail);
+  return NextResponse.json({ posts });
+}
     const posts = await prisma.post.findMany({
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        userEmail: true,
-        imageUrl: true,
-        caption: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: { likes: true },
-        },
-        likes: userEmail
-          ? {
-              where: { userEmail },
-              select: { id: true },
-            }
-          : false,
-      },
-    });
+  orderBy: { createdAt: "desc" },
+  take: 20,
+  select: {
+    id: true,
+    userEmail: true,
+    imageUrl: true,
+    caption: true,
+    createdAt: true,
+    updatedAt: true,
+    _count: {
+      select: { likes: true },
+    },
+    likes: userEmail
+      ? {
+          where: { userEmail },
+          select: { id: true },
+        }
+      : false,
+  },
+});
 
     const shaped = posts.map((p) => ({
       id: p.id,
