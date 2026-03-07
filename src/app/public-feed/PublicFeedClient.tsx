@@ -463,45 +463,44 @@ export function PublicFeedClient() {
                 style={{
                 minHeight: `calc(100vh - ${TOP_BAR + PEOPLE_RAIL + BOTTOM_BAR}px)`
                 }}
-                className="snap-center min-h-[calc(100vh-64px)] flex flex-col justify-center pt-20 -mx-4 md:mx-0"
+                className="snap-center flex flex-col justify-center pt-20 -mx-4 md:mx-0"
                 >
                 <div className="relative w-full md:max-w-[640px] md:mx-auto aspect-[9/16] overflow-hidden bg-black">
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
-                  <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-40">
-                    <div
-                      className="flex items-center gap-3 cursor-pointer"
-                      onClick={() => router.push(`/u/${email}`)}
-                    >
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
-                        <img
-                          src={p.imageUrl || "/avatar-placeholder.png"}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                  <div className="absolute bottom-28 left-4 right-20 z-40">
+  <div className="flex items-center gap-3">
+    <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+      <img
+        src={p.imageUrl || "/avatar-placeholder.png"}
+        className="w-full h-full object-cover"
+      />
+    </div>
 
-                      <div>
-                        <div className="text-sm font-semibold text-white drop-shadow-md">
-                          {display}
-                        </div>
-                        <div className="text-xs text-white/80 drop-shadow-md">
-                          @{email.split("@")[0]}
-                        </div>
-                      </div>
-                    </div>
+    <div>
+      <div className="text-sm font-semibold text-white drop-shadow-md">
+        {display}
+      </div>
 
-                    <button
-                      type="button"
-                      onClick={() => onToggleFollow(email)}
-                      className={`rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-                        followMap[email]
-                          ? "bg-white text-black"
-                          : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-                      }`}
-                    >
-                      {followMap[email] ? "Following" : "Follow"}
-                    </button>
-                  </div>
+      <div className="text-xs text-white/80 drop-shadow-md">
+        @{email.split("@")[0]}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => onToggleFollow(email)}
+      className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+        followMap[email]
+          ? "bg-white text-black"
+          : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+      }`}
+    >
+      {followMap[email] ? "Following" : "Follow"}
+    </button>
+  </div>
+</div>
+                    
 
                   {mediaUrl ? (
                     isVideo ? (
