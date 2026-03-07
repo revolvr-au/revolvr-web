@@ -47,7 +47,7 @@ export function PublicFeedClient() {
   const router = useRouter();
 
   const TOP_BAR = 72;
-  const PEOPLE_RAIL = 110;
+  const PEOPLE_RAIL = 130;
   const BOTTOM_BAR = 80;
 
   const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
@@ -465,7 +465,7 @@ export function PublicFeedClient() {
                 }}
                 className="snap-center flex flex-col justify-center pt-20 -mx-4 md:mx-0"
                 >
-                <div className="relative w-full md:max-w-[640px] md:mx-auto aspect-[9/16] overflow-hidden bg-black">
+                <div className="relative w-full md:max-w-[640px] md:mx-auto h-full overflow-hidden bg-black">
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
                   <div className="absolute bottom-28 left-4 right-20 z-40">

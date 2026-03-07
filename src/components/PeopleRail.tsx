@@ -72,72 +72,77 @@ export default function PeopleRail({
 
   if (!normalized.length) return null;
 
-  return (
+ return (
   <div className="absolute top-[70px] left-0 right-0 z-40 pointer-events-none">
-      <div className="flex items-center overflow-x-auto no-scrollbar px-4 pointer-events-auto">
-        <div className="flex gap-4 py-2">
-          {normalized.map((p) => {
-            const id = p.id;
-            const name = p.displayName;
-            const showImage = Boolean(p.imageUrl) && !broken[id];
-            const isFollowing = followMap[p.email];
 
-            return (
-              <div key={id} className="flex-none flex flex-col items-center gap-2">
-                <Link
-                  href={`/u/${encodeURIComponent(p.handle)}`}
-                  aria-label={`View ${name}`}
+    <div className="flex items-center overflow-x-auto no-scrollbar px-4 pointer-events-auto">
+      <div className="flex gap-4 py-2">
+        {normalized.map((p) => {
+          const id = p.id;
+          const name = p.displayName;
+          const showImage = Boolean(p.imageUrl) && !broken[id];
+          const isFollowing = followMap[p.email];
+
+          return (
+            <div key={id} className="flex-none flex flex-col items-center gap-2">
+              <Link
+                href={`/u/${encodeURIComponent(p.handle)}`}
+                aria-label={`View ${name}`}
+              >
+                <div
+                  className="relative overflow-visible"
+                  style={{ width: size, height: size }}
                 >
+                  {p.isLive && <LivePill />}
+                  {p.tick && <Tick tick={p.tick} />}
+
                   <div
-                    className="relative overflow-visible"
-                    style={{ width: size, height: size }}
+                    className={`
+                      relative w-full h-full rounded-full overflow-hidden
+                      ${p.isLive ? "ring-2 ring-red-500" : "bg-white/5"}
+                    `}
                   >
-                    {p.isLive && <LivePill />}
-                    {p.tick && <Tick tick={p.tick} />}
+                    {p.isLive && (
+                      <>
+                        {/* Outer glow */}
+                        <div className="absolute inset-0 rounded-full shadow-[0_0_35px_rgba(255,0,85,0.8)] pointer-events-none" />
 
-                    <div
-                   className={`
-                  relative w-full h-full rounded-full overflow-hidden
-                  ${p.isLive ? "ring-2 ring-red-500" : "bg-white/5"}
-                 `}
-                  >
-                  {p.isLive && (
-                  <>
-                  {/* Outer glow */}
-                  <div className="absolute inset-0 rounded-full shadow-[0_0_35px_rgba(255,0,85,0.8)] pointer-events-none" />
+                        {/* Breathing halo */}
+                        <div className="absolute inset-0 rounded-full ring-4 ring-red-500/30 animate-ping pointer-events-none" />
+                      </>
+                    )}
 
-                  {/* Breathing halo */}
-                  <div className="absolute inset-0 rounded-full ring-4 ring-red-500/30 animate-ping pointer-events-none" />
-                  </>
-                  )}
-                      {showImage ? (
-                        <Image
-                          src={p.imageUrl as string}
-                          alt={name}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                          onError={() =>
-                            setBroken((prev) => ({ ...prev, [id]: true }))
-                          }
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
-                          {name.slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
+                    {showImage ? (
+                      <Image
+                        src={p.imageUrl as string}
+                        alt={name}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                        onError={() =>
+                          setBroken((prev) => ({ ...prev, [id]: true }))
+                        }
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
+                        {name.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
                   </div>
-                </Link>
-
-                <div className="text-[13px] font-medium text-white/80 max-w-[96px] truncate">
-                  {name}
                 </div>
+              </Link>
+
+              <div className="text-[13px] font-medium text-white/80 max-w-[96px] truncate">
+                {name}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
       </div>
     </div>
-  );
-}
+
+    {/* Fade into feed */}
+    <div className="h-8 bg-gradient-to-b from-transparent to-[#050814] pointer-events-none" />
+
+  </div>
+);
