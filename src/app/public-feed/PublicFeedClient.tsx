@@ -420,14 +420,13 @@ export function PublicFeedClient() {
   }
 
   return (
-    <FeedLayout title="Revolvr" subtitle="Public feed" onGoLive={goLive}>
-      <div className="px-4 pt-4">
-        <PeopleRail
-          items={railItems}
-          onToggleFollow={onToggleFollow}
-          followMap={followMap}
-        />
-      </div>
+      <FeedLayout title="Revolvr" subtitle="Public feed" onGoLive={goLive}>
+      <PeopleRail
+      items={railItems}
+      onToggleFollow={onToggleFollow}
+      followMap={followMap}
+      />
+        
 
       {loading && <div className="p-4 opacity-70">Loading…</div>}
       {err && <div className="p-4 text-red-400">{err}</div>}
@@ -438,12 +437,9 @@ export function PublicFeedClient() {
 
       {!loading && !err && posts.length > 0 && (
           <div
-          ref={feedRef}
-          style={{
-          height: `calc(100vh - ${TOP_BAR + PEOPLE_RAIL + BOTTOM_BAR}px)`
-          }}
-          className="overflow-y-auto overflow-x-hidden snap-y snap-mandatory touch-pan-y"
-          >
+  ref={feedRef}
+  className="h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory touch-pan-y"
+>
           
           {posts.map((p) => {
             const email = String(p.userEmail || "").trim().toLowerCase();
