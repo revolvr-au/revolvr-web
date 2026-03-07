@@ -468,7 +468,7 @@ export function PublicFeedClient() {
                 <div className="relative w-full md:max-w-[640px] md:mx-auto h-full overflow-hidden bg-black">
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
-                  <div className="absolute bottom-28 left-4 right-20 z-40">
+                  <div className="absolute bottom-14 left-4 right-24 z-40">
   <div className="flex items-center gap-3">
     <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
       <img
@@ -524,40 +524,6 @@ export function PublicFeedClient() {
                     </div>
                   )}
 
-                  <div className="absolute z-40 left-4 bottom-[90px] md:bottom-6">
-                    <button
-                      type="button"
-                      onClick={() => toggleRewards(p.id)}
-                      className="flex items-center gap-2 rounded-full bg-black/70 backdrop-blur px-3 py-2 text-xs text-white shadow-lg hover:bg-black/80 transition"
-                    >
-                      <Gift size={16} />
-                      Rewards
-                    </button>
-
-                    {rewardsOpenForThisPost && (
-                      <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
-                        <div className="text-[11px] text-white/60 px-2 pb-2">
-                          Reward this post
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {rewardItems.map((it) => (
-                            <button
-                              key={it.mode}
-                              type="button"
-                              onClick={() => onOpenReward(it.mode, p.id)}
-                              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left hover:bg-white/10 transition active:scale-[0.99]"
-                            >
-                              <div className="text-base">{it.icon}</div>
-                              <div className="text-xs text-white/90 font-semibold">
-                                {it.label}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
                   <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
                     <button
                       type="button"
@@ -592,7 +558,14 @@ export function PublicFeedClient() {
                     </button>
                   </div>
                 </div>
-
+                <button
+               type="button"
+                onClick={() => toggleRewards(p.id)}
+              className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+              >
+              <Gift size={26} />
+              <span className="text-[12px]">Reward</span>
+              </button>
                 {p.caption && (
                   <div className="px-4 mt-3 text-sm text-white/90">
                     {p.caption}

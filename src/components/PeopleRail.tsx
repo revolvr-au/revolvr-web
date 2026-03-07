@@ -73,7 +73,7 @@ export default function PeopleRail({
   if (!normalized.length) return null;
 
  return (
-  <div className="absolute top-[70px] left-0 right-0 z-40 pointer-events-none">
+  <div className="absolute top-[92px] left-0 right-0 z-40 pointer-events-none">
 
     <div className="flex items-center overflow-x-auto no-scrollbar px-4 pointer-events-auto">
       <div className="flex gap-4 py-2">
@@ -142,7 +142,7 @@ export default function PeopleRail({
     </div>
 
     {/* Fade into feed */}
-    <div className="h-8 bg-gradient-to-b from-transparent to-[#050814] pointer-events-none" />
+    <div className="h-6 bg-gradient-to-b from-transparent via-[#050814]/40 to-transparent pointer-events-none" />
 
   </div>
 );
