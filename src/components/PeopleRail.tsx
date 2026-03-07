@@ -74,7 +74,7 @@ export default function PeopleRail({
 
   return (
     <div className="px-4">
-      <div className="flex items-center overflow-x-auto no-scrollbar">
+      <div className="h-[90px] flex items-center overflow-x-auto no-scrollbar">
         <div className="flex gap-4 py-2">
           {normalized.map((p) => {
             const id = p.id;
@@ -96,20 +96,20 @@ export default function PeopleRail({
                     {p.tick && <Tick tick={p.tick} />}
 
                     <div
-  className={`
-    relative w-full h-full rounded-full overflow-hidden
-    ${p.isLive ? "ring-2 ring-red-500" : "bg-white/5"}
-  `}
->
-  {p.isLive && (
-    <>
-      {/* Outer glow */}
-      <div className="absolute inset-0 rounded-full shadow-[0_0_35px_rgba(255,0,85,0.8)] pointer-events-none" />
+                   className={`
+                  relative w-full h-full rounded-full overflow-hidden
+                  ${p.isLive ? "ring-2 ring-red-500" : "bg-white/5"}
+                 `}
+                  >
+                  {p.isLive && (
+                  <>
+                  {/* Outer glow */}
+                  <div className="absolute inset-0 rounded-full shadow-[0_0_35px_rgba(255,0,85,0.8)] pointer-events-none" />
 
-      {/* Breathing halo */}
-      <div className="absolute inset-0 rounded-full ring-4 ring-red-500/30 animate-ping pointer-events-none" />
-    </>
-  )}
+                  {/* Breathing halo */}
+                  <div className="absolute inset-0 rounded-full ring-4 ring-red-500/30 animate-ping pointer-events-none" />
+                  </>
+                  )}
                       {showImage ? (
                         <Image
                           src={p.imageUrl as string}
@@ -133,17 +133,6 @@ export default function PeopleRail({
                 <div className="text-[13px] font-medium text-white/80 max-w-[96px] truncate">
                   {name}
                 </div>
-
-                {onToggleFollow && (
-                  <button
-                    type="button"
-                    disabled={followBusy[p.email]}
-                    onClick={() => onToggleFollow(p.email)}
-                    className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50"
-                  >
-                    {isFollowing ? "Following" : "Follow"}
-                  </button>
-                )}
               </div>
             );
           })}

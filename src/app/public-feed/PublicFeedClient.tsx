@@ -46,6 +46,10 @@ export function PublicFeedClient() {
   const viewer = "test@revolvr.net";
   const router = useRouter();
 
+  const TOP_BAR = 72;
+  const PEOPLE_RAIL = 110;
+  const BOTTOM_BAR = 80;
+
   const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
     { mode: "applause", label: "Applause", icon: "👏" },
     { mode: "fire", label: "Fire", icon: "🔥" },
@@ -433,11 +437,14 @@ export function PublicFeedClient() {
       )}
 
       {!loading && !err && posts.length > 0 && (
-        <div
+          <div
           ref={feedRef}
-          className="h-[calc(100vh-64px)] overflow-y-auto overflow-x-hidden snap-y snap-mandatory touch-pan-y"
-          style={{ WebkitOverflowScrolling: "touch" }}
-        >
+          style={{
+          height: `calc(100vh - ${TOP_BAR + PEOPLE_RAIL + BOTTOM_BAR}px)`
+          }}
+          className="overflow-y-auto overflow-x-hidden snap-y snap-mandatory touch-pan-y"
+          >
+          
           {posts.map((p) => {
             const email = String(p.userEmail || "").trim().toLowerCase();
             const display = email ? displayNameFromEmail(email) : "User";
@@ -457,8 +464,11 @@ export function PublicFeedClient() {
                 key={p.id}
                 data-postid={p.id}
                 ref={observePost}
-                className="snap-center min-h-[calc(100vh-64px)] flex flex-col justify-center pt-4 -mx-4 md:mx-0"
-              >
+                style={{
+                minHeight: `calc(100vh - ${TOP_BAR + PEOPLE_RAIL + BOTTOM_BAR}px)`
+                }}
+                className="snap-center flex flex-col justify-center pt-4 -mx-4 md:mx-0"
+                >
                 <div className="relative w-full md:max-w-[640px] md:mx-auto aspect-[9/16] overflow-hidden bg-black">
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
 
