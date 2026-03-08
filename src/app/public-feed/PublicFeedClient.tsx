@@ -248,49 +248,7 @@ export function PublicFeedClient() {
       container.querySelectorAll("[data-postid]")
     ) as HTMLElement[];
 
-    function snapToClosest() {
-      if (scrollLock.current) return;
-
-      const containerTop = container.scrollTop;
-      let closest: HTMLElement | null = null;
-      let closestDist = Infinity;
-
-      items.forEach((item) => {
-        const dist = Math.abs(item.offsetTop - containerTop);
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = item;
-        }
-      });
-
-      if (!closest) return;
-
-      scrollLock.current = true;
-      container.scrollTo({
-        top: closest.offsetTop,
-        behavior: "smooth",
-      });
-
-      window.setTimeout(() => {
-        scrollLock.current = false;
-      }, 250);
-    }
-
-    let scrollTimer: number | undefined;
-
-    function onScroll() {
-      if (scrollTimer) window.clearTimeout(scrollTimer);
-      scrollTimer = window.setTimeout(snapToClosest, 80);
-    }
-
-    container.addEventListener("scroll", onScroll);
-
-    return () => {
-      container.removeEventListener("scroll", onScroll);
-      if (scrollTimer) window.clearTimeout(scrollTimer);
-    };
-  }, [posts]);
-
+  
   function toggleLike(postId: string) {
     setLikedMap((prev) => {
       const next = { ...prev, [postId]: !prev[postId] };
@@ -436,9 +394,12 @@ export function PublicFeedClient() {
       )}
 
       {!loading && !err && posts.length > 0 && (
-          <div
+      <div
   ref={feedRef}
-  className="h-screen overflow-y-auto overflow-x-hidden snap-y snap-mandatory touch-pan-y"
+  className="h-screen overflow-y-auto snap-y snap-mandatory"
+  style={{
+    WebkitOverflowScrolling: "touch"
+  }}
 >
           
           {posts.map((p) => {
@@ -461,7 +422,7 @@ export function PublicFeedClient() {
     data-postid={p.id}
     ref={observePost}
     style={{
-      height: `calc(100vh - ${TOP_BAR + PEOPLE_RAIL + BOTTOM_BAR}px)`,
+      height: `calc(100vh - ${TOP_BAR + BOTTOM_BAR}px)`
     }}
     className="snap-center relative -mx-4 md:mx-0 overflow-hidden"
   >
@@ -472,18 +433,18 @@ export function PublicFeedClient() {
       {mediaUrl ? (
         isVideo ? (
           <video
-            src={mediaUrl}
-            controls
-            playsInline
-            muted={!isActive}
-            className="w-full h-full object-cover"
-          />
+  src={mediaUrl}
+  controls
+  playsInline
+  muted={!isActive}
+  className="absolute inset-0 w-full h-full object-cover"
+/>
         ) : (
           <img
-            src={mediaUrl}
-            alt="Post media"
-            className="w-full h-full object-cover"
-          />
+  src={mediaUrl}
+  alt="Post media"
+  className="absolute inset-0 w-full h-full object-cover"
+/>
         )
       ) : (
         <div className="p-6 text-sm opacity-70 text-white">
