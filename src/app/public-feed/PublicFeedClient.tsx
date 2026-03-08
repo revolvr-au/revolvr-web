@@ -398,7 +398,7 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length > 0 && (
       <div
   ref={feedRef}
-  className="snap-container h-screen overflow-y-scroll"
+  className="snap-container h-screen overflow-y-scroll scroll-smooth"
   style={{
     WebkitOverflowScrolling: "touch"
   }}
@@ -424,8 +424,8 @@ export function PublicFeedClient() {
     data-postid={p.id}
     ref={observePost}
     style={{
-      height: `calc(100vh - ${TOP_BAR + BOTTOM_BAR}px)`
-    }}
+  height: "100vh"
+}}
     className="snap-post relative -mx-4 md:mx-0 overflow-hidden"
   >
     <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
@@ -511,7 +511,7 @@ export function PublicFeedClient() {
         </div>
       </div>
 
-      <div className="absolute z-40 right-4 bottom-24 flex flex-col items-center gap-6 backdrop-blur-md bg-white/5 rounded-3xl px-2 py-3 border border-white/10">
+      <div className="absolute z-40 right-4 bottom-24 flex flex-col items-center gap-6">
 
         <button
           type="button"
