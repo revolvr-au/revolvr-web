@@ -424,7 +424,7 @@ export function PublicFeedClient() {
     data-postid={p.id}
     ref={observePost}
     style={{
-  height: "calc(100vh - 72px)"
+  height: "calc(100dvh - 72px)"
 }}
     className="snap-post relative -mx-4 md:mx-0 overflow-hidden"
   >
@@ -478,7 +478,7 @@ export function PublicFeedClient() {
         </div>
       )}
 
-      <div className="absolute bottom-6 left-4 right-24 z-40">
+      <div className="absolute bottom-16 left-4 right-24 z-40">
   <div className="flex items-center gap-3">
     <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
       <img
