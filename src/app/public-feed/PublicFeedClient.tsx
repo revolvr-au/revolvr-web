@@ -241,12 +241,14 @@ export function PublicFeedClient() {
   }, [commentsOpen, activePostId]);
 
   useEffect(() => {
-    const container = feedRef.current;
-    if (!container || posts.length === 0) return;
+  const container = feedRef.current;
+  if (!container || posts.length === 0) return;
 
-    const items = Array.from(
-      container.querySelectorAll("[data-postid]")
-    ) as HTMLElement[];
+  const items = Array.from(
+    container.querySelectorAll("[data-postid]")
+  ) as HTMLElement[];
+
+}, [posts]);
 
   
   function toggleLike(postId: string) {
