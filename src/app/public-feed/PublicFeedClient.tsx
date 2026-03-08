@@ -479,38 +479,37 @@ export function PublicFeedClient() {
       )}
 
       <div className="absolute bottom-6 left-4 right-24 z-40">
-        <div className="flex items-center gap-3">
-          className="text-white drop-shadow-md"
-          <div className=w-9 h-9 rounded-full overflow-hidden bg-white/20">
-            <img
-              src={p.imageUrl || "/avatar-placeholder.png"}
-              className="w-full h-full object-cover"
-            />
-          </div>
+  <div className="flex items-center gap-3">
+    <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
+      <img
+        src={p.imageUrl || "/avatar-placeholder.png"}
+        className="w-full h-full object-cover"
+      />
+    </div>
 
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-white drop-shadow-md truncate">
-              {display}
-            </div>
-
-            <div className="text-xs text-white/80 drop-shadow-md truncate">
-              @{email.split("@")[0]}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onToggleFollow(email)}
-            className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-              followMap[email]
-                ? "bg-white text-black"
-                : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-            }`}
-          >
-            {followMap[email] ? "Following" : "Follow"}
-          </button>
-        </div>
+    <div className="min-w-0 text-white drop-shadow-md">
+      <div className="text-sm font-semibold truncate">
+        {display}
       </div>
+
+      <div className="text-xs text-white/80 truncate">
+        @{email.split("@")[0]}
+      </div>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => onToggleFollow(email)}
+      className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+        followMap[email]
+          ? "bg-white text-black"
+          : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+      }`}
+    >
+      {followMap[email] ? "Following" : "Follow"}
+    </button>
+  </div>
+</div>
 
       <div className="absolute z-40 right-4 bottom-32 flex flex-col items-center gap-6">
 
