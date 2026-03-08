@@ -456,124 +456,128 @@ export function PublicFeedClient() {
             const isActive = activePost === p.id;
 
             return (
-              <div
-                key={p.id}
-                data-postid={p.id}
-                ref={observePost}
-                style={{
-                minHeight: `calc(100vh - ${TOP_BAR + PEOPLE_RAIL + BOTTOM_BAR}px)`
-                }}
-                className="snap-center flex flex-col justify-center pt-20 -mx-4 md:mx-0"
-                >
-                <div className="relative w-full md:max-w-[640px] md:mx-auto h-full overflow-hidden bg-black">
-                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
+  <div
+    key={p.id}
+    data-postid={p.id}
+    ref={observePost}
+    style={{
+      height: `calc(100vh - ${TOP_BAR + PEOPLE_RAIL + BOTTOM_BAR}px)`,
+    }}
+    className="snap-center relative -mx-4 md:mx-0 overflow-hidden"
+  >
+    <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
+      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
 
-                  <div className="absolute bottom-14 left-4 right-24 z-40">
-  <div className="flex items-center gap-3">
-    <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
-      <img
-        src={p.imageUrl || "/avatar-placeholder.png"}
-        className="w-full h-full object-cover"
-      />
-    </div>
+      {mediaUrl ? (
+        isVideo ? (
+          <video
+            src={mediaUrl}
+            controls
+            playsInline
+            muted={!isActive}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <img
+            src={mediaUrl}
+            alt="Post media"
+            className="w-full h-full object-cover"
+          />
+        )
+      ) : (
+        <div className="p-6 text-sm opacity-70 text-white">
+          No media.
+        </div>
+      )}
 
-    <div>
-      <div className="text-sm font-semibold text-white drop-shadow-md">
-        {display}
+      {p.caption && (
+        <div className="absolute bottom-20 left-4 right-24 z-40">
+          <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
+            {p.caption}
+          </p>
+        </div>
+      )}
+
+      <div className="absolute bottom-6 left-4 right-24 z-40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+            <img
+              src={p.imageUrl || "/avatar-placeholder.png"}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-white drop-shadow-md truncate">
+              {display}
+            </div>
+
+            <div className="text-xs text-white/80 drop-shadow-md truncate">
+              @{email.split("@")[0]}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onToggleFollow(email)}
+            className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+              followMap[email]
+                ? "bg-white text-black"
+                : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+            }`}
+          >
+            {followMap[email] ? "Following" : "Follow"}
+          </button>
+        </div>
       </div>
 
-      <div className="text-xs text-white/80 drop-shadow-md">
-        @{email.split("@")[0]}
+      <div className="absolute z-40 right-4 bottom-6 flex flex-col items-center gap-5">
+        <button
+          type="button"
+          onClick={() => toggleLike(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+        >
+          <Heart
+            size={26}
+            className={likedMap[p.id] ? "fill-red-500 text-red-500" : ""}
+          />
+          <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => openComments(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+        >
+          <MessageCircle size={26} />
+          <span className="text-[12px]">
+            {commentCounts[p.id] ?? 0}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => sharePost(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+        >
+          <Share2 size={26} />
+          <span className="text-[12px]">Share</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => toggleRewards(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+        >
+          <Gift size={26} />
+          <span className="text-[12px]">Reward</span>
+        </button>
       </div>
     </div>
-
-    <button
-      type="button"
-      onClick={() => onToggleFollow(email)}
-      className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-        followMap[email]
-          ? "bg-white text-black"
-          : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-      }`}
-    >
-      {followMap[email] ? "Following" : "Follow"}
-    </button>
   </div>
-</div>
-                    
-
-                  {mediaUrl ? (
-                    isVideo ? (
-                      <video
-                        src={mediaUrl}
-                        controls
-                        playsInline
-                        muted={!isActive}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <img
-                        src={mediaUrl}
-                        alt="Post media"
-                        className="w-full h-full object-cover"
-                      />
-                    )
-                  ) : (
-                    <div className="p-6 text-sm opacity-70 text-white">
-                      No media.
-                    </div>
-                  )}
-
-                  <div className="absolute z-40 right-4 bottom-[105px] md:bottom-6 flex flex-col items-center gap-5">
-                    <button
-                      type="button"
-                      onClick={() => toggleLike(p.id)}
-                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-                    >
-                      <Heart
-                        size={26}
-                        className={likedMap[p.id] ? "fill-red-500 text-red-500" : ""}
-                      />
-                      <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => openComments(p.id)}
-                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-                    >
-                      <MessageCircle size={26} />
-                      <span className="text-[12px]">
-                        {commentCounts[p.id] ?? 0}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => sharePost(p.id)}
-                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-                    >
-                      <Share2 size={26} />
-                      <span className="text-[12px]">Share</span>
-                    </button>
-                  </div>
-                </div>
-                <button
-               type="button"
-                onClick={() => toggleRewards(p.id)}
-              className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
-              >
-              <Gift size={26} />
-              <span className="text-[12px]">Reward</span>
-              </button>
-                {p.caption && (
-                  <div className="px-4 mt-3 text-sm text-white/90">
-                    {p.caption}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+);
+})}
         </div>
       )}
 
