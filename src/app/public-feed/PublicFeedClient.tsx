@@ -424,7 +424,7 @@ export function PublicFeedClient() {
     data-postid={p.id}
     ref={observePost}
     style={{
-  height: "100vh"
+  height: "calc(100vh - 72px)"
 }}
     className="snap-post relative -mx-4 md:mx-0 overflow-hidden"
   >
@@ -471,7 +471,7 @@ export function PublicFeedClient() {
       </div>
 
       {p.caption && (
-        <div className="absolute bottom-20 left-4 right-24 z-40">
+        <div className="absolute bottom-24 left-4 right-24 z-40">
           <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
             {p.caption}
           </p>
@@ -480,7 +480,8 @@ export function PublicFeedClient() {
 
       <div className="absolute bottom-6 left-4 right-24 z-40">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+          className="text-white drop-shadow-md"
+          <div className=w-9 h-9 rounded-full overflow-hidden bg-white/20">
             <img
               src={p.imageUrl || "/avatar-placeholder.png"}
               className="w-full h-full object-cover"
@@ -511,7 +512,7 @@ export function PublicFeedClient() {
         </div>
       </div>
 
-      <div className="absolute z-40 right-4 bottom-24 flex flex-col items-center gap-6">
+      <div className="absolute z-40 right-4 bottom-32 flex flex-col items-center gap-6">
 
         <button
           type="button"
