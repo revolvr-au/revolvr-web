@@ -555,11 +555,9 @@ export function PublicFeedClient() {
           <Gift size={26} />
           <span className="text-[12px]">Reward</span>
         </button>
-
-      </div>
-    </div>
-  </div>
+        </div>
 );
+})}
         </div>
       )}
 
