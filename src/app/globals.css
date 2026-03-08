@@ -545,3 +545,26 @@ background: linear-gradient(
   rgba(0,0,0,0.65),
   rgba(0,0,0,0)
 );
+/* smoother feed scrolling */
+
+html,
+body {
+  overscroll-behavior-y: none;
+}
+
+.snap-container {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-post {
+  scroll-snap-align: start;
+}
+.snap-container {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-post {
+  scroll-snap-align: start;
+}

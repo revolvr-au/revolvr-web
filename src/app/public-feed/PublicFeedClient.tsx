@@ -398,7 +398,7 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length > 0 && (
       <div
   ref={feedRef}
-  className="h-screen overflow-y-auto snap-y snap-mandatory"
+  className="snap-container h-screen overflow-y-scroll"
   style={{
     WebkitOverflowScrolling: "touch"
   }}
@@ -420,14 +420,14 @@ export function PublicFeedClient() {
 
             return (
   <div
-    key={p.id}
-    data-postid={p.id}
-    ref={observePost}
-    style={{
-      height: `calc(100vh - ${TOP_BAR + BOTTOM_BAR}px)`
-    }}
-    className="snap-center relative -mx-4 md:mx-0 overflow-hidden"
-  >
+  key={p.id}
+  data-postid={p.id}
+  ref={observePost}
+  style={{
+    height: `calc(100vh - ${TOP_BAR + BOTTOM_BAR}px)`
+  }}
+  className="snap-post relative -mx-4 md:mx-0 overflow-hidden"
+>
     <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
@@ -495,16 +495,19 @@ export function PublicFeedClient() {
         </div>
       </div>
 
-      <div className="absolute z-40 right-4 bottom-6 flex flex-col items-center gap-5">
+      <div className="absolute z-40 right-4 bottom-24 flex flex-col items-center gap-6
+        backdrop-blur-md bg-white/5 rounded-3xl px-2 py-3 border border-white/10"
         <button
           type="button"
           onClick={() => toggleLike(p.id)}
           className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
         >
           <Heart
-            size={26}
-            className={likedMap[p.id] ? "fill-red-500 text-red-500" : ""}
-          />
+        size={26}
+        className={`active:scale-90 transition-transform ${
+        likedMap[p.id] ? "fill-red-500 text-red-500" : ""
+        }`}
+        />
           <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
         </button>
 
