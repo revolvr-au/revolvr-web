@@ -418,41 +418,57 @@ export function PublicFeedClient() {
             const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
             const isActive = activePost === p.id;
 
-            return (
+        return (
   <div
-  key={p.id}
-  data-postid={p.id}
-  ref={observePost}
-  style={{
-    height: `calc(100vh - ${TOP_BAR + BOTTOM_BAR}px)`
-  }}
-  className="snap-post relative -mx-4 md:mx-0 overflow-hidden"
->
+    key={p.id}
+    data-postid={p.id}
+    ref={observePost}
+    style={{
+      height: `calc(100vh - ${TOP_BAR + BOTTOM_BAR}px)`
+    }}
+    className="snap-post relative -mx-4 md:mx-0 overflow-hidden"
+  >
     <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
 
-      {mediaUrl ? (
-        isVideo ? (
-          <video
-  src={mediaUrl}
-  controls
-  playsInline
-  muted={!isActive}
-  className="absolute inset-0 w-full h-full object-cover"
-/>
+      <div
+        className="absolute inset-0"
+        onClick={(e) => {
+          const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
+          if (!video) return;
+
+          if (video.paused) video.play();
+          else video.pause();
+        }}
+      >
+        {mediaUrl ? (
+          isVideo ? (
+            <video
+              ref={(el) => {
+                if (!el) return;
+                if (isActive) el.play().catch(() => {});
+                else el.pause();
+              }}
+              src={mediaUrl}
+              playsInline
+              muted
+              loop
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          ) : (
+            <img
+              src={mediaUrl}
+              alt="Post media"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )
         ) : (
-          <img
-  src={mediaUrl}
-  alt="Post media"
-  className="absolute inset-0 w-full h-full object-cover"
-/>
-        )
-      ) : (
-        <div className="p-6 text-sm opacity-70 text-white">
-          No media.
-        </div>
-      )}
+          <div className="p-6 text-sm opacity-70 text-white">
+            No media.
+          </div>
+        )}
+      </div>
 
       {p.caption && (
         <div className="absolute bottom-20 left-4 right-24 z-40">
@@ -495,19 +511,19 @@ export function PublicFeedClient() {
         </div>
       </div>
 
-      <div className="absolute z-40 right-4 bottom-24 flex flex-col items-center gap-6
-        backdrop-blur-md bg-white/5 rounded-3xl px-2 py-3 border border-white/10"
+      <div className="absolute z-40 right-4 bottom-24 flex flex-col items-center gap-6 backdrop-blur-md bg-white/5 rounded-3xl px-2 py-3 border border-white/10">
+
         <button
           type="button"
           onClick={() => toggleLike(p.id)}
           className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
         >
           <Heart
-        size={26}
-        className={`active:scale-90 transition-transform ${
-        likedMap[p.id] ? "fill-red-500 text-red-500" : ""
-        }`}
-        />
+            size={26}
+            className={`active:scale-90 transition-transform ${
+              likedMap[p.id] ? "fill-red-500 text-red-500" : ""
+            }`}
+          />
           <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
         </button>
 
@@ -539,11 +555,11 @@ export function PublicFeedClient() {
           <Gift size={26} />
           <span className="text-[12px]">Reward</span>
         </button>
+
       </div>
     </div>
   </div>
 );
-})}
         </div>
       )}
 
