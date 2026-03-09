@@ -402,7 +402,7 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length > 0 && (
       <div
   ref={feedRef}
-  className="flex flex-col gap-6 min-h-screen"
+  className="snap-container h-screen overflow-y-scroll"
 >
           
           {posts.map((p) => {
@@ -425,7 +425,7 @@ export function PublicFeedClient() {
   key={p.id}
   data-postid={p.id}
   ref={observePost}
-  className="relative -mx-4 md:mx-0 overflow-hidden min-h-[70vh] flex items-center justify-center"
+  className="snap-post relative h-screen w-full overflow-hidden flex items-center justify-center"
 >
     <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
