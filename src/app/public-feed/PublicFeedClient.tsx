@@ -137,91 +137,67 @@ export function PublicFeedClient() {
   }, [commentsOpen]);
 
   useEffect(() => {
-    let cancelled = false;
+  let cancelled = false;
 
-    async function run() {
-  try {
-    setLoading(true);
-    setErr(null);
+  async function run() {
+    try {
+      setLoading(true);
+      setErr(null);
 
-    const res = await fetch("/api/public-feed", { cache: "no-store" });
-    const json = await res.json().catch(() => null);
+      const res = await fetch("/api/public-feed", { cache: "no-store" });
+      const json = await res.json().catch(() => null);
 
-    console.log("FEED API RESPONSE:", json);
+      console.log("FEED API RESPONSE:", json);
 
-    if (!res.ok) {
-      const msg =
-        typeof json?.error === "string"
-          ? json.error
-          : `Failed to load posts (${res.status})`;
+      if (!res.ok) {
+        const msg =
+          typeof json?.error === "string"
+            ? json.error
+            : `Failed to load posts (${res.status})`;
 
-      if (!cancelled) {
-        setErr(msg);
-        setPosts([]);
+        if (!cancelled) {
+          setErr(msg);
+          setPosts([]);
+        }
+        return;
       }
-      return;
-    }
 
-    const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
+      const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
 
-    if (cancelled) return;
+      if (cancelled) return;
 
-    setPosts(incoming);
+      setPosts(incoming);
 
-    const nextCommentCounts: Record<string, number> = {};
-    const nextLiked: Record<string, boolean> = {};
-    const nextCounts: Record<string, number> = {};
+      const nextCommentCounts: Record<string, number> = {};
+      const nextLiked: Record<string, boolean> = {};
+      const nextCounts: Record<string, number> = {};
 
-    for (const p of incoming) {
-      nextCommentCounts[p.id] = p.comments?.length ?? 0;
-      nextLiked[p.id] = false;
-      nextCounts[p.id] = p.reactions?.length ?? 0;
-    }
-
-    setCommentCounts(nextCommentCounts);
-    setLikedMap(nextLiked);
-    setLikeCounts(nextCounts);
-  } catch (e) {
-    console.error("[public-feed] load posts error", e);
-    if (!cancelled) {
-      setErr("Failed to load public feed.");
-      setPosts([]);
-    }
-  } finally {
-    if (!cancelled) setLoading(false);
-  }
-}
-
-        const nextCommentCounts: Record<string, number> = {};
-        const nextLiked: Record<string, boolean> = {};
-        const nextCounts: Record<string, number> = {};
-
-        for (const p of incoming) {
+      for (const p of incoming) {
         nextCommentCounts[p.id] = p.comments?.length ?? 0;
         nextLiked[p.id] = false;
         nextCounts[p.id] = p.reactions?.length ?? 0;
-        }
-
-        setCommentCounts(nextCommentCounts);
-        setLikedMap(nextLiked);
-        setLikeCounts(nextCounts);
-      } catch (e) {
-        console.error("[public-feed] load posts error", e);
-        if (!cancelled) {
-          setErr("Failed to load public feed.");
-          setPosts([]);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
+
+      setCommentCounts(nextCommentCounts);
+      setLikedMap(nextLiked);
+      setLikeCounts(nextCounts);
+    } catch (e) {
+      console.error("[public-feed] load posts error", e);
+      if (!cancelled) {
+        setErr("Failed to load public feed.");
+        setPosts([]);
+      }
+    } finally {
+      if (!cancelled) setLoading(false);
     }
+  }
 
-    run();
+  run();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [viewer]);
+  return () => {
+    cancelled = true;
+  };
+}, [viewer]);
 
   useEffect(() => {
     if (!commentsOpen) return;
@@ -406,7 +382,7 @@ export function PublicFeedClient() {
   }
 
   return (
-      <FeedLayout title="Revolvr" subtitle="Public feed" onGoLive={goLive}>
+      <FeedLayout title="Revolvr" onGoLive={goLive}>
       <PeopleRail
       items={railItems}
       onToggleFollow={onToggleFollow}
