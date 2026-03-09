@@ -398,12 +398,6 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length === 0 && (
         <div className="p-4 opacity-70">No posts yet.</div>
       )}
-
-      {!loading && !err && posts.length > 0 && (
-      <div
-  ref={feedRef}
-  className="snap-container h-screen overflow-y-scroll"
->
           
           {posts.map((p) => {
             const email = String(p.userEmail || "").trim().toLowerCase();
@@ -427,7 +421,7 @@ export function PublicFeedClient() {
   ref={observePost}
   className="snap-post relative h-screen w-full overflow-hidden flex items-center justify-center"
 >
-    <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
+    <div className="relative w-full h-full max-w-[420px] mx-auto overflow-hidden bg-black flex items-center justify-center">
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
 
@@ -453,13 +447,13 @@ export function PublicFeedClient() {
   playsInline
   muted
   loop
-  className="w-full max-h-[70vh] object-contain mx-auto"
+  className="w-full h-full object-contain"
 />
           ) : (
             <img
   src={mediaUrl}
   alt="Post media"
-  className="w-full max-h-[70vh] object-contain mx-auto"
+  className="w-full h-full object-contain"
 />
           )
         ) : (
