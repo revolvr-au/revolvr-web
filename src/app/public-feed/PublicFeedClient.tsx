@@ -13,8 +13,8 @@ type ApiPost = {
   userEmail: string | null;
   imageUrl: string | null;
   caption: string | null;
-  likeCount: number;
-  likedByCurrentUser: boolean;
+  comments?: any[];
+  reactions?: any[];
 };
 
 type RewardMode = "applause" | "fire" | "love" | "respect";
@@ -171,9 +171,9 @@ export function PublicFeedClient() {
         const nextCounts: Record<string, number> = {};
 
         for (const p of incoming) {
-          nextCommentCounts[p.id] = 0;
-          nextLiked[p.id] = Boolean(p.likedByCurrentUser);
-          nextCounts[p.id] = Number.isFinite(p.likeCount) ? p.likeCount : 0;
+        nextCommentCounts[p.id] = p.comments?.length ?? 0;
+        nextLiked[p.id] = false;
+        nextCounts[p.id] = p.reactions?.length ?? 0;
         }
 
         setCommentCounts(nextCommentCounts);
