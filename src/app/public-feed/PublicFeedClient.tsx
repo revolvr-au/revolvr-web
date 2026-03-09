@@ -398,7 +398,7 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length > 0 && (
       <div
   ref={feedRef}
-  className="snap-y snap-mandatory h-[100dvh] overflow-y-scroll"
+  className="overflow-y-auto"
   style={{
     WebkitOverflowScrolling: "touch"
   }}
@@ -424,9 +424,9 @@ export function PublicFeedClient() {
   data-postid={p.id}
   ref={observePost}
   style={{
-    height: "calc(100dvh - 220px)"
+    minHeight: "70vh"
   }}
-  className="snap-start relative -mx-4 md:mx-0 overflow-hidden"
+  className="relative -mx-4 md:mx-0 overflow-hidden"
 >
     <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
@@ -454,13 +454,13 @@ export function PublicFeedClient() {
   playsInline
   muted
   loop
-  className="absolute inset-0 w-full h-full object-contain"
+  className="w-full h-auto max-h-[75vh] object-contain mx-auto"
 />
           ) : (
             <img
   src={mediaUrl}
   alt="Post media"
-  className="absolute inset-0 w-full h-full object-contain"
+  className="w-full h-auto max-h-[75vh] object-contain mx-auto"
 />
           )
         ) : (
