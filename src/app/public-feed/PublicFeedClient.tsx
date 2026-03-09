@@ -145,7 +145,6 @@ export function PublicFeedClient() {
     setErr(null);
 
     const res = await fetch("/api/public-feed", { cache: "no-store" });
-
     const json = await res.json().catch(() => null);
 
     console.log("FEED API RESPONSE:", json);
@@ -163,12 +162,7 @@ export function PublicFeedClient() {
       return;
     }
 
-    const incoming: ApiPost[] =
-      Array.isArray(json?.posts)
-        ? json.posts
-        : Array.isArray(json)
-        ? json
-        : [];
+    const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
 
     if (cancelled) return;
 
