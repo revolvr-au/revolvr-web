@@ -29,7 +29,6 @@ export default function FeedLayout({
 
       {/* HEADER (hidden during LIVE) */}
       {!isLive && (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-[#050814]/70 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
 
             {/* Brand */}

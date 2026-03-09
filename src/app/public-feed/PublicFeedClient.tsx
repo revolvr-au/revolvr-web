@@ -398,7 +398,7 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length > 0 && (
       <div
   ref={feedRef}
-  className="snap-container h-screen overflow-y-scroll scroll-smooth"
+  className="snap-y snap-mandatory h-[100dvh] overflow-y-scroll"
   style={{
     WebkitOverflowScrolling: "touch"
   }}
@@ -419,15 +419,15 @@ export function PublicFeedClient() {
             const isActive = activePost === p.id;
 
         return (
-  <div
-    key={p.id}
-    data-postid={p.id}
-    ref={observePost}
-    style={{
-  height: "calc(100dvh - 72px)"
-}}
-    className="snap-post relative -mx-4 md:mx-0 overflow-hidden"
-  >
+    <div
+  key={p.id}
+  data-postid={p.id}
+  ref={observePost}
+  style={{
+    height: "calc(100dvh - 220px)"
+  }}
+  className="snap-start relative -mx-4 md:mx-0 overflow-hidden"
+>
     <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
@@ -445,23 +445,23 @@ export function PublicFeedClient() {
         {mediaUrl ? (
           isVideo ? (
             <video
-              ref={(el) => {
-                if (!el) return;
-                if (isActive) el.play().catch(() => {});
-                else el.pause();
-              }}
-              src={mediaUrl}
-              playsInline
-              muted
-              loop
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+  ref={(el) => {
+    if (!el) return;
+    if (isActive) el.play().catch(() => {});
+    else el.pause();
+  }}
+  src={mediaUrl}
+  playsInline
+  muted
+  loop
+  className="absolute inset-0 w-full h-full object-contain"
+/>
           ) : (
             <img
-              src={mediaUrl}
-              alt="Post media"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+  src={mediaUrl}
+  alt="Post media"
+  className="absolute inset-0 w-full h-full object-contain"
+/>
           )
         ) : (
           <div className="p-6 text-sm opacity-70 text-white">
@@ -478,7 +478,7 @@ export function PublicFeedClient() {
         </div>
       )}
 
-      <div className="absolute bottom-16 left-4 right-24 z-40">
+      <div className="absolute bottom-28 left-4 right-24 z-40">
   <div className="flex items-center gap-3">
     <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
       <img

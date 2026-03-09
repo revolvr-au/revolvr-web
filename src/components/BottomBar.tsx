@@ -130,7 +130,7 @@ export default function BottomBar({
   return (
     <nav
   aria-label="Bottom navigation"
-  className="fixed inset-x-0 bottom-0 z-50 bg-[#050814]/90 backdrop-blur-xl"
+  className="fixed inset-x-0 bottom-0 z-50 bg-[#050814]/60 backdrop-blur-xl"
   style={{
     height: BAR_HEIGHT_PX,
     paddingBottom: safeArea ? "env(safe-area-inset-bottom)" : undefined,
