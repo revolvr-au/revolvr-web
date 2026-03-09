@@ -29,7 +29,8 @@ export default function FeedLayout({
 
       {/* HEADER (hidden during LIVE) */}
       {!isLive && (
-        <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[#050814]/70 backdrop-blur-xl">
+          <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
 
             {/* Brand */}
             <div className="min-w-0">
@@ -46,16 +47,11 @@ export default function FeedLayout({
                 type="button"
                 onClick={() => onGoLive?.()}
                 disabled={!onGoLive}
-                className={`
-                  relative inline-flex h-10 w-10 items-center justify-center
-                  rounded-xl transition active:scale-95
-                  ${
-                    isLive
-                      ? "bg-red-600 shadow-[0_0_20px_rgba(255,0,60,0.6)]"
-                      : "bg-white/5 hover:bg-white/10"
-                  }
-                  disabled:opacity-40 disabled:cursor-not-allowed
-                `}
+                className={`relative inline-flex h-10 w-10 items-center justify-center rounded-xl transition active:scale-95 ${
+                  isLive
+                    ? "bg-red-600 shadow-[0_0_20px_rgba(255,0,60,0.6)]"
+                    : "bg-white/5 hover:bg-white/10"
+                } disabled:opacity-40 disabled:cursor-not-allowed`}
                 aria-label="Go Live"
               >
                 <Radio className="w-5 h-5 text-white" />
@@ -73,6 +69,7 @@ export default function FeedLayout({
                   ☰
                 </Link>
               )}
+
             </div>
           </div>
         </header>
