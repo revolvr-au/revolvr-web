@@ -551,12 +551,10 @@ export function PublicFeedClient() {
         </button>
 
       </div>
-
     </div>
   </div>
 );
-</div>
-)}
+})}
 
 /* ---------- Comments Modal ---------- */
 
