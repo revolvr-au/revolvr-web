@@ -388,7 +388,9 @@ export function PublicFeedClient() {
       onToggleFollow={onToggleFollow}
       followMap={followMap}
       />
-        
+      <div className="p-4 text-green-400">
+    Feed loaded: {posts.length}
+    </div>
 
       {loading && <div className="p-4 opacity-70">Loading…</div>}
       {err && <div className="p-4 text-red-400">{err}</div>}
@@ -400,7 +402,7 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length > 0 && (
       <div
   ref={feedRef}
-  className="flex flex-col gap-6"
+  className="flex flex-col gap-6 min-h-screen"
 >
           
           {posts.map((p) => {
@@ -416,6 +418,7 @@ export function PublicFeedClient() {
 
             const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
             const isActive = activePost === p.id;
+            console.log("Rendering post:", p.id);
 
         return (
     <div
@@ -423,7 +426,7 @@ export function PublicFeedClient() {
   data-postid={p.id}
   ref={observePost}
   style={{
-  minHeight: "420px"
+  minHeight: "75vh"
 }}
   className="relative -mx-4 md:mx-0 overflow-hidden"
 >
