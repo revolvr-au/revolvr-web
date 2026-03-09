@@ -147,6 +147,7 @@ export function PublicFeedClient() {
         const url = "/api/posts?userEmail=" + encodeURIComponent(viewer);
         const res = await fetch(url, { cache: "no-store" });
         const json = await res.json().catch(() => null);
+        console.log("FEED API RESPONSE:", json);
 
         if (!res.ok) {
           const msg =
@@ -161,7 +162,12 @@ export function PublicFeedClient() {
           return;
         }
 
-        const incoming: ApiPost[] = Array.isArray(json?.posts) ? json.posts : [];
+        const incoming: ApiPost[] =
+  Array.isArray(json?.posts)
+    ? json.posts
+    : Array.isArray(json?.data)
+    ? json.data
+    : [];
         if (cancelled) return;
 
         setPosts(incoming);
