@@ -398,10 +398,7 @@ export function PublicFeedClient() {
       {!loading && !err && posts.length > 0 && (
       <div
   ref={feedRef}
-  className="overflow-y-auto"
-  style={{
-    WebkitOverflowScrolling: "touch"
-  }}
+  className="flex flex-col gap-6"
 >
           
           {posts.map((p) => {
@@ -424,8 +421,8 @@ export function PublicFeedClient() {
   data-postid={p.id}
   ref={observePost}
   style={{
-    minHeight: "70vh"
-  }}
+  minHeight: "420px"
+}}
   className="relative -mx-4 md:mx-0 overflow-hidden"
 >
     <div className="relative w-full h-full md:max-w-[640px] md:mx-auto overflow-hidden bg-black">
@@ -454,13 +451,13 @@ export function PublicFeedClient() {
   playsInline
   muted
   loop
-  className="w-full h-auto max-h-[75vh] object-contain mx-auto"
+  className="w-full max-h-[70vh] object-contain mx-auto"
 />
           ) : (
             <img
   src={mediaUrl}
   alt="Post media"
-  className="w-full h-auto max-h-[75vh] object-contain mx-auto"
+  className="w-full max-h-[70vh] object-contain mx-auto"
 />
           )
         ) : (
