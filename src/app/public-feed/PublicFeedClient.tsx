@@ -415,54 +415,56 @@ export function PublicFeedClient() {
             console.log("Rendering post:", p.id);
 
         return (
-    <div
-  key={p.id}
-  data-postid={p.id}
-  ref={observePost}
-  className="snap-post relative h-screen w-full overflow-hidden flex items-center justify-center"
->
-    <div className="relative w-full h-full max-w-[420px] mx-auto overflow-hidden bg-black flex items-center justify-center">
+  <div
+    key={p.id}
+    data-postid={p.id}
+    ref={observePost}
+    className="snap-post relative h-screen w-full flex items-center justify-center overflow-hidden"
+  >
+    <div className="relative w-full h-full max-w-[420px] bg-black flex items-center justify-center overflow-hidden">
+
+      {/* Top / Bottom gradients */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
 
+      {/* Media */}
       <div
         className="absolute inset-0"
         onClick={(e) => {
           const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
           if (!video) return;
-
-          if (video.paused) video.play();
-          else video.pause();
+          video.paused ? video.play() : video.pause();
         }}
       >
         {mediaUrl ? (
           isVideo ? (
             <video
-  ref={(el) => {
-    if (!el) return;
-    if (isActive) el.play().catch(() => {});
-    else el.pause();
-  }}
-  src={mediaUrl}
-  playsInline
-  muted
-  loop
-  className="w-full h-full object-contain"
-/>
+              ref={(el) => {
+                if (!el) return;
+                if (isActive) el.play().catch(() => {});
+                else el.pause();
+              }}
+              src={mediaUrl}
+              playsInline
+              muted
+              loop
+              className="w-full h-full object-contain"
+            />
           ) : (
             <img
-  src={mediaUrl}
-  alt="Post media"
-  className="w-full h-full object-contain"
-/>
+              src={mediaUrl}
+              alt="Post media"
+              className="w-full h-full object-contain"
+            />
           )
         ) : (
-          <div className="p-6 text-sm opacity-70 text-white">
-            No media.
+          <div className="p-6 text-sm text-white/70">
+            No media
           </div>
         )}
       </div>
 
+      {/* Caption */}
       {p.caption && (
         <div className="absolute bottom-24 left-4 right-24 z-40">
           <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
@@ -471,49 +473,50 @@ export function PublicFeedClient() {
         </div>
       )}
 
-      <div className="absolute bottom-28 left-4 right-24 z-40">
-  <div className="flex items-center gap-3">
-    <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
-      <img
-        src={p.imageUrl || "/avatar-placeholder.png"}
-        className="w-full h-full object-cover"
-      />
-    </div>
+      {/* Creator block */}
+      <div className="absolute bottom-28 left-4 right-24 z-40 flex items-center gap-3">
 
-    <div className="min-w-0 text-white drop-shadow-md">
-      <div className="text-sm font-semibold truncate">
-        {display}
+        <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
+          <img
+            src={p.imageUrl || "/avatar-placeholder.png"}
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        <div className="min-w-0 text-white drop-shadow-md">
+          <div className="text-sm font-semibold truncate">
+            {display}
+          </div>
+          <div className="text-xs text-white/80 truncate">
+            @{email.split("@")[0]}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onToggleFollow(email)}
+          className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+            followMap[email]
+              ? "bg-white text-black"
+              : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+          }`}
+        >
+          {followMap[email] ? "Following" : "Follow"}
+        </button>
+
       </div>
 
-      <div className="text-xs text-white/80 truncate">
-        @{email.split("@")[0]}
-      </div>
-    </div>
-
-    <button
-      type="button"
-      onClick={() => onToggleFollow(email)}
-      className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-        followMap[email]
-          ? "bg-white text-black"
-          : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-      }`}
-    >
-      {followMap[email] ? "Following" : "Follow"}
-    </button>
-  </div>
-</div>
-
-      <div className="absolute z-40 right-4 bottom-32 flex flex-col items-center gap-6">
+      {/* Right interaction rail */}
+      <div className="absolute right-4 bottom-32 z-40 flex flex-col items-center gap-6">
 
         <button
           type="button"
           onClick={() => toggleLike(p.id)}
-          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
         >
           <Heart
             size={26}
-            className={`active:scale-90 transition-transform ${
+            className={`transition ${
               likedMap[p.id] ? "fill-red-500 text-red-500" : ""
             }`}
           />
@@ -523,43 +526,43 @@ export function PublicFeedClient() {
         <button
           type="button"
           onClick={() => openComments(p.id)}
-          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
         >
           <MessageCircle size={26} />
-          <span className="text-[12px]">
-            {commentCounts[p.id] ?? 0}
-          </span>
+          <span className="text-[12px]">{commentCounts[p.id] ?? 0}</span>
         </button>
 
         <button
           type="button"
           onClick={() => sharePost(p.id)}
-          className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
         >
           <Share2 size={26} />
           <span className="text-[12px]">Share</span>
         </button>
 
-       <button
-  type="button"
-  onClick={() => toggleRewards(p.id)}
-  className="flex flex-col items-center gap-1 text-white/90 hover:text-white transition"
->
-  <Gift size={26} />
-  <span className="text-[12px]">Reward</span>
-</button>
+        <button
+          type="button"
+          onClick={() => toggleRewards(p.id)}
+          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+        >
+          <Gift size={26} />
+          <span className="text-[12px]">Reward</span>
+        </button>
 
-</div>
-</div>
-</div>
+      </div>
+
+    </div>
+  </div>
 );
-})}
-
 </div>
 )}
 
+/* ---------- Comments Modal ---------- */
+
 {commentsOpen && (
   <div className="fixed inset-0 z-50">
+
     <button
       type="button"
       className="absolute inset-0 bg-black/60"
@@ -567,10 +570,12 @@ export function PublicFeedClient() {
     />
 
     <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-5xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl flex flex-col h-[75vh] max-h-[75vh]">
+
       <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
 
       <div className="flex items-center justify-between px-5 py-4">
         <div className="text-sm font-semibold text-white">Comments</div>
+
         <button
           type="button"
           onClick={closeComments}
@@ -580,25 +585,40 @@ export function PublicFeedClient() {
         </button>
       </div>
 
+      {/* Comment list */}
+
       <div className="flex-1 overflow-y-auto px-5 pb-4">
         <div className="space-y-4">
+
           {comments.length === 0 && (
-            <div className="text-sm text-white/40">No comments yet.</div>
+            <div className="text-sm text-white/40">
+              No comments yet.
+            </div>
           )}
 
           {comments.map((c) => (
             <div key={c.id}>
+
               <div className="text-xs text-white/50">
                 @{c.userEmail?.split("@")[0] || "user"}
               </div>
-              <div className="text-sm text-white/90">{c.body}</div>
+
+              <div className="text-sm text-white/90">
+                {c.body}
+              </div>
+
             </div>
           ))}
+
         </div>
       </div>
 
+      {/* Comment input */}
+
       <div className="border-t border-white/10 px-4 py-3">
+
         <div className="flex items-center gap-2">
+
           <input
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
@@ -624,9 +644,13 @@ export function PublicFeedClient() {
           >
             <Send size={18} />
           </button>
+
         </div>
+
       </div>
+
     </div>
+
   </div>
 )}
 
