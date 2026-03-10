@@ -381,188 +381,190 @@ export function PublicFeedClient() {
     }
   }
 
-  return (
-      <FeedLayout title="Revolvr" onGoLive={goLive}>
-      <PeopleRail
+ return (
+  <FeedLayout title="Revolvr" onGoLive={goLive}>
+    <PeopleRail
       items={railItems}
       onToggleFollow={onToggleFollow}
       followMap={followMap}
-      />
-      <div className="p-4 text-green-400">
-    Feed loaded: {posts.length}
+    />
+
+    <div className="p-4 text-green-400">
+      Feed loaded: {posts.length}
     </div>
 
-      {loading && <div className="p-4 opacity-70">Loading…</div>}
-      {err && <div className="p-4 text-red-400">{err}</div>}
+    {loading && <div className="p-4 opacity-70">Loading…</div>}
+    {err && <div className="p-4 text-red-400">{err}</div>}
+
     {!loading && (
-  <div
-  ref={feedRef}
-  className="snap-y snap-mandatory overflow-y-scroll h-screen flex flex-col items-center w-full"
->
-    {posts.map((p) => {
-      const email = String(p.userEmail || "").trim().toLowerCase();
-      const display = email ? displayNameFromEmail(email) : "User";
-
-      const mediaUrl = String(p.imageUrl || "").trim();
-      const lower = mediaUrl.toLowerCase();
-
-      const isVideo =
-        lower.endsWith(".mov") ||
-        lower.endsWith(".mp4") ||
-        lower.endsWith(".webm");
-
-      const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
-      const isActive = activePost === p.id;
-
-      console.log("Rendering post:", p.id);
-
-      return (
-        <div
-          key={p.id}
-          data-postid={p.id}
-          ref={observePost}
-          className="snap-start relative h-screen w-full flex items-center justify-center"
-        >
-          <div className="relative w-full h-full max-w-[520px] md:max-w-[680px] bg-black flex items-center justify-center overflow-hidden">
-      {/* Top / Bottom gradients */}
-      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
-      <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
-
-      {/* Media */}
       <div
-        className="absolute inset-0"
-        onClick={(e) => {
-          const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
-          if (!video) return;
-          video.paused ? video.play() : video.pause();
-        }}
+        ref={feedRef}
+        className="snap-y snap-mandatory overflow-y-scroll h-screen flex flex-col items-center w-full"
       >
-        {mediaUrl ? (
-          isVideo ? (
-            <video
-  ref={(el) => {
-    if (!el) return;
-    if (isActive) el.play().catch(() => {});
-    else el.pause();
-  }}
-  autoPlay={isActive}
-  src={mediaUrl}
-  playsInline
-  muted
-  loop
-  className="w-full h-full object-cover"
-/>
-          ) : (
-            <img
-              src={mediaUrl}
-              alt="Post media"
-              className="w-full h-full object-cover"
-            />
-          )
-        ) : (
-          <div className="p-6 text-sm text-white/70">
-            No media
-          </div>
-        )}
+        {posts.map((p) => {
+          const email = String(p.userEmail || "").trim().toLowerCase();
+          const display = email ? displayNameFromEmail(email) : "User";
+
+          const mediaUrl = String(p.imageUrl || "").trim();
+          const lower = mediaUrl.toLowerCase();
+
+          const isVideo =
+            lower.endsWith(".mov") ||
+            lower.endsWith(".mp4") ||
+            lower.endsWith(".webm");
+
+          const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
+          const isActive = activePost === p.id;
+
+          console.log("Rendering post:", p.id);
+
+          return (
+            <div
+              key={p.id}
+              data-postid={p.id}
+              ref={observePost}
+              className="snap-start relative h-screen w-full flex items-center justify-center"
+            >
+              <div className="relative w-full h-full max-w-[520px] md:max-w-[680px] bg-black flex items-center justify-center overflow-hidden">
+
+                {/* Top / Bottom gradients */}
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
+                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
+
+                {/* Media */}
+                <div
+                  className="absolute inset-0"
+                  onClick={(e) => {
+                    const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
+                    if (!video) return;
+                    video.paused ? video.play() : video.pause();
+                  }}
+                >
+                  {mediaUrl ? (
+                    isVideo ? (
+                      <video
+                        ref={(el) => {
+                          if (!el) return;
+                          if (isActive) el.play().catch(() => {});
+                          else el.pause();
+                        }}
+                        autoPlay={isActive}
+                        src={mediaUrl}
+                        playsInline
+                        muted
+                        loop
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={mediaUrl}
+                        alt="Post media"
+                        className="w-full h-full object-cover"
+                      />
+                    )
+                  ) : (
+                    <div className="p-6 text-sm text-white/70">
+                      No media
+                    </div>
+                  )}
+                </div>
+
+                {/* Caption */}
+                {p.caption && (
+                  <div className="absolute bottom-32 left-4 right-24 z-40">
+                    <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
+                      {p.caption}
+                    </p>
+                  </div>
+                )}
+
+                {/* Creator block */}
+                <div className="absolute bottom-24 left-4 right-24 z-40 flex items-center gap-3">
+
+                  <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
+                    <img
+                      src={p.imageUrl || "/avatar-placeholder.png"}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+
+                  <div className="min-w-0 text-white drop-shadow-md">
+                    <div className="text-sm font-semibold truncate">
+                      {display}
+                    </div>
+                    <div className="text-xs text-white/80 truncate">
+                      @{email.split("@")[0]}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onToggleFollow(email)}
+                    className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+                      followMap[email]
+                        ? "bg-white text-black"
+                        : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+                    }`}
+                  >
+                    {followMap[email] ? "Following" : "Follow"}
+                  </button>
+
+                </div>
+
+                {/* Right interaction rail */}
+                <div className="absolute right-4 bottom-32 z-40 flex flex-col items-center gap-6">
+
+                  <button
+                    type="button"
+                    onClick={() => toggleLike(p.id)}
+                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                  >
+                    <Heart
+                      size={26}
+                      className={`transition ${
+                        likedMap[p.id] ? "fill-red-500 text-red-500" : ""
+                      }`}
+                    />
+                    <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openComments(p.id)}
+                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                  >
+                    <MessageCircle size={26} />
+                    <span className="text-[12px]">{commentCounts[p.id] ?? 0}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => sharePost(p.id)}
+                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                  >
+                    <Share2 size={26} />
+                    <span className="text-[12px]">Share</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleRewards(p.id)}
+                    className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                  >
+                    <Gift size={26} />
+                    <span className="text-[12px]">Reward</span>
+                  </button>
+
+                </div>
+
+              </div>
+            </div>
+          );
+        })}
       </div>
+    )}
 
-      {/* Caption */}
-      {p.caption && (
-        <div className="absolute bottom-32 left-4 right-24 z-40">
-          <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
-            {p.caption}
-          </p>
-        </div>
-      )}
-
-      {/* Creator block */}
-      <div className="absolute bottom-24 left-4 right-24 z-40 flex items-center gap-3">
-
-        <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
-          <img
-            src={p.imageUrl || "/avatar-placeholder.png"}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <div className="min-w-0 text-white drop-shadow-md">
-          <div className="text-sm font-semibold truncate">
-            {display}
-          </div>
-          <div className="text-xs text-white/80 truncate">
-            @{email.split("@")[0]}
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onToggleFollow(email)}
-          className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-            followMap[email]
-              ? "bg-white text-black"
-              : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-          }`}
-        >
-          {followMap[email] ? "Following" : "Follow"}
-        </button>
-
-      </div>
-
-           {/* Right interaction rail */}
-      <div className="absolute right-4 bottom-32 z-40 flex flex-col items-center gap-6">
-
-        <button
-          type="button"
-          onClick={() => toggleLike(p.id)}
-          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-        >
-          <Heart
-            size={26}
-            className={`transition ${
-              likedMap[p.id] ? "fill-red-500 text-red-500" : ""
-            }`}
-          />
-          <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => openComments(p.id)}
-          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-        >
-          <MessageCircle size={26} />
-          <span className="text-[12px]">{commentCounts[p.id] ?? 0}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => sharePost(p.id)}
-          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-        >
-          <Share2 size={26} />
-          <span className="text-[12px]">Share</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleRewards(p.id)}
-          className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-        >
-          <Gift size={26} />
-          <span className="text-[12px]">Reward</span>
-        </button>
-
-      </div>
-
-    </div>
-  </div>
-);
-})}
-
-</div>
-
-
-{/* ---------- Comments Modal ---------- */}
+   {/* ---------- Comments Modal ---------- */}
 
 {commentsOpen && (
   <div className="fixed inset-0 z-50">
@@ -580,17 +582,14 @@ export function PublicFeedClient() {
       <div className="flex items-center justify-between px-5 py-4">
         <div className="text-sm font-semibold text-white">Comments</div>
 
-      <div className="flex items-center justify-between px-5 py-4">
-  <div className="text-sm font-semibold text-white">Comments</div>
-
-  <button
-    type="button"
-    onClick={closeComments}
-    className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
-  >
-    Close
-  </button>
-</div>
+        <button
+          type="button"
+          onClick={closeComments}
+          className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
+        >
+          Close
+        </button>
+      </div>
 
       {/* Comment list */}
 
@@ -605,7 +604,6 @@ export function PublicFeedClient() {
 
           {comments.map((c) => (
             <div key={c.id}>
-
               <div className="text-xs text-white/50">
                 @{c.userEmail?.split("@")[0] || "user"}
               </div>
@@ -613,7 +611,6 @@ export function PublicFeedClient() {
               <div className="text-sm text-white/90">
                 {c.body}
               </div>
-
             </div>
           ))}
 
@@ -623,7 +620,6 @@ export function PublicFeedClient() {
       {/* Comment input */}
 
       <div className="border-t border-white/10 px-4 py-3">
-
         <div className="flex items-center gap-2">
 
           <input
@@ -653,14 +649,11 @@ export function PublicFeedClient() {
           </button>
 
         </div>
-
       </div>
 
     </div>
-
   </div>
 )}
-
 </FeedLayout>
 );
 }
