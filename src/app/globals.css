@@ -1,359 +1,76 @@
 @import "tailwindcss";
-/* or, if you want the explicit layers:
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
-*/
 
+/* ================================
+   GLOBAL BASE
+================================ */
 
-
-/* ---- LiveKit UI cleanup (scoped + minimal) ---- */
-
-/* Keep the conference area stable and able to size within our wrapper */
-.live-room [data-lk-theme] .lk-video-conference {
-  position: relative !important;
-  height: 100% !important;
-  min-height: 0 !important;
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
 }
 
-/* Ensure inner layouts can stretch */
-.live-room [data-lk-theme] .lk-grid-layout,
-.live-room [data-lk-theme] .lk-focus-layout,
-.live-room [data-lk-theme] .lk-stage {
-  height: 100% !important;
-  min-height: 0 !important;
-}
+/* ================================
+   REVOLVR FEED ENGINE
+================================ */
 
-/* Hide control bar without display:none (prevents layout blanking) */
-.live-room [data-lk-theme] .lk-control-bar {
-  position: absolute !important;
-  left: -9999px !important;
-  top: -9999px !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-/* Keep the Start Audio overlay/button visible (mobile needs it) */
-.live-room [data-lk-theme] .lk-start-audio {
-  display: flex !important;
-  pointer-events: auto !important;
-  opacity: 1 !important;
-}
-
-/* Revolvr custom bits - no @apply, just plain CSS */
-
-.rv-emoji-button {
-  display: inline-flex;
-  align-items: center;
+.feed-center {
+  display: flex;
   justify-content: center;
-  border-radius: 9999px;
-  padding: 0.25rem 0.5rem; /* px-2 py-1 equivalent */
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: 1rem;
-  transition: background-color 150ms ease, transform 150ms ease;
+  width: 100%;
 }
 
-.rv-emoji-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+.feed-phone {
+  width: 100%;
+  max-width: 420px;
+  height: 100vh;
 }
 
-/* Fun entrance animations for posts */
-.rv-spin-in {
-  animation: rv-spin-in 0.5s ease-out;
-}
-.rv-bounce-in {
-  animation: rv-bounce-in 0.45s ease-out;
-}
-.rv-jolt-in {
-  animation: rv-jolt-in 0.45s ease-out;
-}
-.rv-glitch-in {
-  animation: rv-glitch-in 0.4s ease-out;
-}
-.rv-slide-in {
-  animation: rv-slide-in 0.45s ease-out;
-}
-
-@keyframes rv-spin-in {
-  from {
-    transform: scale(0.9) rotate(-2deg);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-}
-
-@keyframes rv-bounce-in {
-  0% {
-    transform: translateY(8px);
-    opacity: 0;
-  }
-  60% {
-    transform: translateY(-3px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-@keyframes rv-jolt-in {
-  0% {
-    transform: translateX(-6px);
-    opacity: 0;
-  }
-  40% {
-    transform: translateX(3px);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-@keyframes rv-glitch-in {
-  0% {
-    transform: translateX(-4px);
-    opacity: 0;
-  }
-  40% {
-    transform: translateX(4px);
-    opacity: 1;
-  }
-  60% {
-    transform: translateX(-2px);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-@keyframes rv-slide-in {
-  from {
-    transform: translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-/* ---------------- Live Chat Panel (Phase 1) ---------------- */
-
-.live-chat-panel {
-  height: 100%;
-  min-height: 520px;
-  display: flex;
-  flex-direction: column;
-
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  border-radius: 18px;
-
-  background: rgba(0, 0, 0, 0.30);
-  backdrop-filter: blur(10px);
-
+.feed-post {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  background: black;
   overflow: hidden;
+  scroll-snap-align: start;
 }
 
-.live-chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 14px 14px;
-
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.live-chat-title {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.live-chat-subtitle {
-  margin-top: 2px;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.50);
-}
-
-.live-chat-login {
-  font-size: 12px;
-  padding: 8px 10px;
-  border-radius: 10px;
-
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.90);
-  text-decoration: none;
-}
-
-.live-chat-status {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.live-chat-body {
-  flex: 1;
-  overflow: auto;
-  padding: 12px 12px;
-}
-
-.live-chat-empty {
-  padding: 14px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-  border: 1px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.live-chat-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.live-chat-row {
-  display: grid;
-  grid-template-columns: 32px 1fr;
-  gap: 10px;
-  align-items: start;
-}
-
-.live-chat-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.live-chat-avatar img {
+.feed-media {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
-.live-chat-avatar-fallback {
+/* smoother mobile scroll */
+
+.snap-container {
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-post {
+  scroll-snap-align: start;
+}
+
+/* ================================
+   MEDIA SAFETY
+================================ */
+
+video,
+img {
   width: 100%;
   height: 100%;
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.85);
+  object-fit: cover;
 }
 
-.live-chat-bubble {
-  padding: 10px 12px;
-  border-radius: 14px;
+/* ================================
+   PEOPLE RAIL AVATAR RING
+================================ */
 
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.live-chat-meta {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.live-chat-name {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.86);
-}
-
-.live-chat-time {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
-  white-space: nowrap;
-}
-
-.live-chat-text {
-  margin-top: 4px;
-  font-size: 13px;
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.86);
-  word-break: break-word;
-}
-
-.live-chat-error {
-  margin: 10px 12px 0 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
-
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  background: rgba(239, 68, 68, 0.10);
-  color: rgba(254, 202, 202, 0.95);
-  font-size: 12px;
-}
-
-.live-chat-input {
-  display: grid;
-  grid-template-columns: 1fr 78px;
-  gap: 10px;
-
-  padding: 12px 12px;
-
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.20);
-}
-
-.live-chat-input input {
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 12px;
-
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  background: rgba(255, 255, 255, 0.04);
-
-  color: rgba(255, 255, 255, 0.92);
-  outline: none;
-}
-
-.live-chat-input input::placeholder {
-  color: rgba(255, 255, 255, 0.40);
-}
-
-.live-chat-input button {
-  height: 40px;
-  border-radius: 12px;
-
-  border: 1px solid rgba(16, 185, 129, 0.45);
-  background: rgba(16, 185, 129, 0.20);
-
-  color: rgba(255, 255, 255, 0.92);
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.live-chat-input button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* Revolvr Live: hide LiveKit participant identity label overlay */
-.live-room .lk-participant-name,
-.live-room [data-lk-participant-name],
-.live-room .lk-participant-metadata,
-.live-room [data-lk-participant-metadata],
-.live-room .lk-participant-tile__name,
-.live-room [class*="participant-name"] {
-  display: none !important;
-}
-
-/* Outer premium ring */
-/* Inner crisp stroke */
-/* ---------------- People Rail: Premium Avatar Circle ---------------- */
 .rv-avatar {
   position: relative;
   border-radius: 9999px;
@@ -361,7 +78,6 @@
   transform: translateZ(0);
 }
 
-/* Ensure avatar content is below the ring */
 .rv-avatar > * {
   position: relative;
   z-index: 1;
@@ -376,7 +92,6 @@
   z-index: 2;
 }
 
-/* Outer premium ring */
 .rv-avatar::before {
   inset: 0;
   padding: 3px;
@@ -386,12 +101,15 @@
   mask-composite: exclude;
 }
 
-/* Inner crisp stroke */
 .rv-avatar::after {
   inset: 3px;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
 }
-/* Hide chrome during LIVE */
+
+/* ================================
+   LIVE MODE UI CONTROL
+================================ */
+
 body.live-mode .bottom-nav-wrapper {
   display: none !important;
 }
@@ -399,77 +117,165 @@ body.live-mode .bottom-nav-wrapper {
 body.live-mode .app-content {
   padding-bottom: 0 !important;
 }
-@keyframes heartFloat {
-  0% {
-    transform: translateY(0) scale(0.9);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(-300px) scale(1.2);
-    opacity: 0;
-  }
+
+/* ================================
+   LIVEKIT CLEANUP
+================================ */
+
+.live-room [data-lk-theme] .lk-video-conference {
+  position: relative !important;
+  height: 100% !important;
+  min-height: 0 !important;
 }
 
-.animate-heart {
-  animation: heartFloat 3s ease-out forwards;
-}
-@keyframes fadeUp {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  20% {
-    opacity: 1;
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-12px);
-  }
+.live-room [data-lk-theme] .lk-grid-layout,
+.live-room [data-lk-theme] .lk-focus-layout,
+.live-room [data-lk-theme] .lk-stage {
+  height: 100% !important;
+  min-height: 0 !important;
 }
 
-.animate-fadeUp {
-  animation: fadeUp 4s ease forwards;
-}
-@keyframes spark {
-  0% {
-    opacity: 0;
-    transform: scale(0.6);
-  }
-  40% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.9);
-  }
+.live-room [data-lk-theme] .lk-control-bar {
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
-.animate-spark {
-  animation: spark 0.6s ease forwards;
+.live-room [data-lk-theme] .lk-start-audio {
+  display: flex !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
 }
 
-@keyframes floatHeart {
-  0% {
-    opacity: 0;
-    transform: translateY(0) scale(0.8);
-  }
-  20% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-80px) scale(1);
-  }
+/* Hide LiveKit name overlays */
+
+.live-room .lk-participant-name,
+.live-room [data-lk-participant-name],
+.live-room .lk-participant-metadata,
+.live-room [data-lk-participant-metadata],
+.live-room .lk-participant-tile__name {
+  display: none !important;
 }
 
-.animate-floatHeart {
-  animation: floatHeart 3s ease-out forwards;
+.lk-participant-metadata {
+  display: none !important;
 }
-/* globals.css */
+
+.lk-focus-layout {
+  background: black !important;
+}
+
+/* ================================
+   LIVE CHAT PANEL
+================================ */
+
+.live-chat-panel {
+  height: 100%;
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.live-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.live-chat-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.92);
+}
+
+.live-chat-subtitle {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+}
+
+.live-chat-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+}
+
+.live-chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.live-chat-row {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  gap: 10px;
+}
+
+.live-chat-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+}
+
+.live-chat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.live-chat-bubble {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+}
+
+.live-chat-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.86);
+}
+
+.live-chat-text {
+  font-size: 13px;
+  color: rgba(255,255,255,0.86);
+}
+
+/* ================================
+   REVOLVR UI BUTTONS
+================================ */
+
+.rv-emoji-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 1rem;
+  transition: background 150ms ease, transform 150ms ease;
+}
+
+.rv-emoji-button:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* ================================
+   ANIMATIONS
+================================ */
 
 @keyframes floatUp {
   0% {
@@ -485,26 +291,20 @@ body.live-mode .app-content {
 .animate-floatUp {
   animation: floatUp 2s ease-out forwards;
 }
-.lk-participant-metadata {
-  display: none !important;
-}
 
-.lk-focus-layout {
-  background: black !important;
-}
-@keyframes fadeUp {
+@keyframes heartFloat {
   0% {
-    opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(0) scale(0.9);
+    opacity: 1;
   }
   100% {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translateY(-300px) scale(1.2);
+    opacity: 0;
   }
 }
 
-.animate-fadeUp {
-  animation: fadeUp 0.3s ease-out;
+.animate-heart {
+  animation: heartFloat 3s ease-out forwards;
 }
 
 @keyframes heartPop {
@@ -525,50 +325,50 @@ body.live-mode .app-content {
 .animate-heartPop {
   animation: heartPop 0.6s ease-out;
 }
-html, body {
-  overflow-x: hidden;
-  width: 100%;
-  max-width: 100%;
+
+@keyframes spark {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
 }
-.feed-container {
-  height: 100vh;
-  overflow-y: scroll;
+
+.animate-spark {
+  animation: spark 0.6s ease forwards;
+}
+
+@keyframes fadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeUp {
+  animation: fadeUp 0.3s ease-out;
+}
+/* smoother vertical feed physics */
+
+.snap-container,
+.feed-phone {
   scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
 }
 
 .feed-post {
   scroll-snap-align: start;
-  height: 100vh;
-}
-background: linear-gradient(
-  to top,
-  rgba(0,0,0,0.65),
-  rgba(0,0,0,0)
-);
-/* smoother feed scrolling */
-
-html,
-body {
-  overscroll-behavior-y: none;
-}
-
-.snap-container {
-  scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
-}
-
-.snap-post {
-  scroll-snap-align: start;
-}
-
-.feed-center {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.feed-phone {
-  width: 100%;
-  max-width: 420px;
-  height: 100vh;
+  scroll-snap-stop: always;
 }
