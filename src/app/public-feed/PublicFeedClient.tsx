@@ -472,7 +472,7 @@ style={{ height: "calc(100vh - 202px)" }}
 
                   {/* Caption */}
                   {p.caption && (
-                    <div className="absolute bottom-36 left-4 right-24 z-40">
+                    <div className="absolute bottom-28 left-4 right-24 z-40">
                       <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
                         {p.caption}
                       </p>
@@ -480,7 +480,7 @@ style={{ height: "calc(100vh - 202px)" }}
                   )}
 
                   {/* Creator */}
-                  <div className="absolute bottom-32 left-4 right-24 z-40 flex items-center gap-3">
+                  <div className="absolute bottom-24 left-4 right-24 z-40 flex items-center gap-3"
                     <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
                       <img
                         src={p.imageUrl || "/avatar-placeholder.png"}
@@ -512,7 +512,7 @@ style={{ height: "calc(100vh - 202px)" }}
                   </div>
 
                   {/* Right rail */}
-                  <div className="absolute right-4 bottom-44 z-40 flex flex-col items-center gap-6">
+                  <div className="absolute right-4 bottom-32 z-40 flex flex-col items-center gap-6"
                     <button
                       type="button"
                       onClick={() => toggleLike(p.id)}
