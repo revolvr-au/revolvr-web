@@ -397,7 +397,7 @@ export function PublicFeedClient() {
     {!loading && (
   <div
   ref={feedRef}
-  className="snap-y snap-mandatory overflow-y-scroll h-screen flex flex-col items-center"
+  className="snap-y snap-mandatory overflow-y-scroll h-screen flex flex-col items-center w-full"
 >
     {posts.map((p) => {
       const email = String(p.userEmail || "").trim().toLowerCase();
@@ -423,7 +423,7 @@ export function PublicFeedClient() {
           ref={observePost}
           className="snap-start relative h-screen w-full flex items-center justify-center"
         >
-          <div className="relative w-full h-full max-w-[520px] bg-black flex items-center justify-center overflow-hidden">
+          <div className="relative w-full h-full max-w-[520px] md:max-w-[680px] bg-black flex items-center justify-center overflow-hidden">
       {/* Top / Bottom gradients */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
@@ -450,13 +450,13 @@ export function PublicFeedClient() {
   playsInline
   muted
   loop
-  className="w-full h-full object-contain"
+  className="w-full h-full object-cover"
 />
           ) : (
             <img
               src={mediaUrl}
               alt="Post media"
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           )
         ) : (
@@ -476,7 +476,7 @@ export function PublicFeedClient() {
       )}
 
       {/* Creator block */}
-      <div className="absolute bottom-28 left-4 right-24 z-40 flex items-center gap-3">
+      <div className="absolute bottom-24 left-4 right-24 z-40 flex items-center gap-3">
 
         <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20">
           <img
@@ -580,14 +580,17 @@ export function PublicFeedClient() {
       <div className="flex items-center justify-between px-5 py-4">
         <div className="text-sm font-semibold text-white">Comments</div>
 
-        <button
-          type="button"
-          onClick={closeComments}
-          className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
-        >
-          Close
-        </button>
-      </div>
+      <div className="flex items-center justify-between px-5 py-4">
+  <div className="text-sm font-semibold text-white">Comments</div>
+
+  <button
+    type="button"
+    onClick={closeComments}
+    className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
+  >
+    Close
+  </button>
+</div>
 
       {/* Comment list */}
 
