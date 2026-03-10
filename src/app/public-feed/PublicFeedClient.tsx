@@ -479,7 +479,7 @@ style={{ height: "calc(100vh - 140px)" }}>
                   )}
 
                   {/* Creator */}
-<div className="absolute bottom-10 left-4 right-24 z-40 flex items-center gap-3">
+<div className="absolute bottom-16 left-4 right-24 z-40 flex items-center gap-3">
   <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
     <img
       src={p.imageUrl || "/avatar-placeholder.png"}
