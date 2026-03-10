@@ -106,24 +106,28 @@ export function PublicFeedClient() {
   }, [posts]);
 
   function observePost(el: HTMLDivElement | null) {
-    if (!el) return;
+  if (!el) return;
 
-    if (!observerRef.current) {
-      observerRef.current = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const postId = entry.target.getAttribute("data-postid");
-              if (postId) setActivePost(postId);
-            }
-          });
-        },
-        { threshold: 0.6 }
-      );
-    }
-
-    observerRef.current.observe(el);
+  if (!observerRef.current) {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const postId = entry.target.getAttribute("data-postid");
+            if (postId) setActivePost(postId);
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
   }
+
+  observerRef.current.observe(el);
+
+  return () => {
+    observerRef.current?.unobserve(el);
+  };
+}
 
   useEffect(() => {
     if (!commentsOpen) return;
@@ -147,7 +151,7 @@ export function PublicFeedClient() {
       const res = await fetch("/api/public-feed", { cache: "no-store" });
       const json = await res.json().catch(() => null);
 
-      console.log("FEED API RESPONSE:", json);
+      
 
       if (!res.ok) {
         const msg =
@@ -396,9 +400,10 @@ export function PublicFeedClient() {
       <div className="feed-center">
         <div className="feed-phone">
           <div
-            ref={feedRef}
-            className="snap-y snap-mandatory overflow-y-scroll h-screen flex flex-col items-center w-full"
-          >
+  ref={feedRef}
+  className="feed-scroll"
+>
+          
             {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
@@ -415,11 +420,11 @@ export function PublicFeedClient() {
 
               return (
                 <div
-                  key={p.id}
-                  data-postid={p.id}
-                  ref={observePost}
-                  className="snap-start relative h-screen w-full overflow-hidden bg-black"
-                >
+  key={p.id}
+  data-postid={p.id}
+  ref={observePost}
+  className="feed-post relative overflow-hidden bg-black"
+>
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
 
