@@ -560,7 +560,8 @@ export function PublicFeedClient() {
 })}
 
 </div>
-/* ---------- Comments Modal ---------- */
+
+{/* ---------- Comments Modal ---------- */}
 
 {commentsOpen && (
   <div className="fixed inset-0 z-50">
