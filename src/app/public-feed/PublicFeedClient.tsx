@@ -440,18 +440,18 @@ export function PublicFeedClient() {
         {mediaUrl ? (
           isVideo ? (
             <video
-              ref={(el) => {
-                if (!el) return;
-                if (isActive) el.play().catch(() => {});
-                else el.pause();
-                autoPlay={isActive}
-              }}
-              src={mediaUrl}
-              playsInline
-              muted
-              loop
-              className="w-full h-full object-contain"
-            />
+  ref={(el) => {
+    if (!el) return;
+    if (isActive) el.play().catch(() => {});
+    else el.pause();
+  }}
+  autoPlay={isActive}
+  src={mediaUrl}
+  playsInline
+  muted
+  loop
+  className="w-full h-full object-contain"
+/>
           ) : (
             <img
               src={mediaUrl}
