@@ -395,11 +395,12 @@ export function PublicFeedClient() {
       {loading && <div className="p-4 opacity-70">Loading…</div>}
       {err && <div className="p-4 text-red-400">{err}</div>}
 
-      {!loading && !err && posts.length === 0 && (
-        <div className="p-4 opacity-70">No posts yet.</div>
-      )}
-          
-          {posts.map((p) => {
+      {!loading && (
+  <div
+    ref={feedRef}
+    className="snap-container h-[calc(100vh-200px)] overflow-y-scroll"
+  >
+  </div>
             const email = String(p.userEmail || "").trim().toLowerCase();
             const display = email ? displayNameFromEmail(email) : "User";
 
@@ -419,9 +420,9 @@ export function PublicFeedClient() {
     key={p.id}
     data-postid={p.id}
     ref={observePost}
-    className="snap-post relative h-screen w-full flex items-center justify-center overflow-hidden"
+    className="snap-post relative min-h-[calc(100vh-180px)] w-full flex items-center justify-center"
   >
-    <div className="relative w-full h-full max-w-[420px] bg-black flex items-center justify-center overflow-hidden">
+    <div className="relative w-full h-full max-w-[520px] bg-black flex items-center justify-center overflow-hidden">
 
       {/* Top / Bottom gradients */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
@@ -443,6 +444,7 @@ export function PublicFeedClient() {
                 if (!el) return;
                 if (isActive) el.play().catch(() => {});
                 else el.pause();
+                autoPlay={isActive}
               }}
               src={mediaUrl}
               playsInline
@@ -466,7 +468,7 @@ export function PublicFeedClient() {
 
       {/* Caption */}
       {p.caption && (
-        <div className="absolute bottom-24 left-4 right-24 z-40">
+        <div className="absolute bottom-32 left-4 right-24 z-40">
           <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
             {p.caption}
           </p>
