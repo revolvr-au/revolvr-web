@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import { supabase } from "@/lib/supabaseClients";
 
-const BAR_HEIGHT_PX = 72;
+const BAR_HEIGHT_PX = 60;
 
 /**
  * Keep this in sync with layout padding-bottom
@@ -130,7 +130,7 @@ export default function BottomBar({
   return (
     <nav
   aria-label="Bottom navigation"
-  className="fixed inset-x-0 bottom-0 z-50 bg-[#050814]/70 backdrop-blur-xl"
+  className="fixed inset-x-0 bottom-0 z-50 bg-[#050814]/45 backdrop-blur-lg"
   style={{
     height: BAR_HEIGHT_PX,
     paddingBottom: safeArea ? "env(safe-area-inset-bottom)" : undefined,
