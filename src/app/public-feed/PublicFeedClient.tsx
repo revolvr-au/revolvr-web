@@ -508,7 +508,7 @@ export function PublicFeedClient() {
 
       </div>
 
-      {/* Right interaction rail */}
+           {/* Right interaction rail */}
       <div className="absolute right-4 bottom-32 z-40 flex flex-col items-center gap-6">
 
         <button
@@ -553,11 +553,13 @@ export function PublicFeedClient() {
         </button>
 
       </div>
+
     </div>
   </div>
 );
 })}
 
+</div>
 /* ---------- Comments Modal ---------- */
 
 {commentsOpen && (
