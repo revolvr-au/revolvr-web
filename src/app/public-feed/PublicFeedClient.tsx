@@ -424,8 +424,7 @@ export function PublicFeedClient() {
   data-postid={p.id}
   ref={observePost}
   className="feed-post relative w-full overflow-hidden bg-black"
-style={{ height: "calc(100vh - 160px)" }}
->
+style={{ height: "calc(100vh - 140px)" }}>
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
 
@@ -480,7 +479,7 @@ style={{ height: "calc(100vh - 160px)" }}
                   )}
 
                   {/* Creator */}
-<div className="absolute bottom-16 left-4 right-24 z-40 flex items-center gap-3">
+<div className="absolute bottom-10 left-4 right-24 z-40 flex items-center gap-3">
   <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
     <img
       src={p.imageUrl || "/avatar-placeholder.png"}
@@ -513,7 +512,7 @@ style={{ height: "calc(100vh - 160px)" }}
 
               
                   {/* Right rail */}
-                  <div className="absolute right-4 bottom-20 z-40 flex flex-col items-center gap-6">
+                  <div className="absolute right-4 bottom-12 z-40 flex flex-col items-center gap-6">
 
                   <button
                   type="button"
