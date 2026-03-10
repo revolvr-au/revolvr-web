@@ -513,7 +513,7 @@ style={{ height: "calc(100vh - 160px)" }}
 
               
                   {/* Right rail */}
-                  <div className="absolute right-4 bottom-20 z-40 flex flex-col items-center gap-6"
+                  <div className="absolute right-4 bottom-20 z-40 flex flex-col items-center gap-6">
 
                   <button
                   type="button"
