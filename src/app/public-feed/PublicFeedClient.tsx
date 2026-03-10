@@ -423,7 +423,7 @@ export function PublicFeedClient() {
   key={p.id}
   data-postid={p.id}
   ref={observePost}
-  className="feed-post relative overflow-hidden bg-black"
+  className="feed-post relative h-screen w-full overflow-hidden bg-black"
 >
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
@@ -433,7 +433,7 @@ export function PublicFeedClient() {
 
                   {/* Media */}
                   <div
-                    className="absolute inset-0 z-0"
+                    className="absolute inset-0 w-full h-full z-0"
                     onClick={(e) => {
                       const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
                       if (!video) return;
@@ -453,13 +453,13 @@ export function PublicFeedClient() {
                           playsInline
                           muted
                           loop
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className="absolute inset-0 w-full h-full object-cover object-center"
                         />
                       ) : (
                         <img
                           src={mediaUrl}
                           alt="Post media"
-                          className="absolute inset-0 w-full h-full object-cover"
+                          className="absolute inset-0 w-full h-full object-cover object-center"
                         />
                       )
                     ) : (
