@@ -651,5 +651,6 @@ export function PublicFeedClient() {
       </div>
     )}
 
-  </FeedLayout>
+ </FeedLayout>
 );
+}
