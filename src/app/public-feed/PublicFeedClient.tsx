@@ -560,6 +560,7 @@ export function PublicFeedClient() {
 })}
 
 </div>
+)}
 
 {/* ---------- Comments Modal ---------- */}
 
