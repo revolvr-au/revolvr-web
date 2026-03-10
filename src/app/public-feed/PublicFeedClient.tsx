@@ -396,9 +396,9 @@ export function PublicFeedClient() {
       {err && <div className="p-4 text-red-400">{err}</div>}
     {!loading && (
   <div
-    ref={feedRef}
-    className="snap-container h-[calc(100vh-200px)] overflow-y-scroll"
-  >
+  ref={feedRef}
+  className="snap-y snap-mandatory overflow-y-scroll h-screen flex flex-col items-center"
+>
     {posts.map((p) => {
       const email = String(p.userEmail || "").trim().toLowerCase();
       const display = email ? displayNameFromEmail(email) : "User";
@@ -421,7 +421,7 @@ export function PublicFeedClient() {
           key={p.id}
           data-postid={p.id}
           ref={observePost}
-          className="snap-post relative min-h-[calc(100vh-180px)] w-full flex items-center justify-center"
+          className="snap-start relative h-screen w-full flex items-center justify-center"
         >
           <div className="relative w-full h-full max-w-[520px] bg-black flex items-center justify-center overflow-hidden">
       {/* Top / Bottom gradients */}
