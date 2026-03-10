@@ -480,14 +480,14 @@ style={{ height: "calc(100vh - 202px)" }}
                   )}
 
                   {/* Creator */}
-                  <div className="absolute bottom-24 left-4 right-24 z-40 flex items-center gap-3"
-                    <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
-                      <img
-                        src={p.imageUrl || "/avatar-placeholder.png"}
-                        alt={display}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+<div className="absolute bottom-24 left-4 right-24 z-40 flex items-center gap-3">
+  <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
+    <img
+      src={p.imageUrl || "/avatar-placeholder.png"}
+      alt={display}
+      className="w-full h-full object-cover"
+    />
+  </div>
 
                     <div className="min-w-0 text-white drop-shadow-md">
                       <div className="text-sm font-semibold truncate">
