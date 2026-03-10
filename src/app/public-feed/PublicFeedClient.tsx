@@ -511,13 +511,15 @@ style={{ height: "calc(100vh - 202px)" }}
                     </button>
                   </div>
 
+              
                   {/* Right rail */}
-                  <div className="absolute right-4 bottom-32 z-40 flex flex-col items-center gap-6"
-                    <button
-                      type="button"
-                      onClick={() => toggleLike(p.id)}
-                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-                    >
+                  <div className="absolute right-4 bottom-32 z-40 flex flex-col items-center gap-6">
+
+                  <button
+                  type="button"
+                  onClick={() => toggleLike(p.id)}
+                  className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
+                  >
                       <Heart
                         size={26}
                         className={`transition ${
