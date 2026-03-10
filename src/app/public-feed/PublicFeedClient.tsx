@@ -394,36 +394,36 @@ export function PublicFeedClient() {
 
       {loading && <div className="p-4 opacity-70">Loading…</div>}
       {err && <div className="p-4 text-red-400">{err}</div>}
-
-      {!loading && (
+    {!loading && (
   <div
     ref={feedRef}
     className="snap-container h-[calc(100vh-200px)] overflow-y-scroll"
   >
-  </div>
-            const email = String(p.userEmail || "").trim().toLowerCase();
-            const display = email ? displayNameFromEmail(email) : "User";
+    {posts.map((p) => {
+      const email = String(p.userEmail || "").trim().toLowerCase();
+      const display = email ? displayNameFromEmail(email) : "User";
 
-            const mediaUrl = String(p.imageUrl || "").trim();
-            const lower = mediaUrl.toLowerCase();
-            const isVideo =
-              lower.endsWith(".mov") ||
-              lower.endsWith(".mp4") ||
-              lower.endsWith(".webm");
+      const mediaUrl = String(p.imageUrl || "").trim();
+      const lower = mediaUrl.toLowerCase();
 
-            const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
-            const isActive = activePost === p.id;
-            console.log("Rendering post:", p.id);
+      const isVideo =
+        lower.endsWith(".mov") ||
+        lower.endsWith(".mp4") ||
+        lower.endsWith(".webm");
 
-        return (
-  <div
-    key={p.id}
-    data-postid={p.id}
-    ref={observePost}
-    className="snap-post relative min-h-[calc(100vh-180px)] w-full flex items-center justify-center"
-  >
-    <div className="relative w-full h-full max-w-[520px] bg-black flex items-center justify-center overflow-hidden">
+      const rewardsOpenForThisPost = rewardOpen && rewardPostId === p.id;
+      const isActive = activePost === p.id;
 
+      console.log("Rendering post:", p.id);
+
+      return (
+        <div
+          key={p.id}
+          data-postid={p.id}
+          ref={observePost}
+          className="snap-post relative min-h-[calc(100vh-180px)] w-full flex items-center justify-center"
+        >
+          <div className="relative w-full h-full max-w-[520px] bg-black flex items-center justify-center overflow-hidden">
       {/* Top / Bottom gradients */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30" />
