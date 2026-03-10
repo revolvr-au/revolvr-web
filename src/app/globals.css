@@ -560,18 +560,15 @@ body {
 .snap-post {
   scroll-snap-align: start;
 }
-.snap-container {
-  scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
+
+.feed-center {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
-.snap-post {
-  scroll-snap-align: start;
-}
-.snap-container {
-  scroll-snap-type: y mandatory;
-}
-
-.snap-post {
-  scroll-snap-align: start;
+.feed-phone {
+  width: 100%;
+  max-width: 420px;
+  height: 100vh;
 }
