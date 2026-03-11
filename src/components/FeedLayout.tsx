@@ -25,24 +25,20 @@ export default function FeedLayout({
   isLive = false,
 }: Props) {
   return (
-    <div className="min-h-screen bg-[#050814] text-white flex flex-col">
+    <div className="min-h-screen text-white flex flex-col">
 
-      {/* HEADER (hidden during LIVE) */}
       {!isLive && (
         <header className="absolute top-0 left-0 right-0 z-50 px-4 pt-6">
           <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
 
-            {/* Brand */}
             <div className="min-w-0">
               <h1 className="text-xl font-semibold tracking-wider bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
                 {(title ?? "REVOLVR").toUpperCase()}
               </h1>
             </div>
 
-            {/* Right Controls */}
             <div className="flex items-center gap-2">
 
-              {/* Go Live */}
               <button
                 type="button"
                 onClick={() => onGoLive?.()}
@@ -69,21 +65,15 @@ export default function FeedLayout({
                   ☰
                 </Link>
               )}
-
             </div>
           </div>
         </header>
       )}
 
       <main className="flex-1 w-full pb-20">
+        {children}
+      </main>
 
-  <div className="mx-auto w-full max-w-[900px] px-4 py-4">
-    {children}
-  </div>
-
-</main>
-
-      {/* BottomBar renders itself as fixed */}
       {!isLive && <BottomBar />}
 
     </div>
