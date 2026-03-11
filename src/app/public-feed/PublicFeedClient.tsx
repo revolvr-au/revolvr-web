@@ -386,7 +386,7 @@ export function PublicFeedClient() {
     }
   }
 
- return (
+return (
   <FeedLayout title="Revolvr" onGoLive={goLive}>
 
     {loading && <div className="p-4 opacity-70">Loading…</div>}

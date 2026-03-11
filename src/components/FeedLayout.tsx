@@ -76,7 +76,7 @@ export default function FeedLayout({
       )}
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 w-full px-4 py-6 pt-20 pb-20">
+      <main className="flex-1 w-full px-4 py-4 pt-[72px] pb-20">
         <div className="mx-auto w-full max-w-[900px]">
           {children}
         </div>
