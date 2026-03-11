@@ -394,15 +394,14 @@ return (
 
     {!loading && (
       <div className="feed-center">
-        <div className="feed-phone">
+  <div className="feed-phone flex flex-col">
 
           <PeopleRail items={railItems} />
 
 {/* Feed scroll area */}
 <div
   ref={feedRef}
-  className="feed-scroll"
-  style={{ marginTop: "8px" }}
+  className="feed-scroll flex-1 overflow-y-auto"
 >
 
             {posts.map((p) => {
