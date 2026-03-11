@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
-import PeopleRail, { PersonRailItem } from "@/components/PeopleRail";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
+
 
 type ApiPost = {
   id: string;
@@ -80,34 +80,6 @@ export function PublicFeedClient() {
 
     router.push(url);
   });
-
-  const railItems = useMemo<PersonRailItem[]>(() => {
-  const seen = new Set<string>();
-  const out: PersonRailItem[] = [];
-
-  for (const p of posts) {
-    const email = String(p.userEmail || "").trim().toLowerCase();
-
-    if (!email) continue;
-    if (seen.has(email)) continue;
-
-    seen.add(email);
-
-    out.push({
-      id: email,
-      email: email,
-      handle: displayNameFromEmail(email)
-        .toLowerCase()
-        .replace(/\s+/g, ""),
-      imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
-      displayName: displayNameFromEmail(email),
-    });
-
-    if (out.length >= 20) break;
-  }
-
-  return out;
-}, [posts]);
 
   function observePost(el: HTMLDivElement | null) {
   if (!el) return;
@@ -399,7 +371,7 @@ return (
       <div className="feed-center">
   <div className="feed-phone flex flex-col">
 
-<PeopleRail items={railItems} />
+
 
 {/* Feed scroll area */}
 <div
@@ -481,8 +453,9 @@ style={{ height: "calc(100vh - 200px)" }}>
                   )}
 
                   {/* Creator */}
-<div className="absolute bottom-16 left-4 right-24 z-40 flex items-center gap-3">
-  <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
+<div className="absolute top-4 left-4 z-40 flex items-center gap-3">
+
+  <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
     <img
       src={p.imageUrl || "/avatar-placeholder.png"}
       alt={display}
@@ -490,14 +463,16 @@ style={{ height: "calc(100vh - 200px)" }}>
     />
   </div>
 
-                    <div className="min-w-0 text-white drop-shadow-md">
-                      <div className="text-sm font-semibold truncate">
-                        {display}
-                      </div>
-                      <div className="text-xs text-white/80 truncate">
-                        @{email.split("@")[0] || "user"}
-                      </div>
-                    </div>
+  <div className="text-white drop-shadow-md">
+    <div className="text-sm font-semibold">
+      {display}
+    </div>
+    <div className="text-xs text-white/80">
+      @{email.split("@")[0] || "user"}
+    </div>
+  </div>
+
+</div>
 
                     <button
                       type="button"
