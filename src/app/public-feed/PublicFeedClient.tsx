@@ -451,8 +451,7 @@ style={{ height: "calc(100vh - 200px)" }}>
                       </p>
                     </div>
                   )}
-
-                  {/* Creator */}
+{/* Creator */}
 <div className="absolute top-4 left-4 z-40 flex items-center gap-3">
 
   <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
@@ -472,24 +471,22 @@ style={{ height: "calc(100vh - 200px)" }}>
     </div>
   </div>
 
+  <button
+    type="button"
+    onClick={() => onToggleFollow(email)}
+    className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
+      followMap[email]
+        ? "bg-white text-black"
+        : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
+    }`}
+  >
+    {followMap[email] ? "Following" : "Follow"}
+  </button>
+
 </div>
 
-                    <button
-                      type="button"
-                      onClick={() => onToggleFollow(email)}
-                      className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-                        followMap[email]
-                          ? "bg-white text-black"
-                          : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-                      }`}
-                    >
-                      {followMap[email] ? "Following" : "Follow"}
-                    </button>
-                  </div>
-
-              
-                  {/* Right rail */}
-                  <div className="absolute right-4 bottom-12 z-40 flex flex-col items-center gap-6">
+{/* Right rail */}
+<div className="absolute right-4 bottom-12 z-40 flex flex-col items-center gap-6">
 
                   <button
                   type="button"
