@@ -388,21 +388,22 @@ export function PublicFeedClient() {
  return (
   <FeedLayout title="Revolvr" onGoLive={goLive}>
 
-  {loading && <div className="p-4 opacity-70">Loading…</div>}
-  {err && <div className="p-4 text-red-400">{err}</div>}
+    {loading && <div className="p-4 opacity-70">Loading…</div>}
+    {err && <div className="p-4 text-red-400">{err}</div>}
 
-  {!loading && (
-    <div className="feed-center">
-  <div className="feed-phone">
+    {!loading && (
+      <div className="feed-center">
+        <div className="feed-phone">
 
-    <PeopleRail items={railItems} />
+          <div ref={feedRef} className="feed-scroll">
 
+            {/* People Rail now scrolls with feed */}
+            <PeopleRail items={railItems} />
 
-        <div ref={feedRef} className="feed-scroll">
+            {/* Soft fade between rail and first post */}
+            <div className="h-6 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
 
-          <div className="h-6 bg-gradient-to-b from-transparent to-black/20" />
-
-          {posts.map((p) => {
+            {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
 
@@ -415,7 +416,6 @@ export function PublicFeedClient() {
                 lower.endsWith(".webm");
 
               const isActive = activePost === p.id;
-
               return (
                 <div
   key={p.id}
