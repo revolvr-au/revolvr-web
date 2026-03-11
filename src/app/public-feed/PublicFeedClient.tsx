@@ -81,7 +81,22 @@ export function PublicFeedClient() {
     router.push(url);
   });
 
-  const railItems = useMemo<PersonRailItem[]>(() => {
+  const railItems: PersonRailItem[] = [
+  {
+    id: "demo1",
+    email: "demo@revolvr.net",
+    handle: "demo",
+    imageUrl: "/avatar-placeholder.png",
+    displayName: "Demo User",
+  },
+  {
+    id: "demo2",
+    email: "demo2@revolvr.net",
+    handle: "demo2",
+    imageUrl: "/avatar-placeholder.png",
+    displayName: "Second User",
+  }
+];
     const seen = new Set<string>();
     const out: PersonRailItem[] = [];
 

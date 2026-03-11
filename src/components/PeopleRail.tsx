@@ -37,12 +37,17 @@ export default function PeopleRail({ items, size = 72 }: Props) {
 
   const [broken, setBroken] = useState<Record<string, true>>({});
 
-  if (!normalized.length) return null;
+  if (!normalized.length) {
+    return (
+      <div className="w-full py-3 px-4 text-white/40 text-sm border-b border-white/10">
+        No creators yet
+      </div>
+    );
+  }
 
   return (
-    <div className="relative w-full py-3 overflow-x-auto no-scrollbar bg-transparent">
+    <div className="relative w-full py-3 overflow-x-auto no-scrollbar bg-transparent border-b border-white/10">
       <div className="flex gap-4 px-4">
-
         {normalized.map((p) => {
           const id = p.id;
           const name = p.displayName;
@@ -82,7 +87,6 @@ export default function PeopleRail({ items, size = 72 }: Props) {
             </Link>
           );
         })}
-
       </div>
     </div>
   );
