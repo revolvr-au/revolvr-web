@@ -396,14 +396,14 @@ return (
       <div className="feed-center">
         <div className="feed-phone">
 
-          {/* People Rail */}
           <PeopleRail items={railItems} />
 
-          {/* Feed scroll area */}
-          <div
-            ref={feedRef}
-            className="feed-scroll"
-          >
+{/* Feed scroll area */}
+<div
+  ref={feedRef}
+  className="feed-scroll"
+  style={{ marginTop: "8px" }}
+>
 
             {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
@@ -424,7 +424,7 @@ return (
   data-postid={p.id}
   ref={observePost}
   className="feed-post relative w-full overflow-hidden bg-black"
-style={{ height: "calc(100vh - 140px)" }}>
+style={{ height: "calc(100vh - 200px)" }}>
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
 
