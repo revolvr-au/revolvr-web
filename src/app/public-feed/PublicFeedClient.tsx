@@ -111,8 +111,6 @@ export function PublicFeedClient() {
         handle: displayNameFromEmail(email).toLowerCase().replace(/\s+/g, ""),
         imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
         displayName: displayNameFromEmail(email),
-        tick: null,
-        isLive: false,
       });
 
       if (out.length >= 20) break;
