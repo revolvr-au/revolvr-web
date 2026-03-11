@@ -29,7 +29,7 @@ export default function FeedLayout({
 
       {/* HEADER (hidden during LIVE) */}
       {!isLive && (
-        <header className="fixed top-0 left-0 right-0 z-50 bg-[#050814]/70 backdrop-blur-xl">
+        <header className="absolute top-0 left-0 right-0 z-50 px-4 pt-6">
           <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
 
             {/* Brand */}
@@ -75,12 +75,7 @@ export default function FeedLayout({
         </header>
       )}
 
-      <main className="flex-1 w-full pt-[72px] pb-20">
-
-  {/* People Rail lives in layout now */}
-  <div className="w-full border-b border-white/10">
-    {typeof window !== "undefined" && (window as any).__rail}
-  </div>
+      <main className="flex-1 w-full pb-20">
 
   <div className="mx-auto w-full max-w-[900px] px-4 py-4">
     {children}
