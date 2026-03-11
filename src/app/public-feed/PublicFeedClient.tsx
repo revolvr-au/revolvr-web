@@ -81,43 +81,33 @@ export function PublicFeedClient() {
     router.push(url);
   });
 
-  const railItems: PersonRailItem[] = [
-  {
-    id: "demo1",
-    email: "demo@revolvr.net",
-    handle: "demo",
-    imageUrl: "/avatar-placeholder.png",
-    displayName: "Demo User",
-  },
-  {
-    id: "demo2",
-    email: "demo2@revolvr.net",
-    handle: "demo2",
-    imageUrl: "/avatar-placeholder.png",
-    displayName: "Second User",
+  const railItems = useMemo<PersonRailItem[]>(() => {
+  const seen = new Set<string>();
+  const out: PersonRailItem[] = [];
+
+  for (const p of posts) {
+    const email = String(p.userEmail || "").trim().toLowerCase();
+
+    if (!email) continue;
+    if (seen.has(email)) continue;
+
+    seen.add(email);
+
+    out.push({
+      id: email,
+      email: email,
+      handle: displayNameFromEmail(email)
+        .toLowerCase()
+        .replace(/\s+/g, ""),
+      imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
+      displayName: displayNameFromEmail(email),
+    });
+
+    if (out.length >= 20) break;
   }
-];
-    const seen = new Set<string>();
-    const out: PersonRailItem[] = [];
 
-    for (const p of posts) {
-      const email = String(p.userEmail || "").trim().toLowerCase();
-      if (!email || seen.has(email)) continue;
-      seen.add(email);
-
-      out.push({
-        id: email,
-        email,
-        handle: displayNameFromEmail(email).toLowerCase().replace(/\s+/g, ""),
-        imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
-        displayName: displayNameFromEmail(email),
-      });
-
-      if (out.length >= 20) break;
-    }
-
-    return out;
-  }, [posts]);
+  return out;
+}, [posts]);
 
   function observePost(el: HTMLDivElement | null) {
   if (!el) return;
