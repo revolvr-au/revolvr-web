@@ -387,24 +387,22 @@ export function PublicFeedClient() {
 
  return (
   <FeedLayout title="Revolvr" onGoLive={goLive}>
-    <PeopleRail
-      items={railItems}
-      onToggleFollow={onToggleFollow}
-      followMap={followMap}
-    />
 
-    {loading && <div className="p-4 opacity-70">Loading…</div>}
-    {err && <div className="p-4 text-red-400">{err}</div>}
+  {loading && <div className="p-4 opacity-70">Loading…</div>}
+  {err && <div className="p-4 text-red-400">{err}</div>}
 
-    {!loading && (
-      <div className="feed-center">
-        <div className="feed-phone">
-          <div
-  ref={feedRef}
-  className="feed-scroll"
->
+  {!loading && (
+    <div className="feed-center">
+      <div className="feed-phone">
+
+        <div ref={feedRef} className="feed-scroll">
+
+          <PeopleRail
+            items={railItems}
+          />
+          <div className="h-6 bg-gradient-to-b from-transparent to-black/20" />
           
-            {posts.map((p) => {
+          {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
 

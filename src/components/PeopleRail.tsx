@@ -11,23 +11,14 @@ export type PersonRailItem = {
   handle: string;
   imageUrl?: string | null;
   displayName?: string | null;
-  tick?: "blue" | "gold" | null;
-  isLive?: boolean | null;
 };
 
 type Props = {
   items: PersonRailItem[];
   size?: number;
-  onToggleFollow?: (email: string) => void;
-  followMap?: Record<string, boolean>;
-  followBusy?: Record<string, boolean>;
 };
 
-export default function PeopleRail({
-  items,
-  size = 72,
-}: Props) {
-
+export default function PeopleRail({ items, size = 72 }: Props) {
   const normalized = useMemo(() => {
     return items
       .map((p) => {
@@ -49,8 +40,8 @@ export default function PeopleRail({
   if (!normalized.length) return null;
 
   return (
-    <div className="w-full px-4 py-3 overflow-x-auto no-scrollbar bg-transparent">
-      <div className="flex gap-4">
+    <div className="relative w-full py-3 overflow-x-auto no-scrollbar bg-transparent">
+      <div className="flex gap-4 px-4">
 
         {normalized.map((p) => {
           const id = p.id;
