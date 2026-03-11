@@ -23,32 +23,11 @@ type Props = {
   followBusy?: Record<string, boolean>;
 };
 
-function LivePill() {
-  return (
-    <span className="absolute -left-2 -top-2 z-20 h-5 px-2 rounded-full bg-red-500 text-white text-[10px] font-bold shadow ring-2 ring-black/30">
-      LIVE
-    </span>
-  );
-}
-
-function Tick({ tick }: { tick: "blue" | "gold" }) {
-  const bg = tick === "gold" ? "bg-amber-400" : "bg-blue-500";
-  return (
-    <span
-      className={`absolute -right-2 -top-2 z-20 h-[18px] w-[18px] flex items-center justify-center rounded-full ${bg} text-[10px] font-bold text-black shadow ring-2 ring-black/30`}
-    >
-      ✓
-    </span>
-  );
-}
-
 export default function PeopleRail({
   items,
   size = 72,
-  onToggleFollow,
-  followMap = {},
-  followBusy = {},
 }: Props) {
+
   const normalized = useMemo(() => {
     return items
       .map((p) => {
@@ -60,90 +39,60 @@ export default function PeopleRail({
           email,
           displayName: p.displayName || displayNameFromEmail(email),
           imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
-          isLive: Boolean(p.isLive),
         };
       })
-      .filter(Boolean) as Array<
-      PersonRailItem & { displayName: string; isLive: boolean }
-    >;
+      .filter(Boolean) as Array<PersonRailItem & { displayName: string }>;
   }, [items]);
 
   const [broken, setBroken] = useState<Record<string, true>>({});
 
   if (!normalized.length) return null;
 
- return (
-  <div className="absolute top-[92px] left-0 right-0 z-40 pointer-events-none">
+  return (
+    <div className="w-full px-4 py-3 overflow-x-auto no-scrollbar">
+      <div className="flex gap-4">
 
-    <div className="flex items-center overflow-x-auto no-scrollbar px-4 pointer-events-auto">
-      <div className="flex gap-4 py-2">
         {normalized.map((p) => {
           const id = p.id;
           const name = p.displayName;
           const showImage = Boolean(p.imageUrl) && !broken[id];
-          const isFollowing = followMap[p.email];
 
           return (
-            <div key={id} className="flex-none flex flex-col items-center gap-2">
-              <Link
-                href={`/u/${encodeURIComponent(p.handle)}`}
-                aria-label={`View ${name}`}
+            <Link
+              key={id}
+              href={`/u/${encodeURIComponent(p.handle)}`}
+              className="flex flex-col items-center flex-none gap-2"
+            >
+              <div
+                className="relative rounded-full overflow-hidden bg-white/5"
+                style={{ width: size, height: size }}
               >
-                <div
-                  className="relative overflow-visible"
-                  style={{ width: size, height: size }}
-                >
-                  {p.isLive && <LivePill />}
-                  {p.tick && <Tick tick={p.tick} />}
-
-                  <div
-                    className={`
-                      relative w-full h-full rounded-full overflow-hidden
-                      ${p.isLive ? "ring-2 ring-red-500" : "bg-white/5"}
-                    `}
-                  >
-                    {p.isLive && (
-                      <>
-                        {/* Outer glow */}
-                        <div className="absolute inset-0 rounded-full shadow-[0_0_35px_rgba(255,0,85,0.8)] pointer-events-none" />
-
-                        {/* Breathing halo */}
-                        <div className="absolute inset-0 rounded-full ring-4 ring-red-500/30 animate-ping pointer-events-none" />
-                      </>
-                    )}
-
-                    {showImage ? (
-                      <Image
-                        src={p.imageUrl as string}
-                        alt={name}
-                        fill
-                        unoptimized
-                        className="object-cover"
-                        onError={() =>
-                          setBroken((prev) => ({ ...prev, [id]: true }))
-                        }
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
-                        {name.slice(0, 1).toUpperCase()}
-                      </div>
-                    )}
+                {showImage ? (
+                  <Image
+                    src={p.imageUrl as string}
+                    alt={name}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                    onError={() =>
+                      setBroken((prev) => ({ ...prev, [id]: true }))
+                    }
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
+                    {name.slice(0, 1).toUpperCase()}
                   </div>
-                </div>
-              </Link>
+                )}
+              </div>
 
-              <div className="text-[13px] font-medium text-white/80 max-w-[96px] truncate">
+              <div className="text-[12px] text-white/80 max-w-[80px] truncate">
                 {name}
               </div>
-            </div>
+            </Link>
           );
         })}
+
       </div>
     </div>
-
-    {/* Fade into feed */}
-    <div className="h-6 bg-gradient-to-b from-transparent via-[#050814]/40 to-transparent pointer-events-none" />
-
-  </div>
-);
+  );
 }
