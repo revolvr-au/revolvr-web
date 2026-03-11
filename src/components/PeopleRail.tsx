@@ -49,8 +49,8 @@ export default function PeopleRail({
   if (!normalized.length) return null;
 
   return (
-    <div className="w-full px-4 py-3 overflow-x-auto no-scrollbar">
-      <div className="flex gap-4">
+    <div className="absolute top-[92px] left-0 right-0 z-40 px-4 py-3 overflow-x-auto no-scrollbar bg-transparent pointer-events-none">
+      <div className="flex gap-4 pointer-events-auto">
 
         {normalized.map((p) => {
           const id = p.id;
