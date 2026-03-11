@@ -75,12 +75,18 @@ export default function FeedLayout({
         </header>
       )}
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 w-full px-0 pt-[72px] pb-20">
-        <div className="mx-auto w-full max-w-[900px]">
-          {children}
-        </div>
-      </main>
+      <main className="flex-1 w-full pt-[72px] pb-20">
+
+  {/* People Rail lives in layout now */}
+  <div className="w-full border-b border-white/10">
+    {typeof window !== "undefined" && (window as any).__rail}
+  </div>
+
+  <div className="mx-auto w-full max-w-[900px] px-4 py-4">
+    {children}
+  </div>
+
+</main>
 
       {/* BottomBar renders itself as fixed */}
       {!isLive && <BottomBar />}

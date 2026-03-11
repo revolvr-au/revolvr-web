@@ -399,7 +399,7 @@ return (
       <div className="feed-center">
   <div className="feed-phone flex flex-col">
 
-          <PeopleRail items={railItems} />
+          
 
 {/* Feed scroll area */}
 <div
