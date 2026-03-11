@@ -400,7 +400,6 @@ export function PublicFeedClient() {
 
         <div ref={feedRef} className="feed-scroll">
 
-          />
           <div className="h-6 bg-gradient-to-b from-transparent to-black/20" />
 
           {posts.map((p) => {
