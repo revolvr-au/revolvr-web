@@ -401,7 +401,7 @@ export function PublicFeedClient() {
             items={railItems}
           />
           <div className="h-6 bg-gradient-to-b from-transparent to-black/20" />
-          
+
           {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
@@ -422,7 +422,7 @@ export function PublicFeedClient() {
   data-postid={p.id}
   ref={observePost}
   className="feed-post relative w-full overflow-hidden bg-black"
-style={{ height: "calc(100vh - 140px)" }}>
+style={{ height: "calc(100vh - 210px)" }}>
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
 
