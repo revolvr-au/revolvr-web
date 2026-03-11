@@ -397,8 +397,8 @@ return (
   key={p.id}
   data-postid={p.id}
   ref={observePost}
-  className="feed-post relative w-full overflow-hidden bg-black"
-style={{ height: "calc(100vh - 200px)" }}>
+  className="feed-post relative w-full h-screen overflow-hidden bg-black"
+>
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
 
@@ -452,9 +452,9 @@ style={{ height: "calc(100vh - 200px)" }}>
                     </div>
                   )}
 {/* Creator */}
-<div className="absolute top-4 left-4 z-40 flex items-center gap-3">
+<div className="absolute bottom-20 left-4 right-24 z-40 flex items-center gap-3">
 
-  <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+  <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
     <img
       src={p.imageUrl || "/avatar-placeholder.png"}
       alt={display}
@@ -462,11 +462,11 @@ style={{ height: "calc(100vh - 200px)" }}>
     />
   </div>
 
-  <div className="text-white drop-shadow-md">
-    <div className="text-sm font-semibold">
+  <div className="min-w-0 text-white drop-shadow-md">
+    <div className="text-sm font-semibold truncate">
       {display}
     </div>
-    <div className="text-xs text-white/80">
+    <div className="text-xs text-white/80 truncate">
       @{email.split("@")[0] || "user"}
     </div>
   </div>
