@@ -23,6 +23,7 @@ export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [peopleOpen, setPeopleOpen] = useState(false);
 
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
@@ -395,13 +396,14 @@ export function PublicFeedClient() {
       <div className="feed-center">
         <div className="feed-phone">
 
-          <div ref={feedRef} className="feed-scroll">
+          {/* People Rail */}
+          <PeopleRail items={railItems} />
 
-            {/* People Rail now scrolls with feed */}
-            <PeopleRail items={railItems} />
-
-            {/* Soft fade between rail and first post */}
-            <div className="h-6 bg-gradient-to-b from-transparent to-black/20 pointer-events-none" />
+          {/* Feed scroll area */}
+          <div
+            ref={feedRef}
+            className="feed-scroll"
+          >
 
             {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
