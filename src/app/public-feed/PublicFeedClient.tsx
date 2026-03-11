@@ -398,7 +398,7 @@ return (
   data-postid={p.id}
   ref={observePost}
   className="feed-post relative w-full overflow-hidden bg-black"
-style={{ height: "calc(100dvh - 120px)" }}
+  style={{ height: "100dvh" }}
 >
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
@@ -453,7 +453,8 @@ style={{ height: "calc(100dvh - 120px)" }}
                     </div>
                   )}
 {/* Creator */}
-<div className="absolute bottom-24 left-4 right-24 z-40 flex items-center gap-3">
+<div className="absolute left-4 right-24 z-40 flex items-center gap-3"
+     style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}>
 
   <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
     <img
@@ -487,7 +488,10 @@ style={{ height: "calc(100dvh - 120px)" }}
 </div>
 
 {/* Right rail */}
-<div className="absolute right-4 bottom-12 z-40 flex flex-col items-center gap-6">
+<div
+  className="absolute right-4 z-40 flex flex-col items-center gap-6"
+  style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+>
 
                   <button
                   type="button"
