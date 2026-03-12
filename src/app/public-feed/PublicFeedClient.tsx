@@ -405,56 +405,62 @@ return (
 
                   {/* Bottom gradient */}
                   <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30 pointer-events-none" />
-
-                  {/* Media */}
-                  <div
-                    className="absolute inset-0 w-full h-full z-0"
-                    onClick={(e) => {
-                      const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
-                      if (!video) return;
-                      video.paused ? video.play() : video.pause();
-                    }}
-                  >
-                    {mediaUrl ? (
-                      isVideo ? (
-                        <video
-                          ref={(el) => {
-                            if (!el) return;
-                            if (isActive) el.play().catch(() => {});
-                            else el.pause();
-                          }}
-                          autoPlay={isActive}
-                          src={mediaUrl}
-                          playsInline
-                          muted
-                          loop
-                          className="absolute inset-0 w-full h-full object-cover object-center"
-                        />
-                      ) : (
-                        <img
-                          src={mediaUrl}
-                          alt="Post media"
-                          className="absolute inset-0 w-full h-full object-cover object-center"
-                        />
-                      )
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center p-6 text-sm text-white/70">
-                        No media
-                      </div>
-                    )}
-                  </div>
-
+                {/* Media */}
+<div
+  className="absolute inset-0 w-full h-full z-0"
+  onClick={(e) => {
+    const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
+    if (!video) return;
+    video.paused ? video.play() : video.pause();
+  }}
+>
+  {mediaUrl ? (
+    isVideo ? (
+      <video
+        ref={(el) => {
+          if (!el) return;
+          if (isActive) el.play().catch(() => {});
+          else el.pause();
+        }}
+        autoPlay={isActive}
+        src={mediaUrl}
+        playsInline
+        muted
+        loop
+        preload="metadata"
+        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform"
+      />
+    ) : (
+      <img
+        src={mediaUrl}
+        alt="Post media"
+        loading="eager"
+        decoding="async"
+        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform"
+      />
+    )
+  ) : (
+    <div className="flex h-full w-full items-center justify-center p-6 text-sm text-white/70">
+      No media
+    </div>
+  )}
+</div>
                   {/* Caption */}
                   {p.caption && (
-                    <div className="absolute bottom-28 left-4 right-24 z-40">
+                    <div
+  className="absolute left-4 right-28 z-40"
+  style={{ bottom: "calc(10rem + env(safe-area-inset-bottom))" }}
+>
                       <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
                         {p.caption}
                       </p>
                     </div>
                   )}
 {/* Creator */}
-<div className="absolute left-4 right-24 z-40 flex items-center gap-3"
-     style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}>
+<div
+  className="absolute left-4 right-28 z-40 flex items-center gap-3"
+  style={{ bottom: "calc(7.5rem + env(safe-area-inset-bottom))" }}
+>
 
   <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
     <img
@@ -489,8 +495,7 @@ return (
 
 {/* Right rail */}
 <div
-  className="absolute right-4 z-40 flex flex-col items-center gap-6"
-  style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+  className="absolute right-4 top-[55%] -translate-y-1/2 z-40 flex flex-col items-center gap-6"
 >
 
                   <button
