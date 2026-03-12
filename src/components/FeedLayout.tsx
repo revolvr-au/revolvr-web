@@ -28,8 +28,7 @@ export default function FeedLayout({
     <div className="min-h-screen text-white flex flex-col">
 
       {!isLive && (
-          <header
-          className="absolute top-0 left-0 right-0 z-50 px-4"
+          <header className="absolute top-0 left-0 right-0 z-50 px-4 pt-10">
           style={{ paddingTop: "env(safe-area-inset-top)" }}
           >
           <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
