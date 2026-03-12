@@ -430,3 +430,10 @@ body.live-mode .app-content {
   left: 5px;
   border-radius: 50%;
 }
+.feed-layout {
+  display: flex;
+}
+
+.feed-content {
+  flex: 1;
+}
