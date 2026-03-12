@@ -450,7 +450,7 @@ return (
                   {p.caption && (
                     <div
   className="absolute left-4 right-28 z-40"
-  style={{ bottom: "calc(9.5rem + env(safe-area-inset-bottom))" }}>
+  style={{ bottom: "calc(8.25rem + env(safe-area-inset-bottom))" }}>
                       <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
                         {p.caption}
                       </p>
@@ -459,7 +459,7 @@ return (
 {/* Creator */}
 <div
   className="absolute left-4 right-28 z-40 flex items-center gap-3"
-  style={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))" }}>
+  style={{ bottom: "calc(4.25rem + env(safe-area-inset-bottom))" }}>
 
   <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
     <img
