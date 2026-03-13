@@ -2,8 +2,10 @@ export default function OrbitAvatar({ user }) {
 
   if (!user) return null
 
+  const presence = user.presence ?? (user.live ? "live" : "online")
+
   function getRingColor(state) {
-    switch(state){
+    switch (state) {
       case "live": return "red"
       case "active": return "yellow"
       case "online": return "green"
@@ -11,8 +13,7 @@ export default function OrbitAvatar({ user }) {
     }
   }
 
-  const presence = user?.presence || "online"
-  const avatar = user?.avatar_url || user?.avatar
+  const avatar = user.avatar_url ?? user.avatar ?? ""
 
   const ringColor = getRingColor(presence)
 
