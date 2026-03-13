@@ -1,3 +1,5 @@
+"use client";
+
 import { usePeopleRail } from "../../hook/usePeopleRail"
 import OrbitStack from "./OrbitStack"
 
