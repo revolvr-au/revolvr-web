@@ -18,7 +18,7 @@ export default function PeopleRail({ userId }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        paddingTop: 20
+        paddingTop: "calc(20px + env(safe-area-inset-top))"
       }}
     >
       {/* TEMP TEST BOX */}

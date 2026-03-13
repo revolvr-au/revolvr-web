@@ -432,15 +432,15 @@ body.live-mode .app-content {
 }
 .feed-layout {
   display: flex;
+  width: 100%;
+}
+
+.people-rail {
+  width: 80px;
+  flex-shrink: 0;
 }
 
 .feed-content {
   flex: 1;
-}
-.people-rail {
-  width: 80px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: red;
+  min-width: 0;
 }
