@@ -1,3 +1,6 @@
+"use client";
+
+
 import { useEffect, useState } from "react"
 import { fetchOrbitRail } from "../services/orbitService"
 import { fetchPresenceStates } from "../services/presenceService"
