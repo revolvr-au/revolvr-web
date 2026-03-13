@@ -10,11 +10,11 @@ export function usePeopleRail(userId: string) {
 
     // TEMP FAKE DATA
     setOrbitUsers([
-      { id: "1", avatar: "/avatar1.png", live: false },
-      { id: "2", avatar: "/avatar2.png", live: true },
-      { id: "3", avatar: "/avatar3.png", live: false },
-      { id: "4", avatar: "/avatar4.png", live: false },
-    ])
+  { id: "1", avatar: "https://i.pravatar.cc/100?img=1", live: false },
+  { id: "2", avatar: "https://i.pravatar.cc/100?img=2", live: true },
+  { id: "3", avatar: "https://i.pravatar.cc/100?img=3", live: false },
+  { id: "4", avatar: "https://i.pravatar.cc/100?img=4", live: false },
+])
 
   }, [userId])
 
