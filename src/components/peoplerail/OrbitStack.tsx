@@ -1,30 +1,15 @@
-export default function OrbitAvatar({ user }) {
+import OrbitAvatar from "./OrbitAvatar"
 
-  if (!user) return null
+export default function OrbitStack({ users }) {
 
-  const avatar = user.avatar || user.avatar_url || ""
+  if (!users || users.length === 0) return null
 
   return (
-    <div
-      style={{
-        width: 54,
-        height: 54,
-        borderRadius: "50%",
-        overflow: "hidden",
-        border: user?.live ? "2px solid #ff2d55" : "2px solid #666"
-      }}
-    >
-      {avatar && (
-        <img
-          src={avatar}
-          alt=""
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover"
-          }}
-        />
-      )}
+    <div className="orbit-stack">
+      {users.map((user, i) => {
+        if (!user) return null
+        return <OrbitAvatar key={user.id || i} user={user} />
+      })}
     </div>
   )
 }
