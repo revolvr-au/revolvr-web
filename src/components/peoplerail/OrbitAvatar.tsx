@@ -11,10 +11,10 @@ export default function OrbitAvatar({ user }) {
     }
   }
 
-  const presence = user.presence || (user.live ? "live" : "online")
-  const ringColor = getRingColor(presence)
+  const presence = user?.presence || "online"
+  const avatar = user?.avatar_url || user?.avatar
 
-  const avatar = user.avatar_url || user.avatar
+  const ringColor = getRingColor(presence)
 
   return (
     <div className="orbit-avatar">
@@ -28,6 +28,7 @@ export default function OrbitAvatar({ user }) {
         <img
           src={avatar}
           className="orbit-core"
+          alt=""
         />
       )}
 
