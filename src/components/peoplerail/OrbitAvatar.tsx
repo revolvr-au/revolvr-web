@@ -5,11 +5,11 @@ export default function OrbitAvatar({ user }) {
   return (
     <div
       style={{
-        width: 54,
-        height: 54,
+        width: 50,
+        height: 50,
         borderRadius: "50%",
         overflow: "hidden",
-        border: user.live ? "2px solid #ff2d55" : "2px solid #666",
+        border: user.live ? "3px solid red" : "3px solid grey",
         marginBottom: 12
       }}
     >
