@@ -1,24 +1,29 @@
-"use client";
+import { usePeopleRail } from "../../hook/usePeopleRail"
+import OrbitStack from "./OrbitStack"
 
-export default function PeopleRail() {
+export default function PeopleRail({ userId }) {
+
+  const orbitUsers = usePeopleRail(userId)
+
   return (
     <div
       style={{
-        position: "fixed",
-        left: 0,
-        top: 0,
-        width: 72,
-        height: "100vh",
-        background: "linear-gradient(180deg,#0b0b0b,#121212)",
+        width: 80,
+        background: "#000",
+        color: "white",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        paddingTop: 80,
-        gap: 16,
-        zIndex: 50
+        paddingTop: 20
       }}
     >
-      <div style={{ color: "white", fontWeight: 600 }}>REVOLVR</div>
+
+      {orbitUsers.length === 0 ? (
+        <div style={{ fontSize: 12 }}>No orbit users</div>
+      ) : (
+        <OrbitStack users={orbitUsers} />
+      )}
+
     </div>
-  );
+  )
 }
