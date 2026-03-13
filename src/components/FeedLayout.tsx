@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Radio } from "lucide-react";
 import BottomBar from "@/components/BottomBar";
+import PeopleRail from "@/components/peoplerail/PeopleRail";
 
 type Props = {
   children: ReactNode;
@@ -72,8 +73,16 @@ export default function FeedLayout({
       )}
 
       <main className="flex-1 w-full pb-20">
-        {children}
-      </main>
+  <div className="feed-layout">
+
+    <PeopleRail userId="test-user" />
+
+    <div className="feed-content">
+      {children}
+    </div>
+
+  </div>
+</main>
 
       {!isLive && <BottomBar />}
 
