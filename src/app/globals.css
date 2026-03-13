@@ -437,3 +437,10 @@ body.live-mode .app-content {
 .feed-content {
   flex: 1;
 }
+.people-rail {
+  width: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: red;
+}
