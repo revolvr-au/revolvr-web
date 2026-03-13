@@ -401,9 +401,6 @@ return (
   className="feed-post relative w-full overflow-hidden bg-black"
   style={{ height: "100dvh" }}
 >
-  <div style={{ paddingLeft: 72 }}>
-  <PublicFeedClient />
-</div>
                   {/* Top gradient */}
                   <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
 
