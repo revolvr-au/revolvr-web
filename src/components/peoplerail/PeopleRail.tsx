@@ -1,21 +1,19 @@
-import { usePeopleRail } from "../../hook/usePeopleRail"
-import OrbitStack from "./OrbitStack"
+"use client"
 
-export default function PeopleRail({ userId }) {
-
-  const orbitUsers = usePeopleRail(userId)
-
-  console.log("Orbit Users:", orbitUsers)
+export default function PeopleRail() {
 
   return (
-    <div className="people-rail">
-
-      {orbitUsers.length === 0 ? (
-        <div>No orbit users yet</div>
-      ) : (
-        <OrbitStack users={orbitUsers} />
-      )}
-
+    <div
+      style={{
+        width: 80,
+        background: "#ff0000",
+        color: "white",
+        padding: 10,
+        height: "100vh"
+      }}
+    >
+      PEOPLE RAIL
     </div>
-  )
+  );
+
 }
