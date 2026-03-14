@@ -82,35 +82,26 @@ export function PublicFeedClient() {
     router.push(url);
   });
 
- function observePost(el: HTMLDivElement | null) {
-  if (!el) return;
+ useEffect(() => {
+  observerRef.current = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
 
-  if (!observerRef.current) {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
+        const postId = entry.target.getAttribute("data-postid");
+        if (!postId) return;
 
-          const postId = entry.target.getAttribute("data-postid");
-          if (!postId) return;
+        const post = posts.find((p) => p.id === postId);
+        if (post?.userEmail) {
+          setActivePost(post.userEmail);
+        }
+      });
+    },
+    { threshold: 0.6 }
+  );
 
-          const post = posts.find((p) => p.id === postId);
-
-          if (post?.userEmail) {
-            setActivePost(post.userEmail);
-          }
-        });
-      },
-      { threshold: 0.6 }
-    );
-  }
-
-  observerRef.current.observe(el);
-
-  return () => {
-    observerRef.current?.unobserve(el);
-  };
-}
+  return () => observerRef.current?.disconnect();
+}, []);
 
   useEffect(() => {
     if (!commentsOpen) return;
@@ -245,14 +236,6 @@ setRailUsers(creators)
 
     loadComments();
   }, [commentsOpen, activePostId]);
-
-function jumpToCreator(userId: string) {
-  const container = feedRef.current
-  if (!container) return
-
-  const target = container.querySelector(
-    `[data-postid][data-user="${userId}"]`
-  ) as HTMLElement | null
 
   if (!target) return
 
@@ -458,7 +441,10 @@ return (
                   key={p.id}
                   data-postid={p.id}
                   data-user={email}
-                  ref={observePost}
+                  ref={(el) => {
+                  if (!el || !observerRef.current) return;
+                  observerRef.current.observe(el);
+                  }}
                   className="feed-post relative w-full overflow-hidden bg-black"
                   style={{ height: "100dvh" }}
                 >
