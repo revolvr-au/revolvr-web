@@ -439,7 +439,6 @@ return (
             className="feed-scroll flex-1 overflow-y-auto"
             style={{ overscrollBehavior: "none" }}
           >
-
             {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
@@ -467,187 +466,8 @@ return (
                 </div>
               );
             })}
-
           </div>
-        </div>
-      </div>
-    )}
 
-    {commentsOpen && (
-      /* your comment modal stays here unchanged */
-    )}
-
-  </FeedLayout>
-);
-
-
-{/* Feed scroll area */}
-<div
-  ref={feedRef}
-  className="feed-scroll flex-1 overflow-y-auto"
-  style={{ overscrollBehavior: "none" }}
->
-
-            {posts.map((p) => {
-              const email = String(p.userEmail || "").trim().toLowerCase();
-              const display = email ? displayNameFromEmail(email) : "User";
-
-              const mediaUrl = String(p.imageUrl || "").trim();
-              const lower = mediaUrl.toLowerCase();
-
-              const isVideo =
-                lower.endsWith(".mov") ||
-                lower.endsWith(".mp4") ||
-                lower.endsWith(".webm");
-
-              const isActive = activePost === p.id;
-              return (
-                <div
-  key={p.id}
-  data-postid={p.id}
-  ref={observePost}
-  className="feed-post relative w-full overflow-hidden bg-black"
-  style={{ height: "100dvh" }}
->
-                  {/* Top gradient */}
-                  <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent z-30 pointer-events-none" />
-
-                  {/* Bottom gradient */}
-                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-30 pointer-events-none" />
-                {/* Media */}
-<div
-  className="absolute inset-0 w-full h-full z-0"
-  onClick={(e) => {
-    const video = e.currentTarget.querySelector("video") as HTMLVideoElement | null;
-    if (!video) return;
-    video.paused ? video.play() : video.pause();
-  }}
->
-  {mediaUrl ? (
-    isVideo ? (
-      <video
-        ref={(el) => {
-          if (!el) return;
-          if (isActive) el.play().catch(() => {});
-          else el.pause();
-        }}
-        autoPlay={isActive}
-        src={mediaUrl}
-        playsInline
-        muted
-        loop
-        preload="metadata"
-        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform"
-      />
-    ) : (
-      <img
-        src={mediaUrl}
-        alt="Post media"
-        loading="eager"
-        decoding="async"
-        className="absolute inset-0 w-full h-full object-cover object-center will-change-transform"
-      />
-    )
-  ) : (
-    <div className="flex h-full w-full items-center justify-center p-6 text-sm text-white/70">
-      No media
-    </div>
-  )}
-</div>
-                  {/* Caption */}
-                  {p.caption && (
-                    <div
-  className="absolute left-4 right-28 z-40"
-  style={{ bottom: "calc(8.25rem + env(safe-area-inset-bottom))" }}>
-                      <p className="text-sm text-white/90 drop-shadow-md line-clamp-2">
-                        {p.caption}
-                      </p>
-                    </div>
-                  )}
-{/* Creator */}
-<div
-  className="absolute left-4 right-28 z-40 flex items-center gap-3"
-  style={{ bottom: "calc(4.25rem + env(safe-area-inset-bottom))" }}>
-
-  <div className="w-9 h-9 rounded-full overflow-hidden bg-white/20 shrink-0">
-    <img
-      src={p.imageUrl || "/avatar-placeholder.png"}
-      alt={display}
-      className="w-full h-full object-cover"
-    />
-  </div>
-
-  <div className="min-w-0 text-white drop-shadow-md">
-    <div className="text-sm font-semibold truncate">
-      {display}
-    </div>
-    <div className="text-xs text-white/80 truncate">
-      @{email.split("@")[0] || "user"}
-    </div>
-  </div>
-
-  <button
-    type="button"
-    onClick={() => onToggleFollow(email)}
-    className={`ml-2 rounded-full px-3 py-1 text-xs transition active:scale-95 ${
-      followMap[email]
-        ? "bg-white text-black"
-        : "bg-white/15 backdrop-blur text-white hover:bg-white/25"
-    }`}
-  >
-    {followMap[email] ? "Following" : "Follow"}
-  </button>
-
-</div>
-
-{/* Right rail */}
-<div className="absolute right-4 top-[72%] -translate-y-1/2 z-40 flex flex-col items-center gap-6">
-
-                  <button
-                  type="button"
-                  onClick={() => toggleLike(p.id)}
-                  className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-                  >
-                      <Heart
-                        size={26}
-                        className={`transition ${
-                          likedMap[p.id] ? "fill-red-500 text-red-500" : ""
-                        }`}
-                      />
-                      <span className="text-[12px]">{likeCounts[p.id] ?? 0}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => openComments(p.id)}
-                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-                    >
-                      <MessageCircle size={26} />
-                      <span className="text-[12px]">{commentCounts[p.id] ?? 0}</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => sharePost(p.id)}
-                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-                    >
-                      <Share2 size={26} />
-                      <span className="text-[12px]">Share</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => toggleRewards(p.id)}
-                      className="flex flex-col items-center gap-1 text-white/90 hover:text-white"
-                    >
-                      <Gift size={26} />
-                      <span className="text-[12px]">Reward</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </div>
     )}
@@ -723,6 +543,7 @@ return (
         </div>
       </div>
     )}
+
   </FeedLayout>
 );
 }
