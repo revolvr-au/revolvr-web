@@ -391,6 +391,8 @@ body.live-mode .app-content {
 
   scroll-snap-align: start;
   scroll-snap-stop: always;
+}
+
 .feed-scroll {
   overscroll-behavior: none;
 }
