@@ -31,7 +31,7 @@ export default function PeopleRail({ userId, activePost, users = [] }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        paddingTop: "calc(20px + env(safe-area-inset-top))"
+        paddingTop: "calc(80px + env(safe-area-inset-top))"
       }}
     >
       <div style={{ marginBottom: 20, fontSize: 12 }}>

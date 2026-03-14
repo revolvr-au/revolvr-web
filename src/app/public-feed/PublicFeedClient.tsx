@@ -156,14 +156,14 @@ export function PublicFeedClient() {
       .map(p => [
         p.userEmail,
         {
-          id: p.userEmail,
-          avatar: p.imageUrl || "/avatar-placeholder.png",
-          live: false
-        }
+  id: p.userEmail,
+  avatar: `https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail}`,
+  live: false
+}
       ])
   ).values()
 )
-
+console.log("Rail creators:", creators)
 setRailUsers(creators)
 
       const nextCommentCounts: Record<string, number> = {};
