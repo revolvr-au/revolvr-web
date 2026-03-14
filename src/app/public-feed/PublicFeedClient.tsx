@@ -91,8 +91,14 @@ export function PublicFeedClient() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const postId = entry.target.getAttribute("data-postid");
-            if (postId) setActivePost(postId);
-          }
+
+if (!postId) return;
+
+const post = posts.find(p => p.id === postId);
+
+if (post?.userEmail) {
+  setActivePost(post.userEmail);
+}
         });
       },
       { threshold: 0.6 }
