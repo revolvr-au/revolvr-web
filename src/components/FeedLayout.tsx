@@ -16,6 +16,7 @@ type Props = {
   isLive?: boolean;
   activePost?: string | null;
   railUsers?: any[];
+  onSelectCreator?: (id: string) => void;
 };
 
 export default function FeedLayout({
@@ -27,7 +28,8 @@ export default function FeedLayout({
   menuHref = "/command",
   isLive = false,
   activePost,
-  railUsers
+  railUsers,
+  onSelectCreator
 }: Props) {
 
   return (
@@ -80,10 +82,11 @@ export default function FeedLayout({
       <main className="flex-1 w-full pb-20">
   <div className="feed-layout">
 
-    <PeopleRail
+   <PeopleRail
   userId="test-user"
   activePost={activePost}
   users={railUsers}
+  onSelectCreator={onSelectCreator}
 />
 
     <div className="feed-content">

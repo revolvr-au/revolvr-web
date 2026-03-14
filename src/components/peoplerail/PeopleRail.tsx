@@ -3,7 +3,7 @@
 import { usePeopleRail } from "../../hook/usePeopleRail";
 import OrbitStack from "./OrbitStack";
 
-export default function PeopleRail({ userId, activePost, users = [] }) {
+export default function PeopleRail({ userId, activePost, users = [], onSelectCreator }) {
 
   const orbitUsers = users.length ? users : usePeopleRail(userId);
 
@@ -34,14 +34,16 @@ export default function PeopleRail({ userId, activePost, users = [] }) {
         paddingTop: "calc(80px + env(safe-area-inset-top))"
       }}
     >
-      <div style={{ marginBottom: 20, fontSize: 12 }}>
-        Rail Loaded
-      </div>
+    
 
       {orbitUsers.length === 0 ? (
         <div style={{ fontSize: 12 }}>No orbit users</div>
       ) : (
-        <OrbitStack users={orderedUsers} activePost={activePost} />
+        <OrbitStack
+  users={orderedUsers}
+  activePost={activePost}
+  onSelectCreator={onSelectCreator}
+/>
       )}
     </div>
   );

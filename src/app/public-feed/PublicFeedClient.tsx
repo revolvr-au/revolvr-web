@@ -240,6 +240,22 @@ setRailUsers(creators)
     loadComments();
   }, [commentsOpen, activePostId]);
 
+function jumpToCreator(userId: string) {
+  const container = feedRef.current
+  if (!container) return
+
+  const target = container.querySelector(
+    `[data-postid][data-user="${userId}"]`
+  ) as HTMLElement | null
+
+  if (!target) return
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  })
+}
+
   useEffect(() => {
   const container = feedRef.current;
   if (!container || posts.length === 0) return;
@@ -385,7 +401,8 @@ return (
   onGoLive={goLive}
   activePost={activePost}
   railUsers={railUsers}
->
+  onSelectCreator={jumpToCreator}
+/>
 
     {loading && <div className="p-4 opacity-70">Loading…</div>}
     {err && <div className="p-4 text-red-400">{err}</div>}
