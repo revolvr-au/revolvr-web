@@ -28,7 +28,10 @@ export default function FeedLayout({
   isLive = false,
   activePost,
   railUsers
-}: Props)
+}: Props) {
+
+  return (
+    <div className="min-h-screen text-white flex flex-col"></div>
   return (
     <div className="min-h-screen text-white flex flex-col">
 
