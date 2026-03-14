@@ -83,28 +83,23 @@ export default function FeedLayout({
       )}
 
       <main className="flex-1 w-full pb-20">
- <div
-  style={{
-    display: "flex",
-    width: "100%"
-  }}
->
+  <div style={{ display: "flex", width: "100%" }}>
 
-  {peopleOpen && (
-    <PeopleRail
-      open={peopleOpen}
-      userId="test-user"
-      activePost={activePost}
-      users={railUsers}
-      onSelectCreator={onSelectCreator}
-    />
-  )}
+    {peopleOpen && (
+      <PeopleRail
+        open={peopleOpen}
+        userId="test-user"
+        activePost={activePost}
+        users={railUsers}
+        onSelectCreator={onSelectCreator}
+      />
+    )}
 
-  <div style={{ flex: 1 }}>
-    {children}
+    <div style={{ flex: 1, width: "100%" }}>
+      {children}
+    </div>
+
   </div>
-
-</div>
 </main>
       {!isLive && <BottomBar />}
 
