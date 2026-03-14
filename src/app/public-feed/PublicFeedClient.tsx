@@ -237,13 +237,6 @@ setRailUsers(creators)
     loadComments();
   }, [commentsOpen, activePostId]);
 
-  if (!target) return
-
-  target.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  })
-}
 
   useEffect(() => {
   const container = feedRef.current;
