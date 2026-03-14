@@ -20,27 +20,29 @@ export default function FeedScreen() {
   if (!user) return null
 
   return (
-    <div
-      className="feed-layout"
-      style={{
-        display: "grid",
-        gridTemplateColumns: peopleOpen ? "80px 1fr" : "0px 1fr",
-        transition: "grid-template-columns 0.3s ease"
-      }}
-    >
+    <main className="flex-1 w-full pb-20">
+      <div
+        className="feed-layout"
+        style={{
+          display: "grid",
+          gridTemplateColumns: peopleOpen ? "80px 1fr" : "0px 1fr",
+          transition: "grid-template-columns 0.3s ease"
+        }}
+      >
 
-      <PeopleRail
-        open={peopleOpen}
-        userId={user.id}
-        activePost={activePost}
-        users={railUsers}
-        onSelectCreator={onSelectCreator}
-      />
+        <PeopleRail
+          open={peopleOpen}
+          userId="test-user"
+          activePost={activePost}
+          users={railUsers}
+          onSelectCreator={onSelectCreator}
+        />
 
-      <div className="feed-content">
-        Snap Feed Coming Here
+        <div className="feed-content">
+          Snap Feed Coming Here
+        </div>
+
       </div>
-
-    </div>
+    </main>
   )
 }
