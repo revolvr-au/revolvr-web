@@ -391,12 +391,15 @@ body.live-mode .app-content {
 
   scroll-snap-align: start;
   scroll-snap-stop: always;
-}
 .feed-scroll {
   overscroll-behavior: none;
 }
+
+/* PEOPLE RAIL */
+
 .people-rail {
   width: 80px;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -412,6 +415,8 @@ body.live-mode .app-content {
   position: relative;
   width: 50px;
   height: 50px;
+  overflow: hidden;
+  border-radius: 50%;
 }
 
 .orbit-ring {
@@ -433,14 +438,27 @@ body.live-mode .app-content {
 .feed-layout {
   display: flex;
   width: 100%;
+  align-items: stretch;
 }
+
+/* Left creator rail */
 
 .people-rail {
   width: 80px;
   flex-shrink: 0;
 }
 
+/* Feed container */
+
 .feed-content {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Center feed on wide screens */
+
+@media (min-width: 768px) {
+  .feed-layout {
+    justify-content: center;
+  }
 }

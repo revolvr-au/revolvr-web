@@ -394,7 +394,25 @@ function jumpToCreator(userId: string) {
       console.error(err);
     }
   }
+function jumpToCreator(creatorId: string) {
+  const container = feedRef.current;
+  if (!container) return;
 
+  const posts = Array.from(
+    container.querySelectorAll("[data-postid]")
+  ) as HTMLElement[];
+
+  const target = posts.find((p) =>
+    p.getAttribute("data-postid") === creatorId
+  );
+
+  if (!target) return;
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
 return (
  <FeedLayout
   title="Revolvr"
