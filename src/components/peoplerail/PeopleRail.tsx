@@ -29,19 +29,19 @@ export default function PeopleRail({
   console.log("PeopleRail users:", orbitUsers);
 
   return (
-    <div
-      style={{
-        width: open ? 80 : 0,
-        background: "#000",
-        color: "white",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        paddingTop: "calc(80px + env(safe-area-inset-top))",
-        overflow: "hidden",
-        transition: "width 0.3s ease"
-      }}
-    >
+  <div
+    style={{
+      width: open ? 80 : 0,
+      background: "#000",
+      color: "white",
+      display: open ? "flex" : "none",
+      flexDirection: "column",
+      alignItems: "center",
+      paddingTop: "calc(80px + env(safe-area-inset-top))",
+      overflow: "hidden",
+      transition: "width 0.3s ease"
+    }}
+  >
       {orbitUsers.length === 0 ? (
         <div style={{ fontSize: 12 }}>No orbit users</div>
       ) : (
