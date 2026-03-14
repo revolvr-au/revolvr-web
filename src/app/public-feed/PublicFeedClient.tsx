@@ -82,27 +82,28 @@ export function PublicFeedClient() {
     router.push(url);
   });
 
-  function observePost(el: HTMLDivElement | null) {
+ function observePost(el: HTMLDivElement | null) {
   if (!el) return;
 
   if (!observerRef.current) {
     observerRef.current = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (!entry.isIntersecting) return;
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
 
-      const postId = entry.target.getAttribute("data-postid");
-      if (!postId) return;
+          const postId = entry.target.getAttribute("data-postid");
+          if (!postId) return;
 
-      const post = posts.find((p) => p.id === postId);
+          const post = posts.find((p) => p.id === postId);
 
-      if (post?.userEmail) {
-        setActivePost(post.userEmail);
-      }
-    });
-  },
-  { threshold: 0.6 }
-);
+          if (post?.userEmail) {
+            setActivePost(post.userEmail);
+          }
+        });
+      },
+      { threshold: 0.6 }
+    );
+  }
 
   observerRef.current.observe(el);
 
@@ -419,21 +420,65 @@ function jumpToCreator(creatorId: string) {
   });
 }
 return (
- <FeedLayout
-  title="Revolvr"
-  onGoLive={goLive}
-  activePost={activePost}
-  railUsers={railUsers}
-  onSelectCreator={jumpToCreator}
->
-
-{loading && <div className="p-4 opacity-70">Loading…</div>}
+  <FeedLayout
+    title="Revolvr"
+    onGoLive={goLive}
+    activePost={activePost}
+    railUsers={railUsers}
+    onSelectCreator={jumpToCreator}
+  >
+    {loading && <div className="p-4 opacity-70">Loading…</div>}
     {err && <div className="p-4 text-red-400">{err}</div>}
 
     {!loading && (
       <div className="feed-center">
-  <div className="feed-phone flex flex-col">
+        <div className="feed-phone flex flex-col">
 
+          <div
+            ref={feedRef}
+            className="feed-scroll flex-1 overflow-y-auto"
+            style={{ overscrollBehavior: "none" }}
+          >
+
+            {posts.map((p) => {
+              const email = String(p.userEmail || "").trim().toLowerCase();
+              const display = email ? displayNameFromEmail(email) : "User";
+
+              const mediaUrl = String(p.imageUrl || "").trim();
+              const lower = mediaUrl.toLowerCase();
+
+              const isVideo =
+                lower.endsWith(".mov") ||
+                lower.endsWith(".mp4") ||
+                lower.endsWith(".webm");
+
+              const isActive = activePost === email;
+
+              return (
+                <div
+                  key={p.id}
+                  data-postid={p.id}
+                  data-user={email}
+                  ref={observePost}
+                  className="feed-post relative w-full overflow-hidden bg-black"
+                  style={{ height: "100dvh" }}
+                >
+                  {/* media and UI */}
+                </div>
+              );
+            })}
+
+          </div>
+        </div>
+      </div>
+    )}
+
+    {commentsOpen && (
+      /* your comment modal stays here unchanged */
+    )}
+
+  </FeedLayout>
+);
 
 
 {/* Feed scroll area */}
