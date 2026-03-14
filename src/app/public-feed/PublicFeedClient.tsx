@@ -396,15 +396,15 @@ function jumpToCreator(userId: string) {
   }
 
 return (
-  <FeedLayout
+ <FeedLayout
   title="Revolvr"
   onGoLive={goLive}
   activePost={activePost}
   railUsers={railUsers}
   onSelectCreator={jumpToCreator}
-/>
+>
 
-    {loading && <div className="p-4 opacity-70">Loading…</div>}
+{loading && <div className="p-4 opacity-70">Loading…</div>}
     {err && <div className="p-4 text-red-400">{err}</div>}
 
     {!loading && (
