@@ -10,7 +10,10 @@ export default function FeedScreen() {
   return (
     <div className="feed-layout">
 
-      <PeopleRail userId={user.id} />
+      <PeopleRail
+  userId="test-user"
+  activePost={activePost}
+/>
 
       <div className="feed-content">
         Snap Feed Coming Here
