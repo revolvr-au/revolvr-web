@@ -87,23 +87,22 @@ export function PublicFeedClient() {
 
   if (!observerRef.current) {
     observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const postId = entry.target.getAttribute("data-postid");
+  (entries) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
 
-if (!postId) return;
+      const postId = entry.target.getAttribute("data-postid");
+      if (!postId) return;
 
-const post = posts.find(p => p.id === postId);
+      const post = posts.find((p) => p.id === postId);
 
-if (post?.userEmail) {
-  setActivePost(post.userEmail);
-}
-        });
-      },
-      { threshold: 0.6 }
-    );
-  }
+      if (post?.userEmail) {
+        setActivePost(post.userEmail);
+      }
+    });
+  },
+  { threshold: 0.6 }
+);
 
   observerRef.current.observe(el);
 
