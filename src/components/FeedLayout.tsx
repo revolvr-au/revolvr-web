@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Radio } from "lucide-react";
 import BottomBar from "@/components/BottomBar";
 import PeopleRail from "@/components/peoplerail/PeopleRail";
+import { useState } from "react";
 
 type Props = {
   children: ReactNode;
@@ -31,6 +32,8 @@ export default function FeedLayout({
   railUsers,
   onSelectCreator
 }: Props) {
+
+  const [peopleOpen, setPeopleOpen] = useState(false);
 
   return (
     <div className="min-h-screen text-white flex flex-col">
@@ -80,20 +83,26 @@ export default function FeedLayout({
       )}
 
       <main className="flex-1 w-full pb-20">
-  <div className="feed-layout">
+  <div
+  style={{
+    display: "grid",
+    gridTemplateColumns: peopleOpen ? "80px 1fr" : "0px 1fr",
+    transition: "grid-template-columns 0.3s ease"
+  }}
+>
 
-   <PeopleRail
-  userId="test-user"
-  activePost={activePost}
-  users={railUsers}
-  onSelectCreator={onSelectCreator}
-/>
+  <PeopleRail
+    userId="test-user"
+    activePost={activePost}
+    users={railUsers}
+    onSelectCreator={onSelectCreator}
+  />
 
-    <div className="feed-content">
-      {children}
-    </div>
-
+  <div className="feed-content">
+    {children}
   </div>
+
+</div>
 </main>
 
       {!isLive && <BottomBar />}
