@@ -3,9 +3,9 @@
 import { usePeopleRail } from "../../hook/usePeopleRail";
 import OrbitStack from "./OrbitStack";
 
-export default function PeopleRail({ userId, activePost }) {
+export default function PeopleRail({ userId, activePost, users = [] })
 
-  const orbitUsers = usePeopleRail(userId)
+  const orbitUsers = users.length ? users : usePeopleRail(userId)
 
 let orderedUsers = orbitUsers
 

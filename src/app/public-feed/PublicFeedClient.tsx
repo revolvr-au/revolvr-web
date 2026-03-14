@@ -126,7 +126,7 @@ export function PublicFeedClient() {
 
       const res = await fetch("/api/public-feed", { cache: "no-store" });
       const json = await res.json().catch(() => null);
-
+      const [railUsers, setRailUsers] = useState<any[]>([])
       
 
       if (!res.ok) {
@@ -147,6 +147,21 @@ export function PublicFeedClient() {
       if (cancelled) return;
 
       setPosts(incoming);
+
+      const creators = Array.from(
+  new Map(
+    incoming
+      .filter(p => p.userEmail)
+      .map(p => [
+        p.userEmail,
+        {
+          id: p.userEmail,
+          avatar: p.imageUrl || "/avatar-placeholder.png",
+          live: false
+        }
+      ])
+  ).values()
+)
 
       const nextCommentCounts: Record<string, number> = {};
       const nextLiked: Record<string, boolean> = {};
@@ -366,6 +381,7 @@ return (
   title="Revolvr"
   onGoLive={goLive}
   activePost={activePost}
+  railUsers={railUsers}
 >
 
     {loading && <div className="p-4 opacity-70">Loading…</div>}

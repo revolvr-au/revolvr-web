@@ -17,6 +17,7 @@ type Props = {
   activePost?: string | null;
 };
 
+railUsers?: any[]
 export default function FeedLayout({
   children,
   title,
@@ -80,6 +81,7 @@ export default function FeedLayout({
     <PeopleRail
   userId="test-user"
   activePost={activePost}
+  users={railUsers}
 />
 
     <div className="feed-content">
