@@ -6,15 +6,20 @@ export default function OrbitStack({ users, activePost }) {
 
   return (
     <div className="orbit-stack">
-      {users.map((user, i) => {
+      {users.map((user) => {
+
         if (!user) return null
-        return
-        <OrbitAvatar
-  key={user.id}
-  user={user}
-  activePost={activePost}
-/>
+
+        return (
+          <OrbitAvatar
+            key={user.id}
+            user={user}
+            activePost={activePost}
+          />
+        )
+
       })}
     </div>
   )
+
 }
