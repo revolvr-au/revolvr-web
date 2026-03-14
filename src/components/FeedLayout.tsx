@@ -92,11 +92,12 @@ export default function FeedLayout({
 >
 
   <PeopleRail
-    userId="test-user"
-    activePost={activePost}
-    users={railUsers}
-    onSelectCreator={onSelectCreator}
-  />
+  open={peopleOpen}
+  userId="test-user"
+  activePost={activePost}
+  users={railUsers}
+  onSelectCreator={onSelectCreator}
+/>
 
   <div className="feed-content">
     {children}
