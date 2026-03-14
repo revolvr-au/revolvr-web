@@ -86,18 +86,20 @@ export default function FeedLayout({
   <div
   style={{
     display: "grid",
-    gridTemplateColumns: peopleOpen ? "80px 1fr" : "0px 1fr",
+    gridTemplateColumns: peopleOpen ? "80px 1fr" : "1fr",
     transition: "grid-template-columns 0.3s ease"
   }}
 >
 
+  {peopleOpen && (
   <PeopleRail
-  open={peopleOpen}
-  userId="test-user"
-  activePost={activePost}
-  users={railUsers}
-  onSelectCreator={onSelectCreator}
-/>
+    open={peopleOpen}
+    userId="test-user"
+    activePost={activePost}
+    users={railUsers}
+    onSelectCreator={onSelectCreator}
+  />
+)}
 
   <div className="feed-content">
     {children}
