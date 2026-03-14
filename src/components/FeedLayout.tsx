@@ -105,7 +105,7 @@ export default function FeedLayout({
   </div>
 
 </div>
-
+</main>
       {!isLive && <BottomBar />}
 
     </div>
