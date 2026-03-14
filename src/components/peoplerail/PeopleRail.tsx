@@ -2,6 +2,7 @@
 
 import { usePeopleRail } from "../../hook/usePeopleRail";
 import OrbitStack from "./OrbitStack";
+import OrbitAvatar from "./OrbitAvatar";
 
 export default function PeopleRail({ userId, activePost, users = [], onSelectCreator }) {
 
