@@ -369,15 +369,12 @@ async function handleSendComment() {
 
     setComments((prev) => [...prev, data.comment]);
     setCommentText("");
+
     setCommentCounts((prev) => ({
       ...prev,
       [activePostId]: (prev[activePostId] || 0) + 1,
     }));
 
-    if (typeof document !== "undefined") {
-      const el = document.activeElement as HTMLElement | null;
-      el?.blur();
-    }
   } catch (err) {
     console.error(err);
   }
@@ -387,17 +384,13 @@ function jumpToCreator(creatorId: string) {
   const container = feedRef.current;
   if (!container) return;
 
-  const posts = Array.from(
-    container.querySelectorAll("[data-postid]")
-  ) as HTMLElement[];
+  const post = container.querySelector(
+    `[data-user="${creatorId}"]`
+  ) as HTMLElement | null;
 
-  const target = posts.find(
-    (p) => p.getAttribute("data-postid") === creatorId
-  );
+  if (!post) return;
 
-  if (!target) return;
-
-  target.scrollIntoView({
+  post.scrollIntoView({
     behavior: "smooth",
     block: "start",
   });
