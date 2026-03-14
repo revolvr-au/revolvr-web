@@ -83,30 +83,28 @@ export default function FeedLayout({
       )}
 
       <main className="flex-1 w-full pb-20">
-  <div
+ <div
   style={{
-    display: "grid",
-    gridTemplateColumns: peopleOpen ? "80px 1fr" : "1fr",
-    transition: "grid-template-columns 0.3s ease"
+    display: "flex",
+    width: "100%"
   }}
 >
 
   {peopleOpen && (
-  <PeopleRail
-    open={peopleOpen}
-    userId="test-user"
-    activePost={activePost}
-    users={railUsers}
-    onSelectCreator={onSelectCreator}
-  />
-)}
+    <PeopleRail
+      open={peopleOpen}
+      userId="test-user"
+      activePost={activePost}
+      users={railUsers}
+      onSelectCreator={onSelectCreator}
+    />
+  )}
 
-  <div className="feed-content">
+  <div style={{ flex: 1 }}>
     {children}
   </div>
 
 </div>
-</main>
 
       {!isLive && <BottomBar />}
 
