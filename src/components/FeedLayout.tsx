@@ -15,9 +15,9 @@ type Props = {
   menuHref?: string;
   isLive?: boolean;
   activePost?: string | null;
+  railUsers?: any[];
 };
 
-railUsers?: any[]
 export default function FeedLayout({
   children,
   title,
@@ -26,8 +26,9 @@ export default function FeedLayout({
   showMenu = false,
   menuHref = "/command",
   isLive = false,
-  activePost = null,
-}: Props) {
+  activePost,
+  railUsers
+}: Props)
   return (
     <div className="min-h-screen text-white flex flex-col">
 
