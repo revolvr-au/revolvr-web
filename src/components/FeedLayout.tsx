@@ -14,6 +14,7 @@ type Props = {
   showMenu?: boolean;
   menuHref?: string;
   isLive?: boolean;
+  activePost?: string | null;
 };
 
 export default function FeedLayout({
@@ -24,6 +25,7 @@ export default function FeedLayout({
   showMenu = false,
   menuHref = "/command",
   isLive = false,
+  activePost = null,
 }: Props) {
   return (
     <div className="min-h-screen text-white flex flex-col">
@@ -75,7 +77,10 @@ export default function FeedLayout({
       <main className="flex-1 w-full pb-20">
   <div className="feed-layout">
 
-    <PeopleRail userId="test-user" />
+    <PeopleRail
+  userId="test-user"
+  activePost={activePost}
+/>
 
     <div className="feed-content">
       {children}

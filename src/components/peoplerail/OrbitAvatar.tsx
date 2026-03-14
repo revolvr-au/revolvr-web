@@ -1,4 +1,4 @@
-export default function OrbitAvatar({ user }) {
+export default function OrbitAvatar({ user, activePost }) {
 
   if (!user) return null
 
@@ -6,9 +6,16 @@ export default function OrbitAvatar({ user }) {
     <div className="orbit-avatar">
 
       <div
-        className="orbit-ring"
-        style={{ borderColor: user.live ? "red" : "grey" }}
-      />
+  className="orbit-ring"
+  style={{
+    borderColor:
+      user?.id === activePost
+        ? "yellow"
+        : user?.live
+        ? "#ff2d55"
+        : "grey"
+  }}
+/>
 
       <img
         src={user.avatar}

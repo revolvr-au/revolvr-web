@@ -3,9 +3,22 @@
 import { usePeopleRail } from "../../hook/usePeopleRail";
 import OrbitStack from "./OrbitStack";
 
-export default function PeopleRail({ userId }) {
+export default function PeopleRail({ userId, activePost }) {
 
-  const orbitUsers = usePeopleRail(userId);
+  const orbitUsers = usePeopleRail(userId)
+
+let orderedUsers = orbitUsers
+
+if (activePost) {
+  const activeUser = orbitUsers.find(u => u.id === activePost)
+
+  if (activeUser) {
+    orderedUsers = [
+      activeUser,
+      ...orbitUsers.filter(u => u.id !== activePost)
+    ]
+  }
+}
 
   console.log("PeopleRail users:", orbitUsers);
 
@@ -29,7 +42,7 @@ export default function PeopleRail({ userId }) {
       {orbitUsers.length === 0 ? (
         <div style={{ fontSize: 12 }}>No orbit users</div>
       ) : (
-        <OrbitStack users={orbitUsers} />
+        <OrbitStack users={orderedUsers} activePost={activePost} />
       )}
     </div>
   );
