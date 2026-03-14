@@ -350,39 +350,39 @@ setRailUsers(creators)
       closeRewards();
     }
   }
+async function handleSendComment() {
+  if (!activePostId || !commentText.trim()) return;
 
-  async function handleSendComment() {
-    if (!activePostId || !commentText.trim()) return;
+  try {
+    const res = await fetch("/api/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: activePostId,
+        userEmail: viewer,
+        body: commentText.trim(),
+      }),
+    });
 
-    try {
-      const res = await fetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postId: activePostId,
-          userEmail: viewer,
-          body: commentText.trim(),
-        }),
-      });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) return;
 
-      const data = await res.json();
-      if (!res.ok || !data?.ok) return;
+    setComments((prev) => [...prev, data.comment]);
+    setCommentText("");
+    setCommentCounts((prev) => ({
+      ...prev,
+      [activePostId]: (prev[activePostId] || 0) + 1,
+    }));
 
-      setComments((prev) => [...prev, data.comment]);
-      setCommentText("");
-      setCommentCounts((prev) => ({
-        ...prev,
-        [activePostId]: (prev[activePostId] || 0) + 1,
-      }));
-
-      if (typeof document !== "undefined") {
-        const el = document.activeElement as HTMLElement | null;
-        el?.blur();
-      }
-    } catch (err) {
-      console.error(err);
+    if (typeof document !== "undefined") {
+      const el = document.activeElement as HTMLElement | null;
+      el?.blur();
     }
+  } catch (err) {
+    console.error(err);
   }
+}
+
 function jumpToCreator(creatorId: string) {
   const container = feedRef.current;
   if (!container) return;
@@ -391,17 +391,18 @@ function jumpToCreator(creatorId: string) {
     container.querySelectorAll("[data-postid]")
   ) as HTMLElement[];
 
-  const target = posts.find((p) =>
-    p.getAttribute("data-postid") === creatorId
+  const target = posts.find(
+    (p) => p.getAttribute("data-postid") === creatorId
   );
 
   if (!target) return;
 
   target.scrollIntoView({
     behavior: "smooth",
-    block: "start"
+    block: "start",
   });
 }
+
 return (
   <FeedLayout
     title="Revolvr"
