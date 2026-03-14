@@ -24,6 +24,7 @@ export function PublicFeedClient() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const [railUsers, setRailUsers] = useState<any[]>([])
 
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
@@ -126,7 +127,7 @@ export function PublicFeedClient() {
 
       const res = await fetch("/api/public-feed", { cache: "no-store" });
       const json = await res.json().catch(() => null);
-      const [railUsers, setRailUsers] = useState<any[]>([])
+      
       
 
       if (!res.ok) {
@@ -148,7 +149,7 @@ export function PublicFeedClient() {
 
       setPosts(incoming);
 
-      const creators = Array.from(
+    const creators = Array.from(
   new Map(
     incoming
       .filter(p => p.userEmail)
@@ -162,6 +163,8 @@ export function PublicFeedClient() {
       ])
   ).values()
 )
+
+setRailUsers(creators)
 
       const nextCommentCounts: Record<string, number> = {};
       const nextLiked: Record<string, boolean> = {};
