@@ -89,22 +89,27 @@ export default function FeedLayout({
   }}
 
   onTouchEnd={(e) => {
-    const endX = e.changedTouches[0].clientX;
-    const diff = endX - swipeStart.current;
+  const endX = e.changedTouches[0].clientX;
+  const diff = endX - swipeStart.current;
 
-    const startedAtLeftEdge = swipeStart.current < 50;
+  const startedAtLeftEdge = swipeStart.current < 70;
 
-    // open rail (only if swipe starts from left edge)
-    if (!peopleOpen && startedAtLeftEdge && diff > 60) {
+  // OPEN rail only from left edge
+  if (!peopleOpen) {
+    if (!startedAtLeftEdge) return;
+
+    if (diff > 60) {
       setPeopleOpen(true);
-      return;
     }
 
-    // close rail (only if rail already open)
-    if (peopleOpen && diff < -60) {
-      setPeopleOpen(false);
-    }
-  }}
+    return;
+  }
+
+  // CLOSE rail if already open
+  if (peopleOpen && diff < -60) {
+    setPeopleOpen(false);
+  }
+}}
 >
 
   <PeopleRail
