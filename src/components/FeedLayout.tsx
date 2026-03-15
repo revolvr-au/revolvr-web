@@ -83,11 +83,7 @@ export default function FeedLayout({
 
      <main
   className="flex-1 pb-20 relative"
-  style={{
-    transform: peopleOpen ? "translateX(80px)" : "translateX(0)",
-    transition: "transform 0.25s ease"
-  }}
-
+  
   onTouchStart={(e) => {
     swipeStart.current = e.touches[0].clientX;
   }}
