@@ -33,6 +33,7 @@ export default function FeedLayout({
   onSelectCreator
 }: Props) {
 
+  
   const [peopleOpen, setPeopleOpen] = useState(true);
 
   return (

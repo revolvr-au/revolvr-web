@@ -9,7 +9,6 @@ export default function PeopleRail({
   users = [],
   onSelectCreator
 }) {
-
   const orbitUsers = users.length ? users : usePeopleRail(userId);
 
   let orderedUsers = orbitUsers;
@@ -29,25 +28,24 @@ export default function PeopleRail({
     <div
       style={{
         position: "fixed",
-        left: 0,
         top: 0,
         bottom: 0,
+        left: open ? 0 : -80,
         width: 80,
         background: "#000",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         paddingTop: "calc(80px + env(safe-area-inset-top))",
-        transform: open ? "translateX(0)" : "translateX(-80px)",
-        transition: "transform 0.25s ease",
-        zIndex: 40
+        transition: "left 0.25s ease",
+        zIndex: 100
       }}
     >
       {orderedUsers.map((u) => (
         <div
           key={u.id}
-          onClick={() => onSelectCreator?.(u.id)}
           style={{ marginBottom: 16, cursor: "pointer" }}
+          onClick={() => onSelectCreator?.(u.id)}
         >
           <img
             src={u.avatar}
