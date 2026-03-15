@@ -84,10 +84,11 @@ export default function FeedLayout({
       )}
 
      <main
-  className="flex-1 w-full pb-20 relative"
+  className="flex-1 pb-20 relative"
   style={{
+    width: peopleOpen ? "calc(100% - 80px)" : "100%",
     marginLeft: peopleOpen ? 80 : 0,
-    transition: "margin-left 0.3s ease"
+    transition: "all 0.3s ease"
   }}
 >
 
