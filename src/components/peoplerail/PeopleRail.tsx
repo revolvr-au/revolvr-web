@@ -44,7 +44,7 @@ export default function PeopleRail({
         transition: "left 0.25s ease"
       }}
     >
-      console.log("Rail users:", orderedUsers)
+      {orderedUsers.map((u) => (
         <div
           key={u.id}
           onClick={() => onSelectCreator?.(u.id)}
@@ -55,6 +55,7 @@ export default function PeopleRail({
         >
           <img
             src={u.avatar}
+            alt=""
             style={{
               width: 48,
               height: 48,
