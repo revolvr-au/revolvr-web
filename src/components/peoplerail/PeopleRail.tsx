@@ -24,28 +24,33 @@ export default function PeopleRail({
     }
   }
 
+  console.log("Rail users:", orderedUsers);
+
   return (
     <div
       style={{
         position: "fixed",
         top: 0,
-        bottom: 0,
         left: open ? 0 : -80,
         width: 80,
+        height: "100vh",
         background: "#000",
+        zIndex: 100,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        paddingTop: "calc(80px + env(safe-area-inset-top))",
-        transition: "left 0.25s ease",
-        zIndex: 100
+        paddingTop: 120,
+        transition: "left 0.25s ease"
       }}
     >
       {orderedUsers.map((u) => (
         <div
           key={u.id}
-          style={{ marginBottom: 16, cursor: "pointer" }}
           onClick={() => onSelectCreator?.(u.id)}
+          style={{
+            marginBottom: 20,
+            cursor: "pointer"
+          }}
         >
           <img
             src={u.avatar}
