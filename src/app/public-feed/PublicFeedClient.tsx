@@ -83,7 +83,7 @@ export function PublicFeedClient() {
 
     router.push(url);
   });
-setRailUsers(creators)
+
 
  useEffect(() => {
   observerRef.current = new IntersectionObserver(
