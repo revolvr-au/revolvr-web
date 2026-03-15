@@ -479,5 +479,5 @@ body {
 }
 
 .feed-scroll {
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
