@@ -82,24 +82,23 @@ export default function FeedLayout({
         </header>
       )}
 
-      <main className="flex-1 w-full pb-20 relative">
+     <main
+  className="flex-1 w-full pb-20 relative"
+  style={{
+    marginLeft: peopleOpen ? 80 : 0,
+    transition: "margin-left 0.3s ease"
+  }}
+>
 
-  <PeopleRail open={peopleOpen}
+  <PeopleRail
+    open={peopleOpen}
     userId="test-user"
     activePost={activePost}
     users={railUsers}
     onSelectCreator={onSelectCreator}
   />
 
-  <div
-  style={{
-    width: "100%",
-    marginLeft: peopleOpen ? 80 : 0,
-    transition: "margin-left 0.3s ease"
-  }}
->
   {children}
-</div>
 
 </main>
       {!isLive && <BottomBar />}
