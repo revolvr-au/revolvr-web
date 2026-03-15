@@ -470,3 +470,14 @@ html, body {
 .people-rail {
   pointer-events: auto;
 }
+html,
+body {
+  overflow-x: hidden;
+  position: relative;
+  width: 100%;
+  max-width: 100vw;
+}
+
+.feed-scroll {
+  touch-action: pan-y;
+}

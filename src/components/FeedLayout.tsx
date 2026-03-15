@@ -81,43 +81,46 @@ export default function FeedLayout({
         </header>
       )}
 
-      <main
+     <main
   className="flex-1 pb-20 relative"
   style={{
-    transform: peopleOpen ? "translateX(80px)" : "translateX(0px)",
+    transform: peopleOpen ? "translateX(80px)" : "translateX(0)",
     transition: "transform 0.25s ease"
   }}
-        onTouchStart={(e) => {
-          swipeStart.current = e.touches[0].clientX;
-        }}
-        onTouchEnd={(e) => {
-          const endX = e.changedTouches[0].clientX;
-          const diff = endX - swipeStart.current;
 
-          if (swipeStart.current < 40 && diff > 60) {
-            setPeopleOpen(true);
-          }
+  onTouchStart={(e) => {
+    swipeStart.current = e.touches[0].clientX;
+  }}
 
-          if (diff < -60) {
-            setPeopleOpen(false);
-          }
-        }}
-      >
+  onTouchEnd={(e) => {
+    const endX = e.changedTouches[0].clientX;
+    const diff = endX - swipeStart.current;
 
-        <PeopleRail
-          open={peopleOpen}
-          userId="test-user"
-          activePost={activePost}
-          users={railUsers}
-          onSelectCreator={onSelectCreator}
-        />
+    const startedAtLeftEdge = swipeStart.current < 50;
 
-        {children}
+    // open rail (only if swipe starts from left edge)
+    if (!peopleOpen && startedAtLeftEdge && diff > 60) {
+      setPeopleOpen(true);
+      return;
+    }
 
-      </main>
+    // close rail (only if rail already open)
+    if (peopleOpen && diff < -60) {
+      setPeopleOpen(false);
+    }
+  }}
+>
 
-      {!isLive && <BottomBar />}
+  <PeopleRail
+    open={peopleOpen}
+    userId="test-user"
+    activePost={activePost}
+    users={railUsers}
+    onSelectCreator={onSelectCreator}
+  />
 
-    </div>
-  );
-}
+  {children}
+
+</main>
+
+{!isLive && <BottomBar />}

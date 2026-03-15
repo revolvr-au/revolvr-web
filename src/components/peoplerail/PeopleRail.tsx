@@ -32,7 +32,9 @@ export default function PeopleRail({
       style={{
         position: "fixed",
         top: 0,
-        left: open ? 0 : -80,
+        left: 0,
+        transform: open ? "translateX(0)" : "translateX(-80px)",
+        transition: "transform 0.25s ease",
         width: 80,
         height: "100vh",
         background: "#000",
@@ -40,10 +42,15 @@ export default function PeopleRail({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        paddingTop: 120,
-        transition: "left 0.25s ease"
+        paddingTop: 60
       }}
     >
+
+      {/* debug count */}
+      <div style={{ color: "white", fontSize: 12, marginBottom: 10 }}>
+        {orderedUsers.length}
+      </div>
+
       {orderedUsers.map((u) => (
         <div
           key={u.id}
@@ -67,6 +74,7 @@ export default function PeopleRail({
           />
         </div>
       ))}
+
     </div>
   );
 }
