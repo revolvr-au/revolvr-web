@@ -66,12 +66,7 @@ export default function FeedLayout({
               </button>
 
               {/* RAIL TOGGLE BUTTON */}
-              <button
-                onClick={() => setPeopleOpen(!peopleOpen)}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10"
-              >
-                👥
-              </button>
+              
 
               {right ?? null}
 
@@ -90,12 +85,22 @@ export default function FeedLayout({
       )}
 
       <main
-        className="flex-1 pb-20 relative"
-        style={{
-          marginLeft: peopleOpen ? 80 : 0,
-          transition: "margin-left 0.3s ease"
-        }}
-      >
+  className="flex-1 pb-20 relative"
+  style={{
+    marginLeft: peopleOpen ? 80 : 0,
+    transition: "margin-left 0.25s ease"
+  }}
+  onTouchStart={(e) => {
+    window.startX = e.touches[0].clientX
+  }}
+  onTouchEnd={(e) => {
+    const endX = e.changedTouches[0].clientX
+    const diff = endX - window.startX
+
+    if (diff > 60) setPeopleOpen(true)   // swipe right
+    if (diff < -60) setPeopleOpen(false) // swipe left
+  }}
+>
 
         <PeopleRail
           open={peopleOpen}
