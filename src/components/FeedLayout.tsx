@@ -86,7 +86,7 @@ export default function FeedLayout({
   <div style={{ display: "flex", width: "100%" }}>
 
    <PeopleRail
-  open={peopleOpen}
+  open={true}
   userId="test-user"
   activePost={activePost}
   users={railUsers}

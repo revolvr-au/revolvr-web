@@ -1,7 +1,6 @@
 "use client";
 
 import { usePeopleRail } from "../../hook/usePeopleRail";
-import OrbitStack from "./OrbitStack";
 
 export default function PeopleRail({
   open,
@@ -26,32 +25,41 @@ export default function PeopleRail({
     }
   }
 
-  console.log("PeopleRail users:", orbitUsers);
+  console.log("PeopleRail users:", orderedUsers);
 
   return (
     <div
       style={{
-        width: open ? 80 : 0,
+        position: "fixed",
+        left: 0,
+        top: 0,
+        bottom: 0,
+        width: 80,
         background: "#000",
         color: "white",
-        display: open ? "flex" : "none",
+        display: "flex",
         flexDirection: "column",
         alignItems: "center",
         paddingTop: "calc(80px + env(safe-area-inset-top))",
-        overflow: "hidden",
-        transition: "width 0.3s ease"
+        transform: open ? "translateX(0)" : "translateX(-80px)",
+        transition: "transform 0.3s ease",
+        zIndex: 50
       }}
     >
       <div style={{ width: "100%", textAlign: "center" }}>
         {orderedUsers.map((u) => (
-          <div key={u.id} style={{ marginBottom: 16 }}>
+          <div
+            key={u.id}
+            style={{ marginBottom: 16, cursor: "pointer" }}
+            onClick={() => onSelectCreator?.(u.id)}
+          >
             <img
               src={u.avatar}
               style={{
                 width: 48,
                 height: 48,
                 borderRadius: "50%",
-                border: "2px solid white"
+                border: activePost === u.id ? "3px solid #00ffff" : "2px solid white"
               }}
             />
           </div>
