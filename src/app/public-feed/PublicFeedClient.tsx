@@ -519,6 +519,7 @@ return (
           </div>
         </div>
       </div>
-    )}
+       )}
   </FeedLayout>
 );
+}
