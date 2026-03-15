@@ -25,7 +25,7 @@ export default function PeopleRail({
     }
   }
 
-  console.log("Rail users:", orderedUsers);
+  console.log("RAIL USERS:", orderedUsers);
 
   return (
     <div
@@ -60,7 +60,9 @@ export default function PeopleRail({
               width: 48,
               height: 48,
               borderRadius: "50%",
-              border: activePost === u.id ? "3px solid cyan" : "2px solid white"
+              border: activePost === u.id
+                ? "3px solid cyan"
+                : "2px solid white"
             }}
           />
         </div>

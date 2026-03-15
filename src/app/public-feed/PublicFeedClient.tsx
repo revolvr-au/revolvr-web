@@ -19,6 +19,8 @@ type ApiPost = {
 
 type RewardMode = "applause" | "fire" | "love" | "respect";
 
+
+
 export function PublicFeedClient() {
   const [posts, setPosts] = useState<ApiPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +83,7 @@ export function PublicFeedClient() {
 
     router.push(url);
   });
+setRailUsers(creators)
 
  useEffect(() => {
   observerRef.current = new IntersectionObserver(

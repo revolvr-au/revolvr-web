@@ -467,3 +467,6 @@ body.live-mode .app-content {
 html, body {
   overflow-x: hidden;
 }
+.people-rail {
+  pointer-events: auto;
+}
