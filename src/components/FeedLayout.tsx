@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Radio } from "lucide-react";
 import BottomBar from "@/components/BottomBar";
 import PeopleRail from "@/components/peoplerail/PeopleRail";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 type Props = {
   children: ReactNode;
@@ -34,6 +34,7 @@ export default function FeedLayout({
 }: Props) {
 
   const [peopleOpen, setPeopleOpen] = useState(false);
+  const swipeStart = useRef(0);
 
   return (
     <div className="min-h-screen text-white flex flex-col">
@@ -50,7 +51,6 @@ export default function FeedLayout({
 
             <div className="flex items-center gap-2">
 
-              {/* GO LIVE */}
               <button
                 type="button"
                 onClick={() => onGoLive?.()}
@@ -64,9 +64,6 @@ export default function FeedLayout({
                 <Radio className="w-5 h-5 text-white" />
                 <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
               </button>
-
-              {/* RAIL TOGGLE BUTTON */}
-              
 
               {right ?? null}
 
@@ -85,22 +82,27 @@ export default function FeedLayout({
       )}
 
       <main
-  className="flex-1 pb-20 relative"
-  style={{
-    marginLeft: peopleOpen ? 80 : 0,
-    transition: "margin-left 0.25s ease"
-  }}
-  onTouchStart={(e) => {
-    window.startX = e.touches[0].clientX
-  }}
-  onTouchEnd={(e) => {
-    const endX = e.changedTouches[0].clientX
-    const diff = endX - window.startX
+        className="flex-1 pb-20 relative"
+        style={{
+          marginLeft: peopleOpen ? 80 : 0,
+          transition: "margin-left 0.25s ease"
+        }}
+        onTouchStart={(e) => {
+          swipeStart.current = e.touches[0].clientX;
+        }}
+        onTouchEnd={(e) => {
+          const endX = e.changedTouches[0].clientX;
+          const diff = endX - swipeStart.current;
 
-    if (diff > 60) setPeopleOpen(true)   // swipe right
-    if (diff < -60) setPeopleOpen(false) // swipe left
-  }}
->
+          if (swipeStart.current < 40 && diff > 60) {
+            setPeopleOpen(true);
+          }
+
+          if (diff < -60) {
+            setPeopleOpen(false);
+          }
+        }}
+      >
 
         <PeopleRail
           open={peopleOpen}
