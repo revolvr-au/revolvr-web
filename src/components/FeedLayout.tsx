@@ -92,7 +92,13 @@ export default function FeedLayout({
     onSelectCreator={onSelectCreator}
   />
 
-  <div style={{ width: "100%" }}>
+  <div
+    style={{
+      width: "100%",
+      marginLeft: 80,
+      transition: "margin-left 0.3s ease"
+    }}
+  >
     {children}
   </div>
 
