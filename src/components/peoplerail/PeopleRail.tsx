@@ -44,7 +44,7 @@ export default function PeopleRail({
         transition: "left 0.25s ease"
       }}
     >
-      {orderedUsers.map((u) => (
+      console.log("Rail users:", orderedUsers)
         <div
           key={u.id}
           onClick={() => onSelectCreator?.(u.id)}

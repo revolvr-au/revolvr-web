@@ -464,3 +464,6 @@ body.live-mode .app-content {
     justify-content: center;
   }
 }
+html, body {
+  overflow-x: hidden;
+}
