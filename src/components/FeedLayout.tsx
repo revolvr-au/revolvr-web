@@ -42,7 +42,7 @@ export default function FeedLayout({
       {!isLive && (
   <header
   className="absolute top-[64px] left-0 right-0 z-50 px-4">
-          <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
+          <div className="flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
 
             <div className="min-w-0">
               <h1 className="text-xl font-semibold tracking-wider bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
