@@ -29,28 +29,34 @@ export default function PeopleRail({
   console.log("PeopleRail users:", orbitUsers);
 
   return (
-  <div
-    style={{
-      width: open ? 80 : 0,
-      background: "#000",
-      color: "white",
-      display: open ? "flex" : "none",
-      flexDirection: "column",
-      alignItems: "center",
-      paddingTop: "calc(80px + env(safe-area-inset-top))",
-      overflow: "hidden",
-      transition: "width 0.3s ease"
-    }}
-  >
-      {orbitUsers.length === 0 ? (
-        <div style={{ fontSize: 12 }}>No orbit users</div>
-      ) : (
-        <OrbitStack
-          users={orderedUsers}
-          activePost={activePost}
-          onSelectCreator={onSelectCreator}
-        />
-      )}
+    <div
+      style={{
+        width: open ? 80 : 0,
+        background: "#000",
+        color: "white",
+        display: open ? "flex" : "none",
+        flexDirection: "column",
+        alignItems: "center",
+        paddingTop: "calc(80px + env(safe-area-inset-top))",
+        overflow: "hidden",
+        transition: "width 0.3s ease"
+      }}
+    >
+      <div style={{ width: "100%", textAlign: "center" }}>
+        {orderedUsers.map((u) => (
+          <div key={u.id} style={{ marginBottom: 16 }}>
+            <img
+              src={u.avatar}
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: "2px solid white"
+              }}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
