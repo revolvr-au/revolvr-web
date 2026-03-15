@@ -428,20 +428,31 @@ return (
 
               return (
                 <div
-                  key={p.id}
-                  data-postid={p.id}
-                  data-user={email}
-                  ref={(el) => {
-                    if (!el || !observerRef.current) return;
-                    observerRef.current.observe(el);
-                  }}
-                  className="feed-post relative w-full overflow-hidden bg-black"
-                  style={{ height: "100dvh" }}
-                >
-                  <div style={{ color: "white", padding: 20 }}>
-                    {display} — {p.caption || "No caption"}
-                  </div>
-                </div>
+  key={p.id}
+  data-postid={p.id}
+  data-user={email}
+  ref={(el) => {
+    if (!el || !observerRef.current) return;
+    observerRef.current.observe(el);
+  }}
+  className="feed-post relative w-full overflow-hidden bg-black"
+  style={{ height: "100dvh" }}
+>
+
+  {p.imageUrl && (
+    <img
+      src={p.imageUrl}
+      alt={p.caption || "post"}
+      className="absolute inset-0 w-full h-full object-cover"
+    />
+  )}
+
+  <div className="absolute bottom-20 left-4 text-white">
+    <div className="font-semibold">@{display}</div>
+    <div className="text-sm opacity-80">{p.caption}</div>
+  </div>
+
+</div>
               );
             })}
           </div>
