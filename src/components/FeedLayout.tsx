@@ -33,7 +33,7 @@ export default function FeedLayout({
   onSelectCreator
 }: Props) {
 
-  const [peopleOpen, setPeopleOpen] = useState(false);
+  const [peopleOpen, setPeopleOpen] = useState(true);
 
   return (
     <div className="min-h-screen text-white flex flex-col">
@@ -84,8 +84,7 @@ export default function FeedLayout({
 
       <main className="flex-1 w-full pb-20 relative">
 
-  <PeopleRail
-    open={true}
+  <PeopleRail open={peopleOpen}
     userId="test-user"
     activePost={activePost}
     users={railUsers}
@@ -93,14 +92,14 @@ export default function FeedLayout({
   />
 
   <div
-    style={{
-      width: "100%",
-      marginLeft: 80,
-      transition: "margin-left 0.3s ease"
-    }}
-  >
-    {children}
-  </div>
+  style={{
+    width: "100%",
+    marginLeft: peopleOpen ? 80 : 0,
+    transition: "margin-left 0.3s ease"
+  }}
+>
+  {children}
+</div>
 
 </main>
       {!isLive && <BottomBar />}

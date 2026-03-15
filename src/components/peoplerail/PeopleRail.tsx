@@ -25,8 +25,6 @@ export default function PeopleRail({
     }
   }
 
-  console.log("PeopleRail users:", orderedUsers);
-
   return (
     <div
       style={{
@@ -36,35 +34,32 @@ export default function PeopleRail({
         bottom: 0,
         width: 80,
         background: "#000",
-        color: "white",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         paddingTop: "calc(80px + env(safe-area-inset-top))",
         transform: open ? "translateX(0)" : "translateX(-80px)",
-        transition: "transform 0.3s ease",
-        zIndex: 50
+        transition: "transform 0.25s ease",
+        zIndex: 40
       }}
     >
-      <div style={{ width: "100%", textAlign: "center" }}>
-        {orderedUsers.map((u) => (
-          <div
-            key={u.id}
-            style={{ marginBottom: 16, cursor: "pointer" }}
-            onClick={() => onSelectCreator?.(u.id)}
-          >
-            <img
-              src={u.avatar}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                border: activePost === u.id ? "3px solid #00ffff" : "2px solid white"
-              }}
-            />
-          </div>
-        ))}
-      </div>
+      {orderedUsers.map((u) => (
+        <div
+          key={u.id}
+          onClick={() => onSelectCreator?.(u.id)}
+          style={{ marginBottom: 16, cursor: "pointer" }}
+        >
+          <img
+            src={u.avatar}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              border: activePost === u.id ? "3px solid cyan" : "2px solid white"
+            }}
+          />
+        </div>
+      ))}
     </div>
   );
 }
