@@ -397,18 +397,21 @@ return (
     railUsers={railUsers}
     onSelectCreator={jumpToCreator}
   >
-    {loading && <div className="p-4 opacity-70">Loading…</div>}
+    {loading && <div className="p-4 opacity-70 text-white">Loading…</div>}
     {err && <div className="p-4 text-red-400">{err}</div>}
 
     {!loading && (
       <div className="feed-center">
         <div className="feed-phone flex flex-col">
-
           <div
             ref={feedRef}
             className="feed-scroll flex-1 overflow-y-auto"
             style={{ overscrollBehavior: "none" }}
           >
+            <div style={{ color: "white", padding: 40 }}>
+              POSTS: {posts.length}
+            </div>
+
             {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
@@ -429,18 +432,19 @@ return (
                   data-postid={p.id}
                   data-user={email}
                   ref={(el) => {
-                  if (!el || !observerRef.current) return;
-                  observerRef.current.observe(el);
+                    if (!el || !observerRef.current) return;
+                    observerRef.current.observe(el);
                   }}
                   className="feed-post relative w-full overflow-hidden bg-black"
                   style={{ height: "100dvh" }}
                 >
-                  {/* media and UI */}
+                  <div style={{ color: "white", padding: 20 }}>
+                    {display} — {p.caption || "No caption"}
+                  </div>
                 </div>
               );
             })}
           </div>
-
         </div>
       </div>
     )}
@@ -516,7 +520,5 @@ return (
         </div>
       </div>
     )}
-
   </FeedLayout>
 );
-}
