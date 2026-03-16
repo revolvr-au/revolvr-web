@@ -521,12 +521,12 @@ return (
 
     </div>
 
-  {/* CREATOR USERNAME + CAPTION LEFT RAIL */}
+      {/* CREATOR USERNAME + CAPTION LEFT RAIL */}
 <div
   style={{
     position: "absolute",
     left: 90,
-    top: "60vh",
+    top: "65vh",
     color: "white",
     zIndex: 80,
     textShadow: "0 2px 6px rgba(0,0,0,0.7)"
