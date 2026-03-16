@@ -481,3 +481,12 @@ body {
 .feed-scroll {
   touch-action: manipulation;
 }
+html,
+body {
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+.feed-scroll {
+  overscroll-behavior: contain;
+}
