@@ -449,7 +449,42 @@ return (
       className="absolute inset-0 w-full h-full object-cover"
     />
   )}
+{/* RIGHT INTERACTION RAIL */}
+<div
+  style={{
+    position: "absolute",
+    right: 12,
+    bottom: 120,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 18,
+    zIndex: 60,
+    color: "white"
+  }}
+>
+  {/* LIKE */}
+  <button onClick={() => toggleLike(p.id)} style={{ textAlign: "center" }}>
+    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+    <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
+  </button>
 
+  {/* COMMENT */}
+  <button onClick={() => openComments(p.id)} style={{ textAlign: "center" }}>
+    <MessageCircle size={28} />
+    <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
+  </button>
+
+  {/* SHARE */}
+  <button onClick={() => sharePost(p.id)}>
+    <Share2 size={28} />
+  </button>
+
+  {/* REWARD */}
+  <button onClick={() => toggleRewards(p.id)}>
+    <Gift size={28} />
+  </button>
+</div>
   <div className="absolute bottom-20 left-4 text-white">
     <div className="font-semibold">@{display}</div>
     <div className="text-sm opacity-80">{p.caption}</div>
