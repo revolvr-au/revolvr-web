@@ -522,10 +522,9 @@ return (
     </div>
 
       {/* CAPTION */}
-    <div className="absolute bottom-20 left-4 text-white">
-      <div className="font-semibold">@{display}</div>
-      <div className="text-sm opacity-80">{p.caption}</div>
-    </div>
+   <div className="absolute bottom-20 left-4 text-white">
+  <div className="text-sm opacity-80">{p.caption}</div>
+</div>
 
   </div>
 );
