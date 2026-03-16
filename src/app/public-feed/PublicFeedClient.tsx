@@ -477,11 +477,11 @@ return (
       >
         <div style={{ fontWeight: 600 }}>@{display}</div>
         <div style={{ opacity: 0.8 }}>{p.caption}</div>
+                </div>
+        </div>
       </div>
+    )}
 
-    </div>
-  );
-})}
     {commentsOpen && (
       <div className="fixed inset-0 z-50">
         <button
@@ -491,6 +491,7 @@ return (
         />
       </div>
     )}
+
   </FeedLayout>
 );
 }
