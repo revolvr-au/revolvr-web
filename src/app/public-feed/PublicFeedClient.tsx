@@ -540,7 +540,7 @@ return (
         marginBottom: 6
       }}
     >
-      @{display}
+           @{display}
     </div>
 
     <div
@@ -557,6 +557,10 @@ return (
 </div>
 );
 })}
+
+          </div>
+        </div>
+      </div>
 
     {commentsOpen && (
       <div className="fixed inset-0 z-50">
