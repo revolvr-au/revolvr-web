@@ -521,9 +521,35 @@ return (
 
     </div>
 
-      {/* CAPTION */}
-   <div className="absolute bottom-20 left-4 text-white">
-  <div className="text-sm opacity-80">{p.caption}</div>
+      {/* CREATOR USERNAME – LEFT SIDE */}
+{activePost && (
+  <div
+    style={{
+      position: "absolute",
+      left: 90,
+      bottom: 140,
+      color: "white",
+      fontSize: 14,
+      fontWeight: 600,
+      letterSpacing: 1
+    }}
+  >
+    @{display}
+  </div>
+)}
+
+{/* CAPTION */}
+<div
+  style={{
+    position: "absolute",
+    left: 90,
+    bottom: 110,
+    color: "white",
+    fontSize: 14,
+    opacity: 0.85
+  }}
+>
+  {p.caption}
 </div>
 
   </div>
