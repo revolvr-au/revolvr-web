@@ -521,36 +521,34 @@ return (
 
     </div>
 
-   {/* CREATOR USERNAME – LEFT SIDE */}
-{activePost && (
-  <div
-    style={{
-      position: "absolute",
-      left: 90,
-      top: "42vh",
-      transform: "translateY(-50%)",
-      color: "white",
-      fontSize: 14,
-      fontWeight: 600,
-      letterSpacing: 1
-    }}
-  >
-    @{display}
-  </div>
-)}
-
-{/* CAPTION */}
+  {/* CREATOR USERNAME + CAPTION LEFT RAIL */}
 <div
   style={{
     position: "absolute",
     left: 90,
-    bottom: 110,
-    color: "white",
-    fontSize: 14,
-    opacity: 0.85
+    top: "42vh",
+    transform: "translateY(-50%)",
+    color: "white"
   }}
 >
-  {p.caption}
+  <div
+    style={{
+      fontWeight: 600,
+      fontSize: 14,
+      marginBottom: 4
+    }}
+  >
+    @{display}
+  </div>
+
+  <div
+    style={{
+      fontSize: 14,
+      opacity: 0.85
+    }}
+  >
+    {p.caption}
+  </div>
 </div>
 
   </div>
