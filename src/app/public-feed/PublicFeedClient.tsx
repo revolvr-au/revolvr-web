@@ -411,10 +411,6 @@ return (
             className="feed-scroll flex-1 overflow-y-auto"
             style={{ overscrollBehavior: "none" }}
           >
-            <div style={{ color: "white", padding: 40 }}>
-              POSTS: {posts.length}
-            </div>
-
             {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
@@ -439,64 +435,18 @@ return (
                     />
                   )}
 
-                  {/* RIGHT INTERACTION RAIL */}
+                  {/* Temporary caption block */}
                   <div
                     style={{
                       position: "absolute",
-                      right: 12,
-                      bottom: 90,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 20,
-                      zIndex: 60,
+                      left: 20,
+                      bottom: 120,
                       color: "white",
-                      filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))"
+                      zIndex: 10
                     }}
                   >
-                    <button
-                      onClick={() => toggleLike(p.id)}
-                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-                    >
-                      <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                      <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
-                    </button>
-
-                    <button
-                      onClick={() => openComments(p.id)}
-                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-                    >
-                      <MessageCircle size={28} />
-                      <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
-                    </button>
-
-                    <button onClick={() => sharePost(p.id)}>
-                      <Share2 size={28} />
-                    </button>
-
-                    <button onClick={() => toggleRewards(p.id)}>
-                      <Gift size={28} />
-                    </button>
-                  </div>
-
-                  {/* USERNAME + CAPTION */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 90,
-                      top: "65vh",
-                      color: "white",
-                      zIndex: 80,
-                      textShadow: "0 2px 6px rgba(0,0,0,0.7)"
-                    }}
-                  >
-                    <div style={{ fontWeight: 700, fontSize: 16 }}>
-                      @{display}
-                    </div>
-
-                    <div style={{ fontSize: 14, opacity: 0.9 }}>
-                      {p.caption}
-                    </div>
+                    <div style={{ fontWeight: 600 }}>@{display}</div>
+                    <div style={{ opacity: 0.8 }}>{p.caption}</div>
                   </div>
                 </div>
               );
@@ -513,62 +463,6 @@ return (
           className="absolute inset-0 bg-black/60"
           onClick={closeComments}
         />
-
-        <div className="absolute left-0 right-0 bottom-0 mx-auto w-full max-w-5xl rounded-t-3xl border border-white/10 bg-[#0b0f1a] shadow-2xl flex flex-col h-[75vh] max-h-[75vh]">
-          <div className="mx-auto mt-3 mb-2 h-1 w-10 rounded-full bg-white/15" />
-
-          <div className="flex items-center justify-between px-5 py-4">
-            <div className="text-sm font-semibold text-white">Comments</div>
-
-            <button
-              type="button"
-              onClick={closeComments}
-              className="rounded-full px-3 py-1 text-sm text-white/70 hover:text-white"
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-5 pb-4">
-            {comments.length === 0 && (
-              <div className="text-sm text-white/40">No comments yet.</div>
-            )}
-
-            {comments.map((c) => (
-              <div key={c.id}>
-                <div className="text-xs text-white/50">
-                  @{c.userEmail?.split("@")[0] || "user"}
-                </div>
-
-                <div className="text-sm text-white/90">{c.body}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-white/10 px-4 py-3">
-            <div className="flex items-center gap-2">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment…"
-                className="h-11 flex-1 rounded-full bg-white/5 px-4 text-base text-white outline-none"
-              />
-
-              <button
-                type="button"
-                disabled={!commentText.trim()}
-                onClick={handleSendComment}
-                className={`h-11 w-11 flex items-center justify-center rounded-full transition ${
-                  commentText.trim()
-                    ? "bg-white text-black"
-                    : "bg-white/10 text-white/40"
-                }`}
-              >
-                <Send size={18} />
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     )}
   </FeedLayout>
