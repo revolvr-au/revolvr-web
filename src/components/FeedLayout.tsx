@@ -120,15 +120,28 @@ onTouchEnd={(e) => {
 }}
 >
 
-  <PeopleRail
-    open={peopleOpen}
-    userId="test-user"
-    activePost={activePost}
-    users={railUsers}
-    onSelectCreator={onSelectCreator}
-  />
+ <PeopleRail
+  open={peopleOpen}
+  userId="test-user"
+  activePost={activePost}
+  users={railUsers}
+  onSelectCreator={onSelectCreator}
+/>
 
-  {children}
+<div
+  style={{
+    position: "fixed",
+    top: 0,
+    right: 0,
+    width: 90,
+    height: "100vh",
+    zIndex: 300,
+    background: "transparent",
+    touchAction: "none"
+  }}
+/>
+
+{children}
 
 </main>
 
