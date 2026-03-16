@@ -54,11 +54,12 @@ export default function FeedLayout({
               src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${activePost || "revolvr"}`}
               alt="creator"
               style={{
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               borderRadius: "50%",
               border: "2px solid white",
-              objectFit: "cover"
+              objectFit: "cover",
+              marginRight: 6
               }}
               /> 
               <button
@@ -140,16 +141,17 @@ onTouchEnd={(e) => {
 
 <div
   style={{
-    position: "fixed",
-    top: 0,
-    right: 0,
-    width: 90,
-    height: "100vh",
-    zIndex: 300,
-    background: "transparent",
-    touchAction: "none"
+    position: "absolute",
+    left: 90,
+    top: 120,
+    color: "white",
+    fontSize: 14,
+    fontWeight: 500
   }}
-/>
+>
+  @{activePost?.split("@")[0]}
+</div>
+
 
 {children}
 
