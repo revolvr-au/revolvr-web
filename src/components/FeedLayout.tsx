@@ -172,15 +172,16 @@ onTouchEnd={(e) => {
     }}
   >
     {/* Avatar */}
-    <img
-      src={avatar}
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: "50%",
-        border: "2px solid white"
-      }}
-    />
+     <img
+  src="https://api.dicebear.com/7.x/thumbs/svg?seed=revolvr"
+  style={{
+    width: 40,
+    height: 40,
+    borderRadius: "50%",
+    border: "2px solid white"
+  }}
+/>
+     
 
     {/* GoLive */}
     <button
