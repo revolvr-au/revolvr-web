@@ -450,20 +450,20 @@ return (
     )}
 
     {/* RIGHT INTERACTION RAIL */}
-    <div
-      style={{
-        position: "absolute",
-        right: 12,
-        bottom: 180,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 20,
-        zIndex: 60,
-        color: "white",
-        filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))"
-      }}
-    >
+<div
+  style={{
+    position: "absolute",
+    right: 12,
+    bottom: 120,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 20,
+    zIndex: 60,
+    color: "white",
+    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))"
+  }}
+>
 
       {/* LIKE */}
       <button
