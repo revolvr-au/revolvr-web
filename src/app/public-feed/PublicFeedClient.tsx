@@ -422,28 +422,27 @@ return (
       className="feed-post relative w-full overflow-hidden bg-black"
       style={{ height: "100dvh" }}
     >
-      {p.imageUrl && (
-        <img
-          src={p.imageUrl}
+          {p.imageUrl && (
+          <img
+          src="https://picsum.photos/800/1200"
           alt={p.caption || "post"}
           className="absolute inset-0 w-full h-full object-cover"
         />
       )}
 
       {/* RIGHT INTERACTION RAIL */}
-      <div
-        style={{
-          position: "absolute",
-          right: 12,
-          bottom: 90,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 20,
-          zIndex: 60,
-          color: "white"
-        }}
-      >
+     <div
+  style={{
+    position: "absolute",
+    right: 70,
+    top: 110,
+    maxWidth: 220,
+    textAlign: "right",
+    color: "white",
+    zIndex: 60,
+    textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+  }}
+>
         <button
           onClick={() => toggleLike(p.id)}
           style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
