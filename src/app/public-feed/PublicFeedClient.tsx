@@ -406,7 +406,7 @@ return (
     {!loading && (
       <div className="feed-center">
         <div className="feed-phone flex flex-col">
-          {posts.map((p) => {
+         {posts.map((p) => {
   const email = String(p.userEmail || "").trim().toLowerCase();
   const display = email ? displayNameFromEmail(email) : "User";
 
@@ -444,60 +444,69 @@ return (
           color: "white"
         }}
       >
-        <button onClick={() => toggleLike(p.id)}>
+        <button
+          onClick={() => toggleLike(p.id)}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+        >
           <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
           <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
         </button>
 
-        <button onClick={() => openComments(p.id)}>
+        <button
+          onClick={() => openComments(p.id)}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+        >
           <MessageCircle size={28} />
           <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
         </button>
 
-        <button onClick={() => sharePost(p.id)}>
+        <button
+          onClick={() => sharePost(p.id)}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+        >
           <Share2 size={28} />
         </button>
 
-        <button onClick={() => toggleRewards(p.id)}>
+        <button
+          onClick={() => toggleRewards(p.id)}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+        >
           <Gift size={28} />
         </button>
       </div>
 
-   {/* CREATOR USERNAME + CAPTION */}
-<div
-  style={{
-    position: "absolute",
-    right: 90,
-    top: 100,
-    textAlign: "right",
-    color: "white",
-    zIndex: 60,
-    textShadow: "0 2px 6px rgba(0,0,0,0.7)"
-  }}
->
-  <div style={{ fontWeight: 600 }}>@{display}</div>
-  <div style={{ opacity: 0.8 }}>{p.caption}</div>
-</div>
-
-</div>
-);
+      {/* CREATOR USERNAME + CAPTION */}
+      <div
+        style={{
+          position: "absolute",
+          right: 90,
+          top: 100,
+          textAlign: "right",
+          color: "white",
+          zIndex: 60,
+          textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+        }}
+      >
+        <div style={{ fontWeight: 600 }}>@{display}</div>
+        <div style={{ opacity: 0.8 }}>{p.caption}</div>
+      </div>
+    </div>
+  );
 })}
+          </div>
+        </div>
+      </div>
+    )}
 
-</div>
-</div>
-</div>
-)}
-
-{commentsOpen && (
-  <div className="fixed inset-0 z-50">
-    <button
-      type="button"
-      className="absolute inset-0 bg-black/60"
-      onClick={closeComments}
-    />
-  </div>
-)}
-
-</FeedLayout>
+    {commentsOpen && (
+      <div className="fixed inset-0 z-50">
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/60"
+          onClick={closeComments}
+        />
+      </div>
+    )}
+  </FeedLayout>
 );
 }
