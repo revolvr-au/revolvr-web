@@ -405,94 +405,101 @@ return (
 
     {!loading && (
       <div className="feed-center">
-        <div className="feed-phone flex flex-col">
-         {posts.map((p) => {
-  const email = String(p.userEmail || "").trim().toLowerCase();
-  const display = email ? displayNameFromEmail(email) : "User";
+  <div className="feed-phone flex flex-col">
 
-  return (
     <div
-      key={p.id}
-      data-postid={p.id}
-      data-user={email}
-      ref={(el) => {
-        if (!el || !observerRef.current) return;
-        observerRef.current.observe(el);
-      }}
-      className="feed-post relative w-full overflow-hidden bg-black"
-      style={{ height: "100dvh" }}
-    >
-          {p.imageUrl && (
-          <img
-          src="https://picsum.photos/800/1200"
-          alt={p.caption || "post"}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      )}
-
-      {/* RIGHT INTERACTION RAIL */}
-     <div
-  style={{
-    position: "absolute",
-    right: 70,
-    top: 110,
-    maxWidth: 220,
-    textAlign: "right",
-    color: "white",
-    zIndex: 60,
-    textShadow: "0 2px 6px rgba(0,0,0,0.7)"
-  }}
+  ref={feedRef}
+  className="feed-scroll flex-1 overflow-y-auto"
+  style={{ overscrollBehavior: "none" }}
 >
-        <button
-          onClick={() => toggleLike(p.id)}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-        >
-          <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-          <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
-        </button>
+  {posts.map((p) => {
+    const email = String(p.userEmail || "").trim().toLowerCase();
+    const display = email ? displayNameFromEmail(email) : "User";
 
-        <button
-          onClick={() => openComments(p.id)}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-        >
-          <MessageCircle size={28} />
-          <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
-        </button>
-
-        <button
-          onClick={() => sharePost(p.id)}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-        >
-          <Share2 size={28} />
-        </button>
-
-        <button
-          onClick={() => toggleRewards(p.id)}
-          style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-        >
-          <Gift size={28} />
-        </button>
-      </div>
-
-      {/* CREATOR USERNAME + CAPTION */}
+    return (
       <div
-        style={{
-          position: "absolute",
-          right: 90,
-          top: 100,
-          textAlign: "right",
-          color: "white",
-          zIndex: 60,
-          textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+        key={p.id}
+        data-postid={p.id}
+        data-user={email}
+        ref={(el) => {
+          if (!el || !observerRef.current) return;
+          observerRef.current.observe(el);
         }}
+        className="feed-post relative w-full overflow-hidden bg-black"
+        style={{ height: "100dvh" }}
       >
-        <div style={{ fontWeight: 600 }}>@{display}</div>
-        <div style={{ opacity: 0.8 }}>{p.caption}</div>
+        {p.imageUrl && (
+          <img
+            src={p.imageUrl}
+            alt={p.caption || "post"}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+
+        {/* RIGHT INTERACTION RAIL */}
+        <div
+          style={{
+            position: "absolute",
+            right: 12,
+            bottom: 90,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 20,
+            zIndex: 60,
+            color: "white"
+          }}
+        >
+          <button
+            onClick={() => toggleLike(p.id)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+          >
+            <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+            <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
+          </button>
+
+          <button
+            onClick={() => openComments(p.id)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+          >
+            <MessageCircle size={28} />
+            <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
+          </button>
+
+          <button
+            onClick={() => sharePost(p.id)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+          >
+            <Share2 size={28} />
+          </button>
+
+          <button
+            onClick={() => toggleRewards(p.id)}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+          >
+            <Gift size={28} />
+          </button>
+        </div>
+
+        {/* CREATOR USERNAME + CAPTION */}
+        <div
+          style={{
+            position: "absolute",
+            right: 90,
+            top: 100,
+            textAlign: "right",
+            color: "white",
+            zIndex: 60,
+            textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+          }}
+        >
+          <div style={{ fontWeight: 600 }}>@{display}</div>
+          <div style={{ opacity: 0.8 }}>{p.caption}</div>
+        </div>
       </div>
-    </div>
-  );
-})}
-          </div>
+    );
+  })}
+</div>
         </div>
       )}
 
