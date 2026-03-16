@@ -51,18 +51,17 @@ export default function FeedLayout({
 
             <div className="flex items-center gap-2">
             {activePost && (
-  <img
-    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${activePost}`}
-    alt="creator"
-    style={{
-      width: 36,
-      height: 36,
-      borderRadius: "50%",
-      border: "2px solid white",
-      objectFit: "cover"
-    }}
-  />
-)}
+              <img
+  src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${activePost || "revolvr"}`}
+  alt="creator"
+  style={{
+    width: 36,
+    height: 36,
+    borderRadius: "50%",
+    border: "2px solid white",
+    objectFit: "cover"
+  }}
+/> 
               <button
                 type="button"
                 onClick={() => onGoLive?.()}
