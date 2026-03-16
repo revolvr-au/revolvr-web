@@ -454,7 +454,7 @@ return (
   style={{
     position: "absolute",
     right: 12,
-    bottom: 120,
+    bottom: 90,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
