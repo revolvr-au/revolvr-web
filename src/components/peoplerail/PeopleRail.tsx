@@ -14,16 +14,18 @@ export default function PeopleRail({
 
   let orderedUsers = orbitUsers;
 
-  if (activePost) {
-    const activeUser = orbitUsers.find((u) => u.id === activePost);
+if (activePost) {
+  const activeUser = orbitUsers.find((u) => u.id === activePost);
 
-    if (activeUser) {
-      orderedUsers = [
-        activeUser,
-        ...orbitUsers.filter((u) => u.id !== activePost)
-      ];
-    }
+  if (activeUser) {
+    orderedUsers = [
+      activeUser,
+      ...orbitUsers.filter((u) => u.id !== activePost)
+    ];
   }
+}
+
+if (!orderedUsers || orderedUsers.length === 0) return null;
 
   console.log("RAIL USERS:", orderedUsers);
 

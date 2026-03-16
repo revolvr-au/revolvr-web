@@ -85,32 +85,35 @@ export default function FeedLayout({
   className="flex-1 pb-20 relative"
   
 onTouchStart={(e) => {
-  swipeStart.current = e.touches[0].clientX;
+  const x = e.touches[0].clientX;
+  const screenWidth = window.innerWidth;
+
+  // Ignore touches on the right half of the screen
+  if (x > screenWidth / 2) {
+    swipeStart.current = -1;
+    return;
+  }
+
+  swipeStart.current = x;
 }}
 
 onTouchEnd={(e) => {
+  if (swipeStart.current === -1) return;
+
   const endX = e.changedTouches[0].clientX;
   const diff = endX - swipeStart.current;
 
-  const screenWidth = window.innerWidth;
   const startedAtLeftEdge = swipeStart.current < 70;
-  const startedAtRightEdge = swipeStart.current > screenWidth - 70;
 
-  // HARD LOCK: ignore any swipe starting on the right edge
-  if (startedAtRightEdge) return;
-
-  // OPEN rail (only from left edge)
   if (!peopleOpen) {
     if (!startedAtLeftEdge) return;
 
     if (diff > 60) {
       setPeopleOpen(true);
     }
-
     return;
   }
 
-  // CLOSE rail (when already open)
   if (peopleOpen && diff < -60) {
     setPeopleOpen(false);
   }
