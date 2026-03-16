@@ -550,12 +550,16 @@ return (
       }}
     >
       {p.caption}
-    </div>
-  </div>
-)}
-  
+                </div>
+                })}
+          </div>
+        </div>
+      </div>
+    )}
+
     {commentsOpen && (
       <div className="fixed inset-0 z-50">
+
         <button
           type="button"
           className="absolute inset-0 bg-black/60"
@@ -623,8 +627,8 @@ return (
             </div>
           </div>
         </div>
-      </div>
-       )}
+       </div>
+    )}
   </FeedLayout>
 );
 }
