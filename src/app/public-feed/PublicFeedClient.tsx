@@ -463,36 +463,41 @@ return (
         </button>
       </div>
 
-      {/* CREATOR USERNAME + CAPTION */}
-      <div
-        style={{
-          position: "absolute",
-          right: 90,
-          top: 100,
-          textAlign: "right",
-          color: "white",
-          zIndex: 60,
-          textShadow: "0 2px 6px rgba(0,0,0,0.7)"
-        }}
-      >
-        <div style={{ fontWeight: 600 }}>@{display}</div>
-        <div style={{ opacity: 0.8 }}>{p.caption}</div>
-                </div>
-        </div>
-      
-      );
+   {/* CREATOR USERNAME + CAPTION */}
+<div
+  style={{
+    position: "absolute",
+    right: 90,
+    top: 100,
+    textAlign: "right",
+    color: "white",
+    zIndex: 60,
+    textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+  }}
+>
+  <div style={{ fontWeight: 600 }}>@{display}</div>
+  <div style={{ opacity: 0.8 }}>{p.caption}</div>
+</div>
+
+</div>
+);
 })}
 
-    {commentsOpen && (
-      <div className="fixed inset-0 z-50">
-        <button
-          type="button"
-          className="absolute inset-0 bg-black/60"
-          onClick={closeComments}
-        />
-      </div>
-    )}
+</div>
+</div>
+</div>
+)}
 
-  </FeedLayout>
+{commentsOpen && (
+  <div className="fixed inset-0 z-50">
+    <button
+      type="button"
+      className="absolute inset-0 bg-black/60"
+      onClick={closeComments}
+    />
+  </div>
+)}
+
+</FeedLayout>
 );
 }
