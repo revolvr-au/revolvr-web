@@ -435,27 +435,21 @@ return (
                     />
                   )}
 
-                  {/* Temporary caption block */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: 20,
-                      bottom: 120,
-                      color: "white",
-                      zIndex: 10
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>@{display}</div>
-                    <div style={{ opacity: 0.8 }}>{p.caption}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    )}
-
+                 {/* CREATOR USERNAME + CAPTION */}
+<div
+  style={{
+    position: "absolute",
+    right: 90,
+    top: 100,
+    textAlign: "right",
+    color: "white",
+    zIndex: 60,
+    textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+  }}
+>
+  <div style={{ fontWeight: 600 }}>@{display}</div>
+  <div style={{ opacity: 0.8 }}>{p.caption}</div>
+</div>
     {commentsOpen && (
       <div className="fixed inset-0 z-50">
         <button
