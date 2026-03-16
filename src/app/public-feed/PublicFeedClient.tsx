@@ -521,13 +521,14 @@ return (
 
     </div>
 
-      {/* CREATOR USERNAME – LEFT SIDE */}
+   {/* CREATOR USERNAME – LEFT SIDE */}
 {activePost && (
   <div
     style={{
       position: "absolute",
       left: 90,
-      bottom: 140,
+      top: "42vh",
+      transform: "translateY(-50%)",
       color: "white",
       fontSize: 14,
       fontWeight: 600,
