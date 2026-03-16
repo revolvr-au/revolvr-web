@@ -142,14 +142,60 @@ onTouchEnd={(e) => {
 <div
   style={{
     position: "absolute",
-    left: 90,
-    top: 120,
-    color: "white",
-    fontSize: 14,
-    fontWeight: 500
+    top: 16,
+    left: 20,
+    right: 20,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 100,
+    color: "white"
   }}
 >
-  @{activePost?.split("@")[0]}
+  {/* LEFT — REVOLVR */}
+  <div
+    style={{
+      fontSize: 22,
+      fontWeight: 700,
+      letterSpacing: 2
+    }}
+  >
+    REVOLVR
+  </div>
+
+  {/* RIGHT — AVATAR + GOLIVE */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 12
+    }}
+  >
+    {/* Avatar */}
+    <img
+      src={avatar}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: "50%",
+        border: "2px solid white"
+      }}
+    />
+
+    {/* GoLive */}
+    <button
+      onClick={onGoLive}
+      style={{
+        background: "rgba(0,0,0,0.5)",
+        borderRadius: 20,
+        padding: "6px 10px",
+        display: "flex",
+        alignItems: "center"
+      }}
+    >
+      <Broadcast size={18} />
+    </button>
+  </div>
 </div>
 
 
