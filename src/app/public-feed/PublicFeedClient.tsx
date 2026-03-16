@@ -526,16 +526,17 @@ return (
   style={{
     position: "absolute",
     left: 90,
-    top: "42vh",
-    transform: "translateY(-50%)",
-    color: "white"
+    top: "60vh",
+    color: "white",
+    zIndex: 80,
+    textShadow: "0 2px 6px rgba(0,0,0,0.7)"
   }}
 >
   <div
     style={{
-      fontWeight: 600,
-      fontSize: 14,
-      marginBottom: 4
+      fontWeight: 700,
+      fontSize: 16,
+      marginBottom: 6
     }}
   >
     @{display}
@@ -544,14 +545,13 @@ return (
   <div
     style={{
       fontSize: 14,
-      opacity: 0.85
+      opacity: 0.9
     }}
   >
     {p.caption}
   </div>
 </div>
-
-  </div>
+</div>
 );
             })}
           </div>
