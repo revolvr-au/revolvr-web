@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Radio } from "lucide-react";
+import { Home, User, Plus, Radio, Broadcast } from "lucide-react";
+
 import BottomBar from "@/components/BottomBar";
 import PeopleRail from "@/components/peoplerail/PeopleRail";
+
 import { useState, useRef } from "react";
 
 type Props = {
