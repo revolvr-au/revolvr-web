@@ -419,152 +419,95 @@ return (
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
 
-              const mediaUrl = String(p.imageUrl || "").trim();
-              const lower = mediaUrl.toLowerCase();
-
-              const isVideo =
-                lower.endsWith(".mov") ||
-                lower.endsWith(".mp4") ||
-                lower.endsWith(".webm");
-
-              const isActive = activePost === email;
               return (
-  <div
-    key={p.id}
-    data-postid={p.id}
-    data-user={email}
-    ref={(el) => {
-      if (!el || !observerRef.current) return;
-      observerRef.current.observe(el);
-    }}
-    className="feed-post relative w-full overflow-hidden bg-black"
-    style={{ height: "100dvh" }}
-  >
+                <div
+                  key={p.id}
+                  data-postid={p.id}
+                  data-user={email}
+                  ref={(el) => {
+                    if (!el || !observerRef.current) return;
+                    observerRef.current.observe(el);
+                  }}
+                  className="feed-post relative w-full overflow-hidden bg-black"
+                  style={{ height: "100dvh" }}
+                >
+                  {p.imageUrl && (
+                    <img
+                      src={p.imageUrl}
+                      alt={p.caption || "post"}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
 
-    {p.imageUrl && (
-      <img
-        src={p.imageUrl}
-        alt={p.caption || "post"}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
-    )}
+                  {/* RIGHT INTERACTION RAIL */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      bottom: 90,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 20,
+                      zIndex: 60,
+                      color: "white",
+                      filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))"
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleLike(p.id)}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                    >
+                      <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+                      <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
+                    </button>
 
-    {/* RIGHT INTERACTION RAIL */}
-<div
-  style={{
-    position: "absolute",
-    right: 12,
-    bottom: 90,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 20,
-    zIndex: 60,
-    color: "white",
-    filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.6))"
-  }}
->
+                    <button
+                      onClick={() => openComments(p.id)}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                    >
+                      <MessageCircle size={28} />
+                      <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
+                    </button>
 
-      {/* LIKE */}
-      <button
-        onClick={() => toggleLike(p.id)}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: 6
-        }}
-      >
-        <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-        <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
-      </button>
+                    <button onClick={() => sharePost(p.id)}>
+                      <Share2 size={28} />
+                    </button>
 
-      {/* COMMENT */}
-      <button
-        onClick={() => openComments(p.id)}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: 6
-        }}
-      >
-        <MessageCircle size={28} />
-        <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
-      </button>
+                    <button onClick={() => toggleRewards(p.id)}>
+                      <Gift size={28} />
+                    </button>
+                  </div>
 
-      {/* SHARE */}
-      <button
-        onClick={() => sharePost(p.id)}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: 6
-        }}
-      >
-        <Share2 size={28} />
-      </button>
+                  {/* USERNAME + CAPTION */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: 90,
+                      top: "65vh",
+                      color: "white",
+                      zIndex: 80,
+                      textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, fontSize: 16 }}>
+                      @{display}
+                    </div>
 
-      {/* REWARD */}
-      <button
-        onClick={() => toggleRewards(p.id)}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: 6
-        }}
-      >
-        <Gift size={28} />
-      </button>
-
-    </div>
-
-      {/* CREATOR USERNAME + CAPTION LEFT RAIL */}
-{!loading && activePost && (
-  <div
-    style={{
-      position: "absolute",
-      left: 90,
-      top: "65vh",
-      color: "white",
-      zIndex: 80,
-      textShadow: "0 2px 6px rgba(0,0,0,0.7)"
-    }}
-  >
-    <div
-      style={{
-        fontWeight: 700,
-        fontSize: 16,
-        marginBottom: 6
-      }}
-    >
-           @{display}
-    </div>
-
-    <div
-      style={{
-        fontSize: 14,
-        opacity: 0.9
-      }}
-    >
-      {p.caption}
-    </div>
-  </div>
-)}
-
-</div>
-);
-})}
-
+                    <div style={{ fontSize: 14, opacity: 0.9 }}>
+                      {p.caption}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
+    )}
 
     {commentsOpen && (
       <div className="fixed inset-0 z-50">
-
         <button
           type="button"
           className="absolute inset-0 bg-black/60"
@@ -587,25 +530,19 @@ return (
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 pb-4">
-            <div className="space-y-4">
-              {comments.length === 0 && (
-                <div className="text-sm text-white/40">
-                  No comments yet.
-                </div>
-              )}
+            {comments.length === 0 && (
+              <div className="text-sm text-white/40">No comments yet.</div>
+            )}
 
-              {comments.map((c) => (
-                <div key={c.id}>
-                  <div className="text-xs text-white/50">
-                    @{c.userEmail?.split("@")[0] || "user"}
-                  </div>
-
-                  <div className="text-sm text-white/90">
-                    {c.body}
-                  </div>
+            {comments.map((c) => (
+              <div key={c.id}>
+                <div className="text-xs text-white/50">
+                  @{c.userEmail?.split("@")[0] || "user"}
                 </div>
-              ))}
-            </div>
+
+                <div className="text-sm text-white/90">{c.body}</div>
+              </div>
+            ))}
           </div>
 
           <div className="border-t border-white/10 px-4 py-3">
@@ -632,8 +569,7 @@ return (
             </div>
           </div>
         </div>
-       </div>
+      </div>
     )}
   </FeedLayout>
 );
-}
