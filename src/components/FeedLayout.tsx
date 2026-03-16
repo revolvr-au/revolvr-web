@@ -86,10 +86,10 @@ export default function FeedLayout({
   
 onTouchStart={(e) => {
   const x = e.touches[0].clientX;
-  const screenWidth = window.innerWidth;
+  const width = window.innerWidth;
 
-  // Ignore touches on the right half of the screen
-  if (x > screenWidth / 2) {
+  // Ignore touches starting on right edge (browser navigation zone)
+  if (x > width - 80) {
     swipeStart.current = -1;
     return;
   }
