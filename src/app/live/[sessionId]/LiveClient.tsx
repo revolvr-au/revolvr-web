@@ -155,7 +155,7 @@ function triggerHeart() {
     <div className="relative w-screen h-[100svh] bg-black overflow-hidden">
 
       {/* VIDEO */}
-<div className="absolute inset-0 z-0 pointer-events-auto">
+<div className="absolute inset-0 z-0 pointer-events-none">
   <LiveKitClient
     token={token}
     lkUrl={lkUrl}
@@ -164,9 +164,9 @@ function triggerHeart() {
   />
 </div>
 
-{/* DOUBLE TAP OVERLAY (separate layer) */}
+{/* DOUBLE TAP OVERLAY */}
 <div
-  className="absolute inset-0 z-10"
+  className="absolute inset-0 z-[999]"
   style={{ touchAction: "none" }}
   onTouchStart={handleTouchStart}
   onTouchEnd={handleTouchEnd}
