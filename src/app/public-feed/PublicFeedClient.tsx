@@ -29,6 +29,7 @@ export function PublicFeedClient() {
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [railUsers, setRailUsers] = useState<any[]>([])
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPost, setMenuPost] = useState<ApiPost | null>(null);
 
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
@@ -495,32 +496,15 @@ return (
   </button>
 
   <button
-    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-    onClick={() => setMenuOpen(true)}
-  >
-    <MoreVertical size={28} />
-  </button>
+  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+  onClick={() => {
+    setMenuPost(p);
+    setMenuOpen(true);
+  }}
+>
+  <MoreVertical size={28} />
+</button>
 </div>
-                  {/* CREATOR USERNAME + CAPTION */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 90,
-                      top: 100,
-                      textAlign: "right",
-                      color: "white",
-                      zIndex: 60,
-                      textShadow: "0 2px 10px rgba(0,0,0,0.8)"
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>@{display}</div>
-                    <div style={{ opacity: 0.85 }}>{p.caption}</div>
-                  </div>
-                </div>
-              );
-            })}
-
-          </div>
 
         </div>
       </div>
@@ -535,23 +519,44 @@ return (
         />
       </div>
     )}
-  {menuOpen && (
+  {menuOpen && menuPost && (
   <div className="fixed inset-0 z-50">
+    
+    {/* Overlay */}
     <button
       className="absolute inset-0 bg-black/60"
       onClick={() => setMenuOpen(false)}
     />
 
+    {/* Drawer */}
     <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 text-white">
-      <div className="font-semibold mb-4">
-        Post options
+
+      <div style={{ marginBottom: 12, fontWeight: 600 }}>
+        @{displayNameFromEmail(menuPost.userEmail || "")}
       </div>
 
-      <div className="space-y-4">
-        <button>Share post</button>
-        <button>Save post</button>
-        <button className="text-red-400">Report</button>
+      {menuPost.caption && (
+        <div style={{ opacity: 0.8, marginBottom: 20 }}>
+          {menuPost.caption}
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        
+        <button onClick={() => sharePost(menuPost.id)}>
+          Share post
+        </button>
+
+        <button>
+          Save post
+        </button>
+
+        <button style={{ color: "#ff6b6b" }}>
+          Report
+        </button>
+
       </div>
+
     </div>
   </div>
 )}
