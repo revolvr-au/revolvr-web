@@ -12,22 +12,20 @@ export default function BottomBar() {
   return (
     <div
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 64,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 60,
-        background: "rgba(0,0,0,0.6)",
-        backdropFilter: "blur(12px)",
-        zIndex: 80,
-        color: "white",
-        fontWeight: 600,
-        letterSpacing: 1
-      }}
+  position: "fixed",
+  bottom: 0,
+  left: 0,
+  right: 0,
+  height: 64,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: 60,
+  zIndex: 80,
+  color: "white",
+  fontWeight: 600,
+  letterSpacing: 1
+}}
     >
       <button
         onClick={() => router.push("/public-feed")}
