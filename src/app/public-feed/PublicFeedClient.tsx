@@ -394,7 +394,6 @@ function jumpToCreator(creatorId: string) {
     block: "start",
   });
 }
-
 return (
   <FeedLayout
     title="Revolvr"
@@ -415,7 +414,6 @@ return (
             className="feed-scroll flex-1 overflow-y-auto"
             style={{ overscrollBehavior: "none" }}
           >
-
             {posts.map((p) => {
               const email = String(p.userEmail || "").trim().toLowerCase();
               const display = email ? displayNameFromEmail(email) : "User";
@@ -441,74 +439,79 @@ return (
                   )}
 
                   {/* RIGHT INTERACTION RAIL */}
-<div
-  style={{
-    position: "absolute",
-    right: 12,
-    bottom: 90,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 14,
-    zIndex: 60,
-    color: "white"
-  }}
->
-  <button
-    onClick={() => toggleLike(p.id)}
-    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-  >
-    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-    <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
-  </button>
+                  <div
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      bottom: 90,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 14,
+                      zIndex: 60,
+                      color: "white"
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleLike(p.id)}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                    >
+                      <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+                      <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
+                    </button>
 
-  <button
-    onClick={() => openComments(p.id)}
-    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-  >
-    <MessageCircle size={28} />
-    <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
-  </button>
+                    <button
+                      onClick={() => openComments(p.id)}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                    >
+                      <MessageCircle size={28} />
+                      <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
+                    </button>
 
-  <button
-    onClick={() => sharePost(p.id)}
-    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-  >
-    <Share2 size={28} />
-  </button>
+                    <button
+                      onClick={() => sharePost(p.id)}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                    >
+                      <Share2 size={28} />
+                    </button>
 
-  <button
-    onClick={() => toggleRewards(p.id)}
-    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-  >
-    <Gift size={28} />
-  </button>
+                    <button
+                      onClick={() => toggleRewards(p.id)}
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                    >
+                      <Gift size={28} />
+                    </button>
 
-  {/* Divider */}
-  <div style={{ height: 12 }} />
+                    {/* Divider */}
+                    <div style={{ height: 12 }} />
 
-  <button style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-    <Plus size={28} />
-  </button>
+                    <button style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <Plus size={28} />
+                    </button>
 
-  <button style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-    <Home size={28} />
-  </button>
+                    <button style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                      <Home size={28} />
+                    </button>
 
-  <button
-  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-  onClick={() => {
-    setMenuPost(p);
-    setMenuOpen(true);
-  }}
->
-  <MoreVertical size={28} />
-</button>
-</div>
+                    <button
+                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+                      onClick={() => {
+                        setMenuPost(p);
+                        setMenuOpen(true);
+                      }}
+                    >
+                      <MoreVertical size={28} />
+                    </button>
+                  </div>
 
-                </div> 
+                </div>
               );
-            })} 
+            })}
+          </div>
+
+        </div>
+      </div>
+    )}
 
     {commentsOpen && (
       <div className="fixed inset-0 z-50">
@@ -519,47 +522,41 @@ return (
         />
       </div>
     )}
-  {menuOpen && menuPost && (
-  <div className="fixed inset-0 z-50">
-    
-    {/* Overlay */}
-    <button
-      className="absolute inset-0 bg-black/60"
-      onClick={() => setMenuOpen(false)}
-    />
 
-    {/* Drawer */}
-    <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 text-white">
+    {menuOpen && menuPost && (
+      <div className="fixed inset-0 z-50">
+        <button
+          className="absolute inset-0 bg-black/60"
+          onClick={() => setMenuOpen(false)}
+        />
 
-      <div style={{ marginBottom: 12, fontWeight: 600 }}>
-        @{displayNameFromEmail(menuPost.userEmail || "")}
-      </div>
+        <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 text-white">
+          <div style={{ marginBottom: 12, fontWeight: 600 }}>
+            @{displayNameFromEmail(menuPost.userEmail || "")}
+          </div>
 
-      {menuPost.caption && (
-        <div style={{ opacity: 0.8, marginBottom: 20 }}>
-          {menuPost.caption}
+          {menuPost.caption && (
+            <div style={{ opacity: 0.8, marginBottom: 20 }}>
+              {menuPost.caption}
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <button onClick={() => sharePost(menuPost.id)}>
+              Share post
+            </button>
+
+            <button>
+              Save post
+            </button>
+
+            <button style={{ color: "#ff6b6b" }}>
+              Report
+            </button>
+          </div>
         </div>
-      )}
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        
-        <button onClick={() => sharePost(menuPost.id)}>
-          Share post
-        </button>
-
-        <button>
-          Save post
-        </button>
-
-        <button style={{ color: "#ff6b6b" }}>
-          Report
-        </button>
-
       </div>
+    )}
 
-    </div>
-  </div>
-)}
   </FeedLayout>
 );
-}
