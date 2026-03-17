@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
-import { Heart, MessageCircle, Share2, Gift, Send } from "lucide-react";
+import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
+
 
 
 type ApiPost = {
@@ -27,6 +28,7 @@ export function PublicFeedClient() {
   const [err, setErr] = useState<string | null>(null);
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [railUsers, setRailUsers] = useState<any[]>([])
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
@@ -481,7 +483,29 @@ return (
                       <Gift size={28} />
                     </button>
                   </div>
+                    {/* Divider */}
+<div style={{ height: 20 }} />
 
+<button
+  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+>
+  <Plus size={28} />
+</button>
+
+<div style={{ height: 20 }} />
+
+<button
+  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+>
+  <Home size={28} />
+</button>
+
+<button
+  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+  onClick={() => setMenuOpen(true)}
+>
+  <MoreVertical size={28} />
+</button>
                   {/* CREATOR USERNAME + CAPTION */}
                   <div
                     style={{
@@ -516,7 +540,40 @@ return (
         />
       </div>
     )}
+  {menuOpen && (
+  <div className="fixed inset-0 z-50">
+    <button
+      className="absolute inset-0 bg-black/60"
+      onClick={() => setMenuOpen(false)}
+    />
 
+    <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 text-white">
+
+      <div className="font-semibold mb-2">
+        @{display}
+      </div>
+
+      <div className="opacity-80 mb-6">
+        {p.caption}
+      </div>
+
+      <div className="space-y-4">
+        <button onClick={() => sharePost(p.id)}>
+          Share post
+        </button>
+
+        <button>
+          Save post
+        </button>
+
+        <button className="text-red-400">
+          Report
+        </button>
+      </div>
+
+    </div>
+  </div>
+)}
   </FeedLayout>
 );
 }
