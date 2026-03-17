@@ -25,8 +25,8 @@ export default function BottomBar() {
   zIndex: 80,
   color: "white",
   fontWeight: 600,
-  letterSpacing: 1
-  backdropFilter: "blur(10px)",
+  letterSpacing: 1, // ← THIS COMMA WAS MISSING
+  backdropFilter: "blur(10px)"
 }}
     >
       <button
