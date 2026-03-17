@@ -44,9 +44,37 @@ export default function LiveClient({
   const [message, setMessage] = useState("");
   const router = useRouter();
   const [hostAvatar, setHostAvatar] = useState<string | null>(null);
+  const touchStartY = useRef(0);
+  const pressDuration = Date.now() - touchStartTime.current;
+  if (pressDuration > 300) return;
   
 
   const lastTapRef = useRef(0);
+
+  function handleTouchStart(e: React.TouchEvent) {
+  touchStartY.current = e.touches[0].clientY;
+  touchStartTime.current = Date.now();
+}
+
+function handleTouchEnd(e: React.TouchEvent) {
+  const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+
+  // ignore if user moved (scrolling)
+  if (deltaY > 10) return;
+
+  const now = Date.now();
+  if (now - lastTapRef.current < 250) {
+    triggerHeart();
+  }
+
+  lastTapRef.current = now;
+}
+
+function triggerHeart() {
+  navigator.vibrate?.(10);
+  setHeartBurst(true);
+  setTimeout(() => setHeartBurst(false), 400);
+}
 
   // 🔥 INITIAL FETCH
   useEffect(() => {
@@ -96,14 +124,13 @@ useEffect(() => {
     };
   }, [roomId]);
 
-  function handleTap() {
-    const now = Date.now();
-    if (now - lastTapRef.current < 300) {
-      setHeartBurst(true);
-      setTimeout(() => setHeartBurst(false), 600);
-    }
-    lastTapRef.current = now;
-  }
+function triggerHeart() {
+  if (heartBurst) return;
+
+  navigator.vibrate?.(10);
+  setHeartBurst(true);
+  setTimeout(() => setHeartBurst(false), 400);
+}
 
   async function handleSend() {
     if (!message.trim()) return;
@@ -134,7 +161,8 @@ useEffect(() => {
 {/* DOUBLE TAP OVERLAY (separate layer) */}
 <div
   className="absolute inset-0 z-10"
-  onClick={handleTap}
+  onTouchStart={handleTouchStart}
+  onTouchEnd={handleTouchEnd}
 />
 
     {/* TOP BAR */}
@@ -218,10 +246,10 @@ useEffect(() => {
       </div>
 
       {heartBurst && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-red-500 text-6xl">❤️</div>
-        </div>
-      )}
+  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+    <div className="animate-heart text-red-500 text-6xl">❤️</div>
+  </div>
+)}
     </div>
   );
 }
