@@ -16,7 +16,8 @@ export default function BottomBar() {
   bottom: 0,
   left: 0,
   right: 0,
-  height: 64,
+  height: "calc(64px + env(safe-area-inset-bottom))",
+  paddingBottom: "env(safe-area-inset-bottom)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
@@ -25,6 +26,7 @@ export default function BottomBar() {
   color: "white",
   fontWeight: 600,
   letterSpacing: 1
+  backdropFilter: "blur(10px)",
 }}
     >
       <button

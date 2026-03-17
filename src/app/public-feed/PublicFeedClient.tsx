@@ -444,7 +444,7 @@ return (
                       style={{
                         position: "absolute",
                         right: 12,
-                        bottom: 90,
+                        bottom:"calc(90px + env(safe-area-inset-bottom))",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
@@ -518,7 +518,8 @@ return (
               onClick={() => setMenuOpen(false)}
             />
 
-            <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 text-white">
+            <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 pb-10 text-white"
+     style={{ paddingBottom: "calc(40px + env(safe-area-inset-bottom))" }}>
               <div style={{ marginBottom: 12, fontWeight: 600 }}>
                 @{displayNameFromEmail(menuPost.userEmail || "")}
               </div>
@@ -529,17 +530,29 @@ return (
                 </div>
               )}
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <button onClick={() => sharePost(menuPost.id)}>
-                  Share post
-                </button>
+             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-                <button>Save post</button>
+  <button
+    onClick={() => sharePost(menuPost.id)}
+    className="text-base font-medium tracking-tight"
+  >
+    Share
+  </button>
 
-                <button style={{ color: "#ff6b6b" }}>
-                  Report
-                </button>
-              </div>
+  <button
+    className="text-base font-medium tracking-tight"
+  >
+    Save
+  </button>
+
+  <button
+    className="text-base font-medium tracking-tight"
+    style={{ color: "#ff6b6b" }}
+  >
+    Report
+  </button>
+
+</div>
             </div>
           </div>
         )}

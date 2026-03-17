@@ -490,3 +490,11 @@ body {
 .feed-scroll {
   overscroll-behavior: contain;
 }
+/* iOS safe area support */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-bottom-offset {
+  bottom: calc(16px + env(safe-area-inset-bottom));
+}
