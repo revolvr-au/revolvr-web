@@ -45,24 +45,28 @@ export default function LiveClient({
   const router = useRouter();
   const [hostAvatar, setHostAvatar] = useState<string | null>(null);
   const touchStartY = useRef(0);
-  const pressDuration = Date.now() - touchStartTime.current;
-  if (pressDuration > 300) return;
-  
-
+  const touchStartTime = useRef(0);
   const lastTapRef = useRef(0);
 
-  function handleTouchStart(e: React.TouchEvent) {
+function handleTouchStart(e: React.TouchEvent) {
   touchStartY.current = e.touches[0].clientY;
   touchStartTime.current = Date.now();
 }
 
 function handleTouchEnd(e: React.TouchEvent) {
-  const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+  const deltaY = Math.abs(
+    e.changedTouches[0].clientY - touchStartY.current
+  );
 
-  // ignore if user moved (scrolling)
+  // Ignore scroll
   if (deltaY > 10) return;
 
+  // Ignore long press
+  const pressDuration = Date.now() - touchStartTime.current;
+  if (pressDuration > 300) return;
+
   const now = Date.now();
+
   if (now - lastTapRef.current < 250) {
     triggerHeart();
   }
@@ -71,6 +75,8 @@ function handleTouchEnd(e: React.TouchEvent) {
 }
 
 function triggerHeart() {
+  if (heartBurst) return;
+
   navigator.vibrate?.(10);
   setHeartBurst(true);
   setTimeout(() => setHeartBurst(false), 400);
@@ -161,6 +167,7 @@ function triggerHeart() {
 {/* DOUBLE TAP OVERLAY (separate layer) */}
 <div
   className="absolute inset-0 z-10"
+  style={{ touchAction: "none" }}
   onTouchStart={handleTouchStart}
   onTouchEnd={handleTouchEnd}
 />
