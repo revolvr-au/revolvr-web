@@ -45,13 +45,12 @@ export default function LiveClient({
   const router = useRouter();
   const [hostAvatar, setHostAvatar] = useState<string | null>(null);
   const touchStartY = useRef(0);
-  const touchStartTime = useRef(0);
-  const lastTapRef = useRef(0);
+const touchStartTime = useRef(0);
+const lastTapRef = useRef(0);
 
 function handleTouchStart(e: React.TouchEvent) {
   const target = e.target as HTMLElement;
 
-  // Ignore taps on buttons / inputs
   if (target.closest("button, input, textarea")) return;
 
   touchStartY.current = e.touches[0].clientY;
@@ -81,78 +80,6 @@ function handleTouchEnd(e: React.TouchEvent) {
   lastTapRef.current = now;
 }
 
-  // Ignore scroll
-  if (deltaY > 10) return;
-
-  // Ignore long press
-  const pressDuration = Date.now() - touchStartTime.current;
-  if (pressDuration > 300) return;
-
-  const now = Date.now();
-
-  if (now - lastTapRef.current < 250) {
-    triggerHeart();
-  }
-
-  lastTapRef.current = now;
-}
-
-function triggerHeart() {
-  if (heartBurst) return;
-
-  navigator.vibrate?.(10);
-  setHeartBurst(true);
-  setTimeout(() => setHeartBurst(false), 400);
-}
-
-  // 🔥 INITIAL FETCH
-  useEffect(() => {
-    async function loadInitial() {
-      const res = await fetch(`/api/live/chat?roomId=${roomId}&limit=50`);
-      const data = await res.json();
-      if (data?.ok) {
-        setComments(data.messages || []);
-      }
-    }
-    loadInitial();
-  }, [roomId]);
-
-useEffect(() => {
-  async function loadHost() {
-    try {
-      const res = await fetch(`/api/live/host?email=revolvr.au@gmail.com`)
-      const data = await res.json();
-      if (data?.avatar_url) setHostAvatar(data.avatar_url);
-    } catch (err) {
-      console.error("Failed loading host avatar", err);
-    }
-  }
-
-  loadHost();
-}, [roomId]);
-  // 🔥 REALTIME SUBSCRIPTION
-  useEffect(() => {
-    const channel = supabase
-      .channel("live-chat-" + roomId)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "live_chat_messages",
-          filter: `room_id=eq.${roomId}`,
-        },
-        (payload) => {
-          setComments((prev) => [...prev, payload.new as ChatMessage]);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [roomId]);
-
 function triggerHeart() {
   if (heartBurst) return;
 
@@ -175,7 +102,7 @@ function triggerHeart() {
   }
 
   return (
-    <div
+   <div
   className="relative w-screen h-[100svh] bg-black overflow-hidden"
   style={{ touchAction: "none" }}
   onTouchStart={handleTouchStart}
