@@ -166,10 +166,10 @@ function triggerHeart() {
 
 {/* DOUBLE TAP OVERLAY */}
 <div
-  className="absolute inset-0 z-[999]"
+  className="absolute inset-0 z-[999] bg-red-500/30"
   style={{ touchAction: "none" }}
-  onTouchStart={handleTouchStart}
-  onTouchEnd={handleTouchEnd}
+  onTouchStart={() => console.log("TOUCH START")}
+  onTouchEnd={() => console.log("TOUCH END")}
 />
 
     {/* TOP BAR */}
