@@ -49,14 +49,37 @@ export default function LiveClient({
   const lastTapRef = useRef(0);
 
 function handleTouchStart(e: React.TouchEvent) {
+  const target = e.target as HTMLElement;
+
+  // Ignore taps on buttons / inputs
+  if (target.closest("button, input, textarea")) return;
+
   touchStartY.current = e.touches[0].clientY;
   touchStartTime.current = Date.now();
 }
 
 function handleTouchEnd(e: React.TouchEvent) {
+  const target = e.target as HTMLElement;
+
+  if (target.closest("button, input, textarea")) return;
+
   const deltaY = Math.abs(
     e.changedTouches[0].clientY - touchStartY.current
   );
+
+  if (deltaY > 10) return;
+
+  const pressDuration = Date.now() - touchStartTime.current;
+  if (pressDuration > 300) return;
+
+  const now = Date.now();
+
+  if (now - lastTapRef.current < 250) {
+    triggerHeart();
+  }
+
+  lastTapRef.current = now;
+}
 
   // Ignore scroll
   if (deltaY > 10) return;
@@ -152,7 +175,12 @@ function triggerHeart() {
   }
 
   return (
-    <div className="relative w-screen h-[100svh] bg-black overflow-hidden">
+    <div
+  className="relative w-screen h-[100svh] bg-black overflow-hidden"
+  style={{ touchAction: "none" }}
+  onTouchStart={handleTouchStart}
+  onTouchEnd={handleTouchEnd}
+>
 
       {/* VIDEO */}
 <div className="absolute inset-0 z-0 pointer-events-none">
@@ -163,14 +191,6 @@ function triggerHeart() {
     onlySubscribed={!isHost}
   />
 </div>
-
-{/* DOUBLE TAP OVERLAY */}
-<div
-  className="absolute inset-0 z-[999] bg-red-500/30"
-  style={{ touchAction: "none" }}
-  onTouchStart={() => console.log("TOUCH START")}
-  onTouchEnd={() => console.log("TOUCH END")}
-/>
 
     {/* TOP BAR */}
 <div className="absolute top-4 left-4 flex items-center gap-3 z-50">
