@@ -95,7 +95,7 @@ export default function FeedLayout({
       )}
 
      <main
-  className="flex-1 pb-20 relative"
+  className="flex-1 relative"
   
 onTouchStart={(e) => {
   const x = e.touches[0].clientX;

@@ -510,7 +510,7 @@ return (
                       textAlign: "right",
                       color: "white",
                       zIndex: 60,
-                      textShadow: "0 2px 6px rgba(0,0,0,0.7)"
+                      textShadow: "0 2px 10px rgba(0,0,0,0.8)"
                     }}
                   >
                     <div style={{ fontWeight: 600 }}>@{display}</div>
