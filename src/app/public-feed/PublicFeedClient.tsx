@@ -54,7 +54,7 @@ export function PublicFeedClient() {
 
   const TOP_BAR = 72;
   const PEOPLE_RAIL = 130;
-  const BOTTOM_BAR = 80;
+  
 
   const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
     { mode: "applause", label: "Applause", icon: "👏" },
@@ -429,7 +429,7 @@ return (
                     observerRef.current.observe(el);
                   }}
                   className="feed-post relative w-full overflow-hidden bg-black"
-                  style={{ height: "100dvh" }}
+                  style={{ height: "100vh" }}
                 >
                   {p.imageUrl && (
                     <img
