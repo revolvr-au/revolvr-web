@@ -448,7 +448,7 @@ return (
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 20,
+    gap: 14,
     zIndex: 60,
     color: "white"
   }}
@@ -484,7 +484,7 @@ return (
   </button>
 
   {/* Divider */}
-  <div style={{ height: 20 }} />
+  <div style={{ height: 12 }} />
 
   <button style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
     <Plus size={28} />
@@ -514,7 +514,7 @@ return (
                     }}
                   >
                     <div style={{ fontWeight: 600 }}>@{display}</div>
-                    <div style={{ opacity: 0.8 }}>{p.caption}</div>
+                    <div style={{ opacity: 0.85 }}>{p.caption}</div>
                   </div>
                 </div>
               );
