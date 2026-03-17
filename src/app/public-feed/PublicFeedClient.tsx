@@ -440,72 +440,67 @@ return (
                   )}
 
                   {/* RIGHT INTERACTION RAIL */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      right: 12,
-                      bottom: 90,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 20,
-                      zIndex: 60,
-                      color: "white"
-                    }}
-                  >
-                    <button
-                      onClick={() => toggleLike(p.id)}
-                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-                    >
-                      <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                      <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
-                    </button>
-
-                    <button
-                      onClick={() => openComments(p.id)}
-                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-                    >
-                      <MessageCircle size={28} />
-                      <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
-                    </button>
-
-                    <button
-                      onClick={() => sharePost(p.id)}
-                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-                    >
-                      <Share2 size={28} />
-                    </button>
-
-                    <button
-                      onClick={() => toggleRewards(p.id)}
-                      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-                    >
-                      <Gift size={28} />
-                    </button>
-                  </div>
-                    {/* Divider */}
-<div style={{ height: 20 }} />
-
-<button
-  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+<div
+  style={{
+    position: "absolute",
+    right: 12,
+    bottom: 90,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 20,
+    zIndex: 60,
+    color: "white"
+  }}
 >
-  <Plus size={28} />
-</button>
+  <button
+    onClick={() => toggleLike(p.id)}
+    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+  >
+    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+    <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
+  </button>
 
-<div style={{ height: 20 }} />
+  <button
+    onClick={() => openComments(p.id)}
+    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+  >
+    <MessageCircle size={28} />
+    <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
+  </button>
 
-<button
-  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
->
-  <Home size={28} />
-</button>
+  <button
+    onClick={() => sharePost(p.id)}
+    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+  >
+    <Share2 size={28} />
+  </button>
 
-<button
-  style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
-  onClick={() => setMenuOpen(true)}
->
-  <MoreVertical size={28} />
-</button>
+  <button
+    onClick={() => toggleRewards(p.id)}
+    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+  >
+    <Gift size={28} />
+  </button>
+
+  {/* Divider */}
+  <div style={{ height: 20 }} />
+
+  <button style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <Plus size={28} />
+  </button>
+
+  <button style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <Home size={28} />
+  </button>
+
+  <button
+    style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    onClick={() => setMenuOpen(true)}
+  >
+    <MoreVertical size={28} />
+  </button>
+</div>
                   {/* CREATOR USERNAME + CAPTION */}
                   <div
                     style={{
@@ -548,29 +543,15 @@ return (
     />
 
     <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 text-white">
-
-      <div className="font-semibold mb-2">
-        @{display}
-      </div>
-
-      <div className="opacity-80 mb-6">
-        {p.caption}
+      <div className="font-semibold mb-4">
+        Post options
       </div>
 
       <div className="space-y-4">
-        <button onClick={() => sharePost(p.id)}>
-          Share post
-        </button>
-
-        <button>
-          Save post
-        </button>
-
-        <button className="text-red-400">
-          Report
-        </button>
+        <button>Share post</button>
+        <button>Save post</button>
+        <button className="text-red-400">Report</button>
       </div>
-
     </div>
   </div>
 )}
