@@ -22,7 +22,6 @@ type ChatMessage = {
   created_at: string;
 };
 
-  
 export default function LiveClient({
   token,
   lkUrl,
@@ -36,57 +35,88 @@ export default function LiveClient({
   isHost: boolean;
   roomId: string;
 }) {
-  console.log("LIVE CLIENT V2 ACTIVE");
-
   const [comments, setComments] = useState<ChatMessage[]>([]);
   const [viewerCount] = useState(174);
   const [heartBurst, setHeartBurst] = useState(false);
   const [message, setMessage] = useState("");
-  const router = useRouter();
   const [hostAvatar, setHostAvatar] = useState<string | null>(null);
-  const touchStartY = useRef(0);
-const touchStartTime = useRef(0);
-const lastTapRef = useRef(0);
 
-function handleTouchStart(e: React.TouchEvent) {
-  const target = e.target as HTMLElement;
+  const router = useRouter();
+  const lastTapRef = useRef(0);
 
-  if (target.closest("button, input, textarea")) return;
+  // ✅ DOUBLE TAP (pointer-based)
+  function handlePointerDown(e: React.PointerEvent) {
+    const target = e.target as HTMLElement;
 
-  touchStartY.current = e.touches[0].clientY;
-  touchStartTime.current = Date.now();
-}
+    // ignore UI elements
+    if (target.closest("button, input, textarea")) return;
 
-function handleTouchEnd(e: React.TouchEvent) {
-  const target = e.target as HTMLElement;
+    const now = Date.now();
 
-  if (target.closest("button, input, textarea")) return;
+    if (now - lastTapRef.current < 250) {
+      triggerHeart();
+    }
 
-  const deltaY = Math.abs(
-    e.changedTouches[0].clientY - touchStartY.current
-  );
-
-  if (deltaY > 10) return;
-
-  const pressDuration = Date.now() - touchStartTime.current;
-  if (pressDuration > 300) return;
-
-  const now = Date.now();
-
-  if (now - lastTapRef.current < 250) {
-    triggerHeart();
+    lastTapRef.current = now;
   }
 
-  lastTapRef.current = now;
-}
+  function triggerHeart() {
+    if (heartBurst) return;
 
-function triggerHeart() {
-  if (heartBurst) return;
+    navigator.vibrate?.(10);
+    setHeartBurst(true);
+    setTimeout(() => setHeartBurst(false), 400);
+  }
 
-  navigator.vibrate?.(10);
-  setHeartBurst(true);
-  setTimeout(() => setHeartBurst(false), 400);
-}
+  // 🔥 INITIAL FETCH
+  useEffect(() => {
+    async function loadInitial() {
+      const res = await fetch(`/api/live/chat?roomId=${roomId}&limit=50`);
+      const data = await res.json();
+      if (data?.ok) setComments(data.messages || []);
+    }
+    loadInitial();
+  }, [roomId]);
+
+  // 🔥 LOAD HOST
+  useEffect(() => {
+    async function loadHost() {
+      try {
+        const res = await fetch(
+          `/api/live/host?email=revolvr.au@gmail.com`
+        );
+        const data = await res.json();
+        if (data?.avatar_url) setHostAvatar(data.avatar_url);
+      } catch (err) {
+        console.error("Failed loading host avatar", err);
+      }
+    }
+
+    loadHost();
+  }, [roomId]);
+
+  // 🔥 REALTIME CHAT
+  useEffect(() => {
+    const channel = supabase
+      .channel("live-chat-" + roomId)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "live_chat_messages",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (payload) => {
+          setComments((prev) => [...prev, payload.new as ChatMessage]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [roomId]);
 
   async function handleSend() {
     if (!message.trim()) return;
@@ -102,46 +132,41 @@ function triggerHeart() {
   }
 
   return (
-   <div
-  className="relative w-screen h-[100svh] bg-black overflow-hidden"
-  style={{ touchAction: "none" }}
-  onTouchStart={handleTouchStart}
-  onTouchEnd={handleTouchEnd}
->
-
+    <div
+      className="relative w-screen h-[100svh] bg-black overflow-hidden"
+      style={{ touchAction: "none" }}
+      onPointerDown={handlePointerDown}
+    >
       {/* VIDEO */}
-<div className="absolute inset-0 z-0 pointer-events-none">
-  <LiveKitClient
-    token={token}
-    lkUrl={lkUrl}
-    isMobile={isMobile}
-    onlySubscribed={!isHost}
-  />
-</div>
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <LiveKitClient
+          token={token}
+          lkUrl={lkUrl}
+          isMobile={isMobile}
+          onlySubscribed={!isHost}
+        />
+      </div>
 
-    {/* TOP BAR */}
-<div className="absolute top-4 left-4 flex items-center gap-3 z-50">
+      {/* TOP BAR */}
+      <div className="absolute top-4 left-4 flex items-center gap-3 z-50">
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
+          <img
+            src={hostAvatar || "/default-avatar.png"}
+            className="w-full h-full object-cover"
+          />
+        </div>
 
-  <div className="w-10 h-10 rounded-full overflow-hidden bg-white/20">
-  <img
-  src={hostAvatar || "/default-avatar.png"}
-  className="w-full h-full object-cover"
-  onError={(e) => {
-    (e.currentTarget as HTMLImageElement).src = "/default-avatar.png";
-  }}
-/>
-</div>
+        <div className="leading-tight text-white">
+          <div className="font-semibold text-sm">revolvr au</div>
+          <div className="text-xs mt-1">
+            🔴 LIVE •{" "}
+            <span className="font-semibold">{viewerCount}</span> watching
+          </div>
+        </div>
+      </div>
 
-  <div className="leading-tight">
-    <div className="font-semibold text-sm">revolvr au</div>
-    <div className="text-xs mt-1">
-      🔴 LIVE • <span className="font-semibold">{viewerCount}</span> watching
-    </div>
-  </div>
-
-</div>
       {/* CLOSE */}
-      <div className="absolute top-4 right-4 z-40">
+      <div className="absolute top-4 right-4 z-50">
         <button
           onClick={() => router.push("/public-feed")}
           className="text-white text-lg"
@@ -151,34 +176,32 @@ function triggerHeart() {
       </div>
 
       {/* COMMENTS */}
-<div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none z-30">
-  {comments.slice(-6).map((c) => {
-    return (
-      <div
-        key={c.id}
-        className="flex items-start gap-2 text-white text-sm"
-        style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
-      >
-        <div className="w-7 h-7 rounded-full overflow-hidden bg-white/20 flex-shrink-0">
-  <img
-    src={c.avatar_url || "/default-avatar.png"}
-    className="w-full h-full object-cover"
-  />
-</div>
+      <div className="absolute left-4 bottom-28 flex flex-col gap-2 pointer-events-none z-30">
+        {comments.slice(-6).map((c) => (
+          <div
+            key={c.id}
+            className="flex items-start gap-2 text-white text-sm"
+            style={{ textShadow: "0 1px 6px rgba(0,0,0,0.7)" }}
+          >
+            <div className="w-7 h-7 rounded-full overflow-hidden bg-white/20">
+              <img
+                src={c.avatar_url || "/default-avatar.png"}
+                className="w-full h-full object-cover"
+              />
+            </div>
 
-        <div>
-          <span className="font-semibold">
-            {c.display_name || "user"}
-          </span>{" "}
-          {c.message}
-        </div>
+            <div>
+              <span className="font-semibold">
+                {c.display_name || "user"}
+              </span>{" "}
+              {c.message}
+            </div>
+          </div>
+        ))}
       </div>
-    );
-  })}
-</div>
 
       {/* COMMENT BAR */}
-      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-[100] pointer-events-auto">
+      <div className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-gradient-to-t from-black/80 to-transparent z-50">
         <div className="flex items-center gap-3 text-white">
           <input
             value={message}
@@ -199,11 +222,12 @@ function triggerHeart() {
         </div>
       </div>
 
+      {/* HEART */}
       {heartBurst && (
-  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-    <div className="animate-heart text-red-500 text-6xl">❤️</div>
-  </div>
-)}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="animate-heart text-red-500 text-6xl">❤️</div>
+        </div>
+      )}
     </div>
   );
 }
