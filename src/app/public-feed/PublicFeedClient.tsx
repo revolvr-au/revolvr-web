@@ -52,15 +52,14 @@ export function PublicFeedClient() {
 
 const lastTapRef = useRef(0);
 
-function handlePostTap(e: React.PointerEvent) {
+function handlePostTap(e: React.MouseEvent) {
   const target = e.target as HTMLElement;
 
-  // ignore UI buttons
   if (target.closest("button, input, textarea")) return;
 
   const now = Date.now();
 
-  if (now - lastTapRef.current < 250) {
+  if (now - lastTapRef.current < 300) {
     console.log("DOUBLE TAP FIRED");
   }
 
@@ -441,7 +440,7 @@ return (
                   <div
                   key={p.id}
                   data-postid={p.id}
-                  onPointerDown={handlePostTap}
+                  onClick={handlePostTap}
                     data-user={email}
                     ref={(el) => {
                       if (!el || !observerRef.current) return;
