@@ -77,8 +77,8 @@ function handlePostTap(e: React.PointerEvent, postId: string) {
 
     // remove after animation
     setTimeout(() => {
-      setHearts((prev) => prev.filter((h) => h.id !== id));
-    }, 800);
+  setHearts((prev) => prev.filter((h) => h.id !== id));
+}, 1800);
   }
 
   lastTapRef.current = now;
@@ -488,23 +488,23 @@ return (
                       />
                     )}
                       {/* ❤️ HEARTS LAYER (CORRECT PLACE) */}
-  {hearts.map((h) => (
-  <div
-    key={h.id}
-    style={{
-      position: "absolute",
-      left: h.x + (Math.random() * 20 - 10),
-      top: h.y,
-      transform: "translate(-50%, -50%)",
-      fontSize: 80,
-      pointerEvents: "none",
-      zIndex: 200,
-    }}
-    className="animate-heart"
-  >
-    ❤️
-  </div>
-))}
+                    {hearts.map((h) => (
+                    <div
+                    key={h.id}
+                    style={{
+                    position: "absolute",
+                    left: h.x + (Math.random() * 20 - 10),
+                    top: h.y,
+                    transform: "translate(-50%, -50%)",
+                    fontSize: 80,
+                    pointerEvents: "none",
+                    zIndex: 200,
+                    }}
+                    className="animate-heart"
+                    >
+                    ❤️
+                    </div>
+                    ))}
                     <div
                       style={{
                         position: "absolute",
