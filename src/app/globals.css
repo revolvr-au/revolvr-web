@@ -535,3 +535,9 @@ body {
 .animate-heart {
   animation: heartFloat 1.8s ease-out forwards;
 }
+.heart-bg {
+  width: 60px;
+  height: 60px;
+  background: red;
+  border-radius: 20px;
+}

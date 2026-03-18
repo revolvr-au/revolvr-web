@@ -488,36 +488,46 @@ return (
                       />
                     )}
                       {/* ❤️ HEARTS LAYER (CORRECT PLACE) */}
-                    {hearts.map((h) => (
-                    <div
-                    key={h.id}
-                    style={{
-                    position: "absolute",
-                    left: h.x + (Math.random() * 20 - 10),
-                    top: h.y,
-                    transform: "translate(-50%, -50%)",
-                    fontSize: 80,
-                    pointerEvents: "none",
-                    zIndex: 200,
-                    }}
-                    className="animate-heart"
-                    >
-                    ❤️
-                    </div>
-                    ))}
-                    <div
-                      style={{
-                        position: "absolute",
-                        right: 12,
-                        bottom:"calc(90px + env(safe-area-inset-bottom))",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: 14,
-                        zIndex: 60,
-                        color: "white"
-                      }}
-                    >
+                   {hearts.map((h) => (
+  <div
+    key={h.id}
+    style={{
+      position: "absolute",
+      left: h.x + (Math.random() * 20 - 10),
+      top: h.y,
+      transform: "translate(-50%, -50%)",
+      width: 60,
+      height: 60,
+      pointerEvents: "none",
+      zIndex: 200,
+    }}
+    className="animate-heart"
+  >
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        background: "red",
+        borderRadius: "50% 50% 45% 45%",
+        overflow: "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <img
+        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${viewer}`}
+        alt="avatar"
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+        }}
+      />
+    </div>
+  </div>
+))}
+              
                   
                       <button onClick={() => toggleLike(p.id)}>
                         <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
