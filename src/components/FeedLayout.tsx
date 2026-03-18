@@ -140,13 +140,7 @@ onTouchEnd={(e) => {
 }}
 >
 
- <PeopleRail
-  open={peopleOpen}
-  userId="test-user"
-  activePost={activePost}
-  users={railUsers}
-  onSelectCreator={onSelectCreator}
-/>
+ 
 
 {children}
 
