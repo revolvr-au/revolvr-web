@@ -52,7 +52,7 @@ export function PublicFeedClient() {
 
 const lastTapRef = useRef(0);
 
-function handlePostTap(e: React.MouseEvent) {
+function handlePostTap(e: React.PointerEvent) {
   const target = e.target as HTMLElement;
 
   if (target.closest("button, input, textarea")) return;
@@ -450,7 +450,7 @@ return (
                   <div
                   key={p.id}
                   data-postid={p.id}
-                  onClick={handlePostTap}
+                  onPointerDown={handlePostTap}
                     data-user={email}
                     ref={(el) => {
                       if (!el || !observerRef.current) return;
