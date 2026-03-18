@@ -52,7 +52,7 @@ export function PublicFeedClient() {
 
 const lastTapRef = useRef(0);
 
-function handlePostTap(e: React.PointerEvent) {
+function handlePostTap(e: React.PointerEvent, postId: string) {
   const target = e.target as HTMLElement;
 
   if (target.closest("button, input, textarea")) return;
@@ -61,6 +61,9 @@ function handlePostTap(e: React.PointerEvent) {
 
   if (now - lastTapRef.current < 300) {
     console.log("DOUBLE TAP FIRED");
+
+    // 🔥 trigger like
+    toggleLike(postId);
   }
 
   lastTapRef.current = now;
@@ -450,7 +453,7 @@ return (
                   <div
                   key={p.id}
                   data-postid={p.id}
-                  onPointerDown={handlePostTap}
+                  onPointerDown={(e) => handlePostTap(e, p.id)}
                     data-user={email}
                     ref={(el) => {
                       if (!el || !observerRef.current) return;
