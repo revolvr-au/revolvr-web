@@ -49,6 +49,9 @@ export function PublicFeedClient() {
   const feedRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const scrollLock = useRef(false);
+  const [hearts, setHearts] = useState<
+  { id: string; x: number; y: number }[]
+>([]);
 
 const lastTapRef = useRef(0);
 
@@ -60,10 +63,22 @@ function handlePostTap(e: React.PointerEvent, postId: string) {
   const now = Date.now();
 
   if (now - lastTapRef.current < 300) {
-    console.log("DOUBLE TAP FIRED");
-
-    // 🔥 trigger like
     toggleLike(postId);
+
+    // ❤️ spawn heart at tap position
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const id = `${Date.now()}-${Math.random()}`;
+
+    setHearts((prev) => [...prev, { id, x, y }]);
+
+    // remove after animation
+    setTimeout(() => {
+      setHearts((prev) => prev.filter((h) => h.id !== id));
+    }, 800);
   }
 
   lastTapRef.current = now;
@@ -486,6 +501,24 @@ return (
                         color: "white"
                       }}
                     >
+                      {hearts.map((h) => (
+                    <div
+                    key={h.id}
+                    style={{
+                    position: "absolute",
+                    left: h.x,
+                    top: h.y,
+                    transform: "translate(-50%, -50%)",
+                    fontSize: 80,
+                    pointerEvents: "none",
+                    zIndex: 100,
+                    }}
+                    className="animate-heart"
+                    >
+                    ❤️
+                    </div>
+                    ))}
+
                       <button onClick={() => toggleLike(p.id)}>
                         <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
                         <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
