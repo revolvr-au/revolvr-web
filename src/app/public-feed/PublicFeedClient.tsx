@@ -489,22 +489,22 @@ return (
                     )}
                       {/* ❤️ HEARTS LAYER (CORRECT PLACE) */}
   {hearts.map((h) => (
-    <div
-      key={h.id}
-      style={{
-        position: "absolute",
-        left: h.x,
-        top: h.y,
-        transform: "translate(-50%, -50%)",
-        fontSize: 80,
-        pointerEvents: "none",
-        zIndex: 200,
-      }}
-      className="animate-heart"
-    >
-      ❤️
-    </div>
-  ))}
+  <div
+    key={h.id}
+    style={{
+      position: "absolute",
+      left: h.x + (Math.random() * 20 - 10),
+      top: h.y,
+      transform: "translate(-50%, -50%)",
+      fontSize: 80,
+      pointerEvents: "none",
+      zIndex: 200,
+    }}
+    className="animate-heart"
+  >
+    ❤️
+  </div>
+))}
                     <div
                       style={{
                         position: "absolute",
