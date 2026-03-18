@@ -96,9 +96,9 @@ export default function FeedLayout({
 
      <main
   className="flex-1 pb-4 relative"
-  
-onTouchStart={(e) => {
-  const target = e.target as HTMLElement;
+  style={{ background: "rgba(255,0,0,0.2)" }} // 🔴 RED
+  }}
+>
 
   // ✅ IGNORE taps on posts (this is the fix)
   if (target.closest("[data-postid]")) {

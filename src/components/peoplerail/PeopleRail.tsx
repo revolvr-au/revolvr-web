@@ -32,20 +32,21 @@ if (!orderedUsers || orderedUsers.length === 0) return null;
   return (
     <div
   style={{
-    position: "fixed",
-    top: 0,
-    left: 0,
-    transform: open ? "translateX(0)" : "translateX(-80px)",
-    transition: "transform 0.25s ease",
-    width: 80,
-    height: "100vh",
-    background: "#000",
-    zIndex: 200,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    paddingTop: 60
-  }}
+  position: "fixed",
+  top: 0,
+  left: 0,
+  transform: open ? "translateX(0)" : "translateX(-100%)", // 👈 FULLY OFF SCREEN
+  transition: "transform 0.25s ease",
+  width: 80,
+  height: "100vh",
+  background: "#000",
+  zIndex: 200,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  paddingTop: 60,
+  pointerEvents: open ? "auto" : "none" // 👈 CRITICAL FIX
+}}
 >
 
       {/* debug count */}

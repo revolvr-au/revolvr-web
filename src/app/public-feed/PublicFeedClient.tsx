@@ -447,7 +447,10 @@ return (
                       observerRef.current.observe(el);
                     }}
                     className="feed-post relative w-full overflow-hidden bg-black"
-                    style={{ height: "100vh" }}
+                    style={{
+                    height: "100vh",
+                    background: "rgba(0,255,0,0.2)" // 🟢 GREEN
+                    }}
                   >
                     {p.imageUrl && (
                       <img
