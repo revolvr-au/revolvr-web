@@ -98,10 +98,17 @@ export default function FeedLayout({
   className="flex-1 pb-4 relative"
   
 onTouchStart={(e) => {
+  const target = e.target as HTMLElement;
+
+  // ✅ IGNORE taps on posts (this is the fix)
+  if (target.closest("[data-postid]")) {
+    swipeStart.current = -1;
+    return;
+  }
+
   const x = e.touches[0].clientX;
   const width = window.innerWidth;
 
-  // Ignore touches starting on right edge (browser navigation zone)
   if (x > width - 80) {
     swipeStart.current = -1;
     return;
