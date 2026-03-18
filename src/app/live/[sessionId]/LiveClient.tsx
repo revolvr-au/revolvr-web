@@ -44,29 +44,40 @@ export default function LiveClient({
   const router = useRouter();
   const lastTapRef = useRef(0);
 
-  // ✅ DOUBLE TAP (pointer-based)
-  function handlePointerDown(e: React.PointerEvent) {
-    const target = e.target as HTMLElement;
+  // ✅ GLOBAL DOUBLE TAP (FINAL WORKING VERSION)
+  useEffect(() => {
+    function handleGlobalPointer(e: PointerEvent) {
+      console.log("GLOBAL POINTER");
 
-    // ignore UI elements
-    if (target.closest("button, input, textarea")) return;
+      const target = e.target as HTMLElement;
 
-    const now = Date.now();
+      // ignore UI
+      if (target.closest("button, input, textarea")) return;
 
-    if (now - lastTapRef.current < 250) {
-      triggerHeart();
+      const now = Date.now();
+
+      if (now - lastTapRef.current < 250) {
+        triggerHeart();
+      }
+
+      lastTapRef.current = now;
     }
 
-    lastTapRef.current = now;
-  }
+    // capture phase = cannot be blocked
+    window.addEventListener("pointerdown", handleGlobalPointer, true);
+
+    return () => {
+      window.removeEventListener("pointerdown", handleGlobalPointer, true);
+    };
+  }, []);
 
   function triggerHeart() {
     if (heartBurst) return;
+
     navigator.vibrate?.(10);
     setHeartBurst(true);
     setTimeout(() => setHeartBurst(false), 400);
   }
-  
 
   // 🔥 INITIAL FETCH
   useEffect(() => {
@@ -121,27 +132,6 @@ export default function LiveClient({
   async function handleSend() {
     if (!message.trim()) return;
 
-    useEffect(() => {
-  function handleGlobalPointer(e: PointerEvent) {
-    const target = e.target as HTMLElement;
-
-    if (target.closest("button, input, textarea")) return;
-
-    const now = Date.now();
-
-    if (now - lastTapRef.current < 250) {
-      triggerHeart();
-    }
-
-    lastTapRef.current = now;
-  }
-
-  document.addEventListener("pointerdown", handleGlobalPointer);
-
-  return () => {
-    document.removeEventListener("pointerdown", handleGlobalPointer);
-  };
-}, []);
     const text = message;
     setMessage("");
 
@@ -151,34 +141,9 @@ export default function LiveClient({
       body: JSON.stringify({ roomId, message: text }),
     });
   }
-useEffect(() => {
-  function handleGlobalPointer(e: PointerEvent) {
-    const target = e.target as HTMLElement;
-
-    if (target.closest("button, input, textarea")) return;
-
-    const now = Date.now();
-
-    if (now - lastTapRef.current < 250) {
-      triggerHeart();
-    }
-
-    lastTapRef.current = now;
-  }
-
-  document.addEventListener("pointerdown", handleGlobalPointer);
-
-  return () => {
-    document.removeEventListener("pointerdown", handleGlobalPointer);
-  };
-}, []);
 
   return (
-    <div
-  className="relative w-screen h-[100svh] bg-black overflow-hidden"
-  style={{ touchAction: "none" }}
-  onPointerDown={() => console.log("POINTER FIRED")}
->
+    <div className="relative w-screen h-[100svh] bg-black overflow-hidden">
       {/* VIDEO */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <LiveKitClient
