@@ -50,6 +50,23 @@ export function PublicFeedClient() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const scrollLock = useRef(false);
 
+const lastTapRef = useRef(0);
+
+function handlePostTap(e: React.PointerEvent) {
+  const target = e.target as HTMLElement;
+
+  // ignore UI buttons
+  if (target.closest("button, input, textarea")) return;
+
+  const now = Date.now();
+
+  if (now - lastTapRef.current < 250) {
+    console.log("DOUBLE TAP FIRED");
+  }
+
+  lastTapRef.current = now;
+}
+
   const viewer = "test@revolvr.net";
   const router = useRouter();
 
@@ -105,23 +122,6 @@ export function PublicFeedClient() {
     },
     { threshold: 0.6 }
   );
-
-const lastTapRef = useRef(0);
-
-function handlePostTap(e: React.PointerEvent) {
-  const target = e.target as HTMLElement;
-
-  if (target.closest("button, input, textarea")) return;
-
-  const now = Date.now();
-
-  if (now - lastTapRef.current < 250) {
-    console.log("DOUBLE TAP FIRED");
-    // TODO: trigger heart animation later
-  }
-
-  lastTapRef.current = now;
-}
 
   return () => observerRef.current?.disconnect();
 }, []);
