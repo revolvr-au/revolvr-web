@@ -62,11 +62,11 @@ export default function LiveClient({
 
   function triggerHeart() {
     if (heartBurst) return;
-
     navigator.vibrate?.(10);
     setHeartBurst(true);
     setTimeout(() => setHeartBurst(false), 400);
   }
+  
 
   // 🔥 INITIAL FETCH
   useEffect(() => {
@@ -121,6 +121,27 @@ export default function LiveClient({
   async function handleSend() {
     if (!message.trim()) return;
 
+    useEffect(() => {
+  function handleGlobalPointer(e: PointerEvent) {
+    const target = e.target as HTMLElement;
+
+    if (target.closest("button, input, textarea")) return;
+
+    const now = Date.now();
+
+    if (now - lastTapRef.current < 250) {
+      triggerHeart();
+    }
+
+    lastTapRef.current = now;
+  }
+
+  document.addEventListener("pointerdown", handleGlobalPointer);
+
+  return () => {
+    document.removeEventListener("pointerdown", handleGlobalPointer);
+  };
+}, []);
     const text = message;
     setMessage("");
 
@@ -130,12 +151,34 @@ export default function LiveClient({
       body: JSON.stringify({ roomId, message: text }),
     });
   }
+useEffect(() => {
+  function handleGlobalPointer(e: PointerEvent) {
+    const target = e.target as HTMLElement;
+
+    if (target.closest("button, input, textarea")) return;
+
+    const now = Date.now();
+
+    if (now - lastTapRef.current < 250) {
+      triggerHeart();
+    }
+
+    lastTapRef.current = now;
+  }
+
+  document.addEventListener("pointerdown", handleGlobalPointer);
+
+  return () => {
+    document.removeEventListener("pointerdown", handleGlobalPointer);
+  };
+}, []);
 
   return (
     <div
-      className="relative w-screen h-[100svh] bg-black overflow-hidden"
-      style={{ touchAction: "none" }}
-      onPointerDown={handlePointerDown}
+  className="relative w-screen h-[100svh] bg-black overflow-hidden"
+  style={{ touchAction: "none" }}
+  onPointerDown={() => console.log("POINTER FIRED")}
+>
     >
       {/* VIDEO */}
       <div className="absolute inset-0 z-0 pointer-events-none">
