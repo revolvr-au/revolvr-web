@@ -179,7 +179,6 @@ useEffect(() => {
   style={{ touchAction: "none" }}
   onPointerDown={() => console.log("POINTER FIRED")}
 >
-    >
       {/* VIDEO */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <LiveKitClient
