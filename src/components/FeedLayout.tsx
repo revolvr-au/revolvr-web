@@ -96,51 +96,48 @@ export default function FeedLayout({
 
     <main
   className="flex-1 pb-4 relative"
-  style={{ background: "rgba(255,0,0,0.2)" }} // 🔴 RED
->
+  style={{ background: "rgba(255,0,0,0.2)" }}
+  onTouchStart={(e) => {
+    const target = e.target as HTMLElement;
 
-  {/* IGNORE taps on posts */}
-  if (target.closest("[data-postid]")) {
-    swipeStart.current = -1;
-    return;
-  }
-
-  const x = e.touches[0].clientX;
-  const width = window.innerWidth;
-
-  if (x > width - 80) {
-    swipeStart.current = -1;
-    return;
-  }
-
-  swipeStart.current = x;
-}}
-
-onTouchEnd={(e) => {
-  if (swipeStart.current === -1) return;
-
-  const endX = e.changedTouches[0].clientX;
-  const diff = endX - swipeStart.current;
-
-  const startedAtLeftEdge = swipeStart.current < 70;
-
-  if (!peopleOpen) {
-    if (!startedAtLeftEdge) return;
-
-    if (diff > 60) {
-      setPeopleOpen(true);
+    // ✅ ignore taps on posts
+    if (target.closest("[data-postid]")) {
+      swipeStart.current = -1;
+      return;
     }
-    return;
-  }
 
-  if (peopleOpen && diff < -60) {
-    setPeopleOpen(false);
-  }
-}}
+    const x = e.touches[0].clientX;
+    const width = window.innerWidth;
+
+    if (x > width - 80) {
+      swipeStart.current = -1;
+      return;
+    }
+
+    swipeStart.current = x;
+  }}
+  onTouchEnd={(e) => {
+    if (swipeStart.current === -1) return;
+
+    const endX = e.changedTouches[0].clientX;
+    const diff = endX - swipeStart.current;
+
+    const startedAtLeftEdge = swipeStart.current < 70;
+
+    if (!peopleOpen) {
+      if (!startedAtLeftEdge) return;
+
+      if (diff > 60) {
+        setPeopleOpen(true);
+      }
+      return;
+    }
+
+    if (peopleOpen && diff < -60) {
+      setPeopleOpen(false);
+    }
+  }}
 >
-
- 
-
 {children}
 
 </main>
