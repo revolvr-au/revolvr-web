@@ -46,30 +46,32 @@ export default function LiveClient({
 
   // ✅ GLOBAL DOUBLE TAP (FINAL WORKING VERSION)
   useEffect(() => {
-    function handleGlobalPointer(e: PointerEvent) {
-      console.log("GLOBAL POINTER");
+  function handleTouchStart(e: TouchEvent) {
+    console.log("GLOBAL TOUCH");
 
-      const target = e.target as HTMLElement;
+    const target = e.target as HTMLElement;
 
-      // ignore UI
-      if (target.closest("button, input, textarea")) return;
+    if (target.closest("button, input, textarea")) return;
 
-      const now = Date.now();
+    const now = Date.now();
 
-      if (now - lastTapRef.current < 250) {
-        triggerHeart();
-      }
-
-      lastTapRef.current = now;
+    if (now - lastTapRef.current < 250) {
+      triggerHeart();
     }
 
-    // capture phase = cannot be blocked
-    window.addEventListener("pointerdown", handleGlobalPointer, true);
+    lastTapRef.current = now;
+  }
 
-    return () => {
-      window.removeEventListener("pointerdown", handleGlobalPointer, true);
-    };
-  }, []);
+  // 👇 passive:false is important on mobile
+  window.addEventListener("touchstart", handleTouchStart, {
+    passive: false,
+    capture: true,
+  });
+
+  return () => {
+    window.removeEventListener("touchstart", handleTouchStart, true);
+  };
+}, []);
 
   function triggerHeart() {
     if (heartBurst) return;
