@@ -103,7 +103,17 @@ function handlePostTap(e: React.MouseEvent) {
     router.push(url);
   });
 
+useEffect(() => {
+  function logClick(e: MouseEvent) {
+    console.log("CLICK TARGET:", e.target);
+  }
 
+  document.addEventListener("click", logClick);
+
+  return () => {
+    document.removeEventListener("click", logClick);
+  };
+}, []);
  useEffect(() => {
   observerRef.current = new IntersectionObserver(
     (entries) => {
