@@ -94,13 +94,12 @@ export default function FeedLayout({
         </header>
       )}
 
-     <main
+    <main
   className="flex-1 pb-4 relative"
   style={{ background: "rgba(255,0,0,0.2)" }} // 🔴 RED
-  }}
 >
 
-  // ✅ IGNORE taps on posts (this is the fix)
+  {/* IGNORE taps on posts */}
   if (target.closest("[data-postid]")) {
     swipeStart.current = -1;
     return;
