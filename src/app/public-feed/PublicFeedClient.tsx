@@ -487,7 +487,24 @@ return (
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     )}
-
+                      {/* ❤️ HEARTS LAYER (CORRECT PLACE) */}
+  {hearts.map((h) => (
+    <div
+      key={h.id}
+      style={{
+        position: "absolute",
+        left: h.x,
+        top: h.y,
+        transform: "translate(-50%, -50%)",
+        fontSize: 80,
+        pointerEvents: "none",
+        zIndex: 200,
+      }}
+      className="animate-heart"
+    >
+      ❤️
+    </div>
+  ))}
                     <div
                       style={{
                         position: "absolute",
@@ -501,24 +518,7 @@ return (
                         color: "white"
                       }}
                     >
-                      {hearts.map((h) => (
-                    <div
-                    key={h.id}
-                    style={{
-                    position: "absolute",
-                    left: h.x,
-                    top: h.y,
-                    transform: "translate(-50%, -50%)",
-                    fontSize: 80,
-                    pointerEvents: "none",
-                    zIndex: 100,
-                    }}
-                    className="animate-heart"
-                    >
-                    ❤️
-                    </div>
-                    ))}
-
+                  
                       <button onClick={() => toggleLike(p.id)}>
                         <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
                         <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
