@@ -465,115 +465,127 @@ return (
                 const display = email ? displayNameFromEmail(email) : "User";
 
                 return (
-                  <div
-                  key={p.id}
-                  data-postid={p.id}
-                  onPointerDown={(e) => handlePostTap(e, p.id)}
-                    data-user={email}
-                    ref={(el) => {
-                      if (!el || !observerRef.current) return;
-                      observerRef.current.observe(el);
-                    }}
-                    className="feed-post relative w-full overflow-hidden bg-black"
-                    style={{
-                    height: "100vh",
-                    background: "rgba(0,255,0,0.2)" // 🟢 GREEN
-                    }}
-                  >
-                    {p.imageUrl && (
-                      <img
-                        src={p.imageUrl}
-                        alt={p.caption || "post"}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    )}
-                      {/* ❤️ HEARTS LAYER (CORRECT PLACE) */}
-                   {hearts.map((h) => (
   <div
-    key={h.id}
-    style={{
-      position: "absolute",
-      left: h.x + (Math.random() * 20 - 10),
-      top: h.y,
-      transform: "translate(-50%, -50%)",
-      width: 60,
-      height: 60,
-      pointerEvents: "none",
-      zIndex: 200,
+    key={p.id}
+    data-postid={p.id}
+    onPointerDown={(e) => handlePostTap(e, p.id)}
+    data-user={email}
+    ref={(el) => {
+      if (!el || !observerRef.current) return;
+      observerRef.current.observe(el);
     }}
-    className="animate-heart"
+    className="feed-post relative w-full overflow-hidden bg-black"
+    style={{
+      height: "100vh",
+      background: "rgba(0,255,0,0.2)", // 🟢 debug
+    }}
   >
+    {/* IMAGE */}
+    {p.imageUrl && (
+      <img
+        src={p.imageUrl}
+        alt={p.caption || "post"}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    )}
+
+    {/* ❤️ HEARTS LAYER */}
+    {hearts.map((h) => (
+      <div
+        key={h.id}
+        style={{
+          position: "absolute",
+          left: h.x + (Math.random() * 20 - 10),
+          top: h.y,
+          transform: "translate(-50%, -50%)",
+          width: 60,
+          height: 60,
+          pointerEvents: "none",
+          zIndex: 200,
+        }}
+        className="animate-heart"
+      >
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            background: "red",
+            borderRadius: "50% 50% 45% 45%",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <img
+            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${viewer}`}
+            alt="avatar"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      </div>
+    ))}
+
+    {/* ✅ RIGHT SIDE ACTION BAR (THIS WAS MISSING WRAPPER) */}
     <div
       style={{
-        width: "100%",
-        height: "100%",
-        background: "red",
-        borderRadius: "50% 50% 45% 45%",
-        overflow: "hidden",
+        position: "absolute",
+        right: 12,
+        bottom: "calc(90px + env(safe-area-inset-bottom))",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
+        gap: 14,
+        zIndex: 60,
+        color: "white",
       }}
     >
-      <img
-        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${viewer}`}
-        alt="avatar"
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
+      <button onClick={() => toggleLike(p.id)}>
+        <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+        <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
+      </button>
+
+      <button onClick={() => openComments(p.id)}>
+        <MessageCircle size={28} />
+        <div style={{ fontSize: 12 }}>
+          {commentCounts[p.id] || 0}
+        </div>
+      </button>
+
+      <button onClick={() => sharePost(p.id)}>
+        <Share2 size={28} />
+      </button>
+
+      <button onClick={() => toggleRewards(p.id)}>
+        <Gift size={28} />
+      </button>
+
+      <div style={{ height: 12 }} />
+
+      <button>
+        <Plus size={28} />
+      </button>
+
+      <button>
+        <Home size={28} />
+      </button>
+
+      <button
+        onClick={() => {
+          setMenuPost(p);
+          setMenuOpen(true);
         }}
-      />
+      >
+        <MoreVertical size={28} />
+      </button>
     </div>
   </div>
-))}
-              
-                  
-                      <button onClick={() => toggleLike(p.id)}>
-                        <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                        <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
-                      </button>
+);
 
-                      <button onClick={() => openComments(p.id)}>
-                        <MessageCircle size={28} />
-                        <div style={{ fontSize: 12 }}>{commentCounts[p.id] || 0}</div>
-                      </button>
-
-                      <button onClick={() => sharePost(p.id)}>
-                        <Share2 size={28} />
-                      </button>
-
-                      <button onClick={() => toggleRewards(p.id)}>
-                        <Gift size={28} />
-                      </button>
-
-                      <div style={{ height: 12 }} />
-
-                      <button>
-                        <Plus size={28} />
-                      </button>
-
-                      <button>
-                        <Home size={28} />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setMenuPost(p);
-                          setMenuOpen(true);
-                        }}
-                      >
-                        <MoreVertical size={28} />
-                      </button>
-                    </div>
-
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-        </div>
 
         {/* COMMENTS MODAL */}
         {commentsOpen && (
