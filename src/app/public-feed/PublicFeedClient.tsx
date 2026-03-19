@@ -52,6 +52,7 @@ export function PublicFeedClient() {
   const [hearts, setHearts] = useState<
   { id: string; x: number; y: number }[]
 >([]);
+const [bigHeartPost, setBigHeartPost] = useState<string | null>(null);
 
 const lastTapRef = useRef(0);
 
@@ -63,25 +64,27 @@ function handlePostTap(e: React.PointerEvent, postId: string) {
   const now = Date.now();
 
   if (now - lastTapRef.current < 300) {
-    toggleLike(postId);
+  toggleLike(postId);
 
-    // ❤️ spawn heart at tap position
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  // 💥 BIG HEART BURST
+  setBigHeartPost(postId);
+setTimeout(() => setBigHeartPost(null), 300);
 
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+  // ❤️ spawn avatar heart
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 
-    const id = `${Date.now()}-${Math.random()}`;
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
 
-    setHearts((prev) => [...prev, { id, x, y }]);
+  const id = `${Date.now()}-${Math.random()}`;
 
-    // remove after animation
-    setTimeout(() => {
-  setHearts((prev) => prev.filter((h) => h.id !== id));
-}, 1800);
-  }
+  setHearts((prev) => [...prev, { id, x, y }]);
 
-  lastTapRef.current = now;
+  setTimeout(() => {
+    setHearts((prev) => prev.filter((h) => h.id !== id));
+  }, 1800);
+}
+lastTapRef.current = now;
 }
 
   const viewer = "test@revolvr.net";
@@ -483,6 +486,23 @@ return (
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 )}
+
+              {bigHeartPost === p.id && (
+  <div
+    style={{
+      position: "absolute",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%) scale(1.2)",
+      fontSize: 120,
+      zIndex: 300,
+      pointerEvents: "none",
+      opacity: 0.9,
+    }}
+  >
+    ❤️
+  </div>
+)}
 
                 {/* ❤️ HEARTS */}
                 {hearts.map((h) => (
