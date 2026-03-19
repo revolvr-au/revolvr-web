@@ -543,7 +543,39 @@ return (
                     </div>
                   </div>
                 ))}
-
+                {/* TOP RIGHT AVATAR */}
+<div
+  style={{
+    position: "absolute",
+    top: 16,
+    right: 16,
+    zIndex: 70,
+  }}
+>
+  <button
+    onClick={() => {
+      const handle = displayNameFromEmail(p.userEmail || "").toLowerCase();
+      router.push(`/u/${encodeURIComponent(handle)}`);
+    }}
+    style={{
+      width: 48,
+      height: 48,
+      borderRadius: "50%",
+      overflow: "hidden",
+      border: "2px solid white",
+    }}
+  >
+    <img
+      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail}`}
+      alt="avatar"
+      style={{
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
+      }}
+    />
+  </button>
+</div>
                 {/* RIGHT ACTION BAR */}
                 <div
                   style={{
