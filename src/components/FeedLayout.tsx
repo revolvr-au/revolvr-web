@@ -52,18 +52,7 @@ export default function FeedLayout({
             </div>
 
             <div className="flex items-center gap-2">
-              <img
-              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${activePost || "revolvr"}`}
-              alt="creator"
-              style={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              border: "2px solid white",
-              objectFit: "cover",
-              marginRight: 6
-              }}
-              /> 
+              {/* avatar removed — now handled per post */}
               <button
                 type="button"
                 onClick={() => onGoLive?.()}
