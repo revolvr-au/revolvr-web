@@ -68,7 +68,7 @@ function handlePostTap(e: React.PointerEvent, postId: string) {
 
   // 💥 BIG HEART BURST
   setBigHeartPost(postId);
-setTimeout(() => setBigHeartPost(null), 300);
+setTimeout(() => setBigHeartPost(null), 900);
 
   // ❤️ spawn avatar heart
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -82,7 +82,7 @@ setTimeout(() => setBigHeartPost(null), 300);
 
   setTimeout(() => {
     setHearts((prev) => prev.filter((h) => h.id !== id));
-  }, 1800);
+  }, 3000);
 }
 lastTapRef.current = now;
 }
