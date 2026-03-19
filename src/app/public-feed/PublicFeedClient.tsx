@@ -74,11 +74,13 @@ setTimeout(() => setBigHeartPost(null), 900);
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 
   const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const y = e.clientY - rect.top - 20;
 
   const id = `${Date.now()}-${Math.random()}`;
 
+  setTimeout(() => {
   setHearts((prev) => [...prev, { id, x, y }]);
+}, 120);
 
   setTimeout(() => {
     setHearts((prev) => prev.filter((h) => h.id !== id));
@@ -494,7 +496,7 @@ return (
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%) scale(1.2)",
-      fontSize: 120,
+      fontSize: 100,
       zIndex: 300,
       pointerEvents: "none",
       opacity: 0.9,
