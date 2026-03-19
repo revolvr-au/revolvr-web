@@ -553,18 +553,21 @@ return (
   }}
 >
   <button
-    onClick={() => {
-      const handle = displayNameFromEmail(p.userEmail || "").toLowerCase();
-      router.push(`/u/${encodeURIComponent(handle)}`);
-    }}
-    style={{
-      width: 48,
-      height: 48,
-      borderRadius: "50%",
-      overflow: "hidden",
-      border: "2px solid white",
-    }}
-  >
+  onClick={() => {
+    const handle = p.handle;
+    if (!handle) return;
+
+    router.push(`/u/${encodeURIComponent(handle)}`);
+  }}
+  style={{
+    width: 48,
+    height: 48,
+    borderRadius: "50%",
+    overflow: "hidden",
+    border: "2px solid white",
+    cursor: "pointer", // ✅ ADD THIS LINE
+  }}
+>
     <img
       src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail}`}
       alt="avatar"

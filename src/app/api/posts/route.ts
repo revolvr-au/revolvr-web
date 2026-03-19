@@ -64,34 +64,40 @@ if (snapshot.length > 0) {
   orderBy: { createdAt: "desc" },
   take: 20,
   select: {
-    id: true,
-    userEmail: true,
-    imageUrl: true,
-    caption: true,
-    createdAt: true,
-    updatedAt: true,
-    _count: {
-      select: { likes: true },
+  id: true,
+  userEmail: true,
+  imageUrl: true,
+  caption: true,
+  createdAt: true,
+  updatedAt: true,
+  creatorProfile: {
+    select: {
+      handle: true,
     },
-    likes: userEmail
-      ? {
-          where: { userEmail },
-          select: { id: true },
-        }
-      : false,
   },
+  _count: {
+    select: { likes: true },
+  },
+  likes: userEmail
+    ? {
+        where: { userEmail },
+        select: { id: true },
+      }
+    : false,
+},
 });
 
     const shaped = posts.map((p) => ({
-      id: p.id,
-      userEmail: p.userEmail,
-      imageUrl: p.imageUrl,
-      caption: p.caption,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-      likeCount: p._count.likes,
-      likedByCurrentUser: userEmail ? p.likes.length > 0 : false,
-    }));
+  id: p.id,
+  userEmail: p.userEmail,
+  imageUrl: p.imageUrl,
+  caption: p.caption,
+  createdAt: p.createdAt,
+  updatedAt: p.updatedAt,
+  likeCount: p._count.likes,
+  likedByCurrentUser: userEmail ? p.likes.length > 0 : false,
+  handle: p.creatorProfile?.handle || null, // ✅ ADD THIS
+}));
 
     return NextResponse.json({ posts: shaped });
   } catch (err: any) {
