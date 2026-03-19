@@ -60,33 +60,45 @@ if (snapshot.length > 0) {
   const posts = await buildFeedSnapshot(userEmail);
   return NextResponse.json({ posts });
 }
-    const posts = await prisma.post.findMany({
+   const posts = await prisma.post.findMany({
   orderBy: { createdAt: "desc" },
   take: 20,
   select: {
-  id: true,
-  userEmail: true,
-  imageUrl: true,
-  caption: true,
-  createdAt: true,
-  updatedAt: true,
-  creatorProfile: {
-    select: {
-      handle: true,
+    id: true,
+    userEmail: true,
+    imageUrl: true,
+    caption: true,
+    createdAt: true,
+    updatedAt: true,
+    _count: {
+      select: { likes: true },
     },
+    likes: userEmail
+      ? {
+          where: { userEmail },
+          select: { id: true },
+        }
+      : false,
   },
-  _count: {
-    select: { likes: true },
+});
+const emails = posts
+  .map((p) => p.userEmail)
+  .filter(Boolean)
+  .map((e) => String(e).toLowerCase());
+
+const creators = await prisma.creatorProfile.findMany({
+  where: {
+    email: { in: emails },
   },
-  likes: userEmail
-    ? {
-        where: { userEmail },
-        select: { id: true },
-      }
-    : false,
-},
+  select: {
+    email: true,
+    handle: true,
+  },
 });
 
+const handleMap = Object.fromEntries(
+  creators.map((c) => [c.email.toLowerCase(), c.handle])
+);
     const shaped = posts.map((p) => ({
   id: p.id,
   userEmail: p.userEmail,
@@ -96,7 +108,9 @@ if (snapshot.length > 0) {
   updatedAt: p.updatedAt,
   likeCount: p._count.likes,
   likedByCurrentUser: userEmail ? p.likes.length > 0 : false,
-  handle: p.creatorProfile?.handle || null, // ✅ ADD THIS
+  handle: p.userEmail
+    ? handleMap[p.userEmail.toLowerCase()] || null
+    : null,
 }));
 
     return NextResponse.json({ posts: shaped });
