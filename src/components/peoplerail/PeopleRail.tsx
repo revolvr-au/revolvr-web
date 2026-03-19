@@ -77,22 +77,7 @@ if (!orderedUsers || orderedUsers.length === 0) return null;
           />
         </div>
       ))}
-    {activePost && (
-  <div
-    style={{
-      position: "fixed",
-      left: 90,
-      top: "50%",
-      transform: "translateY(-50%)",
-      color: "white",
-      fontSize: 14,
-      fontWeight: 600,
-      letterSpacing: 1
-    }}
-  >
-    @{activePost.split("@")[0]}
-  </div>
-)}
+      {/* activePost label removed — handled in feed context */}
     </div>
   );
 }
