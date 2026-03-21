@@ -498,49 +498,50 @@ return (
             </div>
 
             {/* RIGHT ACTION BAR */}
-            <div className="absolute right-4 bottom-28 flex flex-col items-center gap-4 z-40">
-              <button onClick={() => toggleLike(p.id)}>
-                <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                <div className="text-xs text-center">
-                  {likeCounts[p.id] || 0}
-                </div>
-              </button>
+            <div className="absolute right-4 bottom-32 flex flex-col items-center gap-5 z-40">
+  <button onClick={() => toggleLike(p.id)}>
+    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+    <div className="text-xs text-center">
+      {likeCounts[p.id] || 0}
+    </div>
+  </button>
 
-              <button onClick={() => openComments(p.id)}>
-                <MessageCircle size={28} />
-                <div className="text-xs text-center">
-                  {commentCounts[p.id] || 0}
-                </div>
-              </button>
+  <button onClick={() => openComments(p.id)}>
+    <MessageCircle size={28} />
+    <div className="text-xs text-center">
+      {commentCounts[p.id] || 0}
+    </div>
+  </button>
 
-              <button onClick={() => sharePost(p.id)}>
-                <Share2 size={28} />
-              </button>
+  <button onClick={() => sharePost(p.id)}>
+    <Share2 size={28} />
+  </button>
 
-              <button onClick={() => toggleRewards(p.id)}>
-                <Gift size={28} />
-              </button>
-            </div>
+  <button onClick={() => toggleRewards(p.id)}>
+    <Gift size={28} />
+  </button>
+
+  {/* 🔥 ADD BUTTON (BACK IN) */}
+  <button>
+    <Plus size={30} />
+  </button>
+</div>
 
             {/* RIGHT NAV STACK */}
-            <div className="absolute right-4 bottom-6 flex flex-col items-center gap-4 z-40">
-              <button>
-                <Plus size={28} />
-              </button>
+           <div className="absolute right-4 bottom-12 flex flex-col items-center gap-4 z-40">
+  <button>
+    <Home size={28} />
+  </button>
 
-              <button>
-                <Home size={28} />
-              </button>
-
-              <button
-                onClick={() => {
-                  setMenuPost(p);
-                  setMenuOpen(true);
-                }}
-              >
-                <MoreVertical size={28} />
-              </button>
-            </div>
+  <button
+    onClick={() => {
+      setMenuPost(p);
+      setMenuOpen(true);
+    }}
+  >
+    <MoreVertical size={28} />
+  </button>
+</div>
           </div>
         );
       })}
