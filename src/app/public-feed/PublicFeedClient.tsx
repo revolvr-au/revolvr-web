@@ -497,49 +497,57 @@ return (
               </div>
             </div>
 
-            {/* RIGHT ACTION BAR */}
-<div className="absolute right-4 bottom-36 flex flex-col items-center gap-6 z-40">
-  <button onClick={() => toggleLike(p.id)}>
-    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-    <div className="text-xs text-center">
-      {likeCounts[p.id] || 0}
-    </div>
-  </button>
+           {/* RIGHT SIDE RAIL */}
+<div className="absolute right-4 bottom-24 flex flex-col items-center z-40">
 
-  <button onClick={() => openComments(p.id)}>
-    <MessageCircle size={28} />
-    <div className="text-xs text-center">
-      {commentCounts[p.id] || 0}
-    </div>
-  </button>
+  {/* ENGAGEMENT */}
+  <div className="flex flex-col items-center gap-5">
+    <button onClick={() => toggleLike(p.id)}>
+      <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+      <div className="text-xs text-center">
+        {likeCounts[p.id] || 0}
+      </div>
+    </button>
 
-  <button onClick={() => sharePost(p.id)}>
-    <Share2 size={28} />
-  </button>
+    <button onClick={() => openComments(p.id)}>
+      <MessageCircle size={28} />
+      <div className="text-xs text-center">
+        {commentCounts[p.id] || 0}
+      </div>
+    </button>
 
-  <button onClick={() => toggleRewards(p.id)}>
-    <Gift size={28} />
-  </button>
+    <button onClick={() => sharePost(p.id)}>
+      <Share2 size={28} />
+    </button>
 
-  <button>
-    <Plus size={30} />
-  </button>
-</div>
+    <button onClick={() => toggleRewards(p.id)}>
+      <Gift size={28} />
+    </button>
+  </div>
 
-{/* BOTTOM NAV STACK */}
-<div className="absolute right-4 bottom-20 flex flex-col items-center gap-5 z-40">
-  <button>
-    <Home size={28} />
-  </button>
+  {/* SPACER (this is the key fix) */}
+  <div className="h-6" />
 
-  <button
-    onClick={() => {
-      setMenuPost(p);
-      setMenuOpen(true);
-    }}
-  >
-    <MoreVertical size={28} />
-  </button>
+  {/* NAVIGATION */}
+  <div className="flex flex-col items-center gap-5">
+    <button>
+      <Plus size={30} />
+    </button>
+
+    <button>
+      <Home size={28} />
+    </button>
+
+    <button
+      onClick={() => {
+        setMenuPost(p);
+        setMenuOpen(true);
+      }}
+    >
+      <MoreVertical size={28} />
+    </button>
+  </div>
+
 </div>
           </div>
         );
