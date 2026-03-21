@@ -498,7 +498,7 @@ return (
             </div>
 
             {/* RIGHT ACTION BAR */}
-            <div className="absolute right-4 bottom-32 flex flex-col items-center gap-5 z-40">
+<div className="absolute right-4 bottom-36 flex flex-col items-center gap-6 z-40">
   <button onClick={() => toggleLike(p.id)}>
     <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
     <div className="text-xs text-center">
@@ -521,14 +521,13 @@ return (
     <Gift size={28} />
   </button>
 
-  {/* 🔥 ADD BUTTON (BACK IN) */}
   <button>
     <Plus size={30} />
   </button>
 </div>
 
-            {/* RIGHT NAV STACK */}
-           <div className="absolute right-4 bottom-12 flex flex-col items-center gap-4 z-40">
+{/* BOTTOM NAV STACK */}
+<div className="absolute right-4 bottom-20 flex flex-col items-center gap-5 z-40">
   <button>
     <Home size={28} />
   </button>
