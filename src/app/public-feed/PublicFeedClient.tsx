@@ -137,7 +137,7 @@ useEffect(() => {
     document.removeEventListener("click", logClick);
   };
 }, []);
- useEffect(() => {
+useEffect(() => {
   observerRef.current = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -155,8 +155,10 @@ useEffect(() => {
     { threshold: 0.6 }
   );
 
-  return () => observerRef.current?.disconnect();
-}, []);
+  return () => {
+    observerRef.current?.disconnect();
+  };
+}, [posts]);
 
   useEffect(() => {
     if (!commentsOpen) return;
@@ -452,198 +454,84 @@ return (
     onSelectCreator={jumpToCreator}
   >
 
-    {loading && <div className="p-4 opacity-70 text-white">Loading…</div>}
-    {err && <div className="p-4 text-red-400">{err}</div>}
+    {/* FEED */}
+    <div
+      ref={feedRef}
+      className="h-full w-full overflow-y-scroll snap-y snap-mandatory"
+    >
+    {posts.map((p) => {
+  const email = String(p.userEmail || "").toLowerCase();
+  const mediaUrl = String(p.imageUrl || "").trim();
 
-   {!loading && (
-  <>
-    <div className="feed-center">
-      <div className="feed-phone flex flex-col">
-        <div
-          ref={feedRef}
-          className="feed-scroll flex-1 overflow-y-auto"
-          style={{ overscrollBehavior: "none" }}
-        >
-          {posts.map((p) => {
-            const email = String(p.userEmail || "").trim().toLowerCase();
-            const display = email ? displayNameFromEmail(email) : "User";
-
-            return (
-              <div
-                key={p.id}
-                data-postid={p.id}
-                onPointerDown={(e) => handlePostTap(e, p.id)}
-                data-user={email}
-                ref={(el) => {
-                  if (!el || !observerRef.current) return;
-                  observerRef.current.observe(el);
-                }}
-                className="feed-post relative w-full overflow-hidden bg-black"
-                style={{ height: "100vh" }}
-              >
-                {p.imageUrl && (
-                  <img
-                    src={p.imageUrl}
-                    alt={p.caption || "post"}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                )}
-
-              {bigHeartPost === p.id && (
-  <div
-    style={{
-      position: "absolute",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%) scale(1.2)",
-      fontSize: 100,
-      zIndex: 300,
-      pointerEvents: "none",
-      opacity: 0.9,
-    }}
-  >
-    ❤️
-  </div>
-)}
-
-                {/* ❤️ HEARTS */}
-                {hearts.map((h) => (
-                  <div
-                    key={h.id}
-                    style={{
-                      position: "absolute",
-                      left: h.x + (Math.random() * 20 - 10),
-                      top: h.y,
-                      transform: "translate(-50%, -50%)",
-                      width: 60,
-                      height: 60,
-                      pointerEvents: "none",
-                      zIndex: 200,
-                    }}
-                    className="animate-heart"
-                  >
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        background: "red",
-                        borderRadius: "50% 50% 45% 45%",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <img
-                        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${viewer}`}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-                {/* TOP RIGHT AVATAR */}
-<div
-  style={{
-    position: "absolute",
-    top: 16,
-    right: 16,
-    zIndex: 70,
-  }}
->
-  <button
-  onClick={() => {
-    const handle = p.handle;
-    if (!handle) return;
-
-    router.push(`/u/${encodeURIComponent(handle)}`);
-  }}
-  style={{
-    width: 48,
-    height: 48,
-    borderRadius: "50%",
-    overflow: "hidden",
-    border: "2px solid white",
-    cursor: "pointer", // ✅ ADD THIS LINE
-  }}
->
-    <img
-      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail}`}
-      alt="avatar"
-      style={{
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
+  return (
+    <div
+      key={p.id}
+      data-postid={p.id}
+      data-user={email}
+      onPointerDown={(e) => handlePostTap(e, p.id)}
+      ref={(el) => {
+        if (!el || !observerRef.current) return;
+        observerRef.current.observe(el);
       }}
-    />
-  </button>
-</div>
-                {/* RIGHT ACTION BAR */}
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 12,
-                    bottom: "calc(90px + env(safe-area-inset-bottom))",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 14,
-                    zIndex: 60,
-                    color: "white",
-                  }}
-                >
-                  <button onClick={() => toggleLike(p.id)}>
-                    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                    <div style={{ fontSize: 12 }}>{likeCounts[p.id] || 0}</div>
-                  </button>
+      className="relative h-screen w-full snap-start"
+    >
+      {/* IMAGE */}
+      {mediaUrl && (
+        <img
+          src={mediaUrl}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
 
-                  <button onClick={() => openComments(p.id)}>
-                    <MessageCircle size={28} />
-                    <div style={{ fontSize: 12 }}>
-                      {commentCounts[p.id] || 0}
-                    </div>
-                  </button>
+      {/* GRADIENT */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20" />
 
-                  <button onClick={() => sharePost(p.id)}>
-                    <Share2 size={28} />
-                  </button>
-
-                  <button onClick={() => toggleRewards(p.id)}>
-                    <Gift size={28} />
-                  </button>
-
-                  <div style={{ height: 12 }} />
-
-                  <button>
-                    <Plus size={28} />
-                  </button>
-
-                  <button>
-                    <Home size={28} />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setMenuPost(p);
-                      setMenuOpen(true);
-                    }}
-                  >
-                    <MoreVertical size={28} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+      {/* USER INFO */}
+      <div className="absolute bottom-0 left-0 right-0 p-4 text-white z-30">
+        <div className="font-semibold">
+          @{displayNameFromEmail(email)}
         </div>
-      </div>
-    </div>
 
+        {p.caption && (
+          <div className="opacity-80 text-sm mt-1">
+            {p.caption}
+          </div>
+        )}
+      </div>
+
+      {/* RIGHT ACTION BAR */}
+      <div className="absolute right-4 bottom-24 flex flex-col items-center gap-4 z-40">
+        <button onClick={() => toggleLike(p.id)}>
+          <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+          <div className="text-xs text-center">
+            {likeCounts[p.id] || 0}
+          </div>
+        </button>
+
+        <button onClick={() => openComments(p.id)}>
+          <MessageCircle size={28} />
+          <div className="text-xs text-center">
+            {commentCounts[p.id] || 0}
+          </div>
+        </button>
+
+        <button onClick={() => sharePost(p.id)}>
+          <Share2 size={28} />
+        </button>
+
+        <button onClick={() => toggleRewards(p.id)}>
+          <Gift size={28} />
+        </button>
+      </div>
+
+    </div>
+  );
+})}
+</div> 
     {/* COMMENTS MODAL */}
     {commentsOpen && (
       <div className="fixed inset-0 z-50">
         <button
-          type="button"
           className="absolute inset-0 bg-black/60"
           onClick={closeComments}
         />
@@ -659,20 +547,10 @@ return (
         />
 
         <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 pb-10 text-white">
-          <div style={{ marginBottom: 12, fontWeight: 600 }}>
-            @{displayNameFromEmail(menuPost.userEmail || "")}
-          </div>
-
-          {menuPost.caption && (
-            <div style={{ opacity: 0.8, marginBottom: 20 }}>
-              {menuPost.caption}
-            </div>
-          )}
         </div>
       </div>
     )}
-  </>
-)}
+
   </FeedLayout>
 );
 }
