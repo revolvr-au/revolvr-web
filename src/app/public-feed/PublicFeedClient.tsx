@@ -464,24 +464,34 @@ return (
   const mediaUrl = String(p.imageUrl || "").trim();
 
   return (
-    <div
-      key={p.id}
-      data-postid={p.id}
-      data-user={email}
-      onPointerDown={(e) => handlePostTap(e, p.id)}
-      ref={(el) => {
-        if (!el || !observerRef.current) return;
-        observerRef.current.observe(el);
-      }}
-      className="relative h-screen w-full snap-start"
-    >
-      {/* IMAGE */}
-      {mediaUrl && (
-        <img
-          src={mediaUrl}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      )}
+  <div
+    key={p.id}
+    data-postid={p.id}
+    data-user={email}
+    onPointerDown={(e) => handlePostTap(e, p.id)}
+    ref={(el) => {
+      if (!el || !observerRef.current) return;
+      observerRef.current.observe(el);
+    }}
+    className="relative h-screen w-full snap-start"
+  >
+    {/* IMAGE */}
+    {mediaUrl && (
+      <img
+        src={mediaUrl}
+        className="absolute inset-0 w-full h-full object-cover"
+        alt=""
+      />
+    )}
+
+    {/* AVATAR */}
+    <div className="absolute top-4 right-4 z-40">
+      <img
+        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
+        className="w-10 h-10 rounded-full border-2 border-white"
+        alt=""
+      />
+    </div>
 
       {/* GRADIENT */}
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20" />
@@ -498,7 +508,26 @@ return (
           </div>
         )}
       </div>
+        {/* RIGHT NAV (BOTTOM STACK) */}
+<div className="absolute right-4 bottom-6 flex flex-col items-center gap-4 z-40">
+  <button>
+    <Plus size={28} />
+  </button>
 
+  <button>
+    <Home size={28} />
+  </button>
+
+  <button
+    onClick={() => {
+      setMenuPost(p);
+      setMenuOpen(true);
+    }}
+  >
+    <MoreVertical size={28} />
+  </button>
+</div>
+  
       {/* RIGHT ACTION BAR */}
       <div className="absolute right-4 bottom-24 flex flex-col items-center gap-4 z-40">
         <button onClick={() => toggleLike(p.id)}>
