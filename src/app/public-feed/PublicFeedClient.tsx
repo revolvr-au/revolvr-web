@@ -559,67 +559,67 @@ return (
 )}
 
    {/* MENU MODAL */}
-{menuOpen && menuPost && createPortal(
-  <div className="fixed top-0 left-0 w-screen h-screen z-[9999] flex items-center justify-center">
+ {menuOpen && menuPost &&
+  typeof document !== "undefined" &&
+  createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      
+      {/* backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60"
+        onClick={() => setMenuOpen(false)}
+      />
 
-    {/* backdrop */}
-    <div
-      className="absolute top-0 left-0 w-full h-full bg-black/60"
-      onClick={() => setMenuOpen(false)}
-    />
+      {/* modal */}
+      <div className="relative w-[85%] max-w-sm bg-zinc-900/95 backdrop-blur-xl rounded-2xl p-4 text-white shadow-xl animate-fadeIn">
 
-    {/* modal */}
-    <div className="relative w-[85%] max-w-sm bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-4 text-white shadow-xl">
+        {/* HEADER */}
+        <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+          <img
+            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost.userEmail}`}
+            className="w-10 h-10 rounded-full border border-white/20 shrink-0"
+            alt=""
+          />
 
-  {/* HEADER */}
-  <div className="flex items-center gap-3 pb-4 border-b border-white/10">
-    
-    <img
-      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost.userEmail}`}
-      className="w-12 h-12 rounded-full border border-white/20 shrink-0"
-      alt=""
-    />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold truncate">
+              @{displayNameFromEmail(menuPost.userEmail || "")}
+            </div>
+          </div>
 
-    <div className="flex-1 min-w-0">
-      <div className="text-sm font-semibold truncate">
-        @{displayNameFromEmail(menuPost.userEmail || "")}
+          <button
+            onClick={() => onToggleFollow(menuPost.userEmail || "")}
+            className={`text-xs px-3 py-1 rounded-full border ${
+              followMap[(menuPost.userEmail || "").toLowerCase()]
+                ? "bg-white text-black"
+                : "border-white/30 text-white"
+            }`}
+          >
+            {followMap[(menuPost.userEmail || "").toLowerCase()]
+              ? "Following"
+              : "Follow"}
+          </button>
+        </div>
+
+        {/* ACTIONS */}
+        <div className="divide-y divide-white/10 text-sm mt-2">
+          <button className="w-full text-left py-3">Share</button>
+          <button className="w-full text-left py-3">Save</button>
+          <button className="w-full text-left py-3">Not interested</button>
+          <button className="w-full text-left py-3 text-red-400">Report</button>
+        </div>
+
+        {/* CANCEL */}
+        <button
+          onClick={() => setMenuOpen(false)}
+          className="w-full text-center py-3 mt-2 text-white/70"
+        >
+          Cancel
+        </button>
       </div>
-    </div>
-
-    <button
-      onClick={() => onToggleFollow(menuPost.userEmail || "")}
-      className={`text-xs px-3 py-1 rounded-full border ${
-        followMap[(menuPost.userEmail || "").toLowerCase()]
-          ? "bg-white text-black"
-          : "border-white/30 text-white"
-      }`}
-    >
-      {followMap[(menuPost.userEmail || "").toLowerCase()]
-        ? "Following"
-        : "Follow"}
-    </button>
-  </div>
-
-  {/* ACTIONS */}
-  <div className="divide-y divide-white/10 text-sm mt-2">
-    <button className="w-full text-left py-3">Share</button>
-    <button className="w-full text-left py-3">Save</button>
-    <button className="w-full text-left py-3">Not interested</button>
-    <button className="w-full text-left py-3 text-red-400">Report</button>
-  </div>
-
-  {/* CANCEL */}
-  <button
-    onClick={() => setMenuOpen(false)}
-    className="w-full text-center py-3 mt-2 text-white/70"
-  >
-    Cancel
-  </button>
-</div>
-
-  </div>,
-  document.body
-)}
+    </div>,
+    document.body
+  )}
 </FeedLayout>
 );
 }
