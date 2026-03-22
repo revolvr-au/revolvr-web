@@ -548,7 +548,7 @@ return (
       })}
     </div>
 
-    {/* COMMENTS MODAL */}
+   {/* COMMENTS MODAL */}
 {commentsOpen && (
   <div className="fixed inset-0 z-[9999] flex items-end h-[var(--locked-vh)]">
 
@@ -558,10 +558,10 @@ return (
       onClick={closeComments}
     />
 
-    {/* COMMENTS PANEL */}
+    {/* PANEL */}
     <div className="relative w-full max-w-[420px] mx-auto max-h-[70vh] bg-black text-white rounded-t-2xl p-4 overflow-y-auto">
 
-      {/* COMMENTS LIST */}
+      {/* COMMENTS */}
       {comments.map((c, i) => (
         <div key={i} className="mb-3">
           <div className="text-xs opacity-70">
@@ -573,21 +573,22 @@ return (
 
       {/* INPUT */}
       <div className="sticky bottom-0 left-0 w-full px-2 pb-safe-bottom bg-black">
-  <div className="flex gap-2">
-    <input
-      value={commentText}
-      onChange={(e) => setCommentText(e.target.value)}
-      className="flex-1 bg-white/10 px-3 py-2 rounded-lg text-sm"
-      placeholder="Add a comment..."
-    />
-    <button onClick={handleSendComment} className="shrink-0">
-      <Send size={20} />
-    </button>
-  </div>
-</div>
+        <div className="flex gap-2">
+          <input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            className="flex-1 bg-white/10 px-3 py-2 rounded-lg text-sm"
+            placeholder="Add a comment..."
+          />
+          <button onClick={handleSendComment} className="shrink-0">
+            <Send size={20} />
+          </button>
+        </div>
+      </div>
+
+    </div>
   </div>
 )}
-
    {/* MENU MODAL */}
  {menuOpen && menuPost &&
   typeof document !== "undefined" &&
