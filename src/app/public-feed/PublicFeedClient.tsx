@@ -548,22 +548,22 @@ return (
     </div>
 
     {/* COMMENTS MODAL */}
-    {commentsOpen && (
-      <div className="fixed inset-0 z-50">
-        <button
-          className="absolute inset-0 bg-black/60"
-          onClick={closeComments}
-        />
-      </div>
-    )}
+   {commentsOpen && (
+  <div className="fixed top-0 left-0 w-screen h-screen z-50">
+    <div
+      className="absolute top-0 left-0 w-full h-full bg-black/60"
+      onClick={closeComments}
+    />
+  </div>
+)}
 
     {/* MENU MODAL */}
     {menuOpen && menuPost && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center">
-        <button
-          className="absolute inset-0 bg-black/60"
-          onClick={() => setMenuOpen(false)}
-        />
+  <div className="fixed top-0 left-0 w-screen h-screen z-[9999] flex items-center justify-center">
+    <div
+      className="absolute top-0 left-0 w-full h-full bg-black/60"
+      onClick={() => setMenuOpen(false)}
+    />
 
         <div className="relative w-[85%] max-w-sm bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-4 text-white shadow-xl">
           <div className="flex items-center gap-3 pb-3 border-b border-white/10">
