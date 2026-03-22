@@ -555,71 +555,60 @@ return (
 
     {/* MENU MODAL */}
 {menuOpen && menuPost && (
-  <div className="fixed inset-0 z-50 flex items-end justify-center">
-
-    {/* OVERLAY */}
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* backdrop */}
     <button
-      className="absolute inset-0 bg-black/50"
+      className="absolute inset-0 bg-black/60"
       onClick={() => setMenuOpen(false)}
     />
 
-    {/* FLOATING PANEL */}
-    <div className="relative mb-20 w-[90%] max-w-sm bg-zinc-900/90 backdrop-blur rounded-2xl p-4 text-white shadow-2xl z-50">
+    {/* modal */}
+    <div className="relative w-[85%] max-w-sm bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-4 text-white shadow-xl">
 
-  {/* USER HEADER */}
-  <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-  <img
-    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost?.userEmail}`}
-    className="w-10 h-10 rounded-full border border-white/20 shrink-0"
-    alt=""
-  />
+      {/* HEADER (FIXED) */}
+      <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+        <img
+          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost.userEmail}`}
+          className="w-10 h-10 rounded-full border border-white/20 shrink-0"
+          alt=""
+        />
 
-  <div className="flex-1 min-w-0">
-    <div className="text-sm font-semibold truncate">
-      @{displayNameFromEmail(menuPost?.userEmail || "")}
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold truncate">
+            @{displayNameFromEmail(menuPost.userEmail || "")}
+          </div>
+        </div>
+
+        <button
+          onClick={() => onToggleFollow(menuPost.userEmail || "")}
+          className={`text-xs px-3 py-1 rounded-full border ${
+            followMap[(menuPost.userEmail || "").toLowerCase()]
+              ? "bg-white text-black"
+              : "border-white/30 text-white"
+          }`}
+        >
+          {followMap[(menuPost.userEmail || "").toLowerCase()]
+            ? "Following"
+            : "Follow"}
+        </button>
+      </div>
+
+      {/* ACTIONS */}
+      <div className="divide-y divide-white/10 text-sm mt-2">
+        <button className="w-full text-left py-3">Share</button>
+        <button className="w-full text-left py-3">Save</button>
+        <button className="w-full text-left py-3">Not interested</button>
+        <button className="w-full text-left py-3 text-red-400">Report</button>
+      </div>
+
+      {/* CANCEL */}
+      <button
+        onClick={() => setMenuOpen(false)}
+        className="w-full text-center py-3 mt-2 text-white/70"
+      >
+        Cancel
+      </button>
     </div>
-  </div>
-
-  <button
-    onClick={() => onToggleFollow(menuPost?.userEmail || "")}
-    className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
-      followMap[(menuPost?.userEmail || "").toLowerCase()]
-        ? "bg-white text-black"
-        : "border-white/30 text-white"
-    }`}
-  >
-    {followMap[(menuPost?.userEmail || "").toLowerCase()]
-      ? "Following"
-      : "Follow"}
-  </button>
-</div>
-
-  {/* ACTIONS */}
-  <button className="w-full text-left py-3 border-b border-white/10">
-    Share
-  </button>
-
-  <button className="w-full text-left py-3 border-b border-white/10">
-    Save
-  </button>
-
-  <button className="w-full text-left py-3 border-b border-white/10">
-    Not interested
-  </button>
-
-  <button className="w-full text-left py-3 border-b border-white/10 text-red-400">
-    Report
-  </button>
-
-  {/* CANCEL */}
-  <button
-    className="w-full text-center py-3 mt-2 text-white/70"
-    onClick={() => setMenuOpen(false)}
-  >
-    Cancel
-  </button>
-
-</div>
   </div>
 )}
   </FeedLayout>
