@@ -554,18 +554,44 @@ return (
     )}
 
     {/* MENU MODAL */}
-    {menuOpen && menuPost && (
-      <div className="fixed inset-0 z-50">
-        <button
-          className="absolute inset-0 bg-black/60"
-          onClick={() => setMenuOpen(false)}
-        />
+{menuOpen && menuPost && (
+  <div className="fixed inset-0 z-50 flex items-end justify-center">
 
-        <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 pb-10 text-white">
-          {/* menu content later */}
-        </div>
-      </div>
-    )}
+    {/* OVERLAY */}
+    <button
+      className="absolute inset-0 bg-black/50"
+      onClick={() => setMenuOpen(false)}
+    />
+
+    {/* FLOATING PANEL */}
+    <div className="relative mb-20 w-[90%] max-w-sm bg-zinc-900/90 backdrop-blur rounded-2xl p-4 text-white shadow-2xl z-50">
+
+      <button className="w-full text-left py-3 border-b border-white/10">
+        Share
+      </button>
+
+      <button className="w-full text-left py-3 border-b border-white/10">
+        Save
+      </button>
+
+      <button className="w-full text-left py-3 border-b border-white/10">
+        Not interested
+      </button>
+
+      <button className="w-full text-left py-3 border-b border-white/10 text-red-400">
+        Report
+      </button>
+
+      <button
+        className="w-full text-center py-3 mt-2 text-white/70"
+        onClick={() => setMenuOpen(false)}
+      >
+        Cancel
+      </button>
+
+    </div>
+  </div>
+)}
   </FeedLayout>
 );
 }
