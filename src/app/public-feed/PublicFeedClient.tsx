@@ -483,65 +483,68 @@ return (
               />
             )}
 
+            
             {/* AVATAR */}
-            <div className="absolute top-4 right-4 z-40">
-              <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
-                <img
-                  src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
-                  className="w-10 h-10 rounded-full border-2 border-white"
-                  alt=""
-                />
-              </div>
-            </div>
+{!menuOpen && (
+  <div className="absolute top-4 right-4 z-40">
+    <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
+      <img
+        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
+        className="w-10 h-10 rounded-full border-2 border-white"
+        alt=""
+      />
+    </div>
+  </div>
+)}
 
             {/* GRADIENT */}
             <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20" />
 
-            {/* RIGHT ACTION BAR */}
-            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-40">
-              <button onClick={() => toggleLike(p.id)}>
-                <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                <div className="text-xs text-center">
-                  {likeCounts[p.id] || 0}
-                </div>
-              </button>
+           {/* RIGHT ACTION BAR */}
+{!menuOpen && (
+  <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-40">
+    
+    <button onClick={() => toggleLike(p.id)}>
+      <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+      <div className="text-xs text-center">
+        {likeCounts[p.id] || 0}
+      </div>
+    </button>
 
-              <button onClick={() => openComments(p.id)}>
-                <MessageCircle size={28} />
-                <div className="text-xs text-center">
-                  {commentCounts[p.id] || 0}
-                </div>
-              </button>
+    <button onClick={() => openComments(p.id)}>
+      <MessageCircle size={28} />
+      <div className="text-xs text-center">
+        {commentCounts[p.id] || 0}
+      </div>
+    </button>
 
-              <button onClick={() => sharePost(p.id)}>
-                <Share2 size={28} />
-              </button>
+    <button onClick={() => sharePost(p.id)}>
+      <Share2 size={28} />
+    </button>
 
-              <button onClick={() => toggleRewards(p.id)}>
-                <Gift size={28} />
-              </button>
+    <button onClick={() => toggleRewards(p.id)}>
+      <Gift size={28} />
+    </button>
 
-              <button>
-                <Plus size={28} />
-              </button>
+    <button>
+      <Plus size={28} />
+    </button>
 
-              <button>
-                <Home size={28} />
-              </button>
+    <button>
+      <Home size={28} />
+    </button>
 
-              <button
-                onClick={() => {
-                  setMenuPost(p);
-                  setMenuOpen(true);
-                }}
-              >
-                <MoreVertical size={28} />
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <button
+      onClick={() => {
+        setMenuPost(p);
+        setMenuOpen(true);
+      }}
+    >
+      <MoreVertical size={28} />
+    </button>
+
+  </div>
+)}
 
     {/* COMMENTS MODAL */}
     {commentsOpen && (
