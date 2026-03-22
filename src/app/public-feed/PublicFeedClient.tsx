@@ -560,29 +560,48 @@ return (
 
     {/* PANEL */}
     <div className="relative w-full max-w-[420px] mx-auto 
-  max-h-[calc(var(--locked-vh)-80px)] 
-  bg-black text-white rounded-t-2xl p-4 
-  overflow-y-auto overscroll-contain">
+  h-[calc(var(--locked-vh)-80px)] 
+  bg-black text-white rounded-t-2xl 
+  flex flex-col">
 
-      {/* COMMENTS */}
-      {comments.map((c, i) => (
-        <div key={i} className="mb-3">
-          <div className="text-xs opacity-70">
-            @{displayNameFromEmail(c.userEmail || "")}
-          </div>
-          <div>{c.body}</div>
+  {/* SCROLL AREA */}
+  <div className="flex-1 overflow-y-auto p-4">
+    {comments.map((c, i) => (
+      <div key={i} className="mb-3">
+        <div className="text-xs opacity-70">
+          @{displayNameFromEmail(c.userEmail || "")}
         </div>
-      ))}
+        <div>{c.body}</div>
+      </div>
+    ))}
+  </div>
+
+  {/* INPUT (LOCKED) */}
+  <div className="px-3 py-2 border-t border-white/10 bg-black">
+    <div className="flex gap-2 items-center">
+      <input
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        placeholder="Add a comment..."
+        className="flex-1 bg-transparent outline-none text-white text-base"
+      />
+      <button onClick={handleSendComment} className="shrink-0">
+        <Send size={20} />
+      </button>
+    </div>
+  </div>
+
+</div>
 
       {/* INPUT */}
-      <div className="sticky bottom-0 left-0 w-full px-2 pb-safe-bottom bg-black">
+      <div className="left-0 w-full px-2 pb-safe-bottom bg-black">
         <div className="flex gap-2">
           <input
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            className="flex-1 bg-white/10 px-3 py-2 rounded-lg text-sm"
-            placeholder="Add a comment..."
-          />
+  value={commentText}
+  onChange={(e) => setCommentText(e.target.value)}
+  placeholder="Add a comment..."
+  className="flex-1 bg-transparent outline-none text-white text-base"
+/>
           <button onClick={handleSendComment} className="shrink-0">
             <Send size={20} />
           </button>
