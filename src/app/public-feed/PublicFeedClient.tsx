@@ -550,7 +550,7 @@ return (
 
     {/* COMMENTS MODAL */}
 {commentsOpen && (
-  <div className="fixed inset-0 z-[9999] flex items-end">
+  <div className="fixed inset-0 z-[9999] flex items-end h-[var(--locked-vh)]">
 
     {/* BACKDROP */}
     <div
@@ -572,19 +572,19 @@ return (
       ))}
 
       {/* INPUT */}
-      <div className="mt-4 flex gap-2 px-2 pb-safe-bottom">
-  <input
-    value={commentText}
-    onChange={(e) => setCommentText(e.target.value)}
-    className="flex-1 bg-white/10 px-3 py-2 rounded-lg text-sm"
-    placeholder="Add a comment..."
-  />
-  <button onClick={handleSendComment} className="shrink-0">
-    <Send size={20} />
-  </button>
+      <div className="sticky bottom-0 left-0 w-full px-2 pb-safe-bottom bg-black">
+  <div className="flex gap-2">
+    <input
+      value={commentText}
+      onChange={(e) => setCommentText(e.target.value)}
+      className="flex-1 bg-white/10 px-3 py-2 rounded-lg text-sm"
+      placeholder="Add a comment..."
+    />
+    <button onClick={handleSendComment} className="shrink-0">
+      <Send size={20} />
+    </button>
+  </div>
 </div>
-
-    </div>
   </div>
 )}
 
