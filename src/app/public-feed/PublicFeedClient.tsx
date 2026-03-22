@@ -574,10 +574,9 @@ return (
       <div className="relative w-[85%] max-w-sm bg-zinc-900/95 backdrop-blur-xl rounded-2xl p-4 text-white shadow-xl animate-fadeIn">
 
         {/* HEADER */}
-<div className="flex items-center gap-3 pb-3 border-b border-white/10">
+      <div className="flex items-center gap-3 pb-3 border-b border-white/10">
 
-  {/* AVATAR */}
-  <div className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full overflow-hidden border border-white/20 shrink-0 bg-black">
+  <div className="w-8 h-8 min-w-[32px] min-h-[32px] rounded-full overflow-hidden border border-white/20 shrink-0 bg-black">
     <img
       src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost.userEmail}`}
       className="w-full h-full object-cover"
@@ -585,14 +584,12 @@ return (
     />
   </div>
 
-  {/* NAME */}
   <div className="flex-1 min-w-0">
     <div className="text-sm font-semibold truncate">
       @{displayNameFromEmail(menuPost.userEmail || "")}
     </div>
   </div>
 
-  {/* FOLLOW BUTTON */}
   <button
     onClick={() => onToggleFollow(menuPost.userEmail || "")}
     className={`text-xs px-3 py-1 rounded-full border ${
