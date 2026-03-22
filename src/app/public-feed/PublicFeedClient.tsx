@@ -568,31 +568,31 @@ return (
 
   {/* USER HEADER */}
   <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-    <img
-      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost?.userEmail}`}
-      className="w-10 h-10 rounded-full border border-white/20"
-      alt=""
-    />
+  <img
+    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost?.userEmail}`}
+    className="w-10 h-10 rounded-full border border-white/20 shrink-0"
+    alt=""
+  />
 
-    <div className="flex-1">
-      <div className="text-sm font-semibold">
-        @{displayNameFromEmail(menuPost?.userEmail || "")}
-      </div>
+  <div className="flex-1 min-w-0">
+    <div className="text-sm font-semibold truncate">
+      @{displayNameFromEmail(menuPost?.userEmail || "")}
     </div>
-
-    <button
-      onClick={() => onToggleFollow(menuPost?.userEmail || "")}
-      className={`text-xs px-3 py-1 rounded-full border ${
-        followMap[(menuPost?.userEmail || "").toLowerCase()]
-          ? "bg-white text-black"
-          : "border-white/30 text-white"
-      }`}
-    >
-      {followMap[(menuPost?.userEmail || "").toLowerCase()]
-        ? "Following"
-        : "Follow"}
-    </button>
   </div>
+
+  <button
+    onClick={() => onToggleFollow(menuPost?.userEmail || "")}
+    className={`text-xs px-3 py-1 rounded-full border whitespace-nowrap ${
+      followMap[(menuPost?.userEmail || "").toLowerCase()]
+        ? "bg-white text-black"
+        : "border-white/30 text-white"
+    }`}
+  >
+    {followMap[(menuPost?.userEmail || "").toLowerCase()]
+      ? "Following"
+      : "Follow"}
+  </button>
+</div>
 
   {/* ACTIONS */}
   <button className="w-full text-left py-3 border-b border-white/10">
