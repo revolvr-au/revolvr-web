@@ -483,68 +483,69 @@ return (
               />
             )}
 
-            
             {/* AVATAR */}
-{!menuOpen && (
-  <div className="absolute top-4 right-4 z-40">
-    <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
-      <img
-        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
-        className="w-10 h-10 rounded-full border-2 border-white"
-        alt=""
-      />
-    </div>
-  </div>
-)}
+            {!menuOpen && (
+              <div className="absolute top-4 right-4 z-40">
+                <div className="w-12 h-12 rounded-full bg-black/40 backdrop-blur flex items-center justify-center">
+                  <img
+                    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
+                    className="w-10 h-10 rounded-full border-2 border-white"
+                    alt=""
+                  />
+                </div>
+              </div>
+            )}
 
             {/* GRADIENT */}
             <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20" />
 
-           {/* RIGHT ACTION BAR */}
-{!menuOpen && (
-  <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-40">
-    
-    <button onClick={() => toggleLike(p.id)}>
-      <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-      <div className="text-xs text-center">
-        {likeCounts[p.id] || 0}
-      </div>
-    </button>
+            {/* RIGHT ACTION BAR */}
+            {!menuOpen && (
+              <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-40">
+                <button onClick={() => toggleLike(p.id)}>
+                  <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+                  <div className="text-xs text-center">
+                    {likeCounts[p.id] || 0}
+                  </div>
+                </button>
 
-    <button onClick={() => openComments(p.id)}>
-      <MessageCircle size={28} />
-      <div className="text-xs text-center">
-        {commentCounts[p.id] || 0}
-      </div>
-    </button>
+                <button onClick={() => openComments(p.id)}>
+                  <MessageCircle size={28} />
+                  <div className="text-xs text-center">
+                    {commentCounts[p.id] || 0}
+                  </div>
+                </button>
 
-    <button onClick={() => sharePost(p.id)}>
-      <Share2 size={28} />
-    </button>
+                <button onClick={() => sharePost(p.id)}>
+                  <Share2 size={28} />
+                </button>
 
-    <button onClick={() => toggleRewards(p.id)}>
-      <Gift size={28} />
-    </button>
+                <button onClick={() => toggleRewards(p.id)}>
+                  <Gift size={28} />
+                </button>
 
-    <button>
-      <Plus size={28} />
-    </button>
+                <button>
+                  <Plus size={28} />
+                </button>
 
-    <button>
-      <Home size={28} />
-    </button>
+                <button>
+                  <Home size={28} />
+                </button>
 
-    <button
-      onClick={() => {
-        setMenuPost(p);
-        setMenuOpen(true);
-      }}
-    >
-      <MoreVertical size={28} />
-    </button>
-
-  </div>
-)}
+                <button
+                  onClick={() => {
+                    setMenuPost(p);
+                    setMenuOpen(true);
+                  }}
+                >
+                  <MoreVertical size={28} />
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
 
     {/* COMMENTS MODAL */}
     {commentsOpen && (
@@ -557,63 +558,56 @@ return (
     )}
 
     {/* MENU MODAL */}
-{menuOpen && menuPost && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center">
-    {/* backdrop */}
-    <button
-      className="absolute inset-0 bg-black/60"
-      onClick={() => setMenuOpen(false)}
-    />
-
-    {/* modal */}
-    <div className="relative w-[85%] max-w-sm bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-4 text-white shadow-xl">
-
-      {/* HEADER (FIXED) */}
-      <div className="flex items-center gap-3 pb-3 border-b border-white/10">
-        <img
-          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost.userEmail}`}
-          className="w-10 h-10 rounded-full border border-white/20 shrink-0"
-          alt=""
+    {menuOpen && menuPost && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <button
+          className="absolute inset-0 bg-black/60"
+          onClick={() => setMenuOpen(false)}
         />
 
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold truncate">
-            @{displayNameFromEmail(menuPost.userEmail || "")}
+        <div className="relative w-[85%] max-w-sm bg-zinc-900/90 backdrop-blur-xl rounded-2xl p-4 text-white shadow-xl">
+          <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+            <img
+              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost.userEmail}`}
+              className="w-10 h-10 rounded-full border border-white/20 shrink-0"
+              alt=""
+            />
+
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold truncate">
+                @{displayNameFromEmail(menuPost.userEmail || "")}
+              </div>
+            </div>
+
+            <button
+              onClick={() => onToggleFollow(menuPost.userEmail || "")}
+              className={`text-xs px-3 py-1 rounded-full border ${
+                followMap[(menuPost.userEmail || "").toLowerCase()]
+                  ? "bg-white text-black"
+                  : "border-white/30 text-white"
+              }`}
+            >
+              {followMap[(menuPost.userEmail || "").toLowerCase()]
+                ? "Following"
+                : "Follow"}
+            </button>
           </div>
+
+          <div className="divide-y divide-white/10 text-sm mt-2">
+            <button className="w-full text-left py-3">Share</button>
+            <button className="w-full text-left py-3">Save</button>
+            <button className="w-full text-left py-3">Not interested</button>
+            <button className="w-full text-left py-3 text-red-400">Report</button>
+          </div>
+
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="w-full text-center py-3 mt-2 text-white/70"
+          >
+            Cancel
+          </button>
         </div>
-
-        <button
-          onClick={() => onToggleFollow(menuPost.userEmail || "")}
-          className={`text-xs px-3 py-1 rounded-full border ${
-            followMap[(menuPost.userEmail || "").toLowerCase()]
-              ? "bg-white text-black"
-              : "border-white/30 text-white"
-          }`}
-        >
-          {followMap[(menuPost.userEmail || "").toLowerCase()]
-            ? "Following"
-            : "Follow"}
-        </button>
       </div>
-
-      {/* ACTIONS */}
-      <div className="divide-y divide-white/10 text-sm mt-2">
-        <button className="w-full text-left py-3">Share</button>
-        <button className="w-full text-left py-3">Save</button>
-        <button className="w-full text-left py-3">Not interested</button>
-        <button className="w-full text-left py-3 text-red-400">Report</button>
-      </div>
-
-      {/* CANCEL */}
-      <button
-        onClick={() => setMenuOpen(false)}
-        className="w-full text-center py-3 mt-2 text-white/70"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-)}
+    )}
   </FeedLayout>
 );
-}
