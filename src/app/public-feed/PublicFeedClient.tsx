@@ -559,7 +559,10 @@ return (
     />
 
     {/* PANEL */}
-    <div className="relative w-full max-w-[420px] mx-auto max-h-[70vh] bg-black text-white rounded-t-2xl p-4 overflow-y-auto">
+    <div className="relative w-full max-w-[420px] mx-auto 
+  max-h-[calc(var(--locked-vh)-80px)] 
+  bg-black text-white rounded-t-2xl p-4 
+  overflow-y-auto overscroll-contain">
 
       {/* COMMENTS */}
       {comments.map((c, i) => (
