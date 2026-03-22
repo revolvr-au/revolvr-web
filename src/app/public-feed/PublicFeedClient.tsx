@@ -566,30 +566,60 @@ return (
     {/* FLOATING PANEL */}
     <div className="relative mb-20 w-[90%] max-w-sm bg-zinc-900/90 backdrop-blur rounded-2xl p-4 text-white shadow-2xl z-50">
 
-      <button className="w-full text-left py-3 border-b border-white/10">
-        Share
-      </button>
+  {/* USER HEADER */}
+  <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+    <img
+      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${menuPost?.userEmail}`}
+      className="w-10 h-10 rounded-full border border-white/20"
+      alt=""
+    />
 
-      <button className="w-full text-left py-3 border-b border-white/10">
-        Save
-      </button>
-
-      <button className="w-full text-left py-3 border-b border-white/10">
-        Not interested
-      </button>
-
-      <button className="w-full text-left py-3 border-b border-white/10 text-red-400">
-        Report
-      </button>
-
-      <button
-        className="w-full text-center py-3 mt-2 text-white/70"
-        onClick={() => setMenuOpen(false)}
-      >
-        Cancel
-      </button>
-
+    <div className="flex-1">
+      <div className="text-sm font-semibold">
+        @{displayNameFromEmail(menuPost?.userEmail || "")}
+      </div>
     </div>
+
+    <button
+      onClick={() => onToggleFollow(menuPost?.userEmail || "")}
+      className={`text-xs px-3 py-1 rounded-full border ${
+        followMap[(menuPost?.userEmail || "").toLowerCase()]
+          ? "bg-white text-black"
+          : "border-white/30 text-white"
+      }`}
+    >
+      {followMap[(menuPost?.userEmail || "").toLowerCase()]
+        ? "Following"
+        : "Follow"}
+    </button>
+  </div>
+
+  {/* ACTIONS */}
+  <button className="w-full text-left py-3 border-b border-white/10">
+    Share
+  </button>
+
+  <button className="w-full text-left py-3 border-b border-white/10">
+    Save
+  </button>
+
+  <button className="w-full text-left py-3 border-b border-white/10">
+    Not interested
+  </button>
+
+  <button className="w-full text-left py-3 border-b border-white/10 text-red-400">
+    Report
+  </button>
+
+  {/* CANCEL */}
+  <button
+    className="w-full text-center py-3 mt-2 text-white/70"
+    onClick={() => setMenuOpen(false)}
+  >
+    Cancel
+  </button>
+
+</div>
   </div>
 )}
   </FeedLayout>
