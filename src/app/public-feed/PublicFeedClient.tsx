@@ -572,10 +572,39 @@ return (
           onClick={() => setMenuOpen(false)}
         />
 
-        <div className="absolute bottom-0 w-full bg-zinc-900 rounded-t-2xl p-6 pb-10 text-white">
-          <div className="mb-3 font-semibold">
-            @{displayNameFromEmail(menuPost.userEmail || "")}
-          </div>
+        {menuOpen && menuPost && (
+  <div className="fixed inset-0 z-50">
+    
+    {/* BACKDROP (tap to close) */}
+    <div
+      className="absolute inset-0 bg-black/30"
+      onClick={() => setMenuOpen(false)}
+    />
+
+    {/* FLOATING MENU */}
+    <div className="absolute right-6 bottom-32 bg-zinc-900/95 backdrop-blur-xl rounded-2xl p-4 w-56 text-white shadow-xl">
+
+      <button className="w-full text-left py-2" onClick={() => sharePost(menuPost.id)}>
+        Share
+      </button>
+
+      <button className="w-full text-left py-2">
+        Save
+      </button>
+
+      <button className="w-full text-left py-2">
+        View creator
+      </button>
+
+      <div className="border-t border-white/10 my-2" />
+
+      <button className="w-full text-left py-2 text-red-400">
+        Report
+      </button>
+
+    </div>
+  </div>
+)}
 
           {menuPost.caption && (
             <div className="opacity-80">
