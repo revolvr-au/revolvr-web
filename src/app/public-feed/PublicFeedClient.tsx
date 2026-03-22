@@ -549,12 +549,42 @@ return (
     </div>
 
     {/* COMMENTS MODAL */}
-   {commentsOpen && (
-  <div className="fixed top-0 left-0 w-screen h-screen z-50">
+{commentsOpen && (
+  <div className="fixed inset-0 z-[9999] flex items-end">
+
+    {/* BACKDROP */}
     <div
-      className="absolute top-0 left-0 w-full h-full bg-black/60"
+      className="absolute inset-0 bg-black/60"
       onClick={closeComments}
     />
+
+    {/* COMMENTS PANEL */}
+    <div className="relative w-full max-h-[70vh] bg-black text-white rounded-t-2xl p-4 overflow-y-auto">
+
+      {/* COMMENTS LIST */}
+      {comments.map((c, i) => (
+        <div key={i} className="mb-3">
+          <div className="text-xs opacity-70">
+            @{displayNameFromEmail(c.userEmail || "")}
+          </div>
+          <div>{c.body}</div>
+        </div>
+      ))}
+
+      {/* INPUT */}
+      <div className="mt-4 flex gap-2">
+        <input
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          className="flex-1 bg-white/10 px-3 py-2 rounded-lg text-sm"
+          placeholder="Add a comment..."
+        />
+        <button onClick={handleSendComment}>
+          <Send size={20} />
+        </button>
+      </div>
+
+    </div>
   </div>
 )}
 
