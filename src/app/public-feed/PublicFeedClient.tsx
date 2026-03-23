@@ -479,10 +479,10 @@ return (
             {/* IMAGE */}
             {mediaUrl && (
               <img
-                src={mediaUrl}
-                className="absolute inset-0 w-full h-full object-cover"
-                alt=""
-              />
+            src={mediaUrl}
+            className="absolute inset-0 w-full h-full object-contain bg-black"
+            alt=""
+            />
             )}
 
             {/* AVATAR */}
@@ -526,6 +526,17 @@ return (
 ))}
             {/* GRADIENT */}
             <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20" />
+
+            <div className="absolute bottom-24 left-4 right-20 z-30 text-white">
+            <div className="text-sm font-semibold">
+            @{displayNameFromEmail(p.userEmail || "")}
+            </div>
+            {p.caption && (
+            <div className="text-sm opacity-90 mt-1">
+            {p.caption}
+            </div>
+             )}
+            </div>
 
             {/* RIGHT ACTION BAR */}
             {!menuOpen && (

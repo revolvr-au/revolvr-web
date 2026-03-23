@@ -49,7 +49,12 @@ export default function CreatePage() {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const mediaType = guessMediaType(file);
+        const file = files[i];
 
+if (file.size > 20 * 1024 * 1024) {
+  setErr("File too large (max 20MB)");
+  return;
+}
         const ext =
           file.name.split(".").pop() ||
           (mediaType === "video" ? "mp4" : "jpg");
@@ -142,13 +147,16 @@ export default function CreatePage() {
       <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
         <label className="block text-sm font-medium text-white/80">Upload video or images</label>
 
-        <input
-          className="mt-2 w-full text-sm text-white/80 file:mr-4 file:rounded-lg file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-white hover:file:bg-white/15"
-          type="file"
-          accept="video/*,image/*"
-          multiple
-          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-        />
+        <label className="mt-3 flex h-[220px] w-full items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/20 text-white/60 text-sm cursor-pointer">
+  Tap to upload
+  <input
+    type="file"
+    accept="video/*,image/*"
+    multiple
+    className="hidden"
+    onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+  />
+</label>
 
         {previewUrls.length ? (
           <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/20">
