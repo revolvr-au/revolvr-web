@@ -328,6 +328,7 @@ setRailUsers(creators)
       const link = window.location.origin + "/post/" + postId;
       navigator.clipboard.writeText(link);
       alert("Link copied!");
+      setMenuOpen(false); 
     } catch {
       alert("Could not copy link.");
     }
@@ -543,13 +544,12 @@ return (
                   </div>
                 </button>
 
-                <button onClick={() => sharePost(p.id)}>
-                  <Share2 size={28} />
-                </button>
-
                 <button onClick={() => toggleRewards(p.id)}>
                   <Gift size={28} />
                 </button>
+
+                <div className="h-4" /> {/* GAP */}
+
 
                 <button>
                   <Plus size={28} />
@@ -667,12 +667,29 @@ return (
   </button>
 
 </div>
-        {/* ACTIONS */}
+       {/* ACTIONS */}
         <div className="divide-y divide-white/10 text-sm mt-2">
-          <button className="w-full text-left py-3">Share</button>
-          <button className="w-full text-left py-3">Save</button>
-          <button className="w-full text-left py-3">Not interested</button>
-          <button className="w-full text-left py-3 text-red-400">Report</button>
+        <button
+        onClick={() => sharePost(menuPost.id)}
+        className="w-full text-left py-3"
+        >
+        Share
+        </button>
+
+        <button
+        onClick={() => sharePost(menuPost.id)}
+        className="w-full text-left py-3"
+        >
+        Copy link
+        </button>
+
+        <button className="w-full text-left py-3">
+        Not interested
+        </button>
+
+        <button className="w-full text-left py-3 text-red-400">
+        Report
+        </button>
         </div>
 
         {/* CANCEL */}
