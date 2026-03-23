@@ -381,11 +381,11 @@ setRailUsers(creators)
       });
 
       if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        console.error("[public-feed] reward checkout failed", txt);
-        alert("Checkout failed. Try again.");
-        return;
-      }
+  const txt = await res.text().catch(() => "");
+  console.error("[public-feed] reward checkout failed", txt);
+  alert(txt); // 👈 ADD THIS
+  return;
+}
 
       const data = await res.json().catch(() => null);
 
