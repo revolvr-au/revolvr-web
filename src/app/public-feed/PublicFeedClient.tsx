@@ -563,6 +563,7 @@ return (
     </div>
   );
 })}
+</div>
 
     {commentsOpen && (
       <div className="fixed inset-0 z-[9999] flex items-end">
