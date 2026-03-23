@@ -124,23 +124,7 @@ export default function PublicFeedDock({
           <span className="text-lg leading-none">💬</span>
         </button>
 
-        <button
-          type="button"
-          disabled={!canAct}
-          onClick={() => activePostId && onShare(activePostId)}
-          className={[
-            "w-12 h-12 rounded-full border border-white/10 bg-black/35 backdrop-blur",
-            "flex items-center justify-center",
-            "active:scale-[0.98] transition",
-            !canAct ? "opacity-40 cursor-not-allowed" : "hover:bg-black/45",
-          ].join(" ")}
-          aria-label="Share"
-          title="Share"
-        >
-          <span className="text-lg leading-none">↗</span>
-        </button>
-      </div>
-
+    
       {/* BOTTOM-LEFT REWARD BUTTON */}
       <div className="fixed left-3 bottom-28 z-50">
         <button
