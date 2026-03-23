@@ -478,11 +478,13 @@ return (
           >
             {/* IMAGE */}
             {mediaUrl && (
-              <img
+              <div className="absolute inset-0 flex items-center justify-center bg-black/95">
+            <img
             src={mediaUrl}
-            className="absolute inset-0 w-full h-full object-contain bg-black"
+            className="max-h-full max-w-full object-contain"
             alt=""
             />
+            </div>
             )}
 
             {/* AVATAR */}
