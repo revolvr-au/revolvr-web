@@ -576,7 +576,7 @@ return (
         ))}
       </div>
 
-      {/* INPUT */}
+            {/* INPUT */}
       <div className="px-3 py-2 border-t border-white/10 bg-black">
         <div className="flex gap-2 items-center">
           <input
@@ -595,24 +595,6 @@ return (
   </div>
 )}
 
-      {/* INPUT */}
-      <div className="left-0 w-full px-2 pb-safe-bottom bg-black">
-        <div className="flex gap-2">
-          <input
-  value={commentText}
-  onChange={(e) => setCommentText(e.target.value)}
-  placeholder="Add a comment..."
-  className="flex-1 bg-transparent outline-none text-white text-base"
-/>
-          <button onClick={handleSendComment} className="shrink-0">
-            <Send size={20} />
-          </button>
-        </div>
-      </div>
-
-    </div>
-  </div>
-)}
    {/* MENU MODAL */}
  {menuOpen && menuPost &&
   typeof document !== "undefined" &&
