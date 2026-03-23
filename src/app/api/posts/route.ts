@@ -37,26 +37,25 @@ export async function GET(req: Request) {
     const userEmail = userEmailParam
       ? userEmailParam.trim().toLowerCase()
       : null;
-    // SNAP FEED CHECK
-if (userEmail) {
-const snapshot = await prisma.feedSnapshot.findMany({
-  where: { viewerEmail: userEmail },
-  orderBy: [
-  { rankScore: "desc" },
-  { createdAt: "desc" },
-],
-  take: 20,
-});
+    // SNAP FEED DISABLED (TEMP)
+if (false && userEmail) {
+  const snapshot = await prisma.feedSnapshot.findMany({
+    where: { viewerEmail: userEmail },
+    orderBy: [
+      { rankScore: "desc" },
+      { createdAt: "desc" },
+    ],
+    take: 20,
+  });
 
-if (snapshot.length > 0) {
-  const posts = snapshot.map((s) => {
-  const payload = s.payload as any;
-  return payload?.post ?? null;
-}).filter(Boolean);
-  return NextResponse.json({ posts });
-}
+  if (snapshot.length > 0) {
+    const posts = snapshot
+      .map((s) => (s.payload as any)?.post ?? null)
+      .filter(Boolean);
 
-  // build snapshot if none exists
+    return NextResponse.json({ posts });
+  }
+
   const posts = await buildFeedSnapshot(userEmail);
   return NextResponse.json({ posts });
 }

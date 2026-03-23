@@ -542,7 +542,10 @@ return (
                 {rewardItems.map((r) => (
                 <button
                 key={r.mode}
-                onClick={() => onOpenReward(r.mode, p.id)}
+                onClick={() => {
+                setRewardOpen(false);
+                onOpenReward(r.mode, p.id);
+                }}
                 className="text-2xl hover:scale-110 active:scale-95 transition"
                 >
                 {r.icon}
@@ -564,8 +567,8 @@ return (
                 <div className="h-4" /> {/* GAP */}
 
 
-                <button>
-                  <Plus size={28} />
+                <button onClick={() => router.push("/create")}>
+                <Plus size={28} />
                 </button>
 
                 <button>
