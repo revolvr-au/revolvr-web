@@ -14,6 +14,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+        />
+      </head>
       <body className="min-h-screen bg-[#050814] text-white">
         {children}
       </body>
