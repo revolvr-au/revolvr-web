@@ -57,37 +57,37 @@ const [bigHeartPost, setBigHeartPost] = useState<string | null>(null);
 
 const lastTapRef = useRef(0);
 
-function handlePostTap(e: React.PointerEvent, postId: string) {
+function handlePostTap(e: React.MouseEvent, postId: string) {
   const target = e.target as HTMLElement;
 
-  if (target.closest("button, input, textarea")) return;
+  // 🔥 STRONGER BLOCK
+  if (target.closest("button, a, input, textarea")) return;
 
   const now = Date.now();
 
   if (now - lastTapRef.current < 300) {
-  toggleLike(postId);
+    toggleLike(postId);
 
-  // 💥 BIG HEART BURST
-  setBigHeartPost(postId);
-setTimeout(() => setBigHeartPost(null), 900);
+    setBigHeartPost(postId);
+    setTimeout(() => setBigHeartPost(null), 900);
 
-  // ❤️ spawn avatar heart
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top - 20;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top - 20;
 
-  const id = `${Date.now()}-${Math.random()}`;
+    const id = `${Date.now()}-${Math.random()}`;
 
-  setTimeout(() => {
-  setHearts((prev) => [...prev, { id, x, y }]);
-}, 120);
+    setTimeout(() => {
+      setHearts((prev) => [...prev, { id, x, y }]);
+    }, 120);
 
-  setTimeout(() => {
-    setHearts((prev) => prev.filter((h) => h.id !== id));
-  }, 3000);
-}
-lastTapRef.current = now;
+    setTimeout(() => {
+      setHearts((prev) => prev.filter((h) => h.id !== id));
+    }, 3000);
+  }
+
+  lastTapRef.current = now;
 }
 
   const viewer = "test@revolvr.net";
@@ -468,7 +468,7 @@ return (
       key={p.id}
       data-postid={p.id}
       data-user={email}
-      onPointerDown={(e) => handlePostTap(e, p.id)}
+      onClick={(e) => handlePostTap(e as any, p.id)}
       ref={(el) => {
         if (!el || !observerRef.current) return;
         observerRef.current.observe(el);
