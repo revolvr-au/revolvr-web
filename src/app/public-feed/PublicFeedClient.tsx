@@ -60,7 +60,6 @@ const lastTapRef = useRef(0);
 function handlePostTap(e: React.MouseEvent, postId: string) {
   const target = e.target as HTMLElement;
 
-  // 🔥 STRONGER BLOCK
   if (target.closest("button, a, input, textarea")) return;
 
   const now = Date.now();
@@ -74,13 +73,11 @@ function handlePostTap(e: React.MouseEvent, postId: string) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
 
     const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top - 20;
+    const y = e.clientY - rect.top;
 
     const id = `${Date.now()}-${Math.random()}`;
 
-    setTimeout(() => {
-      setHearts((prev) => [...prev, { id, x, y }]);
-    }, 120);
+    setHearts((prev) => [...prev, { id, x, y }]);
 
     setTimeout(() => {
       setHearts((prev) => prev.filter((h) => h.id !== id));
@@ -478,12 +475,12 @@ return (
 
       {/* IMAGE */}
       {mediaUrl && (
-        <img
-          src={mediaUrl}
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          alt=""
-        />
-      )}
+  <img
+    src={mediaUrl}
+    className="absolute inset-0 w-full h-full object-cover"
+    alt=""
+  />
+)}
 
       {/* GRADIENT */}
       <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20" />
@@ -534,7 +531,7 @@ return (
 
           {/* REWARD */}
           <button onClick={() => toggleRewards(p.id)}>
-            <Gift size={28} />
+          <Gift size={28} />
           </button>
 
           {/* CREATE */}
@@ -566,27 +563,42 @@ return (
 </div>
 
     {commentsOpen && (
-      <div className="fixed inset-0 z-[9999] flex items-end">
-        <div
-          className="absolute inset-0 bg-black/60"
-          onClick={closeComments}
-        />
-        <div className="relative w-full max-w-[420px] mx-auto bg-black text-white rounded-t-2xl flex flex-col">
-          <div className="flex-1 overflow-y-auto p-4">
-            {comments.map((c, i) => (
-              <div key={i} className="mb-3">
-                <div className="text-xs opacity-70">
-                  @{displayNameFromEmail(c.userEmail || "")}
-                </div>
-                <div>{c.body}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )}
+  <div className="fixed inset-0 z-[9999] flex items-end">
 
-   {menuOpen && menuPost && typeof document !== "undefined" && (
+    {/* BACKDROP */}
+    <div
+      className="absolute inset-0 bg-black/60"
+      onClick={closeComments}
+    />
+
+    {/* PANEL */}
+    <div className="relative w-full bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-50">
+
+      <div className="flex-1 overflow-y-auto p-4">
+        {comments.map((c, i) => (
+          <div key={i} className="mb-3">
+            <div className="text-xs opacity-70">
+              @{displayNameFromEmail(c.userEmail || "")}
+            </div>
+            <div>{c.body}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="p-3 border-t border-white/10">
+        <input
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          placeholder="Add a comment..."
+          className="w-full bg-transparent outline-none text-white"
+        />
+      </div>
+
+    </div>
+  </div>
+)}
+
+   {menuOpen && menuPost && typeof document !== "undefined" &&
   createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
 
@@ -595,7 +607,7 @@ return (
         onClick={() => setMenuOpen(false)}
       />
 
-      <div className="relative w-[85%] max-w-sm bg-zinc-900 rounded-2xl p-4 text-white">
+      <div className="relative w-[85%] max-w-sm bg-zinc-900 rounded-2xl p-4 text-white z-50">
 
         <div className="text-sm font-semibold mb-4">
           @{displayNameFromEmail(menuPost.userEmail || "")}
@@ -603,14 +615,14 @@ return (
 
         <button
           onClick={() => sharePost(menuPost.id)}
-          className="block w-full text-left py-2"
+          className="block w-full text-left py-3"
         >
           Share
         </button>
 
         <button
           onClick={() => setMenuOpen(false)}
-          className="block w-full text-left py-2"
+          className="block w-full text-left py-3"
         >
           Cancel
         </button>
@@ -619,7 +631,7 @@ return (
     </div>,
     document.body
   )
-)}
+}
   </FeedLayout>
 );
 }
