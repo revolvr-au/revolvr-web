@@ -496,7 +496,33 @@ return (
                 </div>
               </div>
             )}
+          {/* BIG HEART */}
+{bigHeartPost === p.id && (
+  <div className="absolute inset-0 flex items-center justify-center z-50 pointer-events-none">
+    <div className="text-[72px] leading-none animate-heartPop">❤️</div>
+  </div>
+)}
 
+{/* FLOATING HEARTS */}
+{hearts.map((h) => (
+  <div
+    key={h.id}
+    className="absolute z-50 pointer-events-none animate-heart"
+    style={{
+      left: h.x,
+      top: h.y,
+      transform: "translate(-50%, -50%)",
+    }}
+  >
+    <div className="w-[60px] h-[60px] rounded-full overflow-hidden bg-red-500">
+      <img
+        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${viewer}`}
+        className="w-full h-full object-cover"
+        alt=""
+      />
+    </div>
+  </div>
+))}
             {/* GRADIENT */}
             <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20" />
 
