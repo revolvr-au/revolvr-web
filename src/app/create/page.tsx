@@ -47,14 +47,14 @@ export default function CreatePage() {
       const uploads: MediaOut[] = [];
 
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const mediaType = guessMediaType(file);
-        const file = files[i];
+  const file = files[i];
 
-if (file.size > 20 * 1024 * 1024) {
-  setErr("File too large (max 20MB)");
-  return;
-}
+  if (file.size > 20 * 1024 * 1024) {
+    setErr("File too large (max 20MB)");
+    return;
+  }
+
+  const mediaType = guessMediaType(file);
         const ext =
           file.name.split(".").pop() ||
           (mediaType === "video" ? "mp4" : "jpg");
