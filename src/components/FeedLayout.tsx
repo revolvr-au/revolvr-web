@@ -42,45 +42,46 @@ export default function FeedLayout({
     <div className="min-h-screen text-white flex flex-col">
 
       {!isLive && (
-        <header className="absolute top-[64px] left-0 right-0 z-50 px-4">
-          <div className="flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
+        <header className="fixed top-0 left-0 right-0 z-[999] px-4 pt-[env(safe-area-inset-top)]">
+  <div className="flex w-full max-w-[720px] mx-auto items-center justify-between gap-3 px-4 py-3">
 
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold tracking-wider bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
-                {(title ?? "REVOLVR").toUpperCase()}
-              </h1>
-            </div>
+    {/* LEFT: LOGO */}
+    <div className="min-w-0">
+      <h1 className="text-xl font-semibold tracking-wider text-white">
+        {(title ?? "REVOLVR").toUpperCase()}
+      </h1>
+    </div>
 
-            <div className="flex items-center gap-2">
-              {/* avatar removed — now handled per post */}
-              <button
-                type="button"
-                onClick={() => onGoLive?.()}
-                disabled={!onGoLive}
-                className={`relative inline-flex h-10 w-10 items-center justify-center rounded-xl transition active:scale-95 ${
-                  isLive
-                    ? "bg-red-600 shadow-[0_0_20px_rgba(255,0,60,0.6)]"
-                    : "bg-white/5 hover:bg-white/10"
-                } disabled:opacity-40 disabled:cursor-not-allowed`}
-              >
-                <Radio className="w-5 h-5 text-white" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              </button>
+    {/* RIGHT */}
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onGoLive?.()}
+        disabled={!onGoLive}
+        className={`relative inline-flex h-10 w-10 items-center justify-center rounded-xl transition active:scale-95 ${
+          isLive
+            ? "bg-red-600 shadow-[0_0_20px_rgba(255,0,60,0.6)]"
+            : "bg-white/10 backdrop-blur"
+        }`}
+      >
+        <Radio className="w-5 h-5 text-white" />
+        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+      </button>
 
-              {right ?? null}
+      {right ?? null}
 
-              {showMenu && (
-                <Link
-                  href={menuHref}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10 active:scale-95"
-                >
-                  ☰
-                </Link>
-              )}
-            </div>
+      {showMenu && (
+        <Link
+          href={menuHref}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur"
+        >
+          ☰
+        </Link>
+      )}
+    </div>
 
-          </div>
-        </header>
+  </div>
+</header>
       )}
 
     <main

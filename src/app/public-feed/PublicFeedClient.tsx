@@ -456,9 +456,9 @@ return (
     onSelectCreator={jumpToCreator}
   >
     <div
-      ref={feedRef}
-      className="h-full w-full overflow-y-scroll snap-y snap-mandatory"
-    >
+  ref={feedRef}
+  className="h-full w-full overflow-y-scroll snap-y snap-mandatory pt-[100px]"
+>
       {posts.map((p) => {
         const email = String(p.userEmail || "").toLowerCase();
         const mediaUrl = String(p.imageUrl || "").trim();
@@ -476,7 +476,7 @@ return (
             className="relative h-screen w-full snap-start"
           >
             {mediaUrl && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/95">
+              <div className="absolute inset-0 flex items-center justify-center bg-black/95 z-0">
                 <img
                   src={mediaUrl}
                   className="max-h-full max-w-full object-contain"
