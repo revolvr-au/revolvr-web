@@ -145,8 +145,9 @@ export default function PublicFeedDock({
         </button>
 
         {/* Reward tray */}
+        <div className="fixed left-3 bottom-28 z-50 relative"></div>
         {rewardOpen && canAct ? (
-          <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
+          <div className="absolute bottom-16 left-0 w-56 rounded-2xl ...">
             <div className="text-[11px] text-white/60 px-2 pb-2">Reward this post</div>
             <div className="grid grid-cols-2 gap-2">
               {rewardItems.map((it) => (

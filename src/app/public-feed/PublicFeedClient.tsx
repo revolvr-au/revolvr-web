@@ -537,6 +537,19 @@ return (
                   </div>
                 </button>
 
+                {rewardOpen && rewardPostId === p.id && (
+                <div className="absolute right-16 bottom-32 z-50 bg-black/80 backdrop-blur rounded-2xl p-3 flex gap-2 shadow-lg">
+                {rewardItems.map((r) => (
+                <button
+                key={r.mode}
+                onClick={() => onOpenReward(r.mode, p.id)}
+                className="text-2xl hover:scale-110 active:scale-95 transition"
+                >
+                {r.icon}
+                </button>
+                ))}
+                </div>
+                )}
                 <button onClick={() => openComments(p.id)}>
                   <MessageCircle size={28} />
                   <div className="text-xs text-center">
