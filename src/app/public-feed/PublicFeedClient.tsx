@@ -460,86 +460,93 @@ return (
   const email = String(p.userEmail || "").toLowerCase();
   const mediaUrl = String(p.imageUrl || "").trim();
 
-  return (
-    <div
-  key={p.id}
-  data-postid={p.id}
-  data-user={email}
-  className="relative h-screen w-full snap-start overflow-hidden"
-  onPointerDown={(e) => handlePostTap(e, p.id)}
->
-      {/* IMAGE */}
-      {mediaUrl && (
-        <img
-          src={mediaUrl}
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          alt=""
-        />
+ return (
+  <div
+    key={p.id}
+    data-postid={p.id}
+    data-user={email}
+    className="relative h-screen w-full snap-start overflow-hidden"
+    onPointerDown={(e) => handlePostTap(e, p.id)}
+  >
+    {/* IMAGE */}
+    {mediaUrl && (
+      <img
+        src={mediaUrl}
+        className="absolute inset-0 w-full h-full object-cover z-0"
+        alt=""
+      />
+    )}
+
+    {/* GRADIENT */}
+    <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20 pointer-events-none" />
+
+    {/* CAPTION */}
+    <div className="absolute bottom-24 left-4 right-20 z-30 text-white pointer-events-none">
+      <div className="text-sm font-semibold">
+        @{displayNameFromEmail(p.userEmail || "")}
+      </div>
+      {p.caption && (
+        <div className="text-sm opacity-90 mt-1">{p.caption}</div>
       )}
+    </div>
 
-      {/* GRADIENT */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20 pointer-events-none" />
+    {/* ACTION BAR */}
+    <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
 
-      {/* CAPTION */}
-      <div className="absolute bottom-24 left-4 right-20 z-30 text-white pointer-events-none">
-        <div className="text-sm font-semibold">
-          @{displayNameFromEmail(p.userEmail || "")}
+      {/* AVATAR */}
+      <button
+        onClick={() => router.push(`/user/${email}`)}
+        className="mb-3"
+      >
+        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+          <img
+            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
+            className="w-full h-full object-cover"
+            alt=""
+          />
         </div>
-        {p.caption && (
-          <div className="text-sm opacity-90 mt-1">{p.caption}</div>
-        )}
-      </div>
+      </button>
 
-      {/* ACTION BAR */}
-      <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
+      {/* LIKE */}
+      <button onClick={() => toggleLike(p.id)}>
+        <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+        <div className="text-xs">{likeCounts[p.id] || 0}</div>
+      </button>
 
-        router.push(`/user/${email}`)
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
-            <img
-              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
-              className="w-full h-full object-cover"
-              alt=""
-            />
-          </div>
-        </button>
+      {/* COMMENTS */}
+      <button onClick={() => openComments(p.id)}>
+        <MessageCircle size={28} />
+        <div className="text-xs">{commentCounts[p.id] || 0}</div>
+      </button>
 
-        <button onClick={() => toggleLike(p.id)}>
-          <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-          <div className="text-xs">{likeCounts[p.id] || 0}</div>
-        </button>
+      {/* REWARD */}
+      <button onClick={() => toggleRewards(p.id)}>
+        <Gift size={28} />
+      </button>
 
-        <button onClick={() => openComments(p.id)}>
-          <MessageCircle size={28} />
-          <div className="text-xs">{commentCounts[p.id] || 0}</div>
-        </button>
+      {/* CREATE */}
+      <button onClick={() => router.push("/create")}>
+        <Plus size={28} />
+      </button>
 
-        <button onClick={() => toggleRewards(p.id)}>
-          <Gift size={28} />
-        </button>
+      {/* HOME */}
+      <button onClick={() => router.push("/")}>
+        <Home size={28} />
+      </button>
 
-        <button onClick={() => router.push("/create")}>
-          <Plus size={28} />
-        </button>
-
-        <button>
-          <Home size={28} />
-        </button>
-
-        <button
-          onClick={() => {
-            setMenuPost(p);
-            setMenuOpen(true);
-          }}
-        >
-          <MoreVertical size={28} />
-        </button>
-
-      </div>
+      {/* MENU */}
+      <button
+        onClick={() => {
+          setMenuPost(p);
+          setMenuOpen(true);
+        }}
+      >
+        <MoreVertical size={28} />
+      </button>
 
     </div>
-  );
-})}
-</div>
+  </div>
+);
    {commentsOpen && (
   <div className="fixed inset-0 z-[9999] flex items-end pointer-events-auto">
 
