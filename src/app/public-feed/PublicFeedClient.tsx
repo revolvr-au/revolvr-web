@@ -455,7 +455,7 @@ return (
     {/* FEED */}
     <div
       ref={feedRef}
-      className="h-full w-full overflow-y-scroll snap-y snap-mandatory pt-[100px]"
+      className="h-full w-full overflow-y-scroll snap-y snap-mandatory"
     >
       {posts.map((p) => {
         const email = String(p.userEmail || "").toLowerCase();
@@ -492,60 +492,57 @@ return (
             </div>
 
             {/* RIGHT RAIL (RESTORED) */}
-            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
+<div className="absolute right-4 bottom-[120px] flex flex-col items-center gap-5 z-50">
 
-              <button
-                onClick={() => router.push(`/user/${email}`)}
-                className="mb-3"
-              >
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
-                  <img
-                    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
-                    className="w-full h-full object-cover"
-                    alt=""
-                  />
-                </div>
-              </button>
-
-              <button onClick={() => toggleLike(p.id)}>
-                <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                <div className="text-xs text-white">
-                  {likeCounts[p.id] || 0}
-                </div>
-              </button>
-
-              <button onClick={() => openComments(p.id)}>
-                <MessageCircle size={28} />
-                <div className="text-xs text-white">
-                  {commentCounts[p.id] || 0}
-                </div>
-              </button>
-
-              <button onClick={() => toggleRewards(p.id)}>
-                <Gift size={28} />
-              </button>
-
-              <button onClick={() => router.push("/create")}>
-                <Plus size={28} />
-              </button>
-
-              <button onClick={() => router.push("/")}>
-                <Home size={28} />
-              </button>
-
-              <button
-                onClick={() => {
-                  setMenuPost(p);
-                  setMenuOpen(true);
-                }}
-              >
-                <MoreVertical size={28} />
-              </button>
-            </div>
-          </div>
-        );
-      })}
+  <button
+    onClick={() => router.push(`/user/${email}`)}
+    className="mb-3"
+  >
+    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+      <img
+        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
+        className="w-full h-full object-cover"
+        alt=""
+      />
     </div>
+  </button>
+
+  <button onClick={() => toggleLike(p.id)}>
+    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+    <div className="text-xs text-white">
+      {likeCounts[p.id] || 0}
+    </div>
+  </button>
+
+  <button onClick={() => openComments(p.id)}>
+    <MessageCircle size={28} />
+    <div className="text-xs text-white">
+      {commentCounts[p.id] || 0}
+    </div>
+  </button>
+
+  <button onClick={() => toggleRewards(p.id)}>
+    <Gift size={28} />
+  </button>
+
+  <button onClick={() => router.push("/create")}>
+    <Plus size={28} />
+  </button>
+
+  <button onClick={() => router.push("/")}>
+    <Home size={28} />
+  </button>
+
+  <button
+    onClick={() => {
+      setMenuPost(p);
+      setMenuOpen(true);
+    }}
+  >
+    <MoreVertical size={28} />
+  </button>
+
+</div>
 
     {/* COMMENTS (FIXED — NO BLOAT) */}
     {commentsOpen && (
