@@ -582,40 +582,36 @@ return (
   </div>
 )}
 
-   {menuOpen && menuPost && typeof document !== "undefined" &&
-  createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={() => setMenuOpen(false)}
-      />
-
-      <div className="relative w-[85%] max-w-sm bg-zinc-900 rounded-2xl p-4 text-white">
-
-        <div className="text-sm font-semibold mb-4">
-          @{displayNameFromEmail(menuPost.userEmail || "")}
-        </div>
-
-        <button
-          onClick={() => sharePost(menuPost.id)}
-          className="block w-full text-left py-2"
-        >
-          Share
-        </button>
-
-        <button
+  {menuOpen && menuPost && typeof document !== "undefined"
+  ? createPortal(
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div
+          className="absolute inset-0 bg-black/60"
           onClick={() => setMenuOpen(false)}
-          className="block w-full text-left py-2"
-        >
-          Cancel
-        </button>
+        />
+        <div className="relative w-[85%] max-w-sm bg-zinc-900 rounded-2xl p-4 text-white">
+          <div className="text-sm font-semibold mb-4">
+            @{displayNameFromEmail(menuPost.userEmail || "")}
+          </div>
 
-      </div>
-    </div>,
-    document.body
-  )
-}
-  </FeedLayout>
+          <button
+            onClick={() => sharePost(menuPost.id)}
+            className="block w-full text-left py-2"
+          >
+            Share
+          </button>
+
+          <button
+            onClick={() => setMenuOpen(false)}
+            className="block w-full text-left py-2"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>,
+      document.body
+    )
+  : null}
+</FeedLayout>
 );
 }
