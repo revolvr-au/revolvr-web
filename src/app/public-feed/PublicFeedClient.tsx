@@ -462,20 +462,12 @@ return (
 
   return (
     <div
-      key={p.id}
-      data-postid={p.id}
-      data-user={email}
-      className="relative h-screen w-full snap-start overflow-hidden"
-    >
-
-      {/* TAP LAYER */}
-      <div
-      className="absolute inset-0 z-0"
-      data-postid={p.id} 
-      onTouchStart={(e) => handlePostTap(e as any, p.id)}
-      style={{ pointerEvents: "auto" }}
-      />
-
+  key={p.id}
+  data-postid={p.id}
+  data-user={email}
+  className="relative h-screen w-full snap-start overflow-hidden"
+  onPointerDown={(e) => handlePostTap(e, p.id)}
+>
       {/* IMAGE */}
       {mediaUrl && (
         <img
@@ -501,7 +493,7 @@ return (
       {/* ACTION BAR */}
       <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
 
-        <button onClick={() => alert(email)} className="mb-3">
+        router.push(`/user/${email}`)
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
             <img
               src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
@@ -548,8 +540,8 @@ return (
   );
 })}
 </div>
-    {commentsOpen && (
-  <div className="fixed inset-0 z-[9999] flex items-end">
+   {commentsOpen && (
+  <div className="fixed inset-0 z-[9999] flex items-end pointer-events-auto">
 
     {/* BACKDROP */}
     <div
@@ -558,7 +550,7 @@ return (
     />
 
     {/* PANEL */}
-    className="relative w-full max-w-[420px] mx-auto bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-[10000]"
+    <div className="relative w-full bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-[10000]">
 
       <div className="flex-1 overflow-y-auto p-4">
         {comments.map((c, i) => (
@@ -581,6 +573,7 @@ return (
       </div>
 
     </div>
+  </div>
 )}
 
   {menuOpen && menuPost && typeof document !== "undefined"
