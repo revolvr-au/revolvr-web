@@ -501,7 +501,7 @@ return (
       {/* ACTION BAR */}
       <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
 
-        <button onClick={() => alert(email)}} className="mb-3">
+        <button onClick={() => alert(email)} className="mb-3">
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
             <img
               src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
