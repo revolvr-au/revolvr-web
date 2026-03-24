@@ -490,13 +490,14 @@ return (
 
       {/* COMMENTS */}
       {commentsOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-end">
-          <div
-            className="absolute inset-0 bg-black/60"
+        <div className="fixed left-0 right-0 bottom-0 z-[9999] flex justify-center pointer-events-none">
+          <input
+  className="w-full bg-transparent outline-none text-white text-base"
+/>
             onClick={closeComments}
           />
 
-          <div className="relative w-full bg-black text-white rounded-t-2xl flex flex-col">
+          <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col pointer-events-auto max-h-[70vh]">
             <div className="flex-1 overflow-y-auto p-4">
               {comments.map((c, i) => (
                 <div key={i}>{c.body}</div>
