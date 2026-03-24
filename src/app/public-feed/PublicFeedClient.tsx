@@ -586,9 +586,8 @@ return (
       </>
     )}
     
-
-    {/* MENU (SAFE — NO JSX BUGS) */}
-    {menuOpen && menuPost && typeof document !== "undefined" ? (
+   {/* MENU */}
+{menuOpen && menuPost && typeof document !== "undefined" ? (
   createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div
@@ -612,6 +611,7 @@ return (
     document.body
   )
 ) : null}
-</FeedLayout>
+
+  </FeedLayout>
 );
 }
