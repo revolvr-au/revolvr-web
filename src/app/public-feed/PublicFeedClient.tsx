@@ -57,7 +57,7 @@ const [bigHeartPost, setBigHeartPost] = useState<string | null>(null);
 
 const lastTapRef = useRef(0);
 
-function handlePostTap(e: React.MouseEvent, postId: string) {
+function handlePostTap(e: React.PointerEvent, postId: string)
   const target = e.target as HTMLElement;
 
   if (target.closest("button, a, input, textarea")) return;
@@ -465,13 +465,14 @@ return (
       key={p.id}
       data-postid={p.id}
       data-user={email}
-      className="relative h-[100svh] w-full snap-start overflow-hidden"
+      className="relative h-screen w-full"snap-start overflow-hidden"
     >
 
       {/* TAP LAYER */}
       <div
-        className="absolute inset-0 z-10"
-        onPointerDown={(e) => handlePostTap(e, p.id)}
+      className="absolute inset-0 z-10"
+      onPointerDown={(e) => handlePostTap(e, p.id)}
+      style={{ pointerEvents: "auto" }}
       />
 
       {/* IMAGE */}
@@ -497,7 +498,7 @@ return (
       </div>
 
       {/* ACTION BAR */}
-      <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-40">
+      <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
 
         <button onClick={() => router.push(`/user/${email}`)} className="mb-3">
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
@@ -519,7 +520,7 @@ return (
           <div className="text-xs">{commentCounts[p.id] || 0}</div>
         </button>
 
-        <button onClick={() => onOpenReward("applause", p.id)}>
+        <button onClick={() => toggleRewards(p.id)}>
           <Gift size={28} />
         </button>
 
@@ -556,7 +557,7 @@ return (
     />
 
     {/* PANEL */}
-    <div className="relative w-full bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-50">
+    <div className="relative w-full bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-[10000]">
 
       <div className="flex-1 overflow-y-auto p-4">
         {comments.map((c, i) => (
