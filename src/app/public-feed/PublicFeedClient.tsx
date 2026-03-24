@@ -545,7 +545,7 @@ return (
     </div>
   );
 })}
-
+</div>
     {commentsOpen && (
   <div className="fixed inset-0 z-[9999] flex items-end">
 
@@ -590,6 +590,7 @@ return (
           onClick={() => setMenuOpen(false)}
         />
         <div className="relative w-[85%] max-w-sm bg-zinc-900 rounded-2xl p-4 text-white">
+
           <div className="text-sm font-semibold mb-4">
             @{displayNameFromEmail(menuPost.userEmail || "")}
           </div>
@@ -607,6 +608,7 @@ return (
           >
             Cancel
           </button>
+
         </div>
       </div>,
       document.body
