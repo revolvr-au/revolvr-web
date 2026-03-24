@@ -470,14 +470,14 @@ return (
             onPointerDown={(e) => handlePostTap(e, p.id)}
           >
             {mediaUrl && (
-              <img
-                src={mediaUrl}
-                className="absolute inset-0 w-full h-full object-cover"
-                alt=""
-              />
-            )}
+  <img
+    src={mediaUrl}
+    className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+    alt=""
+  />
+)}
 
-            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
+            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-100">
               <button onClick={() => openComments(p.id)}>
                 <MessageCircle size={28} />
               </button>
