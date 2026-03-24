@@ -57,7 +57,7 @@ const [bigHeartPost, setBigHeartPost] = useState<string | null>(null);
 
 const lastTapRef = useRef(0);
 
-function handlePostTap(e: React.PointerEvent, postId: string)
+function handlePostTap(e: React.PointerEvent, postId: string) {
   const target = e.target as HTMLElement;
 
   if (target.closest("button, a, input, textarea")) return;
@@ -465,12 +465,12 @@ return (
       key={p.id}
       data-postid={p.id}
       data-user={email}
-      className="relative h-screen w-full"snap-start overflow-hidden"
+      className="relative h-screen w-full snap-start overflow-hidden"
     >
 
       {/* TAP LAYER */}
       <div
-      className="absolute inset-0 z-10"
+      className="absolute inset-0 z-0"
       onPointerDown={(e) => handlePostTap(e, p.id)}
       style={{ pointerEvents: "auto" }}
       />
