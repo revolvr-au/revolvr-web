@@ -490,31 +490,40 @@ return (
 
       {/* COMMENTS */}
       {commentsOpen && (
-        <div className="fixed left-0 right-0 bottom-0 z-[9999] flex justify-center pointer-events-none">
-          <input
-  className="w-full bg-transparent outline-none text-white text-base"
-/>
-            onClick={closeComments}
-          />
+  <>
+    {/* BACKDROP */}
+    <div
+      className="fixed inset-0 bg-black/40 z-[9998]"
+      onClick={closeComments}
+    />
 
-          <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col pointer-events-auto max-h-[70vh]">
-            <div className="flex-1 overflow-y-auto p-4">
-              {comments.map((c, i) => (
-                <div key={i}>{c.body}</div>
-              ))}
-            </div>
+    {/* PANEL */}
+    <div className="fixed left-0 right-0 bottom-0 z-[9999] flex justify-center pointer-events-none">
+      <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col pointer-events-auto max-h-[70vh]">
 
-            <div className="p-3 border-t border-white/10">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment..."
-                className="w-full bg-transparent text-white"
-              />
+        {/* COMMENTS LIST */}
+        <div className="flex-1 overflow-y-auto p-4">
+          {comments.map((c, i) => (
+            <div key={i} className="mb-2">
+              {c.body}
             </div>
-          </div>
+          ))}
         </div>
-      )}
+
+        {/* INPUT */}
+        <div className="p-3 border-t border-white/10 sticky bottom-0 bg-black">
+          <input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Add a comment..."
+            className="w-full bg-transparent outline-none text-white text-base"
+          />
+        </div>
+
+      </div>
+    </div>
+  </>
+)}
 
       {/* MENU */}
       {menuOpen && menuPost && typeof document !== "undefined"
