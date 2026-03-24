@@ -591,7 +591,7 @@ return (
         onClick={() => setMenuOpen(false)}
       />
 
-      <div className="relative w-[85%] max-w-sm bg-zinc-900 rounded-2xl p-4 text-white z-50">
+      <div className="relative w-[85%] max-w-sm bg-zinc-900 rounded-2xl p-4 text-white">
 
         <div className="text-sm font-semibold mb-4">
           @{displayNameFromEmail(menuPost.userEmail || "")}
@@ -599,14 +599,14 @@ return (
 
         <button
           onClick={() => sharePost(menuPost.id)}
-          className="block w-full text-left py-3"
+          className="block w-full text-left py-2"
         >
           Share
         </button>
 
         <button
           onClick={() => setMenuOpen(false)}
-          className="block w-full text-left py-3"
+          className="block w-full text-left py-2"
         >
           Cancel
         </button>
