@@ -452,169 +452,162 @@ return (
     railUsers={railUsers}
     onSelectCreator={jumpToCreator}
   >
-    <>
-      {/* FEED */}
-      <div
-        ref={feedRef}
-        className="h-full w-full overflow-y-scroll snap-y snap-mandatory pt-[100px]"
-      >
-        {posts.map((p) => {
-          const email = String(p.userEmail || "").toLowerCase();
-          const mediaUrl = String(p.imageUrl || "").trim();
+    {/* FEED */}
+    <div
+      ref={feedRef}
+      className="h-full w-full overflow-y-scroll snap-y snap-mandatory pt-[100px]"
+    >
+      {posts.map((p) => {
+        const email = String(p.userEmail || "").toLowerCase();
+        const mediaUrl = String(p.imageUrl || "").trim();
 
-          return (
-            <div
-              key={p.id}
-              data-postid={p.id}
-              data-user={email}
-              className="relative h-screen w-full snap-start overflow-hidden"
-              onPointerDown={(e) => handlePostTap(e, p.id)}
-            >
-              {/* IMAGE */}
-              {mediaUrl && (
-                <img
-                  src={mediaUrl}
-                  className="absolute inset-0 w-full h-full object-cover z-0"
-                  alt=""
-                />
-              )}
-
-              {/* GRADIENT */}
-              <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20 pointer-events-none" />
-
-              {/* CAPTION */}
-              <div className="absolute bottom-24 left-4 right-20 z-30 text-white pointer-events-none">
-                <div className="text-sm font-semibold">
-                  @{displayNameFromEmail(p.userEmail || "")}
-                </div>
-                {p.caption && (
-                  <div className="text-sm opacity-90 mt-1">{p.caption}</div>
-                )}
-              </div>
-
-              {/* RIGHT RAIL */}
-              <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
-
-                {/* AVATAR */}
-                <button
-                  onClick={() => router.push(`/user/${email}`)}
-                  className="mb-3"
-                >
-                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
-                    <img
-                      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
-                      className="w-full h-full object-cover"
-                      alt=""
-                    />
-                  </div>
-                </button>
-
-                {/* LIKE */}
-                <button onClick={() => toggleLike(p.id)}>
-                  <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                  <div className="text-xs text-white">
-                    {likeCounts[p.id] || 0}
-                  </div>
-                </button>
-
-                {/* COMMENTS */}
-                <button onClick={() => openComments(p.id)}>
-                  <MessageCircle size={28} />
-                  <div className="text-xs text-white">
-                    {commentCounts[p.id] || 0}
-                  </div>
-                </button>
-
-                {/* REWARD */}
-                <button onClick={() => toggleRewards(p.id)}>
-                  <Gift size={28} />
-                </button>
-
-                {/* CREATE */}
-                <button onClick={() => router.push("/create")}>
-                  <Plus size={28} />
-                </button>
-
-                {/* HOME */}
-                <button onClick={() => router.push("/")}>
-                  <Home size={28} />
-                </button>
-
-                {/* MENU */}
-                <button
-                  onClick={() => {
-                    setMenuPost(p);
-                    setMenuOpen(true);
-                  }}
-                >
-                  <MoreVertical size={28} />
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* COMMENTS OVERLAY */}
-      {commentsOpen && (
-        <>
+        return (
           <div
-            className="fixed inset-0 bg-black/50 z-[9998]"
-            onClick={closeComments}
-          />
+            key={p.id}
+            data-postid={p.id}
+            data-user={email}
+            className="relative h-screen w-full snap-start overflow-hidden"
+            onPointerDown={(e) => handlePostTap(e, p.id)}
+          >
+            {/* IMAGE */}
+            {mediaUrl && (
+              <img
+                src={mediaUrl}
+                className="absolute inset-0 w-full h-full object-cover z-0"
+                alt=""
+              />
+            )}
 
-          <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center">
-            <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col max-h-[70vh]">
+            {/* GRADIENT */}
+            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-black/80 to-transparent z-20 pointer-events-none" />
 
-              <div className="flex-1 overflow-y-auto p-4">
-                {comments.map((c, i) => (
-                  <div key={i} className="mb-3">
-                    <div className="text-xs opacity-70">
-                      @{displayNameFromEmail(c.userEmail || "")}
-                    </div>
-                    <div>{c.body}</div>
-                  </div>
-                ))}
+            {/* CAPTION */}
+            <div className="absolute bottom-24 left-4 right-20 z-30 text-white pointer-events-none">
+              <div className="text-sm font-semibold">
+                @{displayNameFromEmail(p.userEmail || "")}
               </div>
+              {p.caption && (
+                <div className="text-sm opacity-90 mt-1">{p.caption}</div>
+              )}
+            </div>
 
-              <div className="p-3 border-t border-white/10 bg-black">
-                <input
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  placeholder="Add a comment..."
-                  className="w-full bg-transparent outline-none text-white text-base"
-                />
-              </div>
+            {/* RIGHT RAIL (RESTORED) */}
+            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
+
+              <button
+                onClick={() => router.push(`/user/${email}`)}
+                className="mb-3"
+              >
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+                  <img
+                    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
+                    className="w-full h-full object-cover"
+                    alt=""
+                  />
+                </div>
+              </button>
+
+              <button onClick={() => toggleLike(p.id)}>
+                <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+                <div className="text-xs text-white">
+                  {likeCounts[p.id] || 0}
+                </div>
+              </button>
+
+              <button onClick={() => openComments(p.id)}>
+                <MessageCircle size={28} />
+                <div className="text-xs text-white">
+                  {commentCounts[p.id] || 0}
+                </div>
+              </button>
+
+              <button onClick={() => toggleRewards(p.id)}>
+                <Gift size={28} />
+              </button>
+
+              <button onClick={() => router.push("/create")}>
+                <Plus size={28} />
+              </button>
+
+              <button onClick={() => router.push("/")}>
+                <Home size={28} />
+              </button>
+
+              <button
+                onClick={() => {
+                  setMenuPost(p);
+                  setMenuOpen(true);
+                }}
+              >
+                <MoreVertical size={28} />
+              </button>
             </div>
           </div>
-        </>
-      )}
+        );
+      })}
+    </div>
 
-      {/* MENU */}
-     {menuOpen && menuPost && typeof document !== "undefined" && (
-  createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={() => setMenuOpen(false)}
-      />
+    {/* COMMENTS (FIXED — NO BLOAT) */}
+    {commentsOpen && (
+      <>
+        <div
+          className="fixed inset-0 bg-black/50 z-[9998]"
+          onClick={closeComments}
+        />
 
-      <div className="relative bg-zinc-900 p-4 rounded-2xl text-white">
-        <button onClick={() => sharePost(menuPost.id)}>
-          Share
-        </button>
+        <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center">
+          <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col max-h-[70vh]">
 
-        <button
-          onClick={() => setMenuOpen(false)}
-          className="block mt-2 text-sm opacity-70"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>,
-    document.body
-  )
-)}
+            <div className="flex-1 overflow-y-auto p-4">
+              {comments.map((c, i) => (
+                <div key={i} className="mb-3">
+                  <div className="text-xs opacity-70">
+                    @{displayNameFromEmail(c.userEmail || "")}
+                  </div>
+                  <div>{c.body}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 border-t border-white/10 bg-black">
+              <input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Add a comment..."
+                className="w-full bg-transparent outline-none text-white text-base"
+              />
+            </div>
+          </div>
+        </div>
+      </>
+    )}
+
+    {/* MENU (SAFE — NO JSX BUGS) */}
+    {menuOpen && menuPost && typeof document !== "undefined" ? (
+      createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setMenuOpen(false)}
+          />
+
+          <div className="relative bg-zinc-900 p-4 rounded-2xl text-white">
+            <button onClick={() => sharePost(menuPost.id)}>
+              Share
+            </button>
+
+            <button
+              onClick={() => setMenuOpen(false)}
+              className="block mt-2 text-sm opacity-70"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>,
+        document.body
+      )
+    ) : null}
+
   </FeedLayout>
 );
 }
