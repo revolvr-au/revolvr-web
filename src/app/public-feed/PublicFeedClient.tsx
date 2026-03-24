@@ -581,7 +581,6 @@ return (
       </div>
 
     </div>
-  </div>
 )}
 
   {menuOpen && menuPost && typeof document !== "undefined"
