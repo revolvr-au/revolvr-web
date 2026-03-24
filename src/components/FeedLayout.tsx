@@ -91,10 +91,7 @@ export default function FeedLayout({
     const target = e.target as HTMLElement;
 
     // ✅ ignore taps on posts
-    if (target.closest("[data-postid]")) {
-      swipeStart.current = -1;
-      return;
-    }
+    if (target.closest("[data-postid]")) return;
 
     const x = e.touches[0].clientX;
     const width = window.innerWidth;

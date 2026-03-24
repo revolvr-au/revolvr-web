@@ -471,7 +471,8 @@ return (
       {/* TAP LAYER */}
       <div
       className="absolute inset-0 z-0"
-      onPointerDown={(e) => handlePostTap(e, p.id)}
+      data-postid={p.id} 
+      onTouchStart={(e) => handlePostTap(e as any, p.id)}
       style={{ pointerEvents: "auto" }}
       />
 
@@ -500,7 +501,7 @@ return (
       {/* ACTION BAR */}
       <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-50">
 
-        <button onClick={() => router.push(`/user/${email}`)} className="mb-3">
+        <button onClick={() => alert(email)}} className="mb-3">
           <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
             <img
               src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
@@ -557,7 +558,7 @@ return (
     />
 
     {/* PANEL */}
-    <div className="relative w-full bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-[10000]">
+    className="relative w-full max-w-[420px] mx-auto bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-[10000]"
 
       <div className="flex-1 overflow-y-auto p-4">
         {comments.map((c, i) => (
