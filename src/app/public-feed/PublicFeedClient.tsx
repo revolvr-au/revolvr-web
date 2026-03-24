@@ -544,8 +544,9 @@ return (
       onClick={closeComments}
     />
 
-    <div className="relative w-full bg-black text-white rounded-t-2xl max-h-[80vh] flex flex-col z-[10000]">
-      <div className="flex-1 overflow-y-auto p-4">
+    className="relative w-full bg-black text-white rounded-t-2xl flex flex-col z-[10000]"
+    style={{ height: "calc(var(--locked-vh, 100vh) * 0.8)" }}
+      <div className="flex-1 overflow-y-auto p-4 overscroll-contain">
         {comments.map((c, i) => (
           <div key={i} className="mb-3">
             <div className="text-xs opacity-70">
@@ -556,7 +557,7 @@ return (
         ))}
       </div>
 
-      <div className="p-3 border-t border-white/10">
+      <div className="p-3 border-t border-white/10 pb-[env(safe-area-inset-bottom)]">
         <input
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
