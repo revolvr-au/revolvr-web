@@ -7,7 +7,7 @@ import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } fr
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
 import { createPortal } from "react-dom";
-
+import { useRef } from "react";
 
 
 type ApiPost = {
@@ -31,6 +31,7 @@ export function PublicFeedClient() {
   const [railUsers, setRailUsers] = useState<any[]>([])
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPost, setMenuPost] = useState<ApiPost | null>(null);
+  
 
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
@@ -92,6 +93,19 @@ function handlePostTap(e: React.PointerEvent, postId: string) {
 
   const TOP_BAR = 72;
   const PEOPLE_RAIL = 130;
+
+  
+  const now = Date.now();
+  const DOUBLE_TAP_DELAY = 300;
+
+  const lastTap = lastTapRef.current[postId] || 0;
+
+  if (now - lastTap < DOUBLE_TAP_DELAY) {
+    toggleLike(postId);
+  }
+
+  lastTapRef.current[postId] = now;
+};
   
 
   const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
@@ -467,13 +481,13 @@ return (
             data-postid={p.id}
             data-user={email}
             className="relative h-screen w-full snap-start overflow-hidden"
-            onPointerDown={(e) => handlePostTap(e, p.id)}
+            onPointerUp={(e) => handlePostTap(e, p.id)}
           >
             {/* IMAGE */}
             {mediaUrl && (
               <img
                 src={mediaUrl}
-                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-auto"
                 alt=""
               />
             )}
