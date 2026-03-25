@@ -578,24 +578,26 @@ return (
         />
 
         <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center">
-          <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col max-h-[70vh]">
+          <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col h-[70vh] overflow-hidden">
 
-            <div className="flex-1 overflow-y-auto p-4">
-              {comments.map((c, i) => (
-                <div key={i}>{c.body}</div>
-              ))}
-            </div>
+  {/* COMMENTS LIST */}
+  <div className="flex-1 overflow-y-auto p-4 min-h-0">
+    {comments.map((c, i) => (
+      <div key={i}>{c.body}</div>
+    ))}
+  </div>
 
-            <div className="p-3 border-t border-white/10 bg-black">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment..."
-                className="w-full bg-transparent text-white outline-none"
-              />
-            </div>
+  {/* INPUT */}
+  <div className="p-3 border-t border-white/10 bg-black shrink-0">
+    <input
+      value={commentText}
+      onChange={(e) => setCommentText(e.target.value)}
+      placeholder="Add a comment..."
+      className="w-full bg-transparent text-white outline-none py-2"
+    />
+  </div>
 
-          </div>
+</div>
         </div>
       </>
     )}
