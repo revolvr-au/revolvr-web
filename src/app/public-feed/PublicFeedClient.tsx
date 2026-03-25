@@ -599,25 +599,22 @@ return (
         {/* SCROLL AREA */}
         <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
           {comments.map((c, i) => (
-            <div key={i} className="flex gap-3 mb-3">
+        <div key={i} className="flex items-start gap-3 mb-4">
 
-  {/* AVATAR */}
   <img
     src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-    className="w-8 h-8 rounded-full"
+    className="w-9 h-9 min-w-[36px] max-w-[36px] h-[36px] rounded-full object-cover"
   />
 
-  {/* CONTENT */}
-  <div>
+  <div className="flex-1">
     <div className="text-sm font-semibold text-white">
       {displayNameFromEmail(c.userEmail)}
     </div>
 
-    <div className="text-sm text-white/80">
+    <div className="text-sm text-white/80 leading-snug">
       {c.body}
     </div>
 
-    {/* ACTIONS */}
     <div className="text-xs text-white/40 mt-1 flex gap-3">
       <button onClick={() => handleReply(c)}>Reply</button>
       <button onClick={() => handleTranche(c)}>Tranche</button>
@@ -625,7 +622,7 @@ return (
   </div>
 
 </div>
-          ))}
+        ))}
         </div>
 
         {/* INPUT BAR */}
