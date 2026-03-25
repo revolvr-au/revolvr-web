@@ -7,7 +7,7 @@ import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } fr
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
 import { createPortal } from "react-dom";
-import { useRef } from "react";
+
 
 
 type ApiPost = {
@@ -90,25 +90,12 @@ function handlePostTap(e: React.PointerEvent, postId: string) {
 
   const viewer = "test@revolvr.net";
   const router = useRouter();
-
+  
   const TOP_BAR = 72;
   const PEOPLE_RAIL = 130;
 
-  
-  const now = Date.now();
-  const DOUBLE_TAP_DELAY = 300;
+const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
 
-  const lastTap = lastTapRef.current[postId] || 0;
-
-  if (now - lastTap < DOUBLE_TAP_DELAY) {
-    toggleLike(postId);
-  }
-
-  lastTapRef.current[postId] = now;
-};
-  
-
-  const rewardItems: Array<{ mode: RewardMode; label: string; icon: string }> = [
     { mode: "applause", label: "Applause", icon: "👏" },
     { mode: "fire", label: "Fire", icon: "🔥" },
     { mode: "love", label: "Love", icon: "❤️" },
@@ -458,6 +445,7 @@ function jumpToCreator(creatorId: string) {
     block: "start",
   });
 }
+
 return (
   <FeedLayout
     title="Revolvr"
