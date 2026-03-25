@@ -39,7 +39,7 @@ export default function FeedLayout({
   const swipeStart = useRef(0);
 
   return (
-    <div className="min-h-screen text-white flex flex-col">
+    <div className="h-screen text-white overflow-hidden">
 
       {!isLive && (
         <header className="fixed top-0 left-0 right-0 z-[999] px-4 pt-[env(safe-area-inset-top)]">
@@ -84,13 +84,11 @@ export default function FeedLayout({
 </header>
       )}
 
-    <main
-  className="flex-1 pb-4 relative"
-  style={{ background: "rgba(255,0,0,0.2)" }}
+   <main
+  className="h-full relative"
   onTouchStart={(e) => {
     const target = e.target as HTMLElement;
 
-    // ✅ ignore taps on posts
     if (target.closest("[data-postid]")) return;
 
     const x = e.touches[0].clientX;
@@ -125,8 +123,7 @@ export default function FeedLayout({
     }
   }}
 >
-{children}
-
+  {children}
 </main>
 
 {!isLive && <BottomBar />}

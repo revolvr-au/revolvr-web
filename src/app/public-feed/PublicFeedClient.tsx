@@ -455,7 +455,7 @@ return (
     {/* FEED */}
     <div
       ref={feedRef}
-      className="h-full w-full overflow-y-scroll snap-y snap-mandatory"
+      className="h-screen w-full overflow-y-scroll snap-y snap-mandatory"
     >
       {posts.map((p) => {
         const email = String(p.userEmail || "").toLowerCase();
