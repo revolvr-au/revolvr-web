@@ -356,7 +356,13 @@ function triggerHeartBurst(postId: string) {
     setRewardOpen(false);
     setRewardPostId(null);
   }
+function handleTranche(comment: any) {
+  console.log("TRANCHE:", comment);
+}
 
+function handleReply(comment: any) {
+  setCommentText(`@${displayNameFromEmail(comment.userEmail)} `);
+}
   async function onOpenReward(mode: RewardMode, postId: string) {
     try {
       const post = posts.find((x) => x.id === postId);
@@ -593,7 +599,32 @@ return (
         {/* SCROLL AREA */}
         <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
           {comments.map((c, i) => (
-            <div key={i}>{c.body}</div>
+            <div key={i} className="flex gap-3 mb-3">
+
+  {/* AVATAR */}
+  <img
+    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+    className="w-8 h-8 rounded-full"
+  />
+
+  {/* CONTENT */}
+  <div>
+    <div className="text-sm font-semibold text-white">
+      {displayNameFromEmail(c.userEmail)}
+    </div>
+
+    <div className="text-sm text-white/80">
+      {c.body}
+    </div>
+
+    {/* ACTIONS */}
+    <div className="text-xs text-white/40 mt-1 flex gap-3">
+      <button onClick={() => handleReply(c)}>Reply</button>
+      <button onClick={() => handleTranche(c)}>Tranche</button>
+    </div>
+  </div>
+
+</div>
           ))}
         </div>
 
@@ -608,11 +639,14 @@ return (
           />
 
           <button
-            onClick={handleSendComment}
-            className="text-white text-sm px-3 py-1 bg-white/10 rounded"
-          >
-            Send
-          </button>
+        onMouseDown={(e) => {
+        e.preventDefault();
+        handleSendComment();
+        }}
+        className="text-white p-2"
+        >
+        <Send size={18} />
+        </button>
 
         </div>
 
