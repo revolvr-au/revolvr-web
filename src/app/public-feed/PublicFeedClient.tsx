@@ -51,10 +51,9 @@ export function PublicFeedClient() {
   const feedRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const scrollLock = useRef(false);
-  const [hearts, setHearts] = useState<
-  { id: string; x: number; y: number }[]
+  const [heartBursts, setHeartBursts] = useState<
+  { id: string; postId: string }[]
 >([]);
-const [bigHeartPost, setBigHeartPost] = useState<string | null>(null);
 
 const lastTapRef = useRef(0);
 
@@ -68,25 +67,12 @@ function handlePostTap(e: React.PointerEvent, postId: string) {
   if (now - lastTapRef.current < 300) {
     toggleLike(postId);
 
-    setBigHeartPost(postId);
-    setTimeout(() => setBigHeartPost(null), 900);
-
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    const id = `${Date.now()}-${Math.random()}`;
-
-    setHearts((prev) => [...prev, { id, x, y }]);
-
-    setTimeout(() => {
-      setHearts((prev) => prev.filter((h) => h.id !== id));
-    }, 3000);
+    triggerHeartBurst(postId); // 👈 NEW
   }
 
   lastTapRef.current = now;
 }
+
 
   const viewer = "test@revolvr.net";
   const router = useRouter();
@@ -315,7 +301,15 @@ setRailUsers(creators)
       return next;
     });
   }
+function triggerHeartBurst(postId: string) {
+  const id = `${Date.now()}-${Math.random()}`;
 
+  setHeartBursts((prev) => [...prev, { id, postId }]);
+
+  setTimeout(() => {
+    setHeartBursts((prev) => prev.filter((h) => h.id !== id));
+  }, 700);
+}
   function onToggleFollow(email: string) {
     const key = email.trim().toLowerCase();
     setFollowMap((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -497,16 +491,41 @@ return (
                 </div>
               </button>
 
+              
               {/* LIKE */}
-              <button
-                onClick={() => toggleLike(p.id)}
-                className="flex flex-col items-center"
-              >
-                <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                <span className="text-xs text-white">
-                  {likeCounts[p.id] || 0}
-                </span>
-              </button>
+          
+<div className="relative flex flex-col items-center">
+
+  {/* BURST HEARTS */}
+  {heartBursts
+    .filter((h) => h.postId === p.id)
+    .map((h) => (
+      <span
+        key={h.id}
+        className="absolute text-white text-lg animate-burst"
+        style={{
+          bottom: "36px",
+          left: "50%",
+          transform: "translateX(-50%)",
+        }}
+      >
+        ❤️
+      </span>
+    ))}
+
+  {/* BUTTON */}
+  <button
+    onClick={() => toggleLike(p.id)}
+    className="flex flex-col items-center"
+  >
+    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+    <span className="text-xs text-white">
+      {likeCounts[p.id] || 0}
+    </span>
+  </button>
+
+</div>
+          
 
               {/* COMMENTS */}
               <button

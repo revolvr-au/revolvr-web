@@ -551,3 +551,17 @@ body {
     transform: scale(1);
   }
 }
+@keyframes burst {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -40px) scale(1.5);
+  }
+}
+
+.animate-burst {
+  animation: burst 0.6s ease-out forwards;
+}
