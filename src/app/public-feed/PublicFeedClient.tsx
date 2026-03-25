@@ -469,18 +469,79 @@ return (
             className="relative h-screen w-full snap-start overflow-hidden"
             onPointerDown={(e) => handlePostTap(e, p.id)}
           >
+            {/* IMAGE */}
             {mediaUrl && (
-  <img
-    src={mediaUrl}
-    className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
-    alt=""
-  />
-)}
+              <img
+                src={mediaUrl}
+                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none"
+                alt=""
+              />
+            )}
 
-            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-100">
-              <button onClick={() => openComments(p.id)}>
-                <MessageCircle size={28} />
+            {/* RIGHT RAIL */}
+            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
+
+              {/* AVATAR */}
+              <button
+                onClick={() => router.push(`/user/${email}`)}
+                className="mb-3"
+              >
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+                  <img
+                    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
+                    className="w-full h-full object-cover"
+                    alt=""
+                  />
+                </div>
               </button>
+
+              {/* LIKE */}
+              <button
+                onClick={() => toggleLike(p.id)}
+                className="flex flex-col items-center"
+              >
+                <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+                <span className="text-xs text-white">
+                  {likeCounts[p.id] || 0}
+                </span>
+              </button>
+
+              {/* COMMENTS */}
+              <button
+                onClick={() => openComments(p.id)}
+                className="flex flex-col items-center"
+              >
+                <MessageCircle size={28} />
+                <span className="text-xs text-white">
+                  {commentCounts[p.id] || 0}
+                </span>
+              </button>
+
+              {/* REWARD */}
+              <button onClick={() => toggleRewards(p.id)}>
+                <Gift size={28} />
+              </button>
+
+              {/* CREATE */}
+              <button onClick={() => router.push("/create")}>
+                <Plus size={28} />
+              </button>
+
+              {/* HOME */}
+              <button onClick={() => router.push("/")}>
+                <Home size={28} />
+              </button>
+
+              {/* MENU */}
+              <button
+                onClick={() => {
+                  setMenuPost(p);
+                  setMenuOpen(true);
+                }}
+              >
+                <MoreVertical size={28} />
+              </button>
+
             </div>
           </div>
         );
@@ -497,6 +558,7 @@ return (
 
         <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center">
           <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col max-h-[70vh]">
+
             <div className="flex-1 overflow-y-auto p-4">
               {comments.map((c, i) => (
                 <div key={i}>{c.body}</div>
@@ -511,6 +573,7 @@ return (
                 className="w-full bg-transparent text-white outline-none"
               />
             </div>
+
           </div>
         </div>
       </>
