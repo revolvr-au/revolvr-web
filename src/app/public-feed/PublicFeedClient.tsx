@@ -145,6 +145,14 @@ useEffect(() => {
   };
 }, [posts]);
 
+const [vh, setVh] = useState(0);
+
+useEffect(() => {
+  const update = () => setVh(window.innerHeight);
+  update();
+  window.addEventListener("resize", update);
+  return () => window.removeEventListener("resize", update);
+}, []);
   useEffect(() => {
     if (!commentsOpen) return;
 
@@ -578,17 +586,20 @@ return (
         />
 
         <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center">
-          <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col h-[70vh] overflow-hidden">
+          <div
+  style={{ height: vh * 0.7 }}
+  className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col"
+>
 
   {/* COMMENTS LIST */}
-  <div className="flex-1 overflow-y-auto p-4 min-h-0">
+  <div className="flex-1 overflow-y-auto p-4 pb-24">
     {comments.map((c, i) => (
       <div key={i}>{c.body}</div>
     ))}
   </div>
 
   {/* INPUT */}
-  <div className="p-3 border-t border-white/10 bg-black shrink-0">
+  <div className="p-3 border-t border-white/10 bg-black sticky bottom-0 pb-[env(safe-area-inset-bottom)]">
     <input
       value={commentText}
       onChange={(e) => setCommentText(e.target.value)}
