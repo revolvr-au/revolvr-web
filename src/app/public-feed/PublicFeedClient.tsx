@@ -579,39 +579,47 @@ return (
 
     {/* COMMENTS */}
     {commentsOpen && (
-      <>
-        <div
-          className="fixed inset-0 bg-black/50 z-[9998]"
-          onClick={closeComments}
-        />
-
-        <div className="fixed bottom-0 left-0 right-0 z-[9999] flex justify-center">
-          <div
-  style={{ height: vh * 0.7 }}
-  className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col"
->
-
-  {/* COMMENTS LIST */}
-  <div className="flex-1 overflow-y-auto p-4 pb-24">
-    {comments.map((c, i) => (
-      <div key={i}>{c.body}</div>
-    ))}
-  </div>
-
-  {/* INPUT */}
-  <div className="p-3 border-t border-white/10 bg-black sticky bottom-0 pb-[env(safe-area-inset-bottom)]">
-    <input
-      value={commentText}
-      onChange={(e) => setCommentText(e.target.value)}
-      placeholder="Add a comment..."
-      className="w-full bg-transparent text-white outline-none py-2"
+  <>
+    {/* BACKDROP */}
+    <div
+      className="fixed inset-0 bg-black/50 z-[9998]"
+      onClick={closeComments}
     />
-  </div>
 
-</div>
+    {/* SHEET */}
+    <div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center">
+      <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col">
+
+        {/* SCROLL AREA */}
+        <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
+          {comments.map((c, i) => (
+            <div key={i}>{c.body}</div>
+          ))}
         </div>
-      </>
-    )}
+
+        {/* INPUT BAR */}
+        <div className="p-3 border-t border-white/10 bg-black flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
+          
+          <input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Add a comment..."
+            className="flex-1 bg-transparent text-white outline-none"
+          />
+
+          <button
+            onClick={handleSendComment}
+            className="text-white text-sm px-3 py-1 bg-white/10 rounded"
+          >
+            Send
+          </button>
+
+        </div>
+
+      </div>
+    </div>
+  </>
+)}
 
     {/* MENU */}
     {menuOpen && menuPost && typeof document !== "undefined"
