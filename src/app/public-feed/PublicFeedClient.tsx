@@ -31,6 +31,7 @@ export function PublicFeedClient() {
   const [railUsers, setRailUsers] = useState<any[]>([])
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPost, setMenuPost] = useState<ApiPost | null>(null);
+  const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   
 
   const [commentText, setCommentText] = useState("");
@@ -361,6 +362,7 @@ function handleTranche(comment: any) {
 }
 
 function handleReply(comment: any) {
+  setReplyToCommentId(comment.id); // 👈 THIS IS KEY
   setCommentText(`@${displayNameFromEmail(comment.userEmail)} `);
 }
   async function onOpenReward(mode: RewardMode, postId: string) {
@@ -416,11 +418,12 @@ async function handleSendComment() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        postId: activePostId,
-        userEmail: viewer,
-        body: commentText.trim(),
+      postId: activePostId,
+      userEmail: viewer,
+      body: commentText.trim(),
+      replyToCommentId, 
       }),
-    });
+      });
 
     const data = await res.json();
     if (!res.ok || !data?.ok) return;
@@ -583,8 +586,8 @@ return (
       })}
     </div>
 
-    {/* COMMENTS */}
-    {commentsOpen && (
+   {/* COMMENTS */}
+{commentsOpen && (
   <>
     {/* BACKDROP */}
     <div
@@ -598,31 +601,65 @@ return (
 
         {/* SCROLL AREA */}
         <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
-          {comments.map((c, i) => (
-        <div key={i} className="flex items-start gap-3 mb-4">
+          {(() => {
+            const parentComments = comments.filter(c => !c.replyToCommentId);
+            const replies = comments.filter(c => c.replyToCommentId);
 
-  <img
-    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-    className="w-9 h-9 min-w-[36px] max-w-[36px] h-[36px] rounded-full object-cover"
-  />
+            return parentComments.map((c) => {
+              const childReplies = replies.filter(
+                (r) => r.replyToCommentId === c.id
+              );
 
-  <div className="flex-1">
-    <div className="text-sm font-semibold text-white">
-      {displayNameFromEmail(c.userEmail)}
-    </div>
+              return (
+                <div key={c.id} className="mb-4">
 
-    <div className="text-sm text-white/80 leading-snug">
-      {c.body}
-    </div>
+                  {/* MAIN COMMENT */}
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+                      className="w-9 h-9 rounded-full object-cover"
+                    />
 
-    <div className="text-xs text-white/40 mt-1 flex gap-3">
-      <button onClick={() => handleReply(c)}>Reply</button>
-      <button onClick={() => handleTranche(c)}>Tranche</button>
-    </div>
-  </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold text-white">
+                        {displayNameFromEmail(c.userEmail)}
+                      </div>
 
-</div>
-        ))}
+                      <div className="text-sm text-white/80 leading-snug">
+                        {c.body}
+                      </div>
+
+                      <div className="text-xs text-white/40 mt-1 flex gap-3">
+                        <button onClick={() => handleReply(c)}>Reply</button>
+                        <button onClick={() => handleTranche(c)}>Tranche</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* REPLIES */}
+                  {childReplies.map((r) => (
+                    <div key={r.id} className="flex items-start gap-3 ml-10 mt-2">
+                      <img
+                        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
+                        className="w-7 h-7 rounded-full object-cover"
+                      />
+
+                      <div>
+                        <div className="text-xs font-semibold text-white">
+                          {displayNameFromEmail(r.userEmail)}
+                        </div>
+
+                        <div className="text-xs text-white/70">
+                          {r.body}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                </div>
+              );
+            });
+          })()}
         </div>
 
         {/* INPUT BAR */}
@@ -636,14 +673,14 @@ return (
           />
 
           <button
-        onMouseDown={(e) => {
-        e.preventDefault();
-        handleSendComment();
-        }}
-        className="text-white p-2"
-        >
-        <Send size={18} />
-        </button>
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleSendComment();
+            }}
+            className="text-white p-2"
+          >
+            <Send size={18} />
+          </button>
 
         </div>
 
