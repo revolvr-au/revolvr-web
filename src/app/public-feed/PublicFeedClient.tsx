@@ -610,64 +610,74 @@ return (
         );
 
         return parentComments.map((c) => {
-          const childReplies = replies.filter(
-            (r) => r.replyToCommentId === c.id
-          );
+  const childReplies = replies.filter(
+    (r) => r.replyToCommentId === c.id
+  );
 
-          return (
-              <div key={c.id} className="mb-4 w-full max-w-full overflow-hidden">
+  return (
+    <div key={c.id} className="mb-4 w-full overflow-hidden">
 
-              {/* MAIN COMMENT */}
-              <div className="flex items-start gap-3 w-full min-w-0 overflow-hidden">
-                <img
-                  src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-                  className="w-9 h-9 rounded-full object-cover"
-                />
+      {/* MAIN COMMENT */}
+      <div className="flex items-start gap-3 w-full min-w-0">
 
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className="text-sm font-semibold text-white">
-                    {displayNameFromEmail(c.userEmail)}
-                  </div>
+        {/* AVATAR */}
+        <div className="w-9 h-9 min-w-[36px] max-w-[36px] overflow-hidden rounded-full">
+          <img
+            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+            className="w-full h-full object-cover"
+          />
+        </div>
 
-                  <div className="text-sm text-white/80 leading-snug break-words break-all">
-                    {c.body}
-                  </div>
+        {/* TEXT */}
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <div className="text-sm font-semibold text-white">
+            {displayNameFromEmail(c.userEmail)}
+          </div>
 
-                  <div className="text-xs text-white/40 mt-1 flex gap-3">
-                    <button onClick={() => handleReply(c)}>Reply</button>
-                    <button onClick={() => handleTranche(c)}>Tranche</button>
-                  </div>
-                </div>
-              </div>
+          <div className="text-sm text-white/80 leading-snug break-words">
+            {c.body}
+          </div>
 
-              {/* REPLIES */}
-              {childReplies.map((r) => (
-                <div key={r.id} className="flex items-start gap-3 mt-3 ml-12 w-full min-w-0">
+          <div className="text-xs text-white/40 mt-1 flex gap-3">
+            <button onClick={() => handleReply(c)}>Reply</button>
+            <button onClick={() => handleTranche(c)}>Tranche</button>
+          </div>
+        </div>
+      </div>
 
-                  <img
-                    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
-                    className="w-7 h-7 rounded-full object-cover"
-                  />
+      {/* REPLIES */}
+      {childReplies.map((r) => (
+        <div
+          key={r.id}
+          className="flex items-start gap-3 mt-3 ml-12 w-full min-w-0"
+        >
 
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="text-sm font-semibold text-white">
-                      {displayNameFromEmail(r.userEmail)}
-                    </div>
+          {/* AVATAR */}
+          <div className="w-7 h-7 min-w-[28px] max-w-[28px] overflow-hidden rounded-full">
+            <img
+              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-                    <div className="text-sm text-white/70 break-words">
-                      {r.body}
-                    </div>
-                  </div>
-
-                </div>
-              ))}
-
+          {/* TEXT */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div className="text-sm font-semibold text-white">
+              {displayNameFromEmail(r.userEmail)}
             </div>
-          );
-        });
-      })()}
+
+            <div className="text-sm text-white/70 break-words">
+              {r.body}
+            </div>
+          </div>
+
+        </div>
+      ))}
 
     </div>
+  );
+});
+
 
     {/* INPUT BAR */}
     <div className="p-3 border-t border-white/10 bg-black flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
