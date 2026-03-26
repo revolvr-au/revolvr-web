@@ -618,18 +618,18 @@ return (
             <div key={c.id} className="mb-4">
 
               {/* MAIN COMMENT */}
-              <div className="flex items-start gap-3 w-full min-w-0">
+              <div className="flex items-start gap-3 w-full min-w-0 overflow-hidden">
                 <img
                   src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
                   className="w-9 h-9 rounded-full object-cover"
                 />
 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="text-sm font-semibold text-white">
                     {displayNameFromEmail(c.userEmail)}
                   </div>
 
-                  <div className="text-sm text-white/80 leading-snug break-words">
+                  <div className="text-sm text-white/80 leading-snug break-words w-full">
                     {c.body}
                   </div>
 
@@ -649,7 +649,7 @@ return (
                     className="w-7 h-7 rounded-full object-cover"
                   />
 
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="text-sm font-semibold text-white">
                       {displayNameFromEmail(r.userEmail)}
                     </div>
