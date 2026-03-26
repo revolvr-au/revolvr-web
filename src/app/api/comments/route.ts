@@ -1,27 +1,21 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   try {
-    const { postId, userEmail, body, parentId } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const postId = searchParams.get("postId");
 
-    if (!postId || !userEmail || !body) {
-      return NextResponse.json({ ok: false }, { status: 400 });
+    if (!postId) {
+      return NextResponse.json({ ok: false, comments: [] });
     }
 
-    const comment = await prisma.comment.create({
-      data: {
-        postId,
-        userEmail,
-        body,
-        parentId: parentId ? parentId : null,
-      },
+    const comments = await prisma.comment.findMany({
+      where: { postId },
+      orderBy: { createdAt: "asc" },
     });
 
-    return NextResponse.json({ ok: true, comment });
+    return NextResponse.json({ ok: true, comments });
 
   } catch (error) {
-    console.error("COMMENT ERROR:", error);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    console.error("GET COMMENTS ERROR:", error);
+    return NextResponse.json({ ok: false, comments: [] });
   }
 }
