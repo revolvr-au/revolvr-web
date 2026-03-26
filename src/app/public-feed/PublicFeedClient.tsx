@@ -437,22 +437,6 @@ function handleReply(comment: any) {
   } catch (err) {
     console.error(err);
   }
-} // ✅ THIS CLOSING BRACE IS CRITICAL
-
-    const data = await res.json();
-    if (!res.ok || !data?.ok) return;
-
-    setComments((prev) => [...prev, data.comment]);
-    setCommentText("");
-
-    setCommentCounts((prev) => ({
-      ...prev,
-      [activePostId]: (prev[activePostId] || 0) + 1,
-    }));
-
-  } catch (err) {
-    console.error(err);
-  }
 }
 
 function jumpToCreator(creatorId: string) {
