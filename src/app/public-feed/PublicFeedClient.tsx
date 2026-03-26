@@ -581,50 +581,61 @@ return (
                   const childReplies = replies.filter(r => r.replyToCommentId === c.id);
 
                   return (
-                    <div key={c.id} className="mb-4">
+  <div key={c.id} className="mb-4">
 
-                      <div className="flex items-start gap-3">
-                        <img
-                          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-                          className="w-9 h-9 rounded-full"
-                        />
+    {/* MAIN COMMENT */}
+    <div className="flex items-start gap-3 w-full">
 
-                        <div className="flex-1">
-                          <div className="text-sm font-semibold text-white">
-                            {displayNameFromEmail(c.userEmail)}
-                          </div>
+      <div className="w-9 h-9 min-w-[36px] max-w-[36px] overflow-hidden rounded-full">
+        <img
+          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+          className="w-full h-full object-cover"
+        />
+      </div>
 
-                          <div className="text-sm text-white/80 break-words">
-                            {c.body}
-                          </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-semibold text-white">
+          {displayNameFromEmail(c.userEmail)}
+        </div>
 
-                          <div className="text-xs text-white/40 mt-1 flex gap-3">
-                            <button onClick={() => handleReply(c)}>Reply</button>
-                            <button onClick={() => handleTranche(c)}>Tranche</button>
-                          </div>
-                        </div>
-                      </div>
+        <div className="text-sm text-white/80 break-words">
+          {c.body}
+        </div>
 
-                      {childReplies.map((r) => (
-                        <div key={r.id} className="flex items-start gap-3 mt-3 ml-10">
-                          <img
-                            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
-                            className="w-7 h-7 rounded-full"
-                          />
+        <div className="text-xs text-white/40 mt-1 flex gap-3">
+          <button onClick={() => handleReply(c)}>Reply</button>
+          <button onClick={() => handleTranche(c)}>Tranche</button>
+        </div>
+      </div>
 
-                          <div className="flex-1">
-                            <div className="text-sm font-semibold text-white">
-                              {displayNameFromEmail(r.userEmail)}
-                            </div>
+    </div>
 
-                            <div className="text-sm text-white/70 break-words">
-                              {r.body}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
+    {/* REPLIES — NOW INSIDE */}
+    {childReplies.map((r) => (
+      <div key={r.id} className="flex items-start gap-3 mt-3 ml-10">
+
+        <div className="w-7 h-7 min-w-[28px] max-w-[28px] overflow-hidden rounded-full">
+          <img
+            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-white">
+            {displayNameFromEmail(r.userEmail)}
+          </div>
+
+          <div className="text-sm text-white/70 break-words">
+            {r.body}
+          </div>
+        </div>
+
+      </div>
+    ))}
+
+  </div>
+);
                 });
               })()}
             </div>
