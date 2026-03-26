@@ -425,10 +425,19 @@ async function handleSendComment() {
     }),
   });
 
-  const data = await res.json(); // 👈 THIS WAS MISSING
+  const data = await res.json(); // ✅ ONLY ONCE
 
-  console.log("NEW COMMENT:", data.comment); // 👈 NOW VALID
-  
+  console.log("NEW COMMENT:", data.comment);
+
+  if (!res.ok || !data?.ok) return;
+
+  setComments((prev) => [...prev, data.comment]);
+  setCommentText("");
+
+} catch (err) {
+  console.error(err);
+}
+
     const data = await res.json();
     if (!res.ok || !data?.ok) return;
 
