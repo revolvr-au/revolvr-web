@@ -595,7 +595,7 @@ return (
 
     {/* SHEET */}
     <div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center">
-      <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col">
+      <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col overflow-hidden">
 
         {/* SCROLL AREA */}
         <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
@@ -617,18 +617,18 @@ return (
                 <div key={c.id} className="mb-4">
 
                   {/* MAIN COMMENT */}
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 w-full min-w-0">
                     <img
                       src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
                       className="w-9 h-9 rounded-full object-cover"
                     />
 
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                       <div className="text-sm font-semibold text-white">
                         {displayNameFromEmail(c.userEmail)}
                       </div>
 
-                      <div className="text-sm text-white/80 leading-snug">
+                      <div className="text-sm text-white/80 leading-snug break-words">
                         {c.body}
                       </div>
 
