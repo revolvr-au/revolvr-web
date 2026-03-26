@@ -593,108 +593,106 @@ return (
       onClick={closeComments}
     />
 
-    {/* SHEET */}
-    <div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center overflow-hidden">
-      <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-4 max-h-[60vh] w-full overflow-x-hidden">
-  <div className="w-full max-w-full">
-    {comments.map(...)}
-  </div>
-</div>
-        {/* SCROLL AREA */}
-        <div className="flex-1 overflow-y-auto p-4 max-h-[60vh] w-full overflow-x-hidden">
-          {(() => {
-            const parentComments = comments.filter(
-            c => c.replyToCommentId === null || c.replyToCommentId === undefined
-            );
+   {/* SHEET */}
+<div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center overflow-hidden">
+  <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col overflow-hidden">
 
-            const replies = comments.filter(
-            c => c.replyToCommentId !== null && c.replyToCommentId !== undefined
-            );
+    {/* SCROLL AREA */}
+    <div className="flex-1 overflow-y-auto p-4 max-h-[60vh] w-full overflow-x-hidden">
 
-            return parentComments.map((c) => {
-              const childReplies = replies.filter(
-                (r) => r.replyToCommentId === c.id
-              );
+      {(() => {
+        const parentComments = comments.filter(
+          c => c.replyToCommentId === null || c.replyToCommentId === undefined
+        );
 
-              return (
-                <div key={c.id} className="mb-4">
+        const replies = comments.filter(
+          c => c.replyToCommentId !== null && c.replyToCommentId !== undefined
+        );
 
-                  {/* MAIN COMMENT */}
-                  <div className="flex items-start gap-3 w-full min-w-0">
-                    <img
-                      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-                      className="w-9 h-9 rounded-full object-cover"
-                    />
+        return parentComments.map((c) => {
+          const childReplies = replies.filter(
+            (r) => r.replyToCommentId === c.id
+          );
 
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-semibold text-white">
-                        {displayNameFromEmail(c.userEmail)}
-                      </div>
+          return (
+            <div key={c.id} className="mb-4">
 
-                      <div className="text-sm text-white/80 leading-snug break-words">
-                        {c.body}
-                      </div>
+              {/* MAIN COMMENT */}
+              <div className="flex items-start gap-3 w-full min-w-0">
+                <img
+                  src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+                  className="w-9 h-9 rounded-full object-cover"
+                />
 
-                      <div className="text-xs text-white/40 mt-1 flex gap-3">
-                        <button onClick={() => handleReply(c)}>Reply</button>
-                        <button onClick={() => handleTranche(c)}>Tranche</button>
-                      </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold text-white">
+                    {displayNameFromEmail(c.userEmail)}
+                  </div>
+
+                  <div className="text-sm text-white/80 leading-snug break-words">
+                    {c.body}
+                  </div>
+
+                  <div className="text-xs text-white/40 mt-1 flex gap-3">
+                    <button onClick={() => handleReply(c)}>Reply</button>
+                    <button onClick={() => handleTranche(c)}>Tranche</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* REPLIES */}
+              {childReplies.map((r) => (
+                <div key={r.id} className="flex items-start gap-3 mt-3 ml-12 w-full min-w-0">
+
+                  <img
+                    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white">
+                      {displayNameFromEmail(r.userEmail)}
+                    </div>
+
+                    <div className="text-sm text-white/70 break-words">
+                      {r.body}
                     </div>
                   </div>
 
-                  {/* REPLIES */}
-                  {childReplies.map((r) => (
-                    <div key={r.id} className="flex items-start gap-3 ml-10 mt-2">
-                      <img
-                        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
-                        className="w-7 h-7 rounded-full object-cover"
-                      />
-
-                      <div>
-                        <div className="text-xs font-semibold text-white">
-                          {displayNameFromEmail(r.userEmail)}
-                        </div>
-
-                        <div className="text-xs text-white/70">
-                          {r.body}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-
                 </div>
-              );
-            });
-          })()}
-        </div>
+              ))}
 
-        {/* INPUT BAR */}
-        <div className="p-3 border-t border-white/10 bg-black flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
-          
-          <input
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Add a comment..."
-            className="flex-1 bg-transparent text-white outline-none"
-          />
+            </div>
+          );
+        });
+      })()}
 
-          <button
-            onMouseDown={(e) => {
-              e.preventDefault();
-              handleSendComment();
-            }}
-            className="text-white p-2"
-          >
-            <Send size={18} />
-          </button>
-
-        </div>
-
-      </div>
     </div>
-  </>
-)}
+
+    {/* INPUT BAR */}
+    <div className="p-3 border-t border-white/10 bg-black flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
+
+      <input
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        placeholder="Add a comment..."
+        className="flex-1 bg-transparent text-white outline-none"
+      />
+
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault();
+          handleSendComment();
+        }}
+        className="text-white p-2"
+      >
+        <Send size={18} />
+      </button>
+
+    </div>
+
+  </div>
+</div>
 
     {/* MENU */}
     {menuOpen && menuPost && typeof document !== "undefined"
