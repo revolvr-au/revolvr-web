@@ -410,33 +410,34 @@ function handleReply(comment: any) {
       closeRewards();
     }
   }
-async function handleSendComment() {
+  async function handleSendComment() {
   if (!activePostId || !commentText.trim()) return;
 
   try {
-  const res = await fetch("/api/comments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      postId: activePostId,
-      userEmail: viewer,
-      body: commentText.trim(),
-      replyToCommentId,
-    }),
-  });
+    const res = await fetch("/api/comments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        postId: activePostId,
+        userEmail: viewer,
+        body: commentText.trim(),
+        replyToCommentId,
+      }),
+    });
 
-  const data = await res.json(); // ✅ ONLY ONCE
+    const data = await res.json();
 
-  console.log("NEW COMMENT:", data.comment);
+    console.log("NEW COMMENT:", data.comment);
 
-  if (!res.ok || !data?.ok) return;
+    if (!res.ok || !data?.ok) return;
 
-  setComments((prev) => [...prev, data.comment]);
-  setCommentText("");
+    setComments((prev) => [...prev, data.comment]);
+    setCommentText("");
 
-} catch (err) {
-  console.error(err);
-}
+  } catch (err) {
+    console.error(err);
+  }
+} // ✅ THIS CLOSING BRACE IS CRITICAL
 
     const data = await res.json();
     if (!res.ok || !data?.ok) return;
