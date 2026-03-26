@@ -542,49 +542,7 @@ return (
 </div>
           
 
-              {/* COMMENTS */}
-              <button
-                onClick={() => openComments(p.id)}
-                className="flex flex-col items-center"
-              >
-                <MessageCircle size={28} />
-                <span className="text-xs text-white">
-                  {commentCounts[p.id] || 0}
-                </span>
-              </button>
-
-              {/* REWARD */}
-              <button onClick={() => toggleRewards(p.id)}>
-                <Gift size={28} />
-              </button>
-
-              {/* CREATE */}
-              <button onClick={() => router.push("/create")}>
-                <Plus size={28} />
-              </button>
-
-              {/* HOME */}
-              <button onClick={() => router.push("/")}>
-                <Home size={28} />
-              </button>
-
-              {/* MENU */}
-              <button
-                onClick={() => {
-                  setMenuPost(p);
-                  setMenuOpen(true);
-                }}
-              >
-                <MoreVertical size={28} />
-              </button>
-
-            </div>
-          </div>
-        );
-      })}
-    </div>
-
-   {/* COMMENTS */}
+    {/* COMMENTS */}
 {commentsOpen && (
   <>
     {/* BACKDROP */}
@@ -593,116 +551,117 @@ return (
       onClick={closeComments}
     />
 
-   {/* SHEET */}
-<div className="fixed inset-0 z-[9999] flex items-end justify-center overflow-hidden">
-  <div className="w-full max-w-[720px] h-full max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
+    {/* SHEET */}
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center overflow-hidden">
+      <div className="w-full max-w-[720px] h-full max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
 
-    {/* SCROLL AREA */}
-    <div className="flex-1 overflow-y-auto p-4 w-full overflow-x-hidden">
+        {/* SCROLL AREA */}
+        <div className="flex-1 overflow-y-auto p-4 w-full overflow-x-hidden">
 
-      {(() => {
-        const parentComments = comments.filter(
-          c => c.replyToCommentId === null || c.replyToCommentId === undefined
-        );
+          {(() => {
+            const parentComments = comments.filter(
+              c => c.replyToCommentId == null
+            );
 
-        const replies = comments.filter(
-          c => c.replyToCommentId !== null && c.replyToCommentId !== undefined
-        );
+            const replies = comments.filter(
+              c => c.replyToCommentId != null
+            );
 
-        return parentComments.map((c) => {
-  const childReplies = replies.filter(
-    (r) => r.replyToCommentId === c.id
-  );
+            return parentComments.map((c) => {
+              const childReplies = replies.filter(
+                (r) => r.replyToCommentId === c.id
+              );
 
-  return (
-    <div key={c.id} className="mb-4 w-full overflow-hidden">
+              return (
+                <div key={c.id} className="mb-4 w-full overflow-hidden">
 
-      {/* MAIN COMMENT */}
-      <div className="flex items-start gap-3 w-full min-w-0">
+                  {/* MAIN COMMENT */}
+                  <div className="flex items-start gap-3 w-full min-w-0">
 
-        {/* AVATAR */}
-        <div className="w-9 h-9 min-w-[36px] max-w-[36px] overflow-hidden rounded-full">
-          <img
-            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-            className="w-full h-full object-cover"
+                    <div className="w-9 h-9 min-w-[36px] max-w-[36px] overflow-hidden rounded-full">
+                      <img
+                        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-white">
+                        {displayNameFromEmail(c.userEmail)}
+                      </div>
+
+                      <div className="text-sm text-white/80 break-words">
+                        {c.body}
+                      </div>
+
+                      <div className="text-xs text-white/40 mt-1 flex gap-3">
+                        <button onClick={() => handleReply(c)}>Reply</button>
+                        <button onClick={() => handleTranche(c)}>Tranche</button>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* REPLIES */}
+                  {childReplies.map((r) => (
+                    <div
+                      key={r.id}
+                      className="flex items-start gap-3 mt-3 ml-12 w-full min-w-0"
+                    >
+
+                      <div className="w-7 h-7 min-w-[28px] max-w-[28px] overflow-hidden rounded-full">
+                        <img
+                          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-white">
+                          {displayNameFromEmail(r.userEmail)}
+                        </div>
+
+                        <div className="text-sm text-white/70 break-words">
+                          {r.body}
+                        </div>
+                      </div>
+
+                    </div>
+                  ))}
+
+                </div>
+              );
+            });
+          })()}
+
+        </div>
+
+        {/* INPUT BAR */}
+        <div className="p-3 border-t border-white/10 bg-black flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
+
+          <input
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Add a comment..."
+            className="flex-1 bg-transparent text-white outline-none"
           />
+
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleSendComment();
+            }}
+            className="text-white p-2"
+          >
+            <Send size={18} />
+          </button>
+
         </div>
 
-        {/* TEXT */}
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <div className="text-sm font-semibold text-white">
-            {displayNameFromEmail(c.userEmail)}
-          </div>
-
-          <div className="text-sm text-white/80 leading-snug break-words">
-            {c.body}
-          </div>
-
-          <div className="text-xs text-white/40 mt-1 flex gap-3">
-            <button onClick={() => handleReply(c)}>Reply</button>
-            <button onClick={() => handleTranche(c)}>Tranche</button>
-          </div>
-        </div>
       </div>
-
-      {/* REPLIES */}
-      {childReplies.map((r) => (
-        <div
-          key={r.id}
-          className="flex items-start gap-3 mt-3 ml-12 w-full min-w-0"
-        >
-
-          {/* AVATAR */}
-          <div className="w-7 h-7 min-w-[28px] max-w-[28px] overflow-hidden rounded-full">
-            <img
-              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          {/* TEXT */}
-          <div className="flex-1 min-w-0 overflow-hidden">
-            <div className="text-sm font-semibold text-white">
-              {displayNameFromEmail(r.userEmail)}
-            </div>
-
-            <div className="text-sm text-white/70 break-words">
-              {r.body}
-            </div>
-          </div>
-
-        </div>
-      ))}
-
     </div>
-  );
-});
-
-
-    {/* INPUT BAR */}
-    <div className="p-3 border-t border-white/10 bg-black flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
-
-      <input
-        value={commentText}
-        onChange={(e) => setCommentText(e.target.value)}
-        placeholder="Add a comment..."
-        className="flex-1 bg-transparent text-white outline-none"
-      />
-
-      <button
-        onMouseDown={(e) => {
-          e.preventDefault();
-          handleSendComment();
-        }}
-        className="text-white p-2"
-      >
-        <Send size={18} />
-      </button>
-
-    </div>
-
-  </div>
-</div>
+  </>
+)}
 
     {/* MENU */}
     {menuOpen && menuPost && typeof document !== "undefined"
