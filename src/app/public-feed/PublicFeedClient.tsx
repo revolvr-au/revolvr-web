@@ -418,10 +418,10 @@ function handleReply(comment: any) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        postId: activePostId,
-        userEmail: viewer,
-        body: commentText.trim(),
-        replyToCommentId,
+      postId: activePostId,
+      userEmail: viewer,
+      body: commentText.trim(),
+      parentId: replyToCommentId,
       }),
     });
 
@@ -575,8 +575,8 @@ return (
 
             <div className="flex-1 overflow-y-auto p-4">
               {(() => {
-                const parentComments = comments.filter(c => c.replyToCommentId == null);
-                const replies = comments.filter(c => c.replyToCommentId != null);
+               const parentComments = comments.filter(c => c.parentId == null);
+                const replies = comments.filter(c => c.parentId != null);
 
                 return parentComments.map((c) => {
                   const childReplies = replies.filter(r => r.replyToCommentId === c.id);

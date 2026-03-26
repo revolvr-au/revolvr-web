@@ -25,20 +25,20 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { postId, userEmail, body, parentId } = await req.json();
+  const { postId, userEmail, body, replyToCommentId } = await req.json();
 
   if (!postId || !userEmail || !body) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
   const comment = await prisma.comment.create({
-    data: {
-      postId,
-      userEmail,
-      body,
-      parentId: parentId ?? null,
-    },
-  });
+  data: {
+    postId,
+    userEmail,
+    body,
+    replyToCommentId: replyToCommentId ?? null,
+  },
+});
 
   return NextResponse.json({ ok: true, comment });
 }
