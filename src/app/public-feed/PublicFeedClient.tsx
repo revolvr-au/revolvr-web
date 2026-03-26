@@ -719,6 +719,7 @@ return (
           document.body
         )
       : null}
+      </>  {
   </FeedLayout>
 );
 }
