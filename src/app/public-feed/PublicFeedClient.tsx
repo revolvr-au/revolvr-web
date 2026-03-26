@@ -594,11 +594,11 @@ return (
     />
 
    {/* SHEET */}
-<div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center overflow-hidden">
-  <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col overflow-hidden">
+<div className="fixed inset-0 z-[9999] flex items-end justify-center overflow-hidden">
+  <div className="w-full max-w-[720px] h-full max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
 
     {/* SCROLL AREA */}
-    <div className="flex-1 overflow-y-auto p-4 max-h-[60vh] w-full overflow-x-hidden">
+    <div className="flex-1 overflow-y-auto p-4 w-full overflow-x-hidden">
 
       {(() => {
         const parentComments = comments.filter(
@@ -615,7 +615,7 @@ return (
           );
 
           return (
-            <div key={c.id} className="mb-4">
+              <div key={c.id} className="mb-4 w-full max-w-full overflow-hidden">
 
               {/* MAIN COMMENT */}
               <div className="flex items-start gap-3 w-full min-w-0 overflow-hidden">
@@ -629,7 +629,7 @@ return (
                     {displayNameFromEmail(c.userEmail)}
                   </div>
 
-                  <div className="text-sm text-white/80 leading-snug break-words w-full">
+                  <div className="text-sm text-white/80 leading-snug break-words break-all">
                     {c.body}
                   </div>
 
