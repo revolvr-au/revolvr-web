@@ -414,17 +414,21 @@ async function handleSendComment() {
   if (!activePostId || !commentText.trim()) return;
 
   try {
-    const res = await fetch("/api/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+  const res = await fetch("/api/comments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
       postId: activePostId,
       userEmail: viewer,
       body: commentText.trim(),
-      replyToCommentId, 
-      }),
-      });
+      replyToCommentId,
+    }),
+  });
 
+  const data = await res.json(); // 👈 THIS WAS MISSING
+
+  console.log("NEW COMMENT:", data.comment); // 👈 NOW VALID
+  
     const data = await res.json();
     if (!res.ok || !data?.ok) return;
 
@@ -602,8 +606,13 @@ return (
         {/* SCROLL AREA */}
         <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
           {(() => {
-            const parentComments = comments.filter(c => !c.replyToCommentId);
-            const replies = comments.filter(c => c.replyToCommentId);
+            const parentComments = comments.filter(
+            c => c.replyToCommentId === null || c.replyToCommentId === undefined
+            );
+
+            const replies = comments.filter(
+            c => c.replyToCommentId !== null && c.replyToCommentId !== undefined
+            );
 
             return parentComments.map((c) => {
               const childReplies = replies.filter(
