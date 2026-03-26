@@ -25,20 +25,19 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const { postId, userEmail, body, replyToCommentId } = await req.json();
+const { postId, userEmail, body, parentId } = await req.json();
 
-  if (!postId || !userEmail || !body) {
-    return NextResponse.json({ ok: false }, { status: 400 });
-  }
+if (!postId || !userEmail || !body) {
+  return NextResponse.json({ ok: false }, { status: 400 });
+}
 
-  const comment = await prisma.comment.create({
+const comment = await prisma.comment.create({
   data: {
     postId,
     userEmail,
     body,
-    replyToCommentId: replyToCommentId ?? null,
+    parentId: parentId ? parentId : null, // 🔥 CRITICAL FIX
   },
 });
 
-  return NextResponse.json({ ok: true, comment });
-}
+return NextResponse.json({ ok: true, comment });

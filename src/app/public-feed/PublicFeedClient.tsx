@@ -421,7 +421,7 @@ function handleReply(comment: any) {
       postId: activePostId,
       userEmail: viewer,
       body: commentText.trim(),
-      parentId: replyToCommentId,
+      parentId: replyToCommentId || null,
       }),
     });
 
