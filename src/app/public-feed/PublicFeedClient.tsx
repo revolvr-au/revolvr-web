@@ -433,6 +433,7 @@ function handleReply(comment: any) {
 
     setComments((prev) => [...prev, data.comment]);
     setCommentText("");
+    setReplyToCommentId(null); // 👈 THIS WAS MISSING
 
   } catch (err) {
     console.error(err);
@@ -569,7 +570,7 @@ return (
           onClick={closeComments}
         />
 
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+        <div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center">
           <div className="w-full max-w-[720px] max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
 
             <div className="flex-1 overflow-y-auto p-4">
@@ -640,30 +641,41 @@ return (
               })()}
             </div>
 
-            {/* INPUT */}
-            <div className="p-3 border-t border-white/10 flex items-center gap-2">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 bg-transparent text-white outline-none"
-              />
+           {/* INPUT */}
+<div className="p-3 border-t border-white/10">
 
-              <button
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleSendComment();
-                }}
-                className="text-white p-2"
-              >
-                <Send size={18} />
-              </button>
-            </div>
+  {/* REPLY INDICATOR */}
+  {replyToCommentId && (
+    <div className="text-xs text-white/50 mb-1">
+      Replying...
+    </div>
+  )}
 
-          </div>
-        </div>
-      </>
-    )}
+  <div className="flex items-center gap-2">
+    <input
+      value={commentText}
+      onChange={(e) => setCommentText(e.target.value)}
+      placeholder="Add a comment..."
+      className="flex-1 bg-transparent text-white outline-none"
+    />
+
+    <button
+      onMouseDown={(e) => {
+        e.preventDefault();
+        handleSendComment();
+      }}
+      className="text-white p-2"
+    >
+      <Send size={18} />
+    </button>
+  </div>
+
+</div>
+
+</div>
+</div>
+</>
+)}
 
     {/* MENU MODAL */}
     {menuOpen && menuPost && typeof document !== "undefined"
