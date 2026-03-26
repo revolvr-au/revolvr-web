@@ -484,7 +484,7 @@ return (
             {mediaUrl && (
               <img
                 src={mediaUrl}
-                className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-auto"
+                className="absolute inset-0 w-full h-full object-cover z-0"
                 alt=""
               />
             )}
@@ -493,10 +493,7 @@ return (
             <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
 
               {/* AVATAR */}
-              <button
-                onClick={() => router.push(`/user/${email}`)}
-                className="mb-3"
-              >
+              <button onClick={() => router.push(`/user/${email}`)}>
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
                   <img
                     src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
@@ -506,150 +503,158 @@ return (
                 </div>
               </button>
 
-              
-              {/* LIKE */}
-          
-<div className="relative flex flex-col items-center">
+              {/* LIKE + BURST */}
+              <div className="relative flex flex-col items-center">
 
-  {/* BURST HEARTS */}
-  {heartBursts
-    .filter((h) => h.postId === p.id)
-    .map((h) => (
-      <span
-        key={h.id}
-        className="absolute text-white text-lg animate-burst"
-        style={{
-          bottom: "36px",
-          left: "50%",
-          transform: "translateX(-50%)",
-        }}
-      >
-        ❤️
-      </span>
-    ))}
-
-  {/* BUTTON */}
-  <button
-    onClick={() => toggleLike(p.id)}
-    className="flex flex-col items-center"
-  >
-    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-    <span className="text-xs text-white">
-      {likeCounts[p.id] || 0}
-    </span>
-  </button>
-
-</div>
-          
-
-  {/* COMMENTS */}
-{commentsOpen && (
-  <>
-    {/* BACKDROP */}
-    <div
-      className="fixed inset-0 bg-black/50 z-[9998]"
-      onClick={closeComments}
-    />
-
-    {/* SHEET */}
-    <div className="fixed inset-0 z-[9999] flex items-end justify-center">
-      <div className="w-full max-w-[720px] max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
-
-        {/* SCROLL AREA */}
-        <div className="flex-1 overflow-y-auto p-4">
-
-          {(() => {
-            const parentComments = comments.filter(c => c.replyToCommentId == null);
-            const replies = comments.filter(c => c.replyToCommentId != null);
-
-            return parentComments.map((c) => {
-              const childReplies = replies.filter(r => r.replyToCommentId === c.id);
-
-              return (
-                <div key={c.id} className="mb-4">
-
-                  {/* MAIN COMMENT */}
-                  <div className="flex items-start gap-3">
-
-                    <img
-                      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-                      className="w-9 h-9 rounded-full object-cover"
-                    />
-
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold text-white">
-                        {displayNameFromEmail(c.userEmail)}
-                      </div>
-
-                      <div className="text-sm text-white/80 break-words">
-                        {c.body}
-                      </div>
-
-                      <div className="text-xs text-white/40 mt-1 flex gap-3">
-                        <button onClick={() => handleReply(c)}>Reply</button>
-                        <button onClick={() => handleTranche(c)}>Tranche</button>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* REPLIES */}
-                  {childReplies.map((r) => (
-                    <div key={r.id} className="flex items-start gap-3 mt-3 ml-10">
-
-                      <img
-                        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
-                        className="w-7 h-7 rounded-full object-cover"
-                      />
-
-                      <div className="flex-1">
-                        <div className="text-sm font-semibold text-white">
-                          {displayNameFromEmail(r.userEmail)}
-                        </div>
-
-                        <div className="text-sm text-white/70 break-words">
-                          {r.body}
-                        </div>
-                      </div>
-
-                    </div>
+                {heartBursts
+                  .filter((h) => h.postId === p.id)
+                  .map((h) => (
+                    <span
+                      key={h.id}
+                      className="absolute text-white text-lg animate-burst"
+                      style={{
+                        bottom: "36px",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                      }}
+                    >
+                      ❤️
+                    </span>
                   ))}
 
-                </div>
-              );
-            });
-          })()}
+                <button
+                  onClick={() => toggleLike(p.id)}
+                  className="flex flex-col items-center"
+                >
+                  <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+                  <span className="text-xs text-white">
+                    {likeCounts[p.id] || 0}
+                  </span>
+                </button>
 
-        </div>
+              </div>
 
-        {/* INPUT BAR */}
-        <div className="p-3 border-t border-white/10 flex items-center gap-2">
+              {/* COMMENTS BUTTON */}
+              <button
+                onClick={() => openComments(p.id)}
+                className="flex flex-col items-center"
+              >
+                <MessageCircle size={28} />
+                <span className="text-xs text-white">
+                  {commentCounts[p.id] || 0}
+                </span>
+              </button>
 
-          <input
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            placeholder="Add a comment..."
-            className="flex-1 bg-transparent text-white outline-none"
-          />
+              {/* MENU */}
+              <button
+                onClick={() => {
+                  setMenuPost(p);
+                  setMenuOpen(true);
+                }}
+              >
+                <MoreVertical size={28} />
+              </button>
 
-          <button
-            onMouseDown={(e) => {
-              e.preventDefault();
-              handleSendComment();
-            }}
-            className="text-white p-2"
-          >
-            <Send size={18} />
-          </button>
-
-        </div>
-
-      </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
-  </>
-)}
 
-    {/* MENU */}
+    {/* COMMENTS MODAL */}
+    {commentsOpen && (
+      <>
+        <div
+          className="fixed inset-0 bg-black/50 z-[9998]"
+          onClick={closeComments}
+        />
+
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+          <div className="w-full max-w-[720px] max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
+
+            <div className="flex-1 overflow-y-auto p-4">
+              {(() => {
+                const parentComments = comments.filter(c => c.replyToCommentId == null);
+                const replies = comments.filter(c => c.replyToCommentId != null);
+
+                return parentComments.map((c) => {
+                  const childReplies = replies.filter(r => r.replyToCommentId === c.id);
+
+                  return (
+                    <div key={c.id} className="mb-4">
+
+                      <div className="flex items-start gap-3">
+                        <img
+                          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+                          className="w-9 h-9 rounded-full"
+                        />
+
+                        <div className="flex-1">
+                          <div className="text-sm font-semibold text-white">
+                            {displayNameFromEmail(c.userEmail)}
+                          </div>
+
+                          <div className="text-sm text-white/80 break-words">
+                            {c.body}
+                          </div>
+
+                          <div className="text-xs text-white/40 mt-1 flex gap-3">
+                            <button onClick={() => handleReply(c)}>Reply</button>
+                            <button onClick={() => handleTranche(c)}>Tranche</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {childReplies.map((r) => (
+                        <div key={r.id} className="flex items-start gap-3 mt-3 ml-10">
+                          <img
+                            src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
+                            className="w-7 h-7 rounded-full"
+                          />
+
+                          <div className="flex-1">
+                            <div className="text-sm font-semibold text-white">
+                              {displayNameFromEmail(r.userEmail)}
+                            </div>
+
+                            <div className="text-sm text-white/70 break-words">
+                              {r.body}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* INPUT */}
+            <div className="p-3 border-t border-white/10 flex items-center gap-2">
+              <input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 bg-transparent text-white outline-none"
+              />
+
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSendComment();
+                }}
+                className="text-white p-2"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </>
+    )}
+
+    {/* MENU MODAL */}
     {menuOpen && menuPost && typeof document !== "undefined"
       ? createPortal(
           <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -659,9 +664,7 @@ return (
             />
 
             <div className="relative bg-zinc-900 p-4 rounded-2xl text-white">
-              <button onClick={() => sharePost(menuPost.id)}>
-                Share
-              </button>
+              <button onClick={() => sharePost(menuPost.id)}>Share</button>
 
               <button
                 onClick={() => setMenuOpen(false)}
@@ -673,10 +676,8 @@ return (
           </div>,
           document.body
         )
-       : null}
+      : null}
 
-  </>
-)}
-</FeedLayout>
+  </FeedLayout>
 );
 }
