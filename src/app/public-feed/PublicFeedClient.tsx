@@ -542,7 +542,7 @@ return (
 </div>
           
 
-    {/* COMMENTS */}
+  {/* COMMENTS */}
 {commentsOpen && (
   <>
     {/* BACKDROP */}
@@ -552,40 +552,31 @@ return (
     />
 
     {/* SHEET */}
-    <div className="fixed inset-0 z-[9999] flex items-end justify-center overflow-hidden">
-      <div className="w-full max-w-[720px] h-full max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center">
+      <div className="w-full max-w-[720px] max-h-[70vh] bg-black rounded-t-2xl flex flex-col overflow-hidden">
 
         {/* SCROLL AREA */}
-        <div className="flex-1 overflow-y-auto p-4 w-full overflow-x-hidden">
+        <div className="flex-1 overflow-y-auto p-4">
 
           {(() => {
-            const parentComments = comments.filter(
-              c => c.replyToCommentId == null
-            );
-
-            const replies = comments.filter(
-              c => c.replyToCommentId != null
-            );
+            const parentComments = comments.filter(c => c.replyToCommentId == null);
+            const replies = comments.filter(c => c.replyToCommentId != null);
 
             return parentComments.map((c) => {
-              const childReplies = replies.filter(
-                (r) => r.replyToCommentId === c.id
-              );
+              const childReplies = replies.filter(r => r.replyToCommentId === c.id);
 
               return (
-                <div key={c.id} className="mb-4 w-full overflow-hidden">
+                <div key={c.id} className="mb-4">
 
                   {/* MAIN COMMENT */}
-                  <div className="flex items-start gap-3 w-full min-w-0">
+                  <div className="flex items-start gap-3">
 
-                    <div className="w-9 h-9 min-w-[36px] max-w-[36px] overflow-hidden rounded-full">
-                      <img
-                        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                    <img
+                      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${c.userEmail}`}
+                      className="w-9 h-9 rounded-full object-cover"
+                    />
 
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1">
                       <div className="text-sm font-semibold text-white">
                         {displayNameFromEmail(c.userEmail)}
                       </div>
@@ -604,19 +595,14 @@ return (
 
                   {/* REPLIES */}
                   {childReplies.map((r) => (
-                    <div
-                      key={r.id}
-                      className="flex items-start gap-3 mt-3 ml-12 w-full min-w-0"
-                    >
+                    <div key={r.id} className="flex items-start gap-3 mt-3 ml-10">
 
-                      <div className="w-7 h-7 min-w-[28px] max-w-[28px] overflow-hidden rounded-full">
-                        <img
-                          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
+                      <img
+                        src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${r.userEmail}`}
+                        className="w-7 h-7 rounded-full object-cover"
+                      />
 
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1">
                         <div className="text-sm font-semibold text-white">
                           {displayNameFromEmail(r.userEmail)}
                         </div>
@@ -637,7 +623,7 @@ return (
         </div>
 
         {/* INPUT BAR */}
-        <div className="p-3 border-t border-white/10 bg-black flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
+        <div className="p-3 border-t border-white/10 flex items-center gap-2">
 
           <input
             value={commentText}
@@ -687,9 +673,10 @@ return (
           </div>,
           document.body
         )
-      : null}
-      </>  
+       : null}
+
+  </>
 )}
-  </FeedLayout>
+</FeedLayout>
 );
 }
