@@ -594,11 +594,15 @@ return (
     />
 
     {/* SHEET */}
-    <div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center">
+    <div className="fixed inset-x-0 bottom-0 z-[9999] flex justify-center overflow-hidden">
       <div className="w-full max-w-[720px] bg-black rounded-t-2xl flex flex-col overflow-hidden">
-
+      <div className="flex-1 overflow-y-auto p-4 max-h-[60vh] w-full overflow-x-hidden">
+  <div className="w-full max-w-full">
+    {comments.map(...)}
+  </div>
+</div>
         {/* SCROLL AREA */}
-        <div className="flex-1 overflow-y-auto p-4 max-h-[60vh]">
+        <div className="flex-1 overflow-y-auto p-4 max-h-[60vh] w-full overflow-x-hidden">
           {(() => {
             const parentComments = comments.filter(
             c => c.replyToCommentId === null || c.replyToCommentId === undefined
