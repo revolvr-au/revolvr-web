@@ -14,8 +14,16 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ ok: true, comments });
 
-  } catch (error) {
-    console.error("GET COMMENTS ERROR:", error);
-    return NextResponse.json({ ok: false, comments: [] });
+  } catch (error: any) {
+    console.error("🔥 GET COMMENTS ERROR FULL:", error);
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: error?.message || "Unknown error",
+        comments: [],
+      },
+      { status: 500 }
+    );
   }
 }
