@@ -4,10 +4,9 @@ generator client {
 
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_DATABASE_URL")
-  schemas   = ["public"]
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["public"]
 }
 
 model Post {
@@ -26,6 +25,12 @@ model Post {
 
   @@index([createdAt])
   @@index([userEmail])
+
+  @@schema("public")
+}
+
+model identities {
+  @@ignore
   @@schema("public")
 }
 
@@ -37,7 +42,7 @@ model liveSession {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@schema("public")
+@@schema("public")
 }
 model Like {
   id        String   @id @default(uuid())
@@ -49,6 +54,7 @@ model Like {
 
   @@unique([postId, userEmail])
   @@index([postId])
+
   @@schema("public")
 }
 
@@ -64,6 +70,7 @@ model PostReaction {
 
   @@index([postId])
   @@index([userEmail])
+
   @@schema("public")
 }
 
@@ -76,11 +83,13 @@ model Comment {
   createdAt DateTime @default(now())
 
   post    Post      @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
-  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   replies Comment[] @relation("CommentReplies")
 
   @@index([postId])
   @@index([parentId])
+
   @@schema("public")
 }
 
@@ -95,6 +104,7 @@ model PostMedia {
   post Post @relation("PostMedia", fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
+
   @@schema("public")
 }
 
@@ -107,7 +117,7 @@ model RevolvrItem {
   value     Int?
   name      String
 
-  @@schema("public")
+@@schema("public")
 }
 
 model Follow {
@@ -118,6 +128,7 @@ model Follow {
 
   @@unique([followerEmail, followingEmail], name: "uniq_follow_pair")
   @@index([followingEmail])
+
   @@schema("public")
 }
 
@@ -131,6 +142,7 @@ model UserCredits {
   updatedAt DateTime @updatedAt
 
   @@schema("public")
+
 }
 
 model CreatorBalance {
@@ -140,6 +152,7 @@ model CreatorBalance {
   updatedAt        DateTime @updatedAt
 
   @@schema("public")
+
 }
 
 model SupportLedger {
@@ -167,6 +180,7 @@ model SupportLedger {
   @@index([kind, targetId], map: "supportledger_kind_target_idx")
   @@index([targetId, kind], map: "supportledger_target_kind_idx")
   @@index([viewerEmail, kind, targetId], map: "supportledger_viewer_kind_target_idx")
+
   @@schema("public")
 }
 
@@ -186,6 +200,7 @@ model Payment {
   createdAt             DateTime @default(now())
 
   @@schema("public")
+
 }
 
 model CreatorPayout {
@@ -197,6 +212,7 @@ model CreatorPayout {
   createdAt        DateTime @default(now())
 
   @@schema("public")
+
 }
 
 model StripeCheckoutReceipt {
@@ -219,6 +235,7 @@ model StripeCheckoutReceipt {
   @@index([customerEmail])
   @@index([createdAt])
   @@map("stripe_checkout_receipts")
+
   @@schema("public")
 }
 model FeedSnapshot {
@@ -230,6 +247,7 @@ model FeedSnapshot {
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([viewerEmail])
+
   @@schema("public")
 }
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -312,6 +330,7 @@ model creator_profiles {
   bio        String? @db.Text
 
   @@index([user_id])
+
   @@schema("public")
 }
 
@@ -347,6 +366,7 @@ model live_chat_messages {
   avatar_url   String?
 
   @@index([room_id, created_at], map: "live_chat_messages_room_created_idx")
+
   @@schema("public")
 }
 
@@ -369,10 +389,11 @@ model live_votes {
   user_id    String     @db.Uuid
   choice     String
   created_at DateTime   @default(now()) @db.Timestamptz(6)
-  live_polls live_polls @relation(fields: [poll_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  live_polls live_polls @relation(fields: [poll_id], references: [id], onDelete: Cascade, onUpdate: Restrict)
 
   @@index([poll_id], map: "live_votes_poll_idx")
   @@index([user_id], map: "live_votes_user_idx")
+
   @@schema("public")
 }
 
@@ -386,6 +407,7 @@ model paid_reactions {
 
   @@index([context_type, context_id], map: "paid_reactions_context_idx")
   @@index([user_id], map: "paid_reactions_user_idx")
+
   @@schema("public")
 }
 
@@ -398,7 +420,7 @@ model profiles {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at   DateTime @default(now()) @db.Timestamptz(6)
 
-  @@schema("public")
+@@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -409,6 +431,7 @@ model spinner_spins {
   payload    Json?
 
   @@index([user_email])
+
   @@schema("public")
 }
 
@@ -446,6 +469,7 @@ model CreatorProfile {
 
   @@index([blue_tick_sub_id], map: "creatorprofile_blue_tick_sub_id_idx")
   @@map("CreatorProfile")
+
   @@schema("public")
 }
 
@@ -455,7 +479,7 @@ enum RevolvrStatus {
   WON
   LOST
 
-  @@schema("public")
+@@schema("public")
 }
 
 enum CreatorStatus {
@@ -472,14 +496,14 @@ enum SupportKind {
   REACTION
   VOTE
 
-  @@schema("public")
+@@schema("public")
 }
 
 enum SupportSource {
   FEED
   LIVE
 
-  @@schema("public")
+@@schema("public")
 }
 
 enum creator_status {
@@ -487,5 +511,5 @@ enum creator_status {
   active
   suspended
 
-  @@schema("public")
+@@schema("public")
 }

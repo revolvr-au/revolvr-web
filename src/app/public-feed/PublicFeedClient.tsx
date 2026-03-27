@@ -34,6 +34,7 @@ export function PublicFeedClient() {
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
   
 
+
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
@@ -579,7 +580,7 @@ return (
                 const replies = comments.filter(c => c.parentId != null);
 
                 return parentComments.map((c) => {
-                  const childReplies = replies.filter(r => r.replyToCommentId === c.id);
+                  const childReplies = replies.filter(r => r.parentId === c.id);
 
                   return (
   <div key={c.id} className="mb-4">
