@@ -1,38 +1,10 @@
-export async function GET(req: Request) {
-  console.log("👉 GET /api/comments hit");
+import { PrismaClient } from "@prisma/client";
 
-  try {
-    const { searchParams } = new URL(req.url);
-    const postId = searchParams.get("postId");
+const globalForPrisma = global as unknown as {
+  prisma: PrismaClient;
+};
 
-    console.log("👉 postId:", postId);
+export const prisma =
+  globalForPrisma.prisma || new PrismaClient();
 
-    if (!postId) {
-      return new Response(JSON.stringify({ ok: false, comments: [] }), {
-        status: 200,
-      });
-    }
-
-    const comments = await prisma.comment.findMany({
-      where: { postId },
-      orderBy: { createdAt: "asc" },
-    });
-
-    console.log("👉 comments count:", comments.length);
-
-    return new Response(JSON.stringify({ ok: true, comments }), {
-      status: 200,
-    });
-
-  } catch (error: any) {
-    console.error("🔥 FULL ERROR:", error);
-
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        error: error?.message || "unknown",
-      }),
-      { status: 500 }
-    );
-  }
-}
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
