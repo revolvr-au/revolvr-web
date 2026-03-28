@@ -4,10 +4,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import FeedLayout from "@/components/FeedLayout";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
-import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
 import { createPortal } from "react-dom";
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Gift,
+  Plus,
+  MoreVertical
+} from "lucide-react";
 
 
 type ApiPost = {
@@ -526,88 +533,81 @@ return (
             )}
 
             {/* RIGHT RAIL */}
-            <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
+<div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
 
-              {/* AVATAR */}
-              <button
-              onClick={() => {
-              if (p.userEmail) {
-              router.push(`/user/${p.userEmail}`);
-              }
-              }}
-              >
-              <div className="flex flex-col items-center">
-    
-              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
-              <img
-              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail || p.id}`}
-              className="w-full h-full object-cover"
-              alt=""
-              />
-              </div>
+  {/* AVATAR */}
+  <button
+    onClick={() => {
+      if (p.userEmail) {
+        router.push(`/user/${p.userEmail}`);
+      }
+    }}
+  >
+    <div className="flex flex-col items-center">
+      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+        <img
+          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail || p.id}`}
+          className="w-full h-full object-cover"
+          alt=""
+        />
+      </div>
 
-              {p.userEmail && (
-              <span className="text-[10px] text-white/70 mt-1">
-              {p.userEmail.split("@")[0]}
-              </span>
-              )}
+      {p.userEmail && (
+        <span className="text-[10px] text-white/70 mt-1">
+          {p.userEmail.split("@")[0]}
+        </span>
+      )}
+    </div>
+  </button>
 
-              </div>
-              </button>
+  {/* LIKE */}
+  <button
+    onClick={() => toggleLike(p.id)}
+    className="flex flex-col items-center"
+  >
+    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+    <span className="text-xs text-white">
+      {likeCounts[p.id] || 0}
+    </span>
+  </button>
 
-              {/* LIKE + BURST */}
-              <div className="relative flex flex-col items-center">
+  {/* COMMENTS */}
+  <button
+    onClick={() => openComments(p.id)}
+    className="flex flex-col items-center"
+  >
+    <MessageCircle size={28} />
+    <span className="text-xs text-white">
+      {commentCounts[p.id] || 0}
+    </span>
+  </button>
 
-                {heartBursts
-                  .filter((h) => h.postId === p.id)
-                  .map((h) => (
-                    <span
-                      key={h.id}
-                      className="absolute text-white text-lg animate-burst"
-                      style={{
-                        bottom: "36px",
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                      }}
-                    >
-                      ❤️
-                    </span>
-                  ))}
+  {/* SHARE */}
+  <button className="flex flex-col items-center">
+    <Share2 size={26} />
+  </button>
 
-                <button
-                  onClick={() => toggleLike(p.id)}
-                  className="flex flex-col items-center"
-                >
-                  <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-                  <span className="text-xs text-white">
-                    {likeCounts[p.id] || 0}
-                  </span>
-                </button>
+  {/* GIFT */}
+  <button className="flex flex-col items-center">
+    <Gift size={26} />
+  </button>
 
-              </div>
+  {/* FOLLOW / ADD */}
+  <button className="flex flex-col items-center">
+    <Plus size={26} />
+  </button>
 
-              {/* COMMENTS BUTTON */}
-              <button
-                onClick={() => openComments(p.id)}
-                className="flex flex-col items-center"
-              >
-                <MessageCircle size={28} />
-                <span className="text-xs text-white">
-                  {commentCounts[p.id] || 0}
-                </span>
-              </button>
+  {/* MENU */}
+  <button
+    onClick={() => {
+      setMenuPost(p);
+      setMenuOpen(true);
+    }}
+  >
+    <MoreVertical size={28} />
+  </button>
 
-              {/* MENU */}
-              <button
-                onClick={() => {
-                  setMenuPost(p);
-                  setMenuOpen(true);
-                }}
-              >
-                <MoreVertical size={28} />
-              </button>
-
-            </div>
+</div>
           </div>
         );
       })}
