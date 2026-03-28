@@ -504,6 +504,7 @@ return (
       className="h-screen w-full overflow-y-scroll snap-y snap-mandatory"
     >
       {posts.map((p) => {
+      console.log("POST DEBUG:", p.id, p.userEmail);
         const email = String(p.userEmail || "").toLowerCase();
         const mediaUrl = String(p.imageUrl || "").trim();
 
@@ -528,14 +529,23 @@ return (
             <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
 
               {/* AVATAR */}
-              <button onClick={() => router.push(`/user/${p.userEmail}`)}>
+                <button onClick={() => if (p.userEmail) {
+                router.push(`/user/${p.userEmail}`);
+                }}>
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+                const avatarSeed = p.userEmail || p.id;
+
                   <img
                 src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail}`}
                 className="w-full h-full object-cover"
                 alt=""
                 />
                 </div>
+                {p.userEmail && (
+                <span className="text-[10px] text-white/70 mt-1">
+                {p.userEmail.split("@")[0]}
+                </span>
+                )}
               </button>
 
               {/* LIKE + BURST */}
