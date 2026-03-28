@@ -245,6 +245,32 @@ setRailUsers(creators)
   };
 }, [viewer]);
 
+useEffect(() => {
+  const channel = supabase
+    .channel("comments-realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "Comment",
+      },
+      (payload) => {
+        const newComment = payload.new;
+
+        // only update if it's for this post
+        if (newComment.postId !== postId) return;
+
+        setComments((prev) => [...prev, newComment]);
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [postId]);
+
   useEffect(() => {
     if (!commentsOpen) return;
 
@@ -431,7 +457,10 @@ function handleReply(comment: any) {
 
     if (!res.ok || !data?.ok) return;
 
-    setComments((prev) => [...prev, data.comment]);
+    setComments((prev) => {
+    if (prev.find(c => c.id === data.comment.id)) return prev;
+    return [...prev, data.comment];
+    });
     setCommentText("");
     setReplyToCommentId(null); // 👈 THIS WAS MISSING
 
@@ -644,9 +673,9 @@ return (
 
           <div className="text-sm text-white/70 break-words">
   <span className="text-white/40 mr-1">
-    @{displayNameFromEmail(c.userEmail)}
+    @{displayNameFromEmail(r.userEmail)}
   </span>
-  {r.body}
+  {r.body.replace(/^@\w+\s*/, "")}
 </div>
         </div>
 
