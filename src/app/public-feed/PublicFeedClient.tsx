@@ -529,27 +529,30 @@ return (
             <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
 
               {/* AVATAR */}
-                <button
-                onClick={() => {
-                if (p.userEmail) {
-                router.push(`/user/${p.userEmail}`);
-                }
-                }}
-                >
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
-                const avatarSeed = p.userEmail || p.id;
+              <button
+              onClick={() => {
+              if (p.userEmail) {
+              router.push(`/user/${p.userEmail}`);
+              }
+              }}
+              >
+              <div className="flex flex-col items-center">
+    
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+              <img
+              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail || p.id}`}
+              className="w-full h-full object-cover"
+              alt=""
+              />
+              </div>
 
-                  <img
-                src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail}`}
-                className="w-full h-full object-cover"
-                alt=""
-                />
-                </div>
-                {p.userEmail && (
-                <span className="text-[10px] text-white/70 mt-1">
-                {p.userEmail.split("@")[0]}
-                </span>
-                )}
+              {p.userEmail && (
+              <span className="text-[10px] text-white/70 mt-1">
+              {p.userEmail.split("@")[0]}
+              </span>
+              )}
+
+              </div>
               </button>
 
               {/* LIKE + BURST */}
