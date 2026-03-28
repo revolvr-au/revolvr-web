@@ -246,6 +246,8 @@ setRailUsers(creators)
 }, [viewer]);
 
 useEffect(() => {
+  if (!activePostId) return;
+
   const channel = supabase
     .channel("comments-realtime")
     .on(
@@ -258,8 +260,7 @@ useEffect(() => {
       (payload) => {
         const newComment = payload.new;
 
-        // only update if it's for this post
-        if (newComment.postId !== postId) return;
+        if (newComment.postId !== activePostId) return;
 
         setComments((prev) => [...prev, newComment]);
       }
@@ -269,7 +270,7 @@ useEffect(() => {
   return () => {
     supabase.removeChannel(channel);
   };
-}, [postId]);
+}, [activePostId]);
 
   useEffect(() => {
     if (!commentsOpen) return;
