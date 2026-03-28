@@ -13,7 +13,8 @@ import {
   Share2,
   Gift,
   Plus,
-  MoreVertical
+  MoreVertical,
+  Send
 } from "lucide-react";
 
 
