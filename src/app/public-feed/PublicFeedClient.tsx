@@ -584,19 +584,45 @@ return (
   </button>
 
   {/* SHARE */}
-  <button className="flex flex-col items-center">
-    <Share2 size={26} />
-  </button>
+  <button
+  onClick={() => {
+    const url = `${window.location.origin}/post/${p.id}`;
+
+    if (navigator.share) {
+      navigator.share({
+        title: "Revolvr",
+        url,
+      });
+    } else {
+      navigator.clipboard.writeText(url);
+      alert("Link copied");
+    }
+  }}
+  className="flex flex-col items-center"
+>
+  <Share2 size={26} />
+</button>
 
   {/* GIFT */}
-  <button className="flex flex-col items-center">
-    <Gift size={26} />
-  </button>
+  <button
+  onClick={() => {
+    alert(`Send reward to ${p.userEmail}`);
+  }}
+  className="flex flex-col items-center"
+>
+  <Gift size={26} />
+</button>
 
   {/* FOLLOW / ADD */}
-  <button className="flex flex-col items-center">
-    <Plus size={26} />
-  </button>
+  <button
+  onClick={() => {
+    console.log("Follow:", p.userEmail);
+    // future: call follow API
+  }}
+  className="flex flex-col items-center"
+>
+  <Plus size={26} />
+</button>
 
   {/* MENU */}
   <button
