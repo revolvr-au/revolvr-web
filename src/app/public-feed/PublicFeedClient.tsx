@@ -32,9 +32,8 @@ export function PublicFeedClient() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPost, setMenuPost] = useState<ApiPost | null>(null);
   const [replyToCommentId, setReplyToCommentId] = useState<string | null>(null);
+  const [openReplies, setOpenReplies] = useState<Record<string, boolean>>({});
   
-
-
   const [commentText, setCommentText] = useState("");
   const [comments, setComments] = useState<any[]>([]);
   const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
@@ -604,16 +603,31 @@ return (
           {c.body}
         </div>
 
-        <div className="text-xs text-white/40 mt-1 flex gap-3">
-          <button onClick={() => handleReply(c)}>Reply</button>
-          <button onClick={() => handleTranche(c)}>Tranche</button>
-        </div>
+        <div className="text-xs text-white/40 mt-1 flex gap-3 items-center">
+  <button onClick={() => handleReply(c)}>Reply</button>
+  <button onClick={() => handleTranche(c)}>Tranche</button>
+
+  {childReplies.length > 0 && (
+    <button
+      onClick={() =>
+        setOpenReplies(prev => ({
+          ...prev,
+          [c.id]: !prev[c.id],
+        }))
+      }
+      className="text-white/60"
+    >
+      {openReplies[c.id] ? "Hide" : `${childReplies.length} replies`}
+    </button>
+  )}
+</div>
       </div>
 
     </div>
 
     {/* REPLIES — NOW INSIDE */}
-    {childReplies.map((r) => (
+    {openReplies[c.id] &&
+      childReplies.map((r) => (
       <div key={r.id} className="flex items-start gap-3 mt-3 ml-10">
 
         <div className="w-7 h-7 min-w-[28px] max-w-[28px] overflow-hidden rounded-full">
@@ -629,8 +643,11 @@ return (
           </div>
 
           <div className="text-sm text-white/70 break-words">
-            {r.body}
-          </div>
+  <span className="text-white/40 mr-1">
+    @{displayNameFromEmail(c.userEmail)}
+  </span>
+  {r.body}
+</div>
         </div>
 
       </div>
