@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import FeedLayout from "@/components/FeedLayout";
 import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
 import { createPortal } from "react-dom";
-
 
 
 type ApiPost = {
