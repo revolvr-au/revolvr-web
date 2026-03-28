@@ -459,9 +459,13 @@ function handleReply(comment: any) {
     if (!res.ok || !data?.ok) return;
 
     setComments((prev) => {
-    if (prev.find(c => c.id === data.comment.id)) return prev;
-    return [...prev, data.comment];
-    });
+  // prevent duplicates (realtime + manual insert collision)
+  if (prev.some((c) => c.id === data.comment.id)) {
+    return prev;
+  }
+
+  return [...prev, data.comment];
+});
     setCommentText("");
     setReplyToCommentId(null); // 👈 THIS WAS MISSING
 
@@ -524,13 +528,13 @@ return (
             <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
 
               {/* AVATAR */}
-              <button onClick={() => router.push(`/user/${email}`)}>
+              <button onClick={() => router.push(`/user/${p.userEmail}`)}>
                 <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
                   <img
-                    src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${email}`}
-                    className="w-full h-full object-cover"
-                    alt=""
-                  />
+                src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail}`}
+                className="w-full h-full object-cover"
+                alt=""
+                />
                 </div>
               </button>
 
