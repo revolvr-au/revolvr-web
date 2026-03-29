@@ -529,7 +529,7 @@ if (!userEmail) {
 
                     <div className="relative w-full max-h-[480px]">
                       <Image
-                        src={post.}
+                        src={post.media_url || ""}
                         alt={post.caption || "Post media"}
                         width={1200}
                         height={800}
