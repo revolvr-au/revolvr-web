@@ -129,14 +129,14 @@ export default function ProfileClient({
             {!media.length ? (
               <div className="text-sm text-white/60">No media yet.</div>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {media.map((p) => (
-                  <div
+                  <div className="grid grid-cols-3 gap-2">
+                    {media.map((p) => (
+                    <div
                     key={p.id}
                     className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10"
-                  >
+                    >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={!} alt="" className="h-full w-full object-cover" />
+                    <img src={p.media_url || ""} alt="" className="h-full w-full object-cover" />
                   </div>
                 ))}
               </div>
@@ -156,10 +156,11 @@ export default function ProfileClient({
   );
 }
 
-function TabButton({
+function Tab({
   active,
   children,
   onClick,
+}: {
   active: boolean;
   children: React.ReactNode;
   onClick: () => void;
