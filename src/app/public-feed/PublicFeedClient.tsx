@@ -781,27 +781,28 @@ return (
 )}
 
     {/* MENU MODAL */}
-    {menuOpen && menuPost && typeof document !== "undefined"
-      ? createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-            <div
-              className="absolute inset-0 bg-black/60"
-              onClick={() => setMenuOpen(false)}
-            />
+    {menuOpen && menuPost && typeof document !== "undefined" &&
+  createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/60"
+        onClick={() => setMenuOpen(false)}
+      />
 
-            <div className="relative bg-zinc-900 p-4 rounded-2xl text-white">
-              <button onClick={() => sharePost(menuPost.id)}>Share</button>
+      <div className="relative bg-zinc-900 p-4 rounded-2xl text-white">
+        <button onClick={() => sharePost(menuPost.id)}>Share</button>
 
-              <button
-                onClick={() => setMenuOpen(false)}
-                className="block mt-2 text-sm opacity-70"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>,
-          document.body
-        )
+        <button
+          onClick={() => setMenuOpen(false)}
+          className="block mt-2 text-sm opacity-70"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>,
+    document.body
+  )
+)
       : null}
 
   </FeedLayout>
