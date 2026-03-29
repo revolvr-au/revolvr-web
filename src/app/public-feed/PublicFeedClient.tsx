@@ -512,137 +512,140 @@ return (
       className="h-screen w-full overflow-y-scroll snap-y snap-mandatory"
     >
       {posts.map((p) => {
-      console.log("POST DEBUG:", p.id, p.userEmail);
-        const email = String(p.userEmail || "").toLowerCase();
-        const mediaUrl = String(p.imageUrl || "").trim();
+  console.log("POST DEBUG:", p.id, p.userEmail);
 
-        return (
-          <div
-            key={p.id}
-            data-postid={p.id}
-            data-user={email}
-            className="relative h-screen w-full snap-start overflow-hidden"
-            onPointerUp={(e) => handlePostTap(e, p.id)}
-          >
-            {/* IMAGE */}
-            {mediaUrl && (
-              <img
-                src={mediaUrl}
-                className="absolute inset-0 w-full h-full object-cover z-0"
-                alt=""
-              />
-            )}
+  const email = String(p.userEmail || "").toLowerCase();
+  const mediaUrl = String(p.imageUrl || "").trim();
 
-            {/* RIGHT RAIL */}
-<div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
+  return (
+    <div
+      key={p.id}
+      data-postid={p.id}
+      data-user={email}
+      className="relative h-screen w-full snap-start overflow-hidden"
+      onPointerUp={(e) => handlePostTap(e, p.id)}
+    >
+      {/* IMAGE */}
+      {mediaUrl && (
+        <img
+          src={mediaUrl}
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          alt=""
+        />
+      )}
 
- {/* AVATAR */}
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-    if (p.userEmail) {
-      router.push(`/user/${p.userEmail}`);
-    }
-  }}
-  className="flex flex-col items-center"
->
-  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
-    <img
-      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail || p.id}`}
-      className="w-full h-full object-cover"
-      alt=""
-    />
-  </div>
+      {/* RIGHT RAIL */}
+      <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
 
-  {p.userEmail && (
-    <span className="text-[10px] text-white/70 mt-1">
-      {p.userEmail.split("@")[0]}
-    </span>
-  )}
-</button>
+        {/* AVATAR */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (p.userEmail) {
+              router.push(`/user/${p.userEmail}`);
+            }
+          }}
+          className="flex flex-col items-center"
+        >
+          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+            <img
+              src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail || p.id}`}
+              className="w-full h-full object-cover"
+              alt=""
+            />
+          </div>
 
-{/* LIKE */}
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-    toggleLike(p.id);
-  }}
-  className="flex flex-col items-center"
->
-  <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-  <span className="text-xs text-white">
-    {likeCounts[p.id] || 0}
-  </span>
-</button>
+          {p.userEmail && (
+            <span className="text-[10px] text-white/70 mt-1">
+              {p.userEmail.split("@")[0]}
+            </span>
+          )}
+        </button>
 
-{/* COMMENTS */}
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-    openComments(p.id);
-  }}
-  className="flex flex-col items-center"
->
-  <MessageCircle size={28} />
-  <span className="text-xs text-white">
-    {commentCounts[p.id] || 0}
-  </span>
-</button>
+        {/* LIKE */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleLike(p.id);
+          }}
+          className="flex flex-col items-center"
+        >
+          <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+          <span className="text-xs text-white">
+            {likeCounts[p.id] || 0}
+          </span>
+        </button>
 
-{/* SHARE */}
-<button
-  onClick={(e) => {
-    e.stopPropagation();
+        {/* COMMENTS */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            openComments(p.id);
+          }}
+          className="flex flex-col items-center"
+        >
+          <MessageCircle size={28} />
+          <span className="text-xs text-white">
+            {commentCounts[p.id] || 0}
+          </span>
+        </button>
 
-    const url = `${window.location.origin}/post/${p.id}`;
+        {/* SHARE */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
 
-    if (navigator.share) {
-      navigator.share({
-        title: "Revolvr",
-        url,
-      });
-    } else {
-      navigator.clipboard.writeText(url);
-      alert("Link copied");
-    }
-  }}
-  className="flex flex-col items-center"
->
-  <Share2 size={26} />
-</button>
+            const url = `${window.location.origin}/post/${p.id}`;
 
-{/* GIFT */}
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-    sendReward(p.userEmail);
-  }}
-  className="flex flex-col items-center"
->
-  <Gift size={26} />
-</button>
+            if (navigator.share) {
+              navigator.share({ title: "Revolvr", url });
+            } else {
+              navigator.clipboard.writeText(url);
+              alert("Link copied");
+            }
+          }}
+          className="flex flex-col items-center"
+        >
+          <Share2 size={26} />
+        </button>
 
-{/* FOLLOW / ADD */}
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-    alert(`Follow ${p.userEmail}`);
-  }}
-  className="flex flex-col items-center"
->
-  <Plus size={26} />
-</button>
+        {/* GIFT */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            sendReward(p.userEmail);
+          }}
+          className="flex flex-col items-center"
+        >
+          <Gift size={26} />
+        </button>
 
-{/* MENU (TEMP → HOME) */}
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-    router.push("/");
-  }}
-  className="flex flex-col items-center"
->
-  <Home size={26} />
-</button>
+        {/* FOLLOW */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            alert(`Follow ${p.userEmail}`);
+          }}
+          className="flex flex-col items-center"
+        >
+          <Plus size={26} />
+        </button>
+
+        {/* HOME */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push("/");
+          }}
+          className="flex flex-col items-center"
+        >
+          <Home size={26} />
+        </button>
+
+      </div>
+    </div>
+  );
+})}
 
     {/* COMMENTS MODAL */}
     {commentsOpen && (
