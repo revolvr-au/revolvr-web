@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 
 export type ProfilePost = {
   id: string;
-  imageUrl?: string | null;
+  image_Url?: string | null;
   caption?: string | null;
   createdAt?: string | null;
 };

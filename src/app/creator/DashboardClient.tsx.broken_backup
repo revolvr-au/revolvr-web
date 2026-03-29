@@ -26,7 +26,7 @@ type UserCredits = {
 type Post = {
   id: string;
   userEmail: string;
-  imageUrl: string;
+  image_Url: string;
   caption: string | null;
   createdAt: string;
   is_boosted?: boolean | null;
@@ -83,7 +83,7 @@ function isPost(value: unknown): value is Post {
   return (
     typeof v.id === "string" &&
     typeof v.userEmail === "string" &&
-    typeof v.imageUrl === "string" &&
+    typeof v.image_Url === "string" &&
     (typeof v.caption === "string" || v.caption === null) &&
     typeof v.createdAt === "string"
   );
@@ -456,7 +456,7 @@ export default function DashboardClient() {
         .from(POSTS_TABLE)
         .insert({
           userEmail,
-          imageUrl: publicUrl,
+          image_Url: publicUrl,
           caption: caption.trim(),
         })
         .select()
@@ -863,11 +863,11 @@ export default function DashboardClient() {
                     </div>
 
                     <div className="relative w-full max-h-[480px]">
-                      {_isVideoUrl(post.imageUrl) ? (
-                        <video src={post.imageUrl} controls className="w-full max-h-[480px] object-cover" />
+                      {_isVideoUrl(post.image_Url) ? (
+                        <video src={post.image_Url} controls className="w-full max-h-[480px] object-cover" />
                       ) : (
                         <Image
-                          src={post.imageUrl}
+                          src={post.image_Url}
                           alt={post.caption || "Post media"}
                           width={1200}
                           height={800}

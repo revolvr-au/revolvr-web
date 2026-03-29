@@ -65,7 +65,7 @@ if (false && userEmail) {
   select: {
     id: true,
     userEmail: true,
-    imageUrl: true,
+    image_Url: true,
     caption: true,
     createdAt: true,
     updatedAt: true,
@@ -101,7 +101,7 @@ const handleMap = Object.fromEntries(
     const shaped = posts.map((p) => ({
   id: p.id,
   userEmail: p.userEmail,
-  imageUrl: p.media_url,
+  image_Url: p.media_url,
   caption: p.caption,
   createdAt: p.createdAt,
   updatedAt: p.updatedAt,
@@ -123,7 +123,7 @@ const handleMap = Object.fromEntries(
 
 /**
  * POST /api/posts
- * Accepts media[] but stores ONLY the first URL into imageUrl
+ * Accepts media[] but stores ONLY the first URL into image_Url
  */
 export async function POST(req: Request) {
   try {
@@ -144,7 +144,7 @@ export async function POST(req: Request) {
 
     const media = normalizeMedia(body);
     const legacyUrl = String(
-      media[0]?.url ?? body?.imageUrl ?? ""
+      media[0]?.url ?? body?.image_Url ?? ""
     ).trim();
 
     if (!legacyUrl || !/^https?:\/\//i.test(legacyUrl)) {
@@ -158,7 +158,7 @@ export async function POST(req: Request) {
       data: {
         userEmail,
         caption,
-        imageUrl: legacyUrl,
+        image_Url: legacyUrl,
       },
       select: { id: true },
     });

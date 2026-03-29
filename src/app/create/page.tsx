@@ -102,7 +102,7 @@ export default function CreatePage() {
           caption,
           media: uploads,
           // legacy (safe)
-          imageUrl: uploads[0]?.url ?? null,
+          image_Url: uploads[0]?.url ?? null,
           mediaType: uploads[0]?.type ?? "image",
         }),
       });

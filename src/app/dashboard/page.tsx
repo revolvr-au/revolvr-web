@@ -21,7 +21,7 @@ type UserCredits = {
 type Post = {
   id: string;
   userEmail: string;
-  imageUrl: string;
+  image_Url: string;
   caption: string;
   createdAt: string;
   is_boosted?: boolean | null;
@@ -246,7 +246,7 @@ export default function DashboardClient() {
         .from(POSTS_TABLE)
         .insert({
           userEmail, // IMPORTANT: required for attribution
-          imageUrl: publicUrl,
+          image_Url: publicUrl,
           caption: caption.trim(),
         })
         .select()
@@ -529,7 +529,7 @@ if (!userEmail) {
 
                     <div className="relative w-full max-h-[480px]">
                       <Image
-                        src={post.imageUrl}
+                        src={post.}
                         alt={post.caption || "Post media"}
                         width={1200}
                         height={800}

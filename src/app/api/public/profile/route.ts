@@ -38,7 +38,7 @@ export async function GET(req: Request) {
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
-        imageUrl: true,
+        image_Url: true,
         caption: true,
         createdAt: true,
       },

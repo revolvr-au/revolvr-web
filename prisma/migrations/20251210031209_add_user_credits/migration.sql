@@ -13,7 +13,7 @@ ADD COLUMN     "name" TEXT NOT NULL;
 CREATE TABLE "public"."Post" (
     "id" TEXT NOT NULL,
     "userEmail" TEXT NOT NULL,
-    "imageUrl" TEXT NOT NULL,
+    "image_Url" TEXT NOT NULL,
     "caption" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import FeedLayout from "@/components/FeedLayout";
-import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
+import { displayNameFromEmail, isValidImage_Url } from "@/utils/imageUtils";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
 import { createPortal } from "react-dom";
@@ -13,7 +13,7 @@ import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } fr
 type ApiPost = {
   id: string;
   userEmail: string | null;
-  imageUrl: string | null;
+  image_Url: string | null;
   caption: string | null;
   comments?: any[];
   reactions?: any[];

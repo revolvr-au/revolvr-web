@@ -22,7 +22,7 @@ type UserCredits = {
 type Post = {
   id: string;
   userEmail: string;
-  imageUrl: string;
+  image_Url: string;
   caption: string | null;
   createdAt: string;
   is_boosted?: boolean | null;
@@ -33,7 +33,7 @@ function isPost(value: any): value is Post {
     value &&
     typeof value.id === "string" &&
     typeof value.userEmail === "string" &&
-    typeof value.imageUrl === "string"
+    typeof value.image_Url === "string"
   );
 }
 
@@ -132,7 +132,7 @@ export default function DashboardClient() {
         .from(POSTS_TABLE)
         .insert({
           userEmail,
-          imageUrl: publicUrl,
+          image_Url: publicUrl,
           caption: caption.trim(),
         })
         .select()
@@ -229,7 +229,7 @@ export default function DashboardClient() {
               className="rounded-xl bg-white/5 border border-white/10 overflow-hidden"
             >
               <Image
-                src={post.imageUrl}
+                src={post.image_Url}
                 alt=""
                 width={1000}
                 height={700}

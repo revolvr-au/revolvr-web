@@ -32,7 +32,7 @@ const creator = await prisma.creatorProfile.findUnique({
       id: p.id,
       userEmail: String(p.userEmail ?? "").trim().toLowerCase(),
       avatarUrl: creator?.avatarUrl ?? null,
-      imageUrl: (p as any).imageUrl ?? null, // legacy
+      image_Url: (p as any).image_Url ?? null, // legacy
       media: (p as any).media ?? [],
       caption: p.caption ?? "",
       createdAt: p.createdAt,

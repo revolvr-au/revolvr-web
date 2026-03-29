@@ -126,7 +126,7 @@ export default function MeClient() {
         const c = meJson?.creator || null;
         setDisplayName(c?.displayName || "");
         setHandle(c?.handle || "");
-        setAvatarUrl((c as any)?.avatarUrl || (c as any)?.imageUrl || "");
+        setAvatarUrl((c as any)?.avatarUrl || (c as any)?.image_Url || "");
         setBio((c as any)?.bio || "");
 
         // 2) Stripe connect status (creator-only)
