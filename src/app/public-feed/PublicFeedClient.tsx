@@ -803,7 +803,7 @@ return (
     </div>,
     document.body
   )
-}
+  : null}
   </FeedLayout>
 );
 }
