@@ -511,7 +511,7 @@ return (
   console.log("POST DEBUG:", p.id, p.userEmail);
 
   const email = String(p.userEmail || "").toLowerCase();
-  const mediaUrl = String(p.imageUrl || "").trim();
+  const mediaUrl = String(p.media_url || "").trim();
 
   return (
     <div

@@ -101,7 +101,7 @@ const handleMap = Object.fromEntries(
     const shaped = posts.map((p) => ({
   id: p.id,
   userEmail: p.userEmail,
-  imageUrl: p.imageUrl,
+  imageUrl: p.media_url,
   caption: p.caption,
   createdAt: p.createdAt,
   updatedAt: p.updatedAt,

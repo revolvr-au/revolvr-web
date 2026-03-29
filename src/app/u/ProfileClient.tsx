@@ -36,7 +36,7 @@ export default function ProfileClient({
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
 
   const media = useMemo(() => {
-    return (posts ?? []).filter((p) => (p.imageUrl ?? "").trim().length > 0);
+    return (posts ?? []).filter((p) => (p.media_url ?? "").trim().length > 0);
   }, [posts]);
 
   return (
@@ -116,9 +116,9 @@ export default function ProfileClient({
                     key={p.id}
                     className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10"
                   >
-                    {p.imageUrl ? (
+                    {p.media_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <img src={p.media_url} alt="" className="h-full w-full object-cover" />
                     ) : null}
                   </div>
                 ))}
@@ -139,7 +139,7 @@ export default function ProfileClient({
                     className="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.imageUrl!} alt="" className="h-full w-full object-cover" />
+                    <img src={p.media_url!} alt="" className="h-full w-full object-cover" />
                   </div>
                 ))}
               </div>
