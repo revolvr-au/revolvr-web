@@ -536,56 +536,64 @@ return (
             {/* RIGHT RAIL */}
 <div className="absolute right-4 bottom-24 flex flex-col items-center gap-5 z-[100]">
 
-  {/* AVATAR */}
-  <button
-    onClick={() => {
-      if (p.userEmail) {
-        router.push(`/user/${p.userEmail}`);
-      }
-    }}
-  >
-    <div className="flex flex-col items-center">
-      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
-        <img
-          src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail || p.id}`}
-          className="w-full h-full object-cover"
-          alt=""
-        />
-      </div>
+ {/* AVATAR */}
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+    if (p.userEmail) {
+      router.push(`/user/${p.userEmail}`);
+    }
+  }}
+  className="flex flex-col items-center"
+>
+  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white">
+    <img
+      src={`https://api.dicebear.com/7.x/thumbs/svg?seed=${p.userEmail || p.id}`}
+      className="w-full h-full object-cover"
+      alt=""
+    />
+  </div>
 
-      {p.userEmail && (
-        <span className="text-[10px] text-white/70 mt-1">
-          {p.userEmail.split("@")[0]}
-        </span>
-      )}
-    </div>
-  </button>
-
-  {/* LIKE */}
-  <button
-    onClick={() => toggleLike(p.id)}
-    className="flex flex-col items-center"
-  >
-    <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
-    <span className="text-xs text-white">
-      {likeCounts[p.id] || 0}
+  {p.userEmail && (
+    <span className="text-[10px] text-white/70 mt-1">
+      {p.userEmail.split("@")[0]}
     </span>
-  </button>
+  )}
+</button>
 
-  {/* COMMENTS */}
-  <button
-    onClick={() => openComments(p.id)}
-    className="flex flex-col items-center"
-  >
-    <MessageCircle size={28} />
-    <span className="text-xs text-white">
-      {commentCounts[p.id] || 0}
-    </span>
-  </button>
+{/* LIKE */}
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+    toggleLike(p.id);
+  }}
+  className="flex flex-col items-center"
+>
+  <Heart size={28} color={likedMap[p.id] ? "red" : "white"} />
+  <span className="text-xs text-white">
+    {likeCounts[p.id] || 0}
+  </span>
+</button>
 
-  {/* SHARE */}
-  <button
-  onClick={() => {
+{/* COMMENTS */}
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+    openComments(p.id);
+  }}
+  className="flex flex-col items-center"
+>
+  <MessageCircle size={28} />
+  <span className="text-xs text-white">
+    {commentCounts[p.id] || 0}
+  </span>
+</button>
+
+{/* SHARE */}
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+
     const url = `${window.location.origin}/post/${p.id}`;
 
     if (navigator.share) {
@@ -603,42 +611,38 @@ return (
   <Share2 size={26} />
 </button>
 
-  {/* GIFT */}
-  <button
-  onClick={() => {
-    alert(`Send reward to ${p.userEmail}`);
+{/* GIFT */}
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+    sendReward(p.userEmail);
   }}
   className="flex flex-col items-center"
 >
   <Gift size={26} />
 </button>
 
-  {/* FOLLOW / ADD */}
-  <button
-  onClick={() => {
-    console.log("Follow:", p.userEmail);
-    // future: call follow API
+{/* FOLLOW / ADD */}
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+    alert(`Follow ${p.userEmail}`);
   }}
   className="flex flex-col items-center"
 >
   <Plus size={26} />
 </button>
 
-  {/* MENU */}
-  <button
-    onClick={() => {
-      setMenuPost(p);
-      setMenuOpen(true);
-    }}
-  >
-    <MoreVertical size={28} />
-  </button>
-
-</div>
-          </div>
-        );
-      })}
-    </div>
+{/* MENU (TEMP → HOME) */}
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+    router.push("/");
+  }}
+  className="flex flex-col items-center"
+>
+  <Home size={26} />
+</button>
 
     {/* COMMENTS MODAL */}
     {commentsOpen && (
