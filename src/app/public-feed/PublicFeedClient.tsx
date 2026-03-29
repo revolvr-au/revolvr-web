@@ -7,15 +7,7 @@ import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
 import { useRouter } from "next/navigation";
 import { useGoLive } from "@/hooks/useGoLive";
 import { createPortal } from "react-dom";
-import {
-  Heart,
-  MessageCircle,
-  Share2,
-  Gift,
-  Plus,
-  MoreVertical,
-  Send
-} from "lucide-react";
+import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } from "lucide-react";
 
 
 type ApiPost = {
@@ -639,7 +631,7 @@ return (
           }}
           className="flex flex-col items-center"
         >
-          <Home size={26} />
+          <div>HOME</div>
         </button>
 
       </div>
