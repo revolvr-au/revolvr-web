@@ -781,7 +781,7 @@ return (
 )}
 
     {/* MENU MODAL */}
-    {menuOpen && menuPost && typeof document !== "undefined" &&
+{menuOpen && menuPost && typeof document !== "undefined" &&
   createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <div
