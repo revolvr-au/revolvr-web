@@ -781,6 +781,7 @@ return (
 )}
 
     {/* MENU MODAL */}
+{/* MENU MODAL */}
 {menuOpen && menuPost && typeof document !== "undefined" &&
   createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center">
@@ -802,9 +803,7 @@ return (
     </div>,
     document.body
   )
-)
-      : null}
-
+}
   </FeedLayout>
 );
 }
