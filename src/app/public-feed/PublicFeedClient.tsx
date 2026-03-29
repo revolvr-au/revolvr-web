@@ -489,7 +489,11 @@ function jumpToCreator(creatorId: string) {
     block: "start",
   });
 }
+const sendReward = (email?: string) => {
+  if (!email) return;
 
+  alert(`Send reward to ${email}`);
+};
 return (
   <FeedLayout
     title="Revolvr"
@@ -612,15 +616,16 @@ return (
           <Gift size={26} />
         </button>
 
-        {/* FOLLOW */}
+        
+        {/* UPLOAD */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            alert(`Follow ${p.userEmail}`);
-          }}
-          className="flex flex-col items-center"
+        onClick={(e) => {
+        e.stopPropagation();
+        router.push("/upload");
+        }}
+        className="flex flex-col items-center"
         >
-          <Plus size={26} />
+        <Plus size={26} />
         </button>
 
         {/* HOME */}
