@@ -646,7 +646,7 @@ return (
     </div>
   );
 })}
-
+</div>
     {/* COMMENTS MODAL */}
     {commentsOpen && (
       <>
@@ -781,29 +781,23 @@ return (
 )}
 
     {/* MENU MODAL */}
-{/* MENU MODAL */}
-{menuOpen && menuPost && typeof document !== "undefined" &&
+  {menuOpen && typeof window !== "undefined" ? (
   createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/60"
-        onClick={() => setMenuOpen(false)}
-      />
-
-      <div className="relative bg-zinc-900 p-4 rounded-2xl text-white">
-        <button onClick={() => sharePost(menuPost.id)}>Share</button>
+    <div className="fixed inset-0 z-[9999] flex items-end bg-black/50">
+      <div className="w-full bg-zinc-900 rounded-t-2xl p-4">
 
         <button
           onClick={() => setMenuOpen(false)}
-          className="block mt-2 text-sm opacity-70"
+          className="w-full text-left py-3 text-white"
         >
           Cancel
         </button>
+
       </div>
     </div>,
     document.body
   )
-  : null}
+) : null}
   </FeedLayout>
 );
 }
