@@ -95,61 +95,66 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="p-6 text-white">
-      <h1 className="text-xl mb-4">Upload</h1>
+  <div className="p-6 text-white">
+    <h1 className="text-xl mb-4">Upload</h1>
 
-      {/* FILE INPUT */}
-      <input
-        ref={fileRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-      />
-     
-      {/* PREVIEW */}
-      {previewUrl && (
-        <div className="w-full h-[70vh] mt-4">
-          <img
-            src={previewUrl}
-            className="w-full h-full object-cover rounded-xl"
-            style={{ filter: selectedFilter }}
-            alt=""
-          />
-        </div>
-      )}
+    {/* HIDDEN INPUT */}
+    <input
+      hidden
+      ref={fileRef}
+      type="file"
+      accept="image/*"
+      onChange={handleFileChange}
+    />
 
-      {/* FILTER BAR */}
-      {previewUrl && (
-        <div className="flex gap-2 overflow-x-auto mt-3 py-2">
-          {FILTERS.map((f) => (
-            <button
-              key={f.name}
-              onClick={() => setSelectedFilter(f.value)}
-              className={`text-xs px-3 py-1 rounded-full whitespace-nowrap ${
-                selectedFilter === f.value
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-white"
-              }`}
-            >
-              {f.name}
-            </button>
-          ))}
-        </div>
-      )}
+    {/* CHOOSE IMAGE BUTTON */}
+    <button
+      onClick={() => fileRef.current?.click()}
+      className="bg-white text-black px-4 py-2 rounded"
+    >
+      Choose Image
+    </button>
 
-      {/* UPLOAD BUTTON */}
+    {/* PREVIEW */}
+    {previewUrl && (
+      <div className="w-full h-[70vh] mt-4">
+        <img
+          src={previewUrl}
+          className="w-full h-full object-cover rounded-xl"
+          style={{ filter: selectedFilter }}
+          alt=""
+        />
+      </div>
+    )}
+
+    {/* FILTER BAR */}
+    {previewUrl && (
+      <div className="flex gap-2 overflow-x-auto mt-3 py-2">
+        {FILTERS.map((f) => (
+          <button
+            key={f.name}
+            onClick={() => setSelectedFilter(f.value)}
+            className={`text-xs px-3 py-1 rounded-full whitespace-nowrap ${
+              selectedFilter === f.value
+                ? "bg-white text-black"
+                : "bg-white/10 text-white"
+            }`}
+          >
+            {f.name}
+          </button>
+        ))}
+      </div>
+    )}
+
+    {/* UPLOAD BUTTON */}
+    {previewUrl && (
       <button
         onClick={handleUpload}
         disabled={loading}
         className="mt-6 bg-white text-black px-4 py-2 rounded"
       >
-        <button onClick={() => fileRef.current?.click()}>
-  Choose Image
-</button>
-<input hidden ref={fileRef} type="file" ... />
-
         {loading ? "Uploading..." : "Upload"}
       </button>
-    </div>
-  );
-}
+    )}
+  </div>
+);
