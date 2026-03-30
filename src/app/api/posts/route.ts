@@ -65,7 +65,7 @@ if (false && userEmail) {
   select: {
     id: true,
     userEmail: true,
-    image_Url: true,
+    media_url: true,
     caption: true,
     createdAt: true,
     updatedAt: true,
@@ -101,7 +101,7 @@ const handleMap = Object.fromEntries(
     const shaped = posts.map((p) => ({
   id: p.id,
   userEmail: p.userEmail,
-  image_Url: p.media_url,
+  media_url: p.media_url,
   caption: p.caption,
   createdAt: p.createdAt,
   updatedAt: p.updatedAt,
@@ -158,7 +158,7 @@ export async function POST(req: Request) {
       data: {
         userEmail,
         caption,
-        image_Url: legacyUrl,
+        media_url: legacyUrl,
       },
       select: { id: true },
     });
