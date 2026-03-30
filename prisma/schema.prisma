@@ -2,7 +2,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -10,29 +9,28 @@ datasource db {
 }
 
 model Post {
-  id        String   @id @default(uuid())
-  userEmail String
-  image_Url  String
+  id        String         @id @default(uuid())
+  userEmail String         @map("user_Email")
+  imageUrl  String
   caption   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  likes Like[]      @relation("PostLikes")
-  media PostMedia[] @relation("PostMedia")
-
-  reactions PostReaction[] @relation("PostReactions")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  media_url String?
   comments  Comment[]      @relation("PostComments")
+  likes     Like[]         @relation("PostLikes")
+  media     PostMedia[]    @relation("PostMedia")
+  reactions PostReaction[] @relation("PostReactions")
 
   @@index([createdAt])
-  @@index([userEmail])
-
+  @@index([userEmail], map: "Post_userEmail_idx")
   @@schema("public")
 }
 
-model identities {
-  @@ignore
-  @@schema("public")
-}
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+// model identities {
+// @@ignore
+// @@schema("public")
+// }
 
 model liveSession {
   id          String   @id @default(uuid())
@@ -42,54 +40,47 @@ model liveSession {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-@@schema("public")
+  @@schema("public")
 }
+
 model Like {
   id        String   @id @default(uuid())
   postId    String
   userEmail String
   createdAt DateTime @default(now())
-
-  post Post @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userEmail])
   @@index([postId])
-
   @@schema("public")
 }
-
 
 model PostReaction {
   id        String   @id @default(uuid())
   postId    String
   userEmail String
-  type      String // e.g. "like", "heart", "🔥", etc
+  type      String
   createdAt DateTime @default(now())
-
-  post Post @relation("PostReactions", fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostReactions", fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([userEmail])
-
   @@schema("public")
 }
 
 model Comment {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   postId    String
   userEmail String
   body      String
   parentId  String?
-  createdAt DateTime @default(now())
-
-  post    Post      @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
-
-  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  replies Comment[] @relation("CommentReplies")
+  createdAt DateTime  @default(now())
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   Comment[] @relation("CommentReplies")
+  post      Post      @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([parentId])
-
   @@schema("public")
 }
 
@@ -100,11 +91,9 @@ model PostMedia {
   url       String
   order     Int      @map("order")
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-
-  post Post @relation("PostMedia", fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostMedia", fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
-
   @@schema("public")
 }
 
@@ -117,7 +106,7 @@ model RevolvrItem {
   value     Int?
   name      String
 
-@@schema("public")
+  @@schema("public")
 }
 
 model Follow {
@@ -128,7 +117,6 @@ model Follow {
 
   @@unique([followerEmail, followingEmail], name: "uniq_follow_pair")
   @@index([followingEmail])
-
   @@schema("public")
 }
 
@@ -142,7 +130,6 @@ model UserCredits {
   updatedAt DateTime @updatedAt
 
   @@schema("public")
-
 }
 
 model CreatorBalance {
@@ -152,7 +139,6 @@ model CreatorBalance {
   updatedAt        DateTime @updatedAt
 
   @@schema("public")
-
 }
 
 model SupportLedger {
@@ -180,7 +166,6 @@ model SupportLedger {
   @@index([kind, targetId], map: "supportledger_kind_target_idx")
   @@index([targetId, kind], map: "supportledger_target_kind_idx")
   @@index([viewerEmail, kind, targetId], map: "supportledger_viewer_kind_target_idx")
-
   @@schema("public")
 }
 
@@ -200,7 +185,6 @@ model Payment {
   createdAt             DateTime @default(now())
 
   @@schema("public")
-
 }
 
 model CreatorPayout {
@@ -212,7 +196,6 @@ model CreatorPayout {
   createdAt        DateTime @default(now())
 
   @@schema("public")
-
 }
 
 model StripeCheckoutReceipt {
@@ -235,9 +218,9 @@ model StripeCheckoutReceipt {
   @@index([customerEmail])
   @@index([createdAt])
   @@map("stripe_checkout_receipts")
-
   @@schema("public")
 }
+
 model FeedSnapshot {
   id          String   @id @default(uuid())
   viewerEmail String   @map("viewer_email")
@@ -247,73 +230,8 @@ model FeedSnapshot {
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([viewerEmail])
-
   @@schema("public")
 }
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -325,12 +243,10 @@ model creator_profiles {
   handle        String?
   revenue_share Decimal  @default(0.45) @db.Decimal
   created_at    DateTime @default(now()) @db.Timestamptz(6)
-
-  avatar_url String?
-  bio        String? @db.Text
+  avatar_url    String?
+  bio           String?
 
   @@index([user_id])
-
   @@schema("public")
 }
 
@@ -366,7 +282,6 @@ model live_chat_messages {
   avatar_url   String?
 
   @@index([room_id, created_at], map: "live_chat_messages_room_created_idx")
-
   @@schema("public")
 }
 
@@ -393,7 +308,6 @@ model live_votes {
 
   @@index([poll_id], map: "live_votes_poll_idx")
   @@index([user_id], map: "live_votes_user_idx")
-
   @@schema("public")
 }
 
@@ -407,7 +321,6 @@ model paid_reactions {
 
   @@index([context_type, context_id], map: "paid_reactions_context_idx")
   @@index([user_id], map: "paid_reactions_user_idx")
-
   @@schema("public")
 }
 
@@ -420,7 +333,7 @@ model profiles {
   created_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at   DateTime @default(now()) @db.Timestamptz(6)
 
-@@schema("public")
+  @@schema("public")
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -431,7 +344,6 @@ model spinner_spins {
   payload    Json?
 
   @@index([user_email])
-
   @@schema("public")
 }
 
@@ -440,36 +352,35 @@ model CreatorProfile {
   email                          String        @unique
   displayName                    String
   handle                         String?       @unique
-  bio                            String?       @db.Text
-  avatarUrl                      String?       @map("avatar_url") @db.Text
   payoutShare                    Int           @default(45)
   status                         CreatorStatus @default(ACTIVE)
   createdAt                      DateTime      @default(now())
   updatedAt                      DateTime      @updatedAt
-  stripeAccountId                String?       @map("stripe_account_id")
-  stripeOnboardingStatus         String        @default("not_started") @map("stripe_onboarding_status")
-  payoutCurrency                 String        @default("aud") @map("payout_currency")
-  stripeChargesEnabled           Boolean       @default(false) @map("stripe_charges_enabled")
-  stripePayoutsEnabled           Boolean       @default(false) @map("stripe_payouts_enabled")
-  isVerified                     Boolean       @default(false) @map("is_verified")
-  verifiedSince                  DateTime?     @map("verified_since") @db.Timestamptz(6)
-  stripeCustomerId               String?       @map("stripe_customer_id")
-  stripeSubscriptionId           String?       @unique(map: "creatorprofile_stripe_subscription_id_key") @map("stripe_subscription_id")
-  verificationPriceId            String?       @map("verification_price_id")
-  verificationStatus             String        @default("inactive") @map("verification_status")
-  verificationCurrentPeriodEnd   DateTime?     @map("verification_current_period_end") @db.Timestamptz(6)
+  avatarUrl                      String?       @map("avatar_url")
+  bio                            String?
+  blue_tick_cancel_at_period_end Boolean       @default(false)
+  blue_tick_current_period_end   DateTime?     @db.Timestamptz(6)
+  blue_tick_customer_id          String?
   blue_tick_status               String        @default("inactive")
   blue_tick_sub_id               String?
-  blue_tick_customer_id          String?
-  blue_tick_current_period_end   DateTime?     @db.Timestamptz(6)
-  blue_tick_cancel_at_period_end Boolean       @default(false)
   creatorTermsAccepted           Boolean       @default(false) @map("creator_terms_accepted")
   creatorTermsAcceptedAt         DateTime?     @map("creator_terms_accepted_at") @db.Timestamptz(6)
   creatorTermsVersion            String?       @map("creator_terms_version")
+  isVerified                     Boolean       @default(false) @map("is_verified")
+  payoutCurrency                 String        @default("aud") @map("payout_currency")
+  stripeAccountId                String?       @map("stripe_account_id")
+  stripeChargesEnabled           Boolean       @default(false) @map("stripe_charges_enabled")
+  stripeCustomerId               String?       @map("stripe_customer_id")
+  stripeOnboardingStatus         String        @default("not_started") @map("stripe_onboarding_status")
+  stripePayoutsEnabled           Boolean       @default(false) @map("stripe_payouts_enabled")
+  stripeSubscriptionId           String?       @unique(map: "creatorprofile_stripe_subscription_id_key") @map("stripe_subscription_id")
+  verificationCurrentPeriodEnd   DateTime?     @map("verification_current_period_end") @db.Timestamptz(6)
+  verificationPriceId            String?       @map("verification_price_id")
+  verificationStatus             String        @default("inactive") @map("verification_status")
+  verifiedSince                  DateTime?     @map("verified_since") @db.Timestamptz(6)
 
   @@index([blue_tick_sub_id], map: "creatorprofile_blue_tick_sub_id_idx")
   @@map("CreatorProfile")
-
   @@schema("public")
 }
 
@@ -479,7 +390,7 @@ enum RevolvrStatus {
   WON
   LOST
 
-@@schema("public")
+  @@schema("public")
 }
 
 enum CreatorStatus {
@@ -496,14 +407,14 @@ enum SupportKind {
   REACTION
   VOTE
 
-@@schema("public")
+  @@schema("public")
 }
 
 enum SupportSource {
   FEED
   LIVE
 
-@@schema("public")
+  @@schema("public")
 }
 
 enum creator_status {
@@ -511,5 +422,5 @@ enum creator_status {
   active
   suspended
 
-@@schema("public")
+  @@schema("public")
 }
