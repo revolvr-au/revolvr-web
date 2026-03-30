@@ -13,7 +13,7 @@ import { Heart, MessageCircle, Share2, Gift, Send, MoreVertical, Plus, Home } fr
 type ApiPost = {
   id: string;
   userEmail: string | null;
-  image_Url: string | null;
+  media_url: string | null;   // ✅ FIXED
   caption: string | null;
   comments?: any[];
   reactions?: any[];
