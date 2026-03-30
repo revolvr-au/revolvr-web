@@ -173,7 +173,7 @@ useEffect(() => {
       setLoading(true);
       setErr(null);
 
-      const res = await fetch("/api/public-feed", { cache: "no-store" });
+      const res = await fetch("/api/posts", { cache: "no-store" });
       const json = await res.json().catch(() => null);
       
       
@@ -522,10 +522,10 @@ return (
       onPointerUp={(e) => handlePostTap(e, p.id)}
     >
       {/* IMAGE */}
-      {mediaUrl && (
+      {mediaUrl?.startsWith("http") && (
         <img
           src={mediaUrl}
-          className="absolute inset-0 w-full h-full object-cover z-0"
+              className="w-full h-full object-cover"
           alt=""
         />
       )}
