@@ -98,10 +98,13 @@ const creators = await prisma.creatorProfile.findMany({
 const handleMap = Object.fromEntries(
   creators.map((c) => [c.email.toLowerCase(), c.handle])
 );
-    const shaped = posts.map((p) => ({
+  const shaped = posts.map((p) => ({
   id: p.id,
   userEmail: p.userEmail,
-  media_url: p.media_url,
+
+  // ✅ TEMP BRIDGE
+  media_url: p.media_url ?? p.image_Url ?? null,
+
   caption: p.caption,
   createdAt: p.createdAt,
   updatedAt: p.updatedAt,
