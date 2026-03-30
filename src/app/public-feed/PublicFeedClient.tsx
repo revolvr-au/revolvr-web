@@ -64,11 +64,6 @@ export default function UploadPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          userEmail: "test@revolvr.net",
-          media: [{ url: publicUrl }],
-          filter: selectedFilter,
-        }),
       });
 
       const json = await res.json();
