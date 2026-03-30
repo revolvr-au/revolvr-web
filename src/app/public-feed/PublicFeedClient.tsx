@@ -26,6 +26,10 @@ export default function UploadPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!file.type.startsWith("image/")) {
+  alert("Only images allowed");
+  return;
+}
     const url = URL.createObjectURL(file);
     setPreviewUrl(url);
   }
@@ -60,11 +64,16 @@ export default function UploadPage() {
 
       // 3. Save to DB
       const res = await fetch("/api/posts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    userEmail: "test@revolvr.net", // replace later with auth
+    media: [{ url: publicUrl }],
+    filter: selectedFilter,
+  }),
+});
 
       const json = await res.json();
 
@@ -96,7 +105,7 @@ export default function UploadPage() {
         accept="image/*"
         onChange={handleFileChange}
       />
-
+     
       {/* PREVIEW */}
       {previewUrl && (
         <div className="w-full h-[70vh] mt-4">
@@ -134,6 +143,11 @@ export default function UploadPage() {
         disabled={loading}
         className="mt-6 bg-white text-black px-4 py-2 rounded"
       >
+        <button onClick={() => fileRef.current?.click()}>
+  Choose Image
+</button>
+<input hidden ref={fileRef} type="file" ... />
+
         {loading ? "Uploading..." : "Upload"}
       </button>
     </div>
