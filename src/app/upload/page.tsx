@@ -1,75 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 
 export default function UploadPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = async () => {
-    if (!file) return alert("Select a file");
+  async function handleUpload() {
+    const file = fileRef.current?.files?.[0];
 
-    setUploading(true);
+    if (!file) {
+      alert("Select a file");
+      return;
+    }
 
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${Date.now()}-${file.name}`;
 
-      // 1. Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      // 1. Upload to Supabase
+      const { data, error } = await supabase.storage
         .from("posts")
-        .upload(fileName, file);
+        .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (error) throw error;
 
       // 2. Get public URL
-      const { data } = supabase.storage
+      const { data: publicUrlData } = supabase.storage
         .from("posts")
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
-      const publicUrl = data.publicUrl;
+      const publicUrl = publicUrlData.publicUrl;
 
-      // 3. Create post in DB
-      const { error: insertError } = await supabase
-        .from("posts")
-        .insert([
-          {
-            media_url: publicUrl,
-            user_email: "test@revolvr.net", // replace later with auth
-          },
-        ]);
+      // 3. Save post in DB
+      const res = await fetch("/api/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userEmail: "test@revolvr.net",
+          media: [{ url: publicUrl }],
+        }),
+      });
 
-      if (insertError) throw insertError;
+      const json = await res.json();
 
-      // 4. Redirect to feed
-      router.push("/public-feed");
+      if (!res.ok) throw new Error(json.error);
+
+      alert("Uploaded!");
+
     } catch (err) {
       console.error(err);
       alert("Upload failed");
-    } finally {
-      setUploading(false);
     }
-  };
+  }
 
   return (
-    <div className="text-white p-10">
-      <h1 className="mb-4 text-xl">Upload</h1>
+    <div className="p-6">
+      <h1 className="text-white text-xl mb-4">Upload</h1>
 
-      <input
-        type="file"
-        accept="image/*,video/*"
-        onChange={(e) => setFile(e.target.files?.[0] || null)}
-      />
+      <input ref={fileRef} type="file" />
 
       <button
         onClick={handleUpload}
-        disabled={uploading}
-        className="block mt-4 bg-white text-black px-4 py-2 rounded"
+        className="mt-4 bg-white text-black px-4 py-2 rounded"
       >
-        {uploading ? "Uploading..." : "Upload"}
+        Upload
       </button>
     </div>
   );
