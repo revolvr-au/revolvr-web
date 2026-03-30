@@ -95,8 +95,15 @@ export default function UploadPage() {
   }
 
   return (
-  <div className="p-6 text-white">
-    <h1 className="text-xl mb-4">Upload</h1>
+  <div style={{ color: "white" }}>
+    {posts?.map((p) => (
+      <div key={p.id}>
+        <img src={p.media_url} />
+        <p>{p.caption}</p>
+      </div>
+    ))}
+  </div>
+);
 
     {/* HIDDEN INPUT */}
     <input
