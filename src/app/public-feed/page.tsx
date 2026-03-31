@@ -1,11 +1,8 @@
 export const dynamic = "force-dynamic";
 
-import dynamic from "next/dynamic";
+import PublicFeedClient from "./PublicFeedClient";
 
-const PublicFeedClient = dynamic(
-  () => import("@/app/public-feed/PublicFeedClient"),
-  { ssr: false }
-);
+export const dynamic = "force-dynamic";
 
 export default function PublicFeedPage() {
   return <PublicFeedClient />;
