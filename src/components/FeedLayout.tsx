@@ -38,96 +38,9 @@ export default function FeedLayout({
   const [peopleOpen, setPeopleOpen] = useState(false);
   const swipeStart = useRef(0);
 
-  return (
-    <div className="h-screen text-white overflow-hidden">
-
-      {!isLive && (
-        <header className="fixed top-0 left-0 right-0 z-[999] px-4 pt-[env(safe-area-inset-top)]">
-  <div className="flex w-full max-w-[720px] mx-auto items-center justify-between gap-3 px-4 py-3">
-
-    {/* LEFT: LOGO */}
-    <div className="min-w-0">
-      <h1 className="text-xl font-semibold tracking-wider text-white">
-        {(title ?? "REVOLVR").toUpperCase()}
-      </h1>
-    </div>
-
-    {/* RIGHT */}
-    <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={() => onGoLive?.()}
-        disabled={!onGoLive}
-        className={`relative inline-flex h-10 w-10 items-center justify-center rounded-xl transition active:scale-95 ${
-          isLive
-            ? "bg-red-600 shadow-[0_0_20px_rgba(255,0,60,0.6)]"
-            : "bg-white/10 backdrop-blur"
-        }`}
-      >
-        <Radio className="w-5 h-5 text-white" />
-        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-      </button>
-
-      {right ?? null}
-
-      {showMenu && (
-        <Link
-          href={menuHref}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur"
-        >
-          ☰
-        </Link>
-      )}
-    </div>
-
+ return (
+  <div>
+    {children}
   </div>
-</header>
-      )}
-
-   <main
-  className="h-full relative"
-  onTouchStart={(e) => {
-    const target = e.target as HTMLElement;
-
-    if (target.closest("[data-postid]")) return;
-
-    const x = e.touches[0].clientX;
-    const width = window.innerWidth;
-
-    if (x > width - 80) {
-      swipeStart.current = -1;
-      return;
-    }
-
-    swipeStart.current = x;
-  }}
-  onTouchEnd={(e) => {
-    if (swipeStart.current === -1) return;
-
-    const endX = e.changedTouches[0].clientX;
-    const diff = endX - swipeStart.current;
-
-    const startedAtLeftEdge = swipeStart.current < 70;
-
-    if (!peopleOpen) {
-      if (!startedAtLeftEdge) return;
-
-      if (diff > 60) {
-        setPeopleOpen(true);
-      }
-      return;
-    }
-
-    if (peopleOpen && diff < -60) {
-      setPeopleOpen(false);
-    }
-  }}
->
-  {children}
-</main>
-
-{/* {!isLive && <BottomBar />} */}
-
-</div>
 );
 }
