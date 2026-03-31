@@ -7,6 +7,7 @@ type Post = {
   text?: string;
   content?: string;
   caption?: string;
+  media_url?: string; // ✅ ADD THIS
 };
 
 export default function PublicFeedClient() {
@@ -68,17 +69,17 @@ export default function PublicFeedClient() {
           </div>
 
           {/* IMAGE */}
-          {post.media_url && (
-            <img
-              src={post.media_url}
-              alt="post"
-              style={{
-                width: "100%",
-                maxWidth: 500,
-                borderRadius: 8,
-              }}
-            />
-          )}
+          {typeof post.media_url === "string" && post.media_url && (
+  <img
+    src={post.media_url}
+    alt="post"
+    style={{
+      width: "100%",
+      maxWidth: 500,
+      borderRadius: 8,
+    }}
+  />
+)}
 
         </div>
       ))
