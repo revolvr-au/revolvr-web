@@ -56,26 +56,9 @@ export default function PublicFeedClient() {
   }
 
   // ✅ SAFE DEBUG RENDER
-  return (
-    <div style={{ padding: 20 }}>
-      {Array.isArray(posts) ? (
-        posts.map((post, i) => {
-          if (!post || typeof post !== "object") {
-            console.log("BAD POST:", post);
-            return null;
-          }
-
-          return (
-            <div key={post.id || i} style={{ marginBottom: 20 }}>
-              <div>
-                {String(post.caption ?? post.text ?? "Empty post")}
-              </div>
-            </div>
-          );
-        })
-      ) : (
-        <div>NOT ARRAY</div>
-      )}
-    </div>
-  );
+return (
+  <div style={{ padding: 20 }}>
+    PUBLIC FEED SAFE MODE
+  </div>
+);
 }
