@@ -1,5 +1,12 @@
+import dynamic from "next/dynamic";
+
 export const dynamic = "force-dynamic";
 
+const PublicFeedClient = dynamic(
+  () => import("./PublicFeedClient"),
+  { ssr: false }
+);
+
 export default function PublicFeedPage() {
-  return <div style={{ padding: 20 }}>PURE PAGE TEST</div>;
+  return <PublicFeedClient />;
 }
