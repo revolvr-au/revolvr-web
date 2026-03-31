@@ -77,7 +77,7 @@ if (false && userEmail) {
           where: { userEmail },
           select: { id: true },
         }
-      : false,
+      : undefined,
   },
 });
 const emails = posts
@@ -103,7 +103,7 @@ const handleMap = Object.fromEntries(
   userEmail: p.userEmail,
 
   // ✅ TEMP BRIDGE
-  media_url: p.media_url ?? p.image_Url ?? null,
+  media_url: p.media_url || null,
 
   caption: p.caption,
   createdAt: p.createdAt,
