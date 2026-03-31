@@ -4,8 +4,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Home, User, Plus, Radio, Broadcast } from "lucide-react";
 
-import BottomBar from "@/components/BottomBar";
-import PeopleRail from "@/components/peoplerail/PeopleRail";
+// import BottomBar from "@/components/BottomBar";
+// import PeopleRail from "@/components/peoplerail/PeopleRail";
 
 import { useState, useRef } from "react";
 
@@ -126,7 +126,7 @@ export default function FeedLayout({
   {children}
 </main>
 
-{!isLive && <BottomBar />}
+{/* {!isLive && <BottomBar />} */}
 
 </div>
 );
