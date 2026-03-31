@@ -11,7 +11,7 @@ export default function PeopleRail({
 }) {
 
   const railData = usePeopleRail(userId);
-const orbitUsers = users.length ? users : railData;
+  const orbitUsers = [];
 
   let orderedUsers = orbitUsers;
 

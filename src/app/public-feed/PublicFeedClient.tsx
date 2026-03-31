@@ -7,7 +7,7 @@ type Post = {
   text?: string;
   content?: string;
   caption?: string;
-  media_url?: string; // ✅ ADD THIS
+  media_url?: string;
 };
 
 export default function PublicFeedClient() {
@@ -16,87 +16,66 @@ export default function PublicFeedClient() {
 
   useEffect(() => {
     const loadPosts = async () => {
-  try {
-    const res = await fetch("/api/posts");
+      try {
+        const res = await fetch("/api/posts");
 
-    if (!res.ok) throw new Error("Failed to fetch");
+        if (!res.ok) throw new Error("Failed to fetch");
 
-    const data = await res.json();
+        const data = await res.json();
 
-    console.log("API DATA:", data); // 👈 HERE
+        console.log("API DATA:", data); // ✅ debug
 
-    if (Array.isArray(data)) {
-      setPosts(data);
-    } else if (Array.isArray(data.posts)) {
-      setPosts(data.posts);
-    } else if (Array.isArray(data.data)) {
-      setPosts(data.data);
-    } else {
-      console.warn("Unexpected API shape:", data);
-      setPosts([]);
-    }
-  } catch (err) {
-    console.error("Feed error:", err);
-    setPosts([]);
-  } finally {
-    setLoading(false);
-  }
-};
+        if (Array.isArray(data)) {
+          setPosts(data);
+        } else if (Array.isArray(data.posts)) {
+          setPosts(data.posts);
+        } else if (Array.isArray(data.data)) {
+          setPosts(data.data);
+        } else {
+          console.warn("Unexpected API shape:", data);
+          setPosts([]);
+        }
+      } catch (err) {
+        console.error("Feed error:", err);
+        setPosts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     loadPosts();
   }, []);
 
-  // ✅ Proper debug (outside JSX)
   useEffect(() => {
-    if (posts.length > 0) {
-      console.log("Post sample:", posts[0]);
-    }
+    console.log("POSTS FULL:", posts);
   }, [posts]);
 
+  // ✅ CLEAN loading check
   if (loading) {
     return <div style={{ padding: 20 }}>Loading feed...</div>;
   }
 
-   return (
-  <div style={{ padding: 20 }}>
-    {Array.isArray(posts) && posts.length > 0 ? (
-      posts.map((post, i) => {
-        // FULL guard
-        if (!post || typeof post !== "object") return null;
+  // ✅ SAFE DEBUG RENDER
+  return (
+    <div style={{ padding: 20 }}>
+      {Array.isArray(posts) ? (
+        posts.map((post, i) => {
+          if (!post || typeof post !== "object") {
+            console.log("BAD POST:", post);
+            return null;
+          }
 
-        const text =
-          typeof post.caption === "string"
-            ? post.caption
-            : typeof post.text === "string"
-            ? post.text
-            : "Empty post";
-
-        const image =
-          typeof post.media_url === "string" && post.media_url.length > 0
-            ? post.media_url
-            : null;
-
-        return (
-          <div key={post.id || i} style={{ marginBottom: 20 }}>
-            <div style={{ marginBottom: 8 }}>{text}</div>
-
-            {image && (
-              <img
-                src={image}
-                alt="post"
-                style={{
-                  width: "100%",
-                  maxWidth: 500,
-                  borderRadius: 8,
-                }}
-              />
-            )}
-          </div>
-        );
-      })
-    ) : (
-      <div>No posts yet</div>
-    )}
-  </div>
-);
+          return (
+            <div key={post.id || i} style={{ marginBottom: 20 }}>
+              <div>
+                {String(post.caption ?? post.text ?? "Empty post")}
+              </div>
+            </div>
+          );
+        })
+      ) : (
+        <div>NOT ARRAY</div>
+      )}
+    </div>
+  );
 }
