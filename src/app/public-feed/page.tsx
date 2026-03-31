@@ -1,7 +1,3 @@
-export const dynamic = "force-dynamic";
-
-import PublicFeedClient from "./PublicFeedClient";
-
-export default function PublicFeedPage() {
-  return <PublicFeedClient />;
+export default function Page() {
+  return <div>PAGE OK</div>;
 }
