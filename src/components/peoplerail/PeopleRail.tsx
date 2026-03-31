@@ -1,6 +1,6 @@
 "use client";
 
-import { usePeopleRail } from "../../hook/usePeopleRail";
+// import { usePeopleRail } from "../../hook/usePeopleRail";
 
 export default function PeopleRail({
   open,
@@ -10,8 +10,8 @@ export default function PeopleRail({
   onSelectCreator
 }) {
 
-  const railData = usePeopleRail(userId);
-  const orbitUsers = [];
+  // const railData = usePeopleRail(userId); ❌ disable completely
+const orbitUsers = [];
 
   let orderedUsers = orbitUsers;
 
