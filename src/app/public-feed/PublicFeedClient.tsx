@@ -55,34 +55,36 @@ export default function PublicFeedClient() {
     return <div style={{ padding: 20 }}>Loading feed...</div>;
   }
 
-  return (
+   return (
   <div style={{ padding: 20 }}>
-    {posts.length === 0 ? (
-      <div>No posts yet</div>
-    ) : (
-      posts.map((post) => (
-        <div key={post.id} style={{ marginBottom: 20 }}>
-          
-          {/* TEXT */}
-          <div style={{ marginBottom: 8 }}>
-            {post.caption ?? post.text ?? "Empty post"}
+    {Array.isArray(posts) && posts.length > 0 ? (
+      posts.map((post, i) => {
+        if (!post || typeof post !== "object") return null;
+
+        return (
+          <div key={post.id || i} style={{ marginBottom: 20 }}>
+            
+            <div style={{ marginBottom: 8 }}>
+              {post.caption ?? post.text ?? "Empty post"}
+            </div>
+
+            {typeof post.media_url === "string" && post.media_url && (
+              <img
+                src={post.media_url}
+                alt="post"
+                style={{
+                  width: "100%",
+                  maxWidth: 500,
+                  borderRadius: 8,
+                }}
+              />
+            )}
+
           </div>
-
-          {/* IMAGE */}
-          {typeof post.media_url === "string" && post.media_url && (
-  <img
-    src={post.media_url}
-    alt="post"
-    style={{
-      width: "100%",
-      maxWidth: 500,
-      borderRadius: 8,
-    }}
-  />
-)}
-
-        </div>
-      ))
+        );
+      })
+    ) : (
+      <div>No posts yet</div>
     )}
   </div>
 );
