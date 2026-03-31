@@ -10,7 +10,8 @@ export default function PeopleRail({
   onSelectCreator
 }) {
 
-  const orbitUsers = users.length ? users : usePeopleRail(userId);
+  const railData = usePeopleRail(userId);
+const orbitUsers = users.length ? users : railData;
 
   let orderedUsers = orbitUsers;
 
