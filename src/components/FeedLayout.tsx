@@ -1,46 +1,36 @@
 "use client";
 
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { Home, User, Plus, Radio, Broadcast } from "lucide-react";
-
-// import BottomBar from "@/components/BottomBar";
-// import PeopleRail from "@/components/peoplerail/PeopleRail";
-
-import { useState, useRef } from "react";
+import BottomBar from "./BottomBar";
+import TopBar from "./TopBar";
 
 type Props = {
-  children: ReactNode;
-  title?: string;
-  right?: ReactNode;
-  onGoLive?: () => void;
-  showMenu?: boolean;
-  menuHref?: string;
-  isLive?: boolean;
-  activePost?: string | null;
-  railUsers?: any[];
-  onSelectCreator?: (id: string) => void;
+  children: React.ReactNode;
 };
 
-export default function FeedLayout({
-  children,
-  title,
-  right,
-  onGoLive,
-  showMenu = false,
-  menuHref = "/command",
-  isLive = false,
-  activePost,
-  railUsers,
-  onSelectCreator
-}: Props) {
+export default function FeedLayout({ children }: Props) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        background: "#020617",
+        minHeight: "100vh"
+      }}
+    >
+      {/* SINGLE FEED CONTAINER */}
+      <div
+        style={{
+          width: 420,
+          height: "100vh",
+          overflow: "hidden",
+          position: "relative"
+        }}
+      >
+        <TopBar />
+        <BottomBar />
 
-  const [peopleOpen, setPeopleOpen] = useState(false);
-  const swipeStart = useRef(0);
-
- return (
-  <div>
-    {children}
-  </div>
-);
+        {children}
+      </div>
+    </div>
+  );
 }

@@ -1,50 +1,50 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
-
 export default function BottomBar() {
-  const router = useRouter();
-  const pathname = usePathname();
-
-  const isRevolvr = pathname.startsWith("/public-feed");
-  const isTranche = pathname.startsWith("/tranche");
-
   return (
     <div
       style={{
-  position: "fixed",
-  bottom: 0,
-  left: 0,
-  right: 0,
-  height: "calc(64px + env(safe-area-inset-bottom))",
-  paddingBottom: "env(safe-area-inset-bottom)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: 60,
-  zIndex: 80,
-  color: "white",
-  fontWeight: 600,
-  letterSpacing: 1, // ← THIS COMMA WAS MISSING
-}}
+        position: "fixed",
+        bottom: 28,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: 420,
+        display: "flex",
+        justifyContent: "center",
+        zIndex: 200
+      }}
     >
-      <button
-        onClick={() => router.push("/public-feed")}
+      <div
         style={{
-          opacity: isRevolvr ? 1 : 0.6
+          background: "transparent",
+          backdropFilter: "none",
+          padding: "10px 22px", // slightly tighter
+          borderRadius: 999,
+          border: "none",
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          boxShadow: "none"
         }}
       >
-        REVOLVR
-      </button>
-
-      <button
-        onClick={() => router.push("/tranche")}
-        style={{
-          opacity: isTranche ? 1 : 0.6
-        }}
-      >
-        TRANCHE
-      </button>
+        <div style={labelStyle}>REVOLVR</div>
+        <div style={labelStyleMuted}>TRANCHE</div>
+      </div>
     </div>
   );
 }
+const labelStyle = {
+  fontSize: 15,
+  letterSpacing: "0.06em",
+  fontWeight: 500,
+  fontFamily: "Inter, system-ui, sans-serif",
+  color: "rgba(255,255,255,0.95)"
+};
+
+const labelStyleMuted = {
+  fontSize: 15,
+  letterSpacing: "0.06em",
+  fontWeight: 500,
+  fontFamily: "Inter, system-ui, sans-serif",
+  color: "rgba(255,255,255,0.5)"
+};
