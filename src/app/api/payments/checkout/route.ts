@@ -6,12 +6,9 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
-const stripe = new Stripe(stripeSecretKey);
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"

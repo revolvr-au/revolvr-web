@@ -73,31 +73,22 @@ function getSubscriptionPeriodEnd(sub: Stripe.Subscription): Date | null {
   return typeof end === "number" ? new Date(end * 1000) : null;
 }
 
-/* -------------------------------- Stripe -------------------------------- */
-
-const stripeSecret = process.env.STRIPE_SECRET_KEY;
-
-const stripe = new Stripe(stripeSecret ?? "", {
-  apiVersion: "2025-01-27.acacia" as Stripe.LatestApiVersion,
-});
-
-/* -------------------------------- Handler -------------------------------- */
-
 export async function POST(req: Request) {
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+
   if (!stripeSecret) {
+    console.warn("Missing STRIPE_SECRET_KEY");
     return NextResponse.json(
-      { ok: false, error: "Missing STRIPE_SECRET_KEY" },
-      { status: 500 },
+      { ok: false, error: "Stripe not configured" },
+      { status: 500 }
     );
   }
+
+  const stripe = new Stripe(stripeSecret, {
+    apiVersion: "2025-01-27.acacia" as Stripe.LatestApiVersion,
+  });
 
   const sig = req.headers.get("stripe-signature");
-  if (!sig) {
-    return NextResponse.json(
-      { ok: false, error: "Missing stripe-signature header" },
-      { status: 400 },
-    );
-  }
 
   // IMPORTANT: raw body required for Stripe signature verification
   const body = await req.text();

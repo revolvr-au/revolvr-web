@@ -1,9 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-export default function CommentsPage() {
+function CommentsContent() {
   const searchParams = useSearchParams();
   const postId = searchParams.get("postId");
 
@@ -30,14 +31,13 @@ export default function CommentsPage() {
       },
       body: JSON.stringify({
         postId,
-        userEmail: "test@user.com", // temp
+        userEmail: "test@user.com",
         body: text,
       }),
     });
 
     setText("");
 
-    // reload
     const res = await fetch(`/api/comments?postId=${postId}`);
     const data = await res.json();
     if (data?.ok) setComments(data.comments);
@@ -64,5 +64,13 @@ export default function CommentsPage() {
         <button onClick={sendComment}>Send</button>
       </div>
     </div>
+  );
+}
+
+export default function CommentsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 20 }}>Loading...</div>}>
+      <CommentsContent />
+    </Suspense>
   );
 }
