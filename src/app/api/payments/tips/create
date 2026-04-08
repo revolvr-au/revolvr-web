@@ -1,13 +1,21 @@
 // /src/app/api/payments/tip/create/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { getAuthedEmailOrNull } from "../../../../lib/supabaseServer";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export async function POST(req: NextRequest) {
+  const viewerEmail = await getAuthedEmailOrNull();
+  if (!viewerEmail) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   const { creatorId, amountCents, message } = await req.json();
 
-  // TODO: auth, validate creatorId, etc.
+  if (!creatorId) {
+    return NextResponse.json({ error: "Missing creatorId" }, { status: 400 });
+  }
 
   const session = await stripe.checkout.sessions.create({
     mode: "payment",

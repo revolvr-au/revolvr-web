@@ -59,10 +59,11 @@ model PostReaction {
   id        String   @id @default(uuid())
   postId    String
   userEmail String
-  type      String
+  emoji     String
   createdAt DateTime @default(now())
   post      Post     @relation("PostReactions", fields: [postId], references: [id], onDelete: Cascade)
 
+  @@unique([postId, userEmail, emoji])
   @@index([postId])
   @@index([userEmail])
   @@schema("public")

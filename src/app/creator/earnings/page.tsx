@@ -2,6 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import { getCreatorEarnings } from "@/lib/creatorEarnings";
+import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 
 function formatAudCents(cents: number) {
   const dollars = cents / 100;
@@ -9,8 +10,7 @@ function formatAudCents(cents: number) {
 }
 
 export default async function CreatorEarningsPage() {
-  // TODO: replace with real logged-in email (Supabase auth)
-  const creatorEmail = ""; // hydrate from authed user
+  const creatorEmail = await getAuthedEmailOrNull();
 
   if (!creatorEmail) {
     return (

@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    const { creatorName } = await req.json();
+    if (!creatorName) {
+      return NextResponse.json({ success: false, error: "Missing creatorName" }, { status: 400 });
+    }
     await prisma.liveSession.updateMany({
-      where: { isActive: true },
+      where: { creatorName, isActive: true },
       data: { isActive: false },
     });
 

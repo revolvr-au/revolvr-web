@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
 import RightRail from "@/components/RightRail";
 import { useRouter } from "next/navigation";
 import CommentsList from "../../components/CommentsList";
@@ -20,9 +21,17 @@ export default function PublicFeedClient() {
   id: string;
   userEmail: string;
 } | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+  }, []);
 
   const sendComment = async () => {
-  if (!commentText.trim()) return;
+  if (!commentText.trim() || !userEmail) return;
 
   await fetch("/api/comments", {
     method: "POST",
@@ -31,7 +40,7 @@ export default function PublicFeedClient() {
     },
     body: JSON.stringify({
       postId: activePostId,
-      userEmail: "test@user.com",
+      userEmail: userEmail ?? "",
       body: commentText,
       parentId: replyTo?.id || null,
     }),

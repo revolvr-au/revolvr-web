@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "", {
+  apiVersion: "2025-12-15.clover",
+});
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
