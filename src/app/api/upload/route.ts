@@ -5,14 +5,16 @@ export async function POST(req: Request) {
   const file = formData.get("file") as File;
 
   if (!file) {
-    return NextResponse.json({ error: "No file" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "No file" }, { status: 400 });
   }
 
-  // TEMP: convert to base64 (fastest for now)
   const bytes = await file.arrayBuffer();
   const base64 = Buffer.from(bytes).toString("base64");
 
   const dataUrl = `data:${file.type};base64,${base64}`;
 
-  return NextResponse.json({ url: dataUrl });
+  return NextResponse.json({
+    ok: true,
+    url: dataUrl,
+  });
 }

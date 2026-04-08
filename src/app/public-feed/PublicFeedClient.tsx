@@ -55,15 +55,15 @@ useEffect(() => {
 }, [showComments]);
 
   useEffect(() => {
-    fetch("/api/posts")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data.posts)) {
-          setPosts(data.posts);
-        }
-      })
-      .catch((err) => console.error(err));
-  }, []);
+  fetch("/api/public-feed")
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data.posts)) {
+        setPosts(data.posts);
+      }
+    })
+    .catch((err) => console.error(err));
+}, []);
 
   const activePost = posts[activeIndex];
 
@@ -281,27 +281,31 @@ const handleLive = () => {
    >
       
       
-        {posts.map((post, i) => (
-          <Post
-            key={post.id || i}
-            post={post}
-            liked={!!likedMap[String(post.id ?? i)]}
-            onDoubleTapLike={() => {
-              const key = String(post.id ?? i);
-              setLikedMap((prev) => ({
-                ...prev,
-                [key]: true,
-              }));
-            }}
-            onOpenComments={openComments}
-            onShare={handleShare}
-            onReward={handleReward}
-            onCreate={handleCreate}
-            onHome={handleHome}
-            onLive={handleLive}
-            showComments={showComments}
-          />
-        ))}
+        {posts.map((post, i) => {
+  console.log("POST DATA:", post);
+
+  return (
+    <Post
+      key={post.id || i}
+      post={post}
+      liked={!!likedMap[String(post.id ?? i)]}
+      onDoubleTapLike={() => {
+        const key = String(post.id ?? i);
+        setLikedMap((prev) => ({
+          ...prev,
+          [key]: true,
+        }));
+      }}
+      onOpenComments={openComments}
+      onShare={handleShare}
+      onReward={handleReward}
+      onCreate={handleCreate}
+      onHome={handleHome}
+      onLive={handleLive}
+      showComments={showComments}
+    />
+  );
+})}
       </div>
     </div>
   );
@@ -362,10 +366,9 @@ function Post({
       justifyContent: "flex-end",
     }}
   >
-    {/* IMAGE */}
-{post.media_url && (
+    {post.imageUrl && (
   <img
-    src={post.media_url}
+    src={post.imageUrl}
     onClick={handleTap}
     style={{
       position: "absolute",

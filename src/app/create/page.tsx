@@ -1,203 +1,201 @@
 "use client";
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
-
-type MediaOut = { type: "image" | "video"; url: string; order: number };
+import { useState } from "react";
 
 export default function CreatePage() {
-  const router = useRouter();
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [caption, setCaption] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const [files, setFiles] = React.useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = React.useState<string[]>([]);
-  const [caption, setCaption] = React.useState("");
-  const [isPosting, setIsPosting] = React.useState(false);
-  const [err, setErr] = React.useState<string | null>(null);
+  // 📁 Handle file select
+  const handleFile = (f: File) => {
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
 
-  React.useEffect(() => {
-    // build previews
-    const urls = files.map((f) => URL.createObjectURL(f));
-    setPreviewUrls(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
-  }, [files]);
+  // 📤 Upload
+  const handleSubmit = async () => {
+  if (!file) return;
 
-  const canPost = files.length > 0 && !isPosting;
+  setLoading(true);
 
-  function guessMediaType(f: File): "image" | "video" {
-    return f.type.startsWith("video/") ? "video" : "image";
-  }
+  try {
+    // STEP 1: Upload file
+    const formData = new FormData();
+    formData.append("file", file);
 
-  async function handlePost() {
-    if (!files.length) return;
+    const uploadRes = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
 
-    setIsPosting(true);
-    setErr(null);
+    const uploadData = await uploadRes.json();
 
-    try {
-      const { data: authData, error: authErr } = await supabase.auth.getUser();
-      if (authErr) throw authErr;
-
-      const userEmail = String(authData.user?.email ?? "").trim().toLowerCase();
-      if (!userEmail) {
-        setErr("Please sign in before posting.");
-        return;
-      }
-
-      const uploads: MediaOut[] = [];
-
-      for (let i = 0; i < files.length; i++) {
-  const file = files[i];
-
-  if (file.size > 20 * 1024 * 1024) {
-    setErr("File too large (max 20MB)");
-    return;
-  }
-
-  const mediaType = guessMediaType(file);
-        const ext =
-          file.name.split(".").pop() ||
-          (mediaType === "video" ? "mp4" : "jpg");
-
-        const safeExt =
-          ext.toLowerCase().replace(/[^a-z0-9]/g, "") ||
-          (mediaType === "video" ? "mp4" : "jpg");
-
-        const filePath = `${userEmail}/${Date.now()}-${Math.random()
-          .toString(16)
-          .slice(2)}.${safeExt}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("posts")
-          .upload(filePath, file, {
-            upsert: false,
-            contentType: file.type || undefined,
-          });
-
-        if (uploadError || !uploadData) {
-          console.error("[create] upload error", uploadError);
-          setErr("Upload failed. Check the posts bucket policy + public access.");
-          return;
-        }
-
-        const { data: publicData } = supabase.storage
-          .from("posts")
-          .getPublicUrl(uploadData.path);
-
-        const publicUrl = publicData?.publicUrl;
-        if (!publicUrl) {
-          setErr("Upload succeeded but public URL could not be created.");
-          return;
-        }
-
-        uploads.push({ type: mediaType, url: publicUrl, order: i });
-      }
-
-      // Create post in DB via API (Prisma)
-      const res = await fetch("/api/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userEmail,
-          caption,
-          media: uploads,
-          // legacy (safe)
-          image_Url: uploads[0]?.url ?? null,
-          mediaType: uploads[0]?.type ?? "image",
-        }),
-      });
-
-      const json = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        console.error("[create] /api/posts failed", res.status, json);
-        setErr(`Post failed (${res.status}).`);
-        return;
-      }
-
-      router.push("/public-feed");
-    } catch (e: any) {
-      console.error("[create] unhandled error", e);
-      setErr(e?.message ?? "Something went wrong posting.");
-    } finally {
-      setIsPosting(false);
+    if (!uploadRes.ok || !uploadData?.url) {
+      alert("Upload failed");
+      setLoading(false);
+      return;
     }
+
+    // STEP 2: Create post in DB
+    const postRes = await fetch("/api/posts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+      caption,
+      media_url: uploadData.url,
+      userEmail: "test@user.com", // TEMP (we wire auth later)
+      }),
+    });
+
+    const postData = await postRes.json();
+
+    if (!postRes.ok) {
+      alert("Post creation failed");
+      setLoading(false);
+      return;
+    }
+
+    // STEP 3: Reset UI
+    setFile(null);
+    setPreview(null);
+    setCaption("");
+
+    alert("Post created");
+
+  } catch (err) {
+    console.error(err);
+    alert("Something failed");
   }
+
+  setLoading(false);
+};
 
   return (
-    <main className="mx-auto w-full max-w-screen-sm p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <button type="button" onClick={() => router.back()} className="text-white/80 hover:text-white">
-          ← Back
-        </button>
+    <div
+      style={{
+        maxWidth: 500,
+        margin: "0 auto",
+        padding: 16,
+        color: "white",
+      }}
+    >
+      <h2 style={{ marginBottom: 16 }}>Create</h2>
 
-        <h1 className="text-lg font-semibold">Create</h1>
+      {/* 📦 Upload Area */}
+      <div
+        style={{
+          width: "100%",
+          height: 300,
+          borderRadius: 14,
+          border: "1px dashed rgba(255,255,255,0.2)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          background: "rgba(255,255,255,0.03)",
+          position: "relative",
+          marginBottom: 16,
+        }}
+      >
+        {!preview && (
+          <label
+            style={{
+              cursor: "pointer",
+              textAlign: "center",
+              opacity: 0.7,
+            }}
+          >
+            <div style={{ fontSize: 14 }}>Tap to upload</div>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+              }}
+            />
+          </label>
+        )}
 
-        <button type="button" onClick={() => router.push("/public-feed")} className="text-white/80 hover:text-white">
-          Cancel
-        </button>
+        {/* 🖼 Preview */}
+        {preview && (
+          <>
+            <img
+              src={preview}
+              alt="preview"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+
+            {/* ❌ Remove button */}
+            <button
+              onClick={() => {
+                setFile(null);
+                setPreview(null);
+              }}
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                background: "rgba(0,0,0,0.6)",
+                border: "none",
+                borderRadius: "50%",
+                width: 28,
+                height: 28,
+                color: "white",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          </>
+        )}
       </div>
 
-      {err ? (
-        <div className="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-          {err}
-        </div>
-      ) : null}
+      {/* ✏️ Caption */}
+      <input
+        value={caption}
+        onChange={(e) => setCaption(e.target.value)}
+        placeholder="Say something..."
+        style={{
+          width: "100%",
+          padding: 12,
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.1)",
+          background: "rgba(255,255,255,0.04)",
+          color: "white",
+          marginBottom: 16,
+        }}
+      />
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <label className="block text-sm font-medium text-white/80">Upload video or images</label>
-
-        <label className="mt-3 flex h-[220px] w-full items-center justify-center rounded-xl border border-dashed border-white/20 bg-black/20 text-white/60 text-sm cursor-pointer">
-  Tap to upload
-  <input
-    type="file"
-    accept="video/*,image/*"
-    multiple
-    className="hidden"
-    onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-  />
-</label>
-
-        {previewUrls.length ? (
-          <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/20">
-            {files[0]?.type.startsWith("video/") ? (
-              <video src={previewUrls[0]} controls playsInline className="h-[360px] w-full object-contain" />
-            ) : (
-              <img src={previewUrls[0]} alt="Preview" className="h-[360px] w-full object-contain" />
-            )}
-            {previewUrls.length > 1 ? (
-              <div className="px-3 py-2 text-xs text-white/60">+ {previewUrls.length - 1} more</div>
-            ) : null}
-          </div>
-        ) : null}
-
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-white/80">Caption</label>
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Say something..."
-            className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-white/20"
-            rows={3}
-          />
-        </div>
-
-        <button
-          type="button"
-          disabled={!canPost}
-          onClick={handlePost}
-          className={[
-            "mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold",
-            canPost ? "bg-[#ff0055] text-white hover:opacity-95" : "bg-white/10 text-white/40",
-          ].join(" ")}
-        >
-          {isPosting ? "Posting..." : "Post"}
-        </button>
-
-        <p className="mt-3 text-xs text-white/50">
-          Tip: to select multiple files, hold <b>Ctrl</b> (Windows) or <b>Cmd</b> (Mac) while clicking, or use <b>Shift</b>.
-        </p>
-      </div>
-    </main>
+      {/* 🚀 Post Button */}
+      <button
+        onClick={handleSubmit}
+        disabled={!file || loading}
+        style={{
+          width: "100%",
+          padding: 14,
+          borderRadius: 999,
+          border: "none",
+          background: !file
+            ? "rgba(255,255,255,0.1)"
+            : "white",
+          color: !file ? "rgba(255,255,255,0.4)" : "black",
+          fontWeight: 600,
+          cursor: !file ? "not-allowed" : "pointer",
+          transition: "all 0.2s ease",
+        }}
+      >
+        {loading ? "Posting..." : "Post"}
+      </button>
+    </div>
   );
 }
