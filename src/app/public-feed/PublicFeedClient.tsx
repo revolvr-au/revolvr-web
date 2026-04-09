@@ -99,6 +99,8 @@ const handleShare = async (postId: string) => {
   const post = posts.find(p => p.id === postId);
   if (!post) return;
 
+  const index = Math.round(scrollTop / viewportHeight);
+
   const shareUrl = `${window.location.origin}/post/${postId}`;
 
   try {
@@ -141,25 +143,32 @@ const handleLive = () => {
 >
 {showComments && (
   <div
-    style={{
-      position: "fixed",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      maxWidth: 420,
-      margin: "0 auto",
-      height: "50dvh",
-      background: "#111213",
-      boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
-      zIndex: 200,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-      color: "white",
-    }}
-  >
+  style={{
+    position: "absolute", // ✅ KEY CHANGE
+    bottom: 0,
+    left: 0,
+    right: 0,
+
+    maxWidth: 420,
+    margin: "0 auto",
+
+    height: "320",
+    maxHeight: "320",
+
+    background: "#111213",
+    boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
+    zIndex: 200,
+
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+
+    color: "white",
+  }}
+>
     {/* HEADER */}
     <div style={{
       flexShrink: 0,
@@ -254,7 +263,11 @@ const handleLive = () => {
         <div
   onScroll={(e) => {
     const scrollTop = e.currentTarget.scrollTop;
-    const index = Math.round(scrollTop / window.innerHeight);
+    const [viewportHeight, setViewportHeight] = useState(0);
+
+useEffect(() => {
+  setViewportHeight(window.innerHeight);
+}, []);
     setActiveIndex(index);
   }}
   style={{
