@@ -58,12 +58,17 @@ export default function PublicFeedClient() {
 useEffect(() => {
   if (showComments) {
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.width = "100%";
   } else {
-    document.body.style.overflow = "auto";
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.width = "";
   }
-
   return () => {
-    document.body.style.overflow = "auto";
+    document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.width = "";
   };
 }, [showComments]);
 
@@ -143,13 +148,13 @@ const handleLive = () => {
 {showComments && (
   <div
     style={{
-      position: "fixed",
+      position: "absolute",
       bottom: 0,
       left: 0,
       right: 0,
       maxWidth: 420,
       margin: "0 auto",
-      height: "70dvh",
+      height: "70%",
       maxHeight: "70dvh",
       background: "#111213",
       boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
@@ -205,12 +210,13 @@ const handleLive = () => {
     </div>
 
     {/* INPUT — pinned to bottom, never overflows */}
-    <div style={{
-      flexShrink: 0,
-      padding: "8px 12px 12px",
-      background: "#0f0f10",
-      borderTop: "1px solid rgba(255,255,255,0.04)",
-    }}>
+<div style={{
+  flexShrink: 0,
+  padding: "8px 12px 12px",
+  paddingBottom: "env(safe-area-inset-bottom)",
+  background: "#0f0f10",
+  borderTop: "1px solid rgba(255,255,255,0.04)",
+}}>
       {replyTo && (
         <div style={{
           fontSize: 11,
