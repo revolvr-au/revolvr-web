@@ -241,11 +241,11 @@ const handleLive = () => {
     padding: "0 14px",
     borderRadius: 999,
     border: "1px solid rgba(255,255,255,0.08)",
-    fontSize: 13,
+    fontSize: 16, // ✅ CRITICAL FIX
     background: "rgba(255,255,255,0.06)",
     color: "white",
     outline: "none",
-    position: "relative", // ✅ THIS is step 3
+    position: "relative",
   }}
 />
     <Send
@@ -444,7 +444,7 @@ function Post({
 >
       <div
         style={{
-          fontSize: 13,
+          fontSize: 16,
           opacity: 0.75,
           fontWeight: 500,
         }}
