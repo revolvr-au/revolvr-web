@@ -56,11 +56,8 @@ export default function PublicFeedClient() {
 };
 
 useEffect(() => {
-  if (showComments) {
-    document.body.style.overflow = "hidden";
-  } else {
-    document.body.style.overflow = "";
-  }
+  document.body.style.overflow = showComments ? "hidden" : "";
+
   return () => {
     document.body.style.overflow = "";
   };
@@ -98,8 +95,7 @@ const closeComments = () => {
 const handleShare = async (postId: string) => {
   const post = posts.find(p => p.id === postId);
   if (!post) return;
-
-  const index = Math.round(scrollTop / viewportHeight);
+const index = Math.round(scrollTop / window.innerHeight);
 
   const shareUrl = `${window.location.origin}/post/${postId}`;
 
@@ -143,32 +139,32 @@ const handleLive = () => {
 >
 {showComments && (
   <div
-  style={{
-    position: "absolute", // ✅ KEY CHANGE
-    bottom: 0,
-    left: 0,
-    right: 0,
+    style={{
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
 
-    maxWidth: 420,
-    margin: "0 auto",
+      maxWidth: 420,
+      margin: "0 auto",
 
-    height: "320",
-    maxHeight: "320",
+      height: 320,
+      maxHeight: 320,
 
-    background: "#111213",
-    boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
-    zIndex: 200,
+      background: "#111213",
+      boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
+      zIndex: 200,
 
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
 
-    display: "flex",
-    flexDirection: "column",
-    overflow: "hidden",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
 
-    color: "white",
-  }}
->
+      color: "white",
+    }}
+  >
     {/* HEADER */}
     <div style={{
       flexShrink: 0,
@@ -235,22 +231,23 @@ const handleLive = () => {
   )}
   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
     <input
-      value={commentText}
-      onChange={(e) => setCommentText(e.target.value)}
-      onKeyDown={(e) => e.key === "Enter" && sendComment()}
-      placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
-      style={{
-        flex: 1,
-        height: 36,
-        padding: "0 14px",
-        borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.08)",
-        fontSize: 13,
-        background: "rgba(255,255,255,0.06)",
-        color: "white",
-        outline: "none",
-      }}
-    />
+  value={commentText}
+  onChange={(e) => setCommentText(e.target.value)}
+  onKeyDown={(e) => e.key === "Enter" && sendComment()}
+  placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
+  style={{
+    flex: 1,
+    height: 36,
+    padding: "0 14px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.08)",
+    fontSize: 13,
+    background: "rgba(255,255,255,0.06)",
+    color: "white",
+    outline: "none",
+    position: "relative", // ✅ THIS is step 3
+  }}
+/>
     <Send
       size={20}
       onClick={sendComment}
@@ -263,11 +260,6 @@ const handleLive = () => {
         <div
   onScroll={(e) => {
     const scrollTop = e.currentTarget.scrollTop;
-    const [viewportHeight, setViewportHeight] = useState(0);
-
-useEffect(() => {
-  setViewportHeight(window.innerHeight);
-}, []);
     setActiveIndex(index);
   }}
   style={{
