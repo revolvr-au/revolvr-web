@@ -58,17 +58,11 @@ export default function PublicFeedClient() {
 useEffect(() => {
   if (showComments) {
     document.body.style.overflow = "hidden";
-    document.body.style.position = "fixed";
-    document.body.style.width = "100%";
   } else {
     document.body.style.overflow = "";
-    document.body.style.position = "";
-    document.body.style.width = "";
   }
   return () => {
     document.body.style.overflow = "";
-    document.body.style.position = "";
-    document.body.style.width = "";
   };
 }, [showComments]);
 
@@ -216,46 +210,47 @@ const handleLive = () => {
   background: "#0f0f10",
   borderTop: "1px solid rgba(255,255,255,0.04)",
 }}>
-      {replyTo && (
-        <div style={{
-          fontSize: 11,
-          opacity: 0.5,
-          marginBottom: 5,
-          paddingLeft: 4,
-        }}>
-          Replying to @{replyTo.userEmail}
-          <span
-            onClick={() => setReplyTo(null)}
-            style={{ marginLeft: 8, cursor: "pointer", opacity: 0.7 }}
-          >✕</span>
-        </div>
-      )}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendComment()}
-          placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
-          style={{
-            flex: 1,
-            height: 36,
-            padding: "0 14px",
-            borderRadius: 999,
-            border: "1px solid rgba(255,255,255,0.08)",
-            fontSize: 13,
-            background: "rgba(255,255,255,0.06)",
-            color: "white",
-            outline: "none",
-          }}
-        />
-        <Send
-          size={20}
-          onClick={sendComment}
-          style={{ cursor: "pointer", opacity: 0.85, flexShrink: 0 }}
-        />
-      </div>
+  {replyTo && (
+    <div style={{
+      fontSize: 11,
+      opacity: 0.5,
+      marginBottom: 5,
+      paddingLeft: 4,
+    }}>
+      Replying to @{replyTo.userEmail}
+      <span
+        onClick={() => setReplyTo(null)}
+        style={{ marginLeft: 8, cursor: "pointer", opacity: 0.7 }}
+      >✕</span>
     </div>
+  )}
+  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+    <input
+      value={commentText}
+      onChange={(e) => setCommentText(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && sendComment()}
+      placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
+      onFocus={(e) => e.preventDefault()}
+      style={{
+        flex: 1,
+        height: 36,
+        padding: "0 14px",
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.08)",
+        fontSize: 13,
+        background: "rgba(255,255,255,0.06)",
+        color: "white",
+        outline: "none",
+      }}
+    />
+    <Send
+      size={20}
+      onClick={sendComment}
+      style={{ cursor: "pointer", opacity: 0.85, flexShrink: 0 }}
+    />
   </div>
+  </div>
+</div>
 )}
         <div
   onScroll={(e) => {
