@@ -143,13 +143,14 @@ const handleLive = () => {
 {showComments && (
   <div
     style={{
-      position: "absolute",
+      position: "fixed",
       bottom: 0,
       left: 0,
       right: 0,
       maxWidth: 420,
       margin: "0 auto",
-      height: "70%",
+      height: "70dvh",
+      maxHeight: "70dvh",
       background: "#111213",
       boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
       zIndex: 200,
@@ -160,6 +161,7 @@ const handleLive = () => {
       overflow: "hidden",
       color: "white",
     }}
+  >
   >
     {/* HEADER */}
     <div style={{
