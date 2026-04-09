@@ -133,7 +133,7 @@ const handleLive = () => {
     <div
   style={{
     position: "relative",
-    height: "100vh",
+    height: "100dvh",
     width: "100%",
     margin: "0 auto",
     overflow: "hidden"
@@ -148,7 +148,7 @@ const handleLive = () => {
       right: 0,
       maxWidth: 420,
       margin: "0 auto",
-      height: "50vh",
+      height: "50dvh",
       background: "#111213",
       boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
       zIndex: 200,
@@ -230,7 +230,6 @@ const handleLive = () => {
       onChange={(e) => setCommentText(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && sendComment()}
       placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
-      onFocus={(e) => e.preventDefault()}
       style={{
         flex: 1,
         height: 36,
@@ -259,7 +258,7 @@ const handleLive = () => {
     setActiveIndex(index);
   }}
   style={{
-    height: "100vh",
+    height: "100dvh",
     overflowY: showComments ? "hidden" : "auto",
     scrollSnapType: "y mandatory",
     scrollbarWidth: "none",
@@ -342,7 +341,7 @@ function Post({
  return (
   <div
     style={{
-      height: "100vh",
+      height: "100dvh",
       width: "100%",
       maxWidth: 420,
       margin: "0 auto",
