@@ -148,13 +148,13 @@ const handleLive = () => {
 {showComments && (
   <div
     style={{
-      position: "absolute",
+      position: "fixed",
       bottom: 0,
       left: 0,
       right: 0,
       maxWidth: 420,
       margin: "0 auto",
-      height: "75dvh",
+      height: "50vh",
       background: "#111213",
       boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
       zIndex: 200,
