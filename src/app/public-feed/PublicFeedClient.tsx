@@ -162,7 +162,6 @@ const handleLive = () => {
       color: "white",
     }}
   >
-  >
     {/* HEADER */}
     <div style={{
       flexShrink: 0,
