@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import KeyboardHandler from "@/components/KeyboardHandler";
 
 export const metadata: Metadata = {
   title: "Revolvr",
@@ -16,10 +17,11 @@ export default function RootLayout({
       <head>
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+          content="width=device-width, initial-scale=1, width=device-width, initial-scale=1, viewport-fit=cover"
         />
       </head>
       <body className="min-h-screen bg-[#050814] text-white">
+        <KeyboardHandler />
         {children}
       </body>
     </html>
