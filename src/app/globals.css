@@ -27,27 +27,31 @@ body {
   left: 0;
   right: 0;
 
-  height: 70dvh; /* or whatever */
-  max-height: 100dvh;
+  height: 70dvh;
+  max-height: 70dvh;
+  overflow: hidden;
 
   display: flex;
   flex-direction: column;
+
+  min-height: 0;
+  transform: translateY(calc(-1 * var(--keyboard-height, 0px)));
 }
+
 .comments-list {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .comment-input {
+  flex-shrink: 0;
   position: sticky;
   bottom: 0;
-}
-.comment-input {
+  background: inherit;
   padding-bottom: env(safe-area-inset-bottom);
 }
-.comments-sheet {
-  transform: translateY(calc(-1 * var(--keyboard-height, 0px)));
-}
+
 body {
   overscroll-behavior: none;
 }
