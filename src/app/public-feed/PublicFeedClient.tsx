@@ -31,24 +31,28 @@ export default function PublicFeedClient() {
   }, []);
 
   const sendComment = async () => {
-  if (!commentText.trim() || !userEmail) return;
+  if (!commentText.trim() || !userEmail || !activePostId) return;
 
-  await fetch("/api/comments", {
+  const payload = {
+    postId: activePostId,
+    userEmail: userEmail,
+    body: commentText,
+    parentId: replyTo?.id ?? null,
+  };
+
+  const res = await fetch("/api/comments", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      postId: activePostId,
-      userEmail: userEmail ?? "",
-      body: commentText,
-      parentId: replyTo?.id || null,
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
 
-  setCommentText("");
-  setReplyTo(null);
-  setRefreshKey((prev) => prev + 1);
+  if (res.ok) {
+    setCommentText("");
+    setReplyTo(null);
+    setRefreshKey((prev) => prev + 1);
+  } else {
+    console.error("Comment failed", await res.text());
+  }
 };
 
 useEffect(() => {
@@ -153,124 +157,98 @@ const handleLive = () => {
       borderTopRightRadius: 20,
       display: "flex",
       flexDirection: "column",
-      padding: "10px 10px 4px",
       overflow: "hidden",
       color: "white",
     }}
   >
     {/* HEADER */}
-    <div
-      style={{
-        textAlign: "center",
-        marginBottom: 10,
-        fontSize: 16,
-        fontWeight: 600,
-        letterSpacing: "0.02em",
-        opacity: 0.95,
-      }}
-    >
+    <div style={{
+      flexShrink: 0,
+      textAlign: "center",
+      padding: "12px 16px 8px",
+      fontSize: 16,
+      fontWeight: 600,
+      letterSpacing: "0.02em",
+      borderBottom: "1px solid rgba(255,255,255,0.06)",
+      position: "relative",
+    }}>
       Comments
+      <div
+        onClick={closeComments}
+        style={{
+          position: "absolute",
+          right: 14,
+          top: 12,
+          cursor: "pointer",
+          fontSize: 16,
+          opacity: 0.6,
+        }}
+      >
+        ✕
+      </div>
     </div>
 
-    {/* CLOSE */}
-    <div
-      onClick={closeComments}
-      style={{
-        position: "absolute",
-        right: 14,
-        top: 14,
-        cursor: "pointer",
-        fontSize: 16,
-        opacity: 0.8,
-      }}
-    >
-      ✕
-    </div>
-
-    {/* COMMENTS LIST */}
-    <div
-  style={{
-    flex: 1,
-    overflowY: "auto",
-    marginTop: 10,
-    padding: 6,
-
-    // ✅ OPTIONAL (hide scrollbar)
-    scrollbarWidth: "none",
-    msOverflowStyle: "none",
-  }}
-  className="hide-scrollbar"
->
+    {/* COMMENTS LIST — scrollable middle */}
+    <div style={{
+      flex: 1,
+      overflowY: "auto",
+      padding: "6px 10px",
+      scrollbarWidth: "none",
+    }}>
       <CommentsList
-    postId={activePostId}
-    refreshKey={refreshKey}
-    setReplyTo={setReplyTo}
-    replyTo={replyTo}
-    />
+        postId={activePostId}
+        refreshKey={refreshKey}
+        setReplyTo={setReplyTo}
+        replyTo={replyTo}
+      />
     </div>
 
-    {/* INPUT */}
-   {/* INPUT */}
-<div
-  style={{
-    padding: "6px 8px 8px",
-    background: "#0f0f10",
-    borderTop: "1px solid rgba(255,255,255,0.04)",
-  }}
->
-
-  {/* ✅ MOVE IT HERE (TOP LEVEL INSIDE INPUT CONTAINER) */}
-  {replyTo && (
-    <div
-      style={{
-        fontSize: 11,
-        opacity: 0.6,
-        marginBottom: 6,
-        paddingLeft: 4,
-      }}
-    >
-      Replying to @{replyTo.userEmail}
+    {/* INPUT — pinned to bottom, never overflows */}
+    <div style={{
+      flexShrink: 0,
+      padding: "8px 12px 12px",
+      background: "#0f0f10",
+      borderTop: "1px solid rgba(255,255,255,0.04)",
+    }}>
+      {replyTo && (
+        <div style={{
+          fontSize: 11,
+          opacity: 0.5,
+          marginBottom: 5,
+          paddingLeft: 4,
+        }}>
+          Replying to @{replyTo.userEmail}
+          <span
+            onClick={() => setReplyTo(null)}
+            style={{ marginLeft: 8, cursor: "pointer", opacity: 0.7 }}
+          >✕</span>
+        </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendComment()}
+          placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
+          style={{
+            flex: 1,
+            height: 36,
+            padding: "0 14px",
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.08)",
+            fontSize: 13,
+            background: "rgba(255,255,255,0.06)",
+            color: "white",
+            outline: "none",
+          }}
+        />
+        <Send
+          size={20}
+          onClick={sendComment}
+          style={{ cursor: "pointer", opacity: 0.85, flexShrink: 0 }}
+        />
+      </div>
     </div>
-  )}
-
-  {/* INPUT ROW */}
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-    }}
-  >
-    <input
-      value={commentText}
-      onChange={(e) => setCommentText(e.target.value)}
-      placeholder={
-        replyTo
-          ? `Reply to @${replyTo.userEmail}...`
-          : "Add a comment..."
-      }
-      style={{
-        flex: 1,
-        height: 30,
-        padding: "0 12px",
-        borderRadius: 999,
-        border: "1px solid rgba(255,255,255,0.08)",
-        fontSize: 13,
-        background: "rgba(255,255,255,0.05)",
-        color: "white",
-      }}
-    />
-
-    <Send
-      size={18}
-      onClick={sendComment}
-      style={{
-        cursor: "pointer",
-        opacity: 0.9,
-      }}
-    />
-  </div>
-</div>
   </div>
 )}
         <div
