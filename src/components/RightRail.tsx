@@ -10,7 +10,6 @@ import {
   Home
 } from "lucide-react";
 
-const [rewardBursts, setRewardBursts] = useState<number[]>([]);
 
 type Props = {
   liked: boolean;
@@ -33,6 +32,9 @@ export default function RightRail({
   onHome,
   rewardCount,
 }: Props) {
+
+  const [rewardBursts, setRewardBursts] = useState<number[]>([]); // ✅ HERE
+
   return (
     <div
       style={{
