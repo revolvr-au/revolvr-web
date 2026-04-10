@@ -501,25 +501,10 @@ function Post({
   onReward={() => onReward(post.id)}
   onCreate={() => onCreate()}
   onHome={() => onHome()}
+  rewardCount={rewardCount}
 />
 
-{/* REWARD COUNT */}
-{rewardCount > 0 && (
-  <div
-    style={{
-      position: "absolute",
-      right: 10,
-      top: "50%",
-      transform: "translateY(90px)", // 👈 pushes it BELOW the gift icon
-      fontSize: 12,
-      fontWeight: 600,
-      color: "white",
-      background: "rgba(0,0,0,0.5)",
-      padding: "2px 6px",
-      borderRadius: 999,
-      zIndex: 20,
-    }}
-  >
+
     {rewardCount}
   </div>
 )}

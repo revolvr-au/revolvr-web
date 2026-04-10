@@ -17,9 +17,19 @@ type Props = {
   onReward: () => void; 
   onCreate: () => void; 
   onHome: () => void;
+  rewardCount: number; // ✅ ADD THIS
 };
 
-export default function RightRail({ liked, onLike, onComment, onShare, onReward, onCreate, onHome,  }: Props) {
+export default function RightRail({
+  liked,
+  onLike,
+  onComment,
+  onShare,
+  onReward,
+  onCreate,
+  onHome,
+  rewardCount, // ✅ ADD THIS
+}: Props)
   return (
     <div
       style={{
@@ -68,12 +78,34 @@ export default function RightRail({ liked, onLike, onComment, onShare, onReward,
       onClick={onShare}
       style={{ cursor: "pointer" }}
       />
-      <Gift
-      size={26}
-      strokeWidth={1.5}
-      onClick={onReward}
-      style={{ cursor: "pointer" }}
-      />
+     <div style={{ position: "relative" }}>
+  <Gift
+    size={26}
+    strokeWidth={1.5}
+    onClick={onReward}
+    style={{ cursor: "pointer" }}
+  />
+
+  {rewardCount > 0 && (
+    <div
+      style={{
+        position: "absolute",
+        bottom: -14,
+        left: "50%",
+        transform: "translateX(-50%)",
+        fontSize: 11,
+        fontWeight: 600,
+        color: "white",
+        background: "rgba(0,0,0,0.6)",
+        padding: "2px 6px",
+        borderRadius: 999,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {rewardCount}
+    </div>
+  )}
+</div>
       <Plus
   size={30}
   strokeWidth={1.5}
