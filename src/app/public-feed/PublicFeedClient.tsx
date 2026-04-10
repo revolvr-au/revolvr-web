@@ -26,6 +26,7 @@ export default function PublicFeedClient() {
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
+  const [sheetHeight, setSheetHeight] = useState(62);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -153,16 +154,41 @@ const handleLive = () => {
       setStartY(e.touches[0].clientY);
     }}
     onTouchMove={(e) => {
-      if (!isDragging) return;
-      const currentY = e.touches[0].clientY;
-      const delta = currentY - startY;
-      if (delta > 0) setDragY(delta);
-    }}
+  if (!isDragging) return;
+
+  const currentY = e.touches[0].clientY;
+  const delta = currentY - startY;
+
+  // dragging DOWN
+  if (delta > 0) {
+    setDragY(delta);
+  }
+
+  // dragging UP (expand)
+  if (delta < 0) {
+    const newHeight = Math.min(90, 62 + Math.abs(delta / 5));
+    setSheetHeight(newHeight);
+  }
+}}
     onTouchEnd={() => {
-      setIsDragging(false);
-      if (dragY > 120) closeComments();
-      setDragY(0);
-    }}
+  setIsDragging(false);
+
+  // swipe down to close
+  if (dragY > 140) {
+    closeComments();
+    setDragY(0);
+    return;
+  }
+
+  // snap logic
+  if (sheetHeight > 75) {
+    setSheetHeight(90); // expand
+  } else {
+    setSheetHeight(62); // collapse
+  }
+
+  setDragY(0);
+}}
     style={{
       position: "absolute",
       bottom: 0,
@@ -172,8 +198,8 @@ const handleLive = () => {
       maxWidth: 420,
       margin: "0 auto",
 
-      height: "62dvh",
-      maxHeight: "62dvh",
+      height: `${sheetHeight}dvh`,
+      maxHeight: `${sheetHeight}dvh`,
 
       background: "#111213",
       boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
@@ -188,10 +214,10 @@ const handleLive = () => {
 
       color: "white",
 
-      transition: isDragging ? "none" : "transform 0.25s ease",
+      transition: isDragging ? "none" : "all 0.25s ease",
       transform: `translateY(${dragY}px)`,
-    }}
-  >
+      }}
+      >
     {/* HEADER */}
     <div
       style={{
