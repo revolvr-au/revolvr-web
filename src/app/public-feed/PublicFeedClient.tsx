@@ -505,15 +505,21 @@ function Post({
 
 {/* REWARD COUNT */}
 {rewardCount > 0 && (
-  <div style={{
-    position: "absolute",
-    right: 16,
-    bottom: 120, // 👈 tweak this to sit under reward icon
-    fontSize: 12,
-    opacity: 0.8,
-    zIndex: 10,
-  }}>
-    {rewardCount > 99 ? "99+" : rewardCount}
+  <div
+    style={{
+      position: "absolute",
+      right: 16,
+      bottom: 100,
+      fontSize: 12,
+      fontWeight: 600,
+      color: "white",
+      background: "rgba(0,0,0,0.45)",
+      padding: "2px 6px",
+      borderRadius: 999,
+      zIndex: 20,
+    }}
+  >
+    {rewardCount}
   </div>
 )}
 
