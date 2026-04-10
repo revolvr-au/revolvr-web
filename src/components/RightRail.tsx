@@ -40,8 +40,9 @@ export default function RightRail({
       style={{
   position: "absolute",
   right: 12,
-  top: "50%",
-  transform: "translateY(-50%)",
+  bottom: 120,
+  top: "auto",
+  transform: "none",
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -105,13 +106,14 @@ export default function RightRail({
     key={id}
     style={{
       position: "absolute",
-      bottom: 10,
+      bottom: 12,
       left: "50%",
       transform: "translateX(-50%)",
       color: "#FFD700",
-      fontSize: 14,
-      fontWeight: 700,
-      animation: "rewardFloat 0.6s ease forwards",
+      fontSize: 18,            // 🔥 bigger
+      fontWeight: 800,
+      textShadow: "0 0 6px rgba(0,0,0,0.6)", // 🔥 readable
+      animation: "rewardFloat 1s ease forwards", // 🔥 slower
       pointerEvents: "none",
     }}
   >

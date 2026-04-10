@@ -57,11 +57,14 @@ body {
 }
 @keyframes rewardFloat {
   0% {
-    transform: translate(-50%, 0px);
+    transform: translate(-50%, 0px) scale(1);
     opacity: 1;
   }
+  30% {
+    transform: translate(-50%, -10px) scale(1.2); /* pop */
+  }
   100% {
-    transform: translate(-50%, -30px);
+    transform: translate(-50%, -40px) scale(0.9);
     opacity: 0;
   }
 }

@@ -19,7 +19,7 @@ export default function TopBar() {
     <div
       style={{
         position: "absolute",
-        top: 20,
+        top: 40,
         left: 20,
         right: 20,
         display: "flex",
