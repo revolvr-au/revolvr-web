@@ -504,13 +504,8 @@ function Post({
   rewardCount={rewardCount}
 />
 
-
-    {rewardCount}
-  </div>
-)}
-
-    {/* CONTENT */}
-    <div
+{/* CONTENT */}
+<div
   style={{
     position: "relative",
     zIndex: 1,
@@ -519,7 +514,7 @@ function Post({
       ? "transparent"
       : "linear-gradient(transparent, rgba(0,0,0,0.6))",
   }}
->
+></div>
       <div
         style={{
           fontSize: 16,
@@ -536,6 +531,5 @@ function Post({
         </div>
       )}
     </div>
-  </div>
 );
 }
