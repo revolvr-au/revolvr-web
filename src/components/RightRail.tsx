@@ -31,7 +31,7 @@ export default function RightRail({ liked, onLike, onComment, onShare, onReward,
   flexDirection: "column",
   alignItems: "center",
   gap: 20,
-  zIndex: 100,
+  zIndex: 300,
   color: "white"
 }}
 >
