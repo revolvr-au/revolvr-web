@@ -157,8 +157,8 @@ const handleLive = () => {
       maxWidth: 420,
       margin: "0 auto",
 
-      height: "55dvh",
-      maxHeight: "55dvh",
+      height: "62dvh",
+      maxHeight: "62dvh",
 
       background: "#111213",
       boxShadow: "0 -6px 24px rgba(0,0,0,0.5)",
