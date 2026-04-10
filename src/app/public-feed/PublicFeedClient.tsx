@@ -27,6 +27,7 @@ export default function PublicFeedClient() {
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [sheetHeight, setSheetHeight] = useState(62);
+  const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -105,7 +106,6 @@ const closeComments = () => {
 const handleShare = async (postId: string) => {
   const post = posts.find(p => p.id === postId);
   if (!post) return;
-const index = Math.round(scrollTop / window.innerHeight);
 
   const shareUrl = `${window.location.origin}/post/${postId}`;
 
@@ -125,7 +125,10 @@ const index = Math.round(scrollTop / window.innerHeight);
   }
 };
 const handleReward = (postId: string) => {
-  alert(`Reward sent to post ${postId}`);
+  setRewardMap(prev => ({
+    ...prev,
+    [postId]: (prev[postId] || 0) + 1,
+  }));
 };
 const handleCreate = () => {
   router.push("/create");
@@ -359,6 +362,7 @@ const handleLive = () => {
       onHome={handleHome}
       onLive={handleLive}
       showComments={showComments}
+      rewardCount={rewardMap[post.id] || 0}
     />
   );
 })}
@@ -377,7 +381,8 @@ function Post({
   onCreate,
   onHome,
   onLive,
-  showComments, // ✅ ADD THIS
+  showComments,
+  rewardCount, // ✅ ADD THIS
 }: {
   post: any;
   liked: boolean;
@@ -388,7 +393,8 @@ function Post({
   onCreate: () => void;
   onHome: () => void;
   onLive: () => void;
-  showComments: boolean; // ✅ ADD THIS
+  showComments: boolean;
+  rewardCount: number; // ✅ ADD THIS
 }) {
   const [showBurst, setShowBurst] = useState(false);
   const [lastTap, setLastTap] = useState(0);
@@ -483,17 +489,31 @@ function Post({
         <Heart size={90} fill="white" stroke="none" />
       </div>
     )}
-
+    
     {/* RIGHT RAIL */}
-    <RightRail
-      liked={liked}
-      onLike={onDoubleTapLike}
-      onComment={() => onOpenComments(post.id)}
-      onShare={() => onShare(post.id)}
-      onReward={() => onReward(post.id)}
-      onCreate={() => onCreate()}
-      onHome={() => onHome()}
-    />
+<RightRail
+  liked={liked}
+  onLike={onDoubleTapLike}
+  onComment={() => onOpenComments(post.id)}
+  onShare={() => onShare(post.id)}
+  onReward={() => onReward(post.id)}
+  onCreate={() => onCreate()}
+  onHome={() => onHome()}
+/>
+
+{/* REWARD COUNT */}
+{rewardCount > 0 && (
+  <div style={{
+    position: "absolute",
+    right: 16,
+    bottom: 120, // 👈 tweak this to sit under reward icon
+    fontSize: 12,
+    opacity: 0.8,
+    zIndex: 10,
+  }}>
+    {rewardCount > 99 ? "99+" : rewardCount}
+  </div>
+)}
 
     {/* CONTENT */}
     <div
