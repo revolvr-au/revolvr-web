@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Heart,
   MessageCircle,
@@ -8,6 +9,8 @@ import {
   Plus,
   Home
 } from "lucide-react";
+
+const [rewardBursts, setRewardBursts] = useState<number[]>([]);
 
 type Props = {
   liked: boolean;
@@ -82,9 +85,37 @@ export default function RightRail({
   <Gift
     size={26}
     strokeWidth={1.5}
-    onClick={onReward}
+    onClick={() => {
+  onReward();
+
+  const id = Date.now();
+  setRewardBursts(prev => [...prev, id]);
+
+  setTimeout(() => {
+    setRewardBursts(prev => prev.filter(b => b !== id));
+  }, 600);
+  }}
     style={{ cursor: "pointer" }}
   />
+
+  {rewardBursts.map(id => (
+  <div
+    key={id}
+    style={{
+      position: "absolute",
+      bottom: 10,
+      left: "50%",
+      transform: "translateX(-50%)",
+      color: "#FFD700",
+      fontSize: 14,
+      fontWeight: 700,
+      animation: "rewardFloat 0.6s ease forwards",
+      pointerEvents: "none",
+    }}
+  >
+    +1
+  </div>
+))}
 
   {rewardCount > 0 && (
     <div
