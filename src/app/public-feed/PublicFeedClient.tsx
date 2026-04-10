@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Heart } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import RightRail from "@/components/RightRail";
 import { useRouter } from "next/navigation";
 import CommentsList from "../../components/CommentsList";
 import { Send } from "lucide-react";
+
+
+
 
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<any[]>([]);
@@ -22,6 +25,7 @@ export default function PublicFeedClient() {
   userEmail: string;
 } | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const listRef = useRef(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -63,6 +67,11 @@ useEffect(() => {
   };
 }, [showComments]);
 
+useEffect(() => {
+  if (listRef.current) {
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+  }
+}, [refreshKey, showComments]);
   useEffect(() => {
   fetch("/api/public-feed")
     .then((res) => res.json())
@@ -163,6 +172,10 @@ const handleLive = () => {
       overflow: "hidden",
 
       color: "white",
+
+      // 👇 ADD THESE TWO LINES HERE
+      transition: "transform 0.25s ease",
+      transform: "translateY(0)",
     }}
   >
     {/* HEADER */}
@@ -193,12 +206,14 @@ const handleLive = () => {
     </div>
 
     {/* COMMENTS LIST — scrollable middle */}
-    <div style={{
-      flex: 1,
-      overflowY: "auto",
-      padding: "6px 10px",
-      scrollbarWidth: "none",
-    }}>
+    <div
+  ref={listRef}
+  style={{
+    flex: 1,
+    overflowY: "auto",
+    padding: "6px 10px",
+  }}
+>
       <CommentsList
         postId={activePostId}
         refreshKey={refreshKey}
@@ -208,12 +223,13 @@ const handleLive = () => {
     </div>
 
     {/* INPUT — pinned to bottom, never overflows */}
-<div style={{
+    <div style={{
   flexShrink: 0,
-  padding: "8px 12px 12px",
-  paddingBottom: "env(safe-area-inset-bottom)",
+  padding: "8px 12px",
+  paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)",
   background: "#0f0f10",
   borderTop: "1px solid rgba(255,255,255,0.04)",
+  transform: "translateY(-3px)", // ✅ add this
 }}>
   {replyTo && (
     <div style={{
@@ -259,9 +275,10 @@ const handleLive = () => {
 )}
         <div
   onScroll={(e) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    setActiveIndex(index);
-  }}
+  const scrollTop = e.currentTarget.scrollTop;
+  const index = Math.round(scrollTop / window.innerHeight);
+  setActiveIndex(index);
+}}
   style={{
     height: "100dvh",
     overflowY: showComments ? "hidden" : "auto",
