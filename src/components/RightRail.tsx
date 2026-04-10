@@ -10,16 +10,19 @@ import {
   Home
 } from "lucide-react";
 
-
 type Props = {
   liked: boolean;
   onLike: () => void;
-  onComment: () => void; 
-  onShare: () => void; 
-  onReward: () => void; 
-  onCreate: () => void; 
+  onComment: () => void;
+  onShare: () => void;
+  onReward: () => void;
+  onCreate: () => void;
   onHome: () => void;
-  rewardCount: number; // ✅ ADD THIS
+  rewardCount: number;
+  avatarUrl?: string;
+  username?: string;
+  isFollowing?: boolean;
+  onFollowToggle?: () => void;
 };
 
 export default function RightRail({
@@ -31,35 +34,182 @@ export default function RightRail({
   onCreate,
   onHome,
   rewardCount,
+  avatarUrl,
+  username,
+  isFollowing = false,
+  onFollowToggle,
 }: Props) {
+  const [rewardBursts, setRewardBursts] = useState<number[]>([]);
+  const [followed, setFollowed] = useState(isFollowing);
+  const [bursting, setBursting] = useState(false);
 
-  const [rewardBursts, setRewardBursts] = useState<number[]>([]); // ✅ HERE
+  const handleFollow = () => {
+    setFollowed(prev => !prev);
+    if (!followed) {
+      setBursting(true);
+      setTimeout(() => setBursting(false), 700);
+    }
+    onFollowToggle?.();
+  };
+
+  const circumference = 2 * Math.PI * 23;
 
   return (
     <div
       style={{
-  position: "absolute",
-  right: 12,
-  bottom: 90,
-  top: "auto",
-  transform: "none",
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  gap: 20,
-  zIndex: 300,
-  color: "white"
-}}
->
+        position: "absolute",
+        right: 12,
+        bottom: 90,
+        top: "auto",
+        transform: "none",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 20,
+        zIndex: 300,
+        color: "white"
+      }}
+    >
+      {/* ── ARC AVATAR ── */}
       <div
+        onClick={handleFollow}
         style={{
-          width: 42,
-          height: 42,
-          borderRadius: "50%",
-          border: "1.5px solid white",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+          cursor: "pointer",
         }}
-      />
+      >
+        <div style={{ position: "relative", width: 50, height: 50 }}>
+          <svg
+            width="50"
+            height="50"
+            viewBox="0 0 50 50"
+            style={{
+              position: "absolute",
+              inset: 0,
+              overflow: "visible",
+            }}
+          >
+            {/* Ghost track */}
+            <circle
+              cx="25" cy="25" r="23"
+              fill="none"
+              stroke="#00e5ff"
+              strokeWidth="1.5"
+              opacity="0.08"
+            />
 
+            {/* Burst rings */}
+            {bursting && (
+              <>
+                <circle
+                  cx="25" cy="25" r="23"
+                  fill="none"
+                  stroke="#00e5ff"
+                  strokeWidth="1.5"
+                  style={{
+                    animation: "arcBurst 0.6s ease forwards",
+                  }}
+                />
+                <circle
+                  cx="25" cy="25" r="23"
+                  fill="none"
+                  stroke="#00e5ff"
+                  strokeWidth="1"
+                  style={{
+                    animation: "arcBurst 0.6s ease 0.1s forwards",
+                  }}
+                />
+              </>
+            )}
+
+            {/* Spinning arc — unfollowed */}
+            {!followed && (
+              <circle
+                cx="25" cy="25" r="23"
+                fill="none"
+                stroke="#00e5ff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray="95 50"
+                style={{
+                  transformOrigin: "25px 25px",
+                  animation: "arcSpin 1.8s linear infinite",
+                  filter: "drop-shadow(0 0 5px #00e5ff)",
+                }}
+              />
+            )}
+
+            {/* Complete ring — followed */}
+            {followed && (
+              <circle
+                cx="25" cy="25" r="23"
+                fill="none"
+                stroke="#00e5ff"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset="0"
+                style={{
+                  transformOrigin: "25px 25px",
+                  transform: "rotate(-90deg)",
+                  filter: "drop-shadow(0 0 8px #00e5ff)",
+                  transition: "stroke-dashoffset 0.55s cubic-bezier(0.22,1,0.36,1)",
+                }}
+              />
+            )}
+          </svg>
+
+          {/* Avatar image or initials */}
+          <div
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 38,
+              height: 38,
+              borderRadius: "50%",
+              background: avatarUrl
+                ? `url(${avatarUrl}) center/cover`
+                : "linear-gradient(135deg, #1a1a2e, #16213e)",
+              border: "1.5px solid rgba(255,255,255,0.1)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 14,
+              fontWeight: 700,
+              color: "white",
+              zIndex: 2,
+              transition: "box-shadow 0.4s ease",
+              boxShadow: followed
+                ? "0 0 0 2px rgba(0,229,255,0.2)"
+                : "none",
+            }}
+          >
+            {!avatarUrl && (username?.[0]?.toUpperCase() ?? "?")}
+          </div>
+        </div>
+
+        {/* Follow label */}
+        <span
+          style={{
+            fontSize: 7,
+            letterSpacing: "1.5px",
+            fontFamily: "monospace",
+            textTransform: "uppercase",
+            color: "#00e5ff",
+            opacity: followed ? 0.7 : 0,
+            transition: "opacity 0.4s ease 0.45s",
+          }}
+        >
+          following
+        </span>
+      </div>
+
+      {/* ── LIKE ── */}
       <Heart
         size={26}
         strokeWidth={1.5}
@@ -72,87 +222,110 @@ export default function RightRail({
         }}
       />
 
+      {/* ── COMMENT ── */}
       <MessageCircle
-  size={26}
-  strokeWidth={1.5}
-  onClick={onComment}
-  style={{ cursor: "pointer" }}
-/>
-      <Share2
-      size={26}
-      strokeWidth={1.5}
-      onClick={onShare}
-      style={{ cursor: "pointer" }}
+        size={26}
+        strokeWidth={1.5}
+        onClick={onComment}
+        style={{ cursor: "pointer" }}
       />
-     <div style={{ position: "relative" }}>
-  <Gift
-    size={26}
-    strokeWidth={1.5}
-    onClick={() => {
-  onReward();
 
-  const id = Date.now();
-  setRewardBursts(prev => [...prev, id]);
+      {/* ── SHARE ── */}
+      <Share2
+        size={26}
+        strokeWidth={1.5}
+        onClick={onShare}
+        style={{ cursor: "pointer" }}
+      />
 
-  setTimeout(() => {
-    setRewardBursts(prev => prev.filter(b => b !== id));
-  }, 600);
-  }}
-    style={{ cursor: "pointer" }}
-  />
+      {/* ── REWARD ── */}
+      <div style={{ position: "relative" }}>
+        <Gift
+          size={26}
+          strokeWidth={1.5}
+          onClick={() => {
+            onReward();
+            const id = Date.now();
+            setRewardBursts(prev => [...prev, id]);
+            setTimeout(() => {
+              setRewardBursts(prev => prev.filter(b => b !== id));
+            }, 600);
+          }}
+          style={{ cursor: "pointer" }}
+        />
 
-  {rewardBursts.map(id => (
-  <div
-    key={id}
-    style={{
-      position: "absolute",
-      bottom: 12,
-      left: "50%",
-      transform: "translateX(-50%)",
-      color: "#FFD700",
-      fontSize: 18,            // 🔥 bigger
-      fontWeight: 800,
-      textShadow: "0 0 6px rgba(0,0,0,0.6)", // 🔥 readable
-      animation: "rewardFloat 1s ease forwards", // 🔥 slower
-      pointerEvents: "none",
-    }}
-  >
-    +1
-  </div>
-))}
+        {rewardBursts.map(id => (
+          <div
+            key={id}
+            style={{
+              position: "absolute",
+              bottom: 12,
+              left: "50%",
+              transform: "translateX(-50%)",
+              color: "#FFD700",
+              fontSize: 18,
+              fontWeight: 800,
+              textShadow: "0 0 6px rgba(0,0,0,0.6)",
+              animation: "rewardFloat 1s ease forwards",
+              pointerEvents: "none",
+            }}
+          >
+            +1
+          </div>
+        ))}
 
-  {rewardCount > 0 && (
-    <div
-      style={{
-        position: "absolute",
-        bottom: -14,
-        left: "50%",
-        transform: "translateX(-50%)",
-        fontSize: 11,
-        fontWeight: 600,
-        color: "white",
-        background: "rgba(0,0,0,0.6)",
-        padding: "2px 6px",
-        borderRadius: 999,
-        whiteSpace: "nowrap",
-      }}
-    >
-      {rewardCount}
-    </div>
-  )}
-</div>
+        {rewardCount > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: -14,
+              left: "50%",
+              transform: "translateX(-50%)",
+              fontSize: 11,
+              fontWeight: 600,
+              color: "white",
+              background: "rgba(0,0,0,0.6)",
+              padding: "2px 6px",
+              borderRadius: 999,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {rewardCount}
+          </div>
+        )}
+      </div>
+
+      {/* ── CREATE ── */}
       <Plus
-  size={30}
-  strokeWidth={1.5}
-  onClick={onCreate}
-  style={{ cursor: "pointer" }}
-/>
-  <Home
-  size={26}
-  strokeWidth={1.5}
-  onClick={onHome}
-  style={{ marginTop: 4, cursor: "pointer" }}
-/>
+        size={30}
+        strokeWidth={1.5}
+        onClick={onCreate}
+        style={{ cursor: "pointer" }}
+      />
+
+      {/* ── HOME ── */}
+      <Home
+        size={26}
+        strokeWidth={1.5}
+        onClick={onHome}
+        style={{ marginTop: 4, cursor: "pointer" }}
+      />
+
+      {/* ── KEYFRAMES ── */}
+      <style>{`
+        @keyframes arcSpin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+        @keyframes arcBurst {
+          0%   { r: 23; opacity: 0.8; stroke-width: 2; }
+          100% { r: 42; opacity: 0; stroke-width: 0.2; }
+        }
+        @keyframes rewardFloat {
+          0%   { opacity: 1; transform: translateX(-50%) translateY(0); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+        }
+      `}</style>
     </div>
   );
 }

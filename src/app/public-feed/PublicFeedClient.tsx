@@ -485,6 +485,8 @@ function Post({
   onCreate={() => onCreate()}
   onHome={() => onHome()}
   rewardCount={rewardCount}
+  username={post.handle || post.userEmail}
+  avatarUrl={post.avatarUrl}
 />
 
 {/* CONTENT */}
