@@ -458,24 +458,7 @@ function Post({
     }}
   />
 )}
-    {/* LIVE */}
-    <div
-      onClick={onLive}
-      style={{
-        position: "absolute",
-        top: 20,
-        right: 20,
-        zIndex: 10,
-        cursor: "pointer",
-        fontSize: 12,
-        letterSpacing: "0.08em",
-        opacity: 0.95,
-        color: "white",
-      }}
-    >
-      LIVE
-    </div>
-
+  
     {/* BURST */}
     {showBurst && (
       <div

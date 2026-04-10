@@ -40,7 +40,7 @@ export default function RightRail({
       style={{
   position: "absolute",
   right: 12,
-  bottom: 120,
+  bottom: 90,
   top: "auto",
   transform: "none",
   display: "flex",
