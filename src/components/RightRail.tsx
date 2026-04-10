@@ -28,8 +28,8 @@ export default function RightRail({
   onReward,
   onCreate,
   onHome,
-  rewardCount, // ✅ ADD THIS
-}: Props)
+  rewardCount,
+}: Props) {
   return (
     <div
       style={{
