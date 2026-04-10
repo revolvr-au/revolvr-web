@@ -8,9 +8,6 @@ import { useRouter } from "next/navigation";
 import CommentsList from "../../components/CommentsList";
 import { Send } from "lucide-react";
 
-
-
-
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -26,6 +23,9 @@ export default function PublicFeedClient() {
 } | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const listRef = useRef(null);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startY, setStartY] = useState(0);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -148,6 +148,21 @@ const handleLive = () => {
 >
 {showComments && (
   <div
+    onTouchStart={(e) => {
+      setIsDragging(true);
+      setStartY(e.touches[0].clientY);
+    }}
+    onTouchMove={(e) => {
+      if (!isDragging) return;
+      const currentY = e.touches[0].clientY;
+      const delta = currentY - startY;
+      if (delta > 0) setDragY(delta);
+    }}
+    onTouchEnd={() => {
+      setIsDragging(false);
+      if (dragY > 120) closeComments();
+      setDragY(0);
+    }}
     style={{
       position: "absolute",
       bottom: 0,
@@ -173,47 +188,43 @@ const handleLive = () => {
 
       color: "white",
 
-      // 👇 ADD THESE TWO LINES HERE
-      transition: "transform 0.25s ease",
-      transform: "translateY(0)",
+      transition: isDragging ? "none" : "transform 0.25s ease",
+      transform: `translateY(${dragY}px)`,
     }}
   >
     {/* HEADER */}
-    <div style={{
-      flexShrink: 0,
-      textAlign: "center",
-      padding: "12px 16px 8px",
-      fontSize: 16,
-      fontWeight: 600,
-      letterSpacing: "0.02em",
-      borderBottom: "1px solid rgba(255,255,255,0.06)",
-      position: "relative",
-    }}>
-      Comments
+    <div
+      style={{
+        flexShrink: 0,
+        textAlign: "center",
+        padding: "12px 16px 8px",
+        fontSize: 16,
+        fontWeight: 600,
+        letterSpacing: "0.02em",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}
+    >
       <div
-        onClick={closeComments}
         style={{
-          position: "absolute",
-          right: 14,
-          top: 12,
-          cursor: "pointer",
-          fontSize: 16,
-          opacity: 0.6,
+          width: 40,
+          height: 4,
+          background: "rgba(255,255,255,0.2)",
+          borderRadius: 999,
+          margin: "6px auto 8px",
         }}
-      >
-        ✕
-      </div>
+      />
+      Comments
     </div>
 
-    {/* COMMENTS LIST — scrollable middle */}
+    {/* LIST */}
     <div
-  ref={listRef}
-  style={{
-    flex: 1,
-    overflowY: "auto",
-    padding: "6px 10px",
-  }}
->
+      ref={listRef}
+      style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "6px 10px",
+      }}
+    >
       <CommentsList
         postId={activePostId}
         refreshKey={refreshKey}
@@ -222,56 +233,66 @@ const handleLive = () => {
       />
     </div>
 
-    {/* INPUT — pinned to bottom, never overflows */}
-    <div style={{
-  flexShrink: 0,
-  padding: "8px 12px",
-  paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)",
-  background: "#0f0f10",
-  borderTop: "1px solid rgba(255,255,255,0.04)",
-  transform: "translateY(-3px)", // ✅ add this
-}}>
-  {replyTo && (
-    <div style={{
-      fontSize: 11,
-      opacity: 0.5,
-      marginBottom: 5,
-      paddingLeft: 4,
-    }}>
-      Replying to @{replyTo.userEmail}
-      <span
-        onClick={() => setReplyTo(null)}
-        style={{ marginLeft: 8, cursor: "pointer", opacity: 0.7 }}
-      >✕</span>
+    {/* INPUT */}
+    <div
+      style={{
+        flexShrink: 0,
+        padding: "8px 12px",
+        paddingBottom: "calc(env(safe-area-inset-bottom) + 4px)",
+        background: "#0f0f10",
+        borderTop: "1px solid rgba(255,255,255,0.04)",
+        transform: "translateY(-3px)",
+      }}
+    >
+      {replyTo && (
+        <div
+          style={{
+            fontSize: 11,
+            opacity: 0.5,
+            marginBottom: 5,
+            paddingLeft: 4,
+          }}
+        >
+          Replying to @{replyTo.userEmail}
+          <span
+            onClick={() => setReplyTo(null)}
+            style={{ marginLeft: 8, cursor: "pointer", opacity: 0.7 }}
+          >
+            ✕
+          </span>
+        </div>
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendComment()}
+          placeholder={
+            replyTo
+              ? `Reply to @${replyTo.userEmail}...`
+              : "Add a comment..."
+          }
+          style={{
+            flex: 1,
+            height: 36,
+            padding: "0 14px",
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.08)",
+            fontSize: 16,
+            background: "rgba(255,255,255,0.06)",
+            color: "white",
+            outline: "none",
+          }}
+        />
+        <Send
+          size={20}
+          onClick={sendComment}
+          style={{ cursor: "pointer", opacity: 0.85, flexShrink: 0 }}
+        />
+      </div>
     </div>
-  )}
-  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-    <input
-  value={commentText}
-  onChange={(e) => setCommentText(e.target.value)}
-  onKeyDown={(e) => e.key === "Enter" && sendComment()}
-  placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
-  style={{
-    flex: 1,
-    height: 36,
-    padding: "0 14px",
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.08)",
-    fontSize: 16, // ✅ CRITICAL FIX
-    background: "rgba(255,255,255,0.06)",
-    color: "white",
-    outline: "none",
-    position: "relative",
-  }}
-/>
-    <Send
-      size={20}
-      onClick={sendComment}
-      style={{ cursor: "pointer", opacity: 0.85, flexShrink: 0 }}
-    />
   </div>
-  </div>
-</div>
 )}
         <div
   onScroll={(e) => {
