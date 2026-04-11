@@ -31,9 +31,9 @@ export default async function ProfilePage({
   email: true,
   displayName: true,
   handle: true,
-  avatar_url: true,
+  avatarUrl: true,
   bio: true,
-  is_verified: true,
+  isVerified: true,
 },
   });
 
@@ -69,16 +69,16 @@ export default async function ProfilePage({
   return (
     <div className="min-h-screen bg-[#050814] text-white">
       <main className="max-w-4xl mx-auto px-4 py-6">
-        <ProfileClient
+    <ProfileClient
   profile={{
     email: creator.email,
     displayName: creator.displayName ?? creator.handle ?? creator.email,
     handle: creator.handle ?? "",
-    avatarUrl: creator.avatar_url,
+    avatarUrl: creator.avatarUrl,
     bio: creator.bio,
     followersCount,
     followingCount,
-    isVerified: creator.is_verified ?? false,
+    isVerified: creator.isVerified ?? false,
   }}
   posts={posts}
 />
