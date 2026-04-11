@@ -104,9 +104,9 @@ export default function ProfileClient({
             ) : (
               <g className="arc-spin">
                 <circle cx="40" cy="40" r="28" fill="none"
-                  stroke="#00e5ff" strokeWidth="2.5" strokeLinecap="round"
-                  strokeDasharray="95 82"
-                  style={{ filter: "drop-shadow(0 0 5px #00e5ff)" }}
+                  stroke="#00e5ff" strokeWidth="3.5" strokeLinecap="round"
+                  strokeDasharray="140 36"
+                  style={{ filter: "drop-shadow(0 0 8px #00e5ff)" }}
                 />
               </g>
             )}
