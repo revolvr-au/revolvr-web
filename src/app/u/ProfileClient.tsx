@@ -46,7 +46,7 @@ export default function ProfileClient({
   return (
     <div style={{
       minHeight: "100vh",
-      background: "#060606",
+      background: "#0a0806",
       color: "white",
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
       maxWidth: 480,
@@ -284,7 +284,7 @@ export default function ProfileClient({
         }}>
           {offerings.map((item, i) => (
             <div key={i} style={{
-              background: "#0d0d0d",
+              background: "#0e0b08",
               border: "1px solid #1a1a1a",
               borderRadius: 20,
               padding: "6px 14px",
@@ -317,7 +317,7 @@ export default function ProfileClient({
 
       {/* Separator above grid (creator only) */}
       {isCreator && (
-        <div style={{ borderTop: "1px solid #111" }} />
+        <div style={{ borderTop: "1px solid #1a1510" }} />
       )}
 
       {/* ── POST GRID ── */}
@@ -340,7 +340,7 @@ export default function ProfileClient({
             return (
               <div key={p.id} style={{
                 aspectRatio: "1",
-                background: "#0d0d0d",
+                background: "#0e0b08",
                 position: "relative",
                 overflow: "hidden",
               }}>
