@@ -8,8 +8,7 @@
 }
 .arc-spin {
   animation: arcSpin 1.8s linear infinite;
-  transform-box: fill-box;
-  transform-origin: center;
+  transform-origin: 40px 40px;
 }
 @keyframes burst {
   0% {
