@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Heart,
   MessageCircle,
@@ -41,16 +42,22 @@ export default function RightRail({
 }: Props) {
   const [rewardBursts, setRewardBursts] = useState<number[]>([]);
   const [followed, setFollowed] = useState(isFollowing);
+
+// sync with prop changes (different posts)
+useEffect(() => {
+  setFollowed(isFollowing);
+}, [isFollowing]);
   const [bursting, setBursting] = useState(false);
 
   const handleFollow = () => {
-    setFollowed(prev => !prev);
-    if (!followed) {
-      setBursting(true);
-      setTimeout(() => setBursting(false), 700);
-    }
-    onFollowToggle?.();
-  };
+  const next = !followed;
+  setFollowed(next);
+  if (next) {
+    setBursting(true);
+    setTimeout(() => setBursting(false), 700);
+  }
+  onFollowToggle?.();
+};
 
   const circumference = 2 * Math.PI * 23;
 

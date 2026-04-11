@@ -28,6 +28,7 @@ export default function PublicFeedClient() {
   const [startY, setStartY] = useState(0);
   const [sheetHeight, setSheetHeight] = useState(62);
   const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
+  const [followMap, setFollowMap] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -139,6 +140,19 @@ const handleHome = () => {
 };
 const handleLive = () => {
   router.push("/live");
+};
+const handleFollow = async (targetEmail: string, currentlyFollowing: boolean) => {
+  if (!userEmail) return;
+  
+  await fetch("/api/follow", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      viewerEmail: userEmail,
+      targetEmail: targetEmail,
+      action: currentlyFollowing ? "unfollow" : "follow",
+    }),
+  });
 };
 
   return (
@@ -477,16 +491,24 @@ function Post({
     
     {/* RIGHT RAIL */}
 <RightRail
-  liked={liked}
+  liked={!!likedMap[String(post.id ?? i)]}
   onLike={onDoubleTapLike}
   onComment={() => onOpenComments(post.id)}
   onShare={() => onShare(post.id)}
   onReward={() => onReward(post.id)}
   onCreate={() => onCreate()}
   onHome={() => onHome()}
-  rewardCount={rewardCount}
-  username={post.handle || post.userEmail}
-  avatarUrl={post.avatarUrl}
+  rewardCount={rewardMap[post.id] || 0}
+  username={post.userEmail}
+  isFollowing={!!followMap[post.userEmail]}
+  onFollowToggle={() => {
+    const current = !!followMap[post.userEmail];
+    setFollowMap(prev => ({
+      ...prev,
+      [post.userEmail]: !current,
+    }));
+    handleFollow(post.userEmail, current);
+  }}
 />
 
 {/* CONTENT */}
