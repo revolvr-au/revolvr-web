@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 
 export type ProfilePost = {
   id: string;
@@ -36,6 +36,12 @@ export default function ProfileClient({
   const following = profile.followingCount ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
   const circumference = 2 * Math.PI * 28;
+  const arcRef = useRef<SVGCircleElement>(null);
+useEffect(() => {
+  if (arcRef.current) {
+    arcRef.current.style.animation = "arcSpin 1.8s linear infinite";
+  }
+}, [followed]);
 
   const media = useMemo(() => {
     return (posts ?? []).filter((p) => {
@@ -106,12 +112,11 @@ export default function ProfileClient({
                 }}
               />
             ) : (
-              <circle cx="40" cy="40" r="28" fill="none"
+              <circle ref={arcRef} cx="40" cy="40" r="28" fill="none"
                 stroke="#00e5ff" strokeWidth="2.5" strokeLinecap="round"
                 strokeDasharray="95 82"
                 style={{
                   transformOrigin: "40px 40px",
-                  animation: "arcSpin 1.8s linear infinite",
                   filter: "drop-shadow(0 0 5px #00e5ff)",
                 }}
               />
