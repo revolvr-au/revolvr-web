@@ -78,6 +78,7 @@ export default async function ProfilePage({
   const isFollowing = !!followRecord;
 
   return (
+    <div style={{ minHeight: "100vh", background: "#0a0806" }}>
     <ProfileClient
       profile={{
         email: creator.email,
@@ -93,5 +94,6 @@ export default async function ProfilePage({
       isFollowing={isFollowing}
       isCreator={isCreator}
     />
+    </div>
   );
 }
