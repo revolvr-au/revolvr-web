@@ -79,7 +79,12 @@ export default function ProfileClient({
         gap: 16,
         borderBottom: "1px solid #111",
       }}>
-
+        <style>{`
+  @keyframes arcSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`}</style>
         {/* Arc Avatar */}
         <div style={{ position: "relative", width: 80, height: 80 }}>
           <svg width="80" height="80" viewBox="0 0 80 80"
