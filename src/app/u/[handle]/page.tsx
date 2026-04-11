@@ -15,8 +15,6 @@ export default async function ProfilePage({
 
   const handle = decodeURIComponent(rawHandle || "").trim();
 
-  console.log("Profile route hit with handle:", handle);
-
   if (!handle) {
     return <div style={{ padding: 40 }}>Handle missing</div>;
   }
@@ -29,13 +27,13 @@ export default async function ProfilePage({
       },
     },
     select: {
-  email: true,
-  displayName: true,
-  handle: true,
-  avatarUrl: true,
-  bio: true,
-  isVerified: true,
-},
+      email: true,
+      displayName: true,
+      handle: true,
+      avatarUrl: true,
+      bio: true,
+      isVerified: true,
+    },
   });
 
   if (!creator) {
@@ -46,15 +44,17 @@ export default async function ProfilePage({
     );
   }
 
+  const isCreator = true;
+
   const posts = await prisma.post.findMany({
     where: { userEmail: creator.email },
     orderBy: { createdAt: "desc" },
     select: {
-  id: true,
-  imageUrl: true,
-  caption: true,
-  createdAt: true,
-},
+      id: true,
+      imageUrl: true,
+      caption: true,
+      createdAt: true,
+    },
     take: 60,
   });
 
@@ -78,23 +78,20 @@ export default async function ProfilePage({
   const isFollowing = !!followRecord;
 
   return (
-    <div className="min-h-screen bg-[#050814] text-white">
-      <main className="max-w-4xl mx-auto px-4 py-6">
     <ProfileClient
-  profile={{
-    email: creator.email,
-    displayName: creator.displayName ?? creator.handle ?? creator.email,
-    handle: creator.handle ?? "",
-    avatarUrl: creator.avatarUrl,
-    bio: creator.bio,
-    followersCount,
-    followingCount,
-    isVerified: creator.isVerified ?? false,
-  }}
-  posts={posts}
-  isFollowing={isFollowing}
-/>
-      </main>
-    </div>
+      profile={{
+        email: creator.email,
+        displayName: creator.displayName ?? creator.handle ?? creator.email,
+        handle: creator.handle ?? "",
+        avatarUrl: creator.avatarUrl,
+        bio: creator.bio,
+        followersCount,
+        followingCount,
+        isVerified: creator.isVerified ?? false,
+      }}
+      posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
+      isFollowing={isFollowing}
+      isCreator={isCreator}
+    />
   );
 }
