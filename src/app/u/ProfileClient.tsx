@@ -38,11 +38,11 @@ export default function ProfileClient({
   const circumference = 2 * Math.PI * 28;
 
   const media = useMemo(() => {
-  return (posts ?? []).filter((p) => {
-    const url = p.imageUrl ?? p.image_Url ?? "";
-    return url.trim().length > 0;
-  });
-}, [posts]);
+    return (posts ?? []).filter((p) => {
+      const url = p.imageUrl ?? p.image_Url ?? "";
+      return url.trim().length > 0;
+    });
+  }, [posts]);
 
   return (
     <div style={{
@@ -51,6 +51,14 @@ export default function ProfileClient({
       color: "white",
       fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     }}>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        @keyframes arcSpin {
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
+        }
+      `}</style>
 
       {/* ── HEADER ── */}
       <div style={{
@@ -79,12 +87,7 @@ export default function ProfileClient({
         gap: 16,
         borderBottom: "1px solid #111",
       }}>
-        <style>{`
-  @keyframes arcSpin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`}</style>
+
         {/* Arc Avatar */}
         <div style={{ position: "relative", width: 80, height: 80 }}>
           <svg width="80" height="80" viewBox="0 0 80 80"
@@ -356,14 +359,6 @@ export default function ProfileClient({
         )}
       </div>
 
-      {/* Keyframes */}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        @keyframes arcSpin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
