@@ -391,7 +391,6 @@ const handleFollow = async (targetEmail: string, currentlyFollowing: boolean) =>
     </div>
   );
 }
-
 function Post({
   post,
   liked,
@@ -426,120 +425,113 @@ function Post({
 
   const handleTap = () => {
     const now = Date.now();
-
     if (now - lastTap < 300) {
       onDoubleTapLike();
       setShowBurst(true);
-
-      setTimeout(() => {
-        setShowBurst(false);
-      }, 600);
+      setTimeout(() => setShowBurst(false), 600);
     }
-
     setLastTap(now);
   };
- return (
-  <div
-    style={{
-      height: "100dvh",
-      width: "100%",
-      maxWidth: 420,
-      margin: "0 auto",
-      position: "relative",
-      overflow: "hidden",
-      scrollSnapAlign: "start",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "flex-end",
-    }}
-  >
-    {post.imageUrl && (
-  <img
-    src={post.imageUrl}
-    onClick={handleTap}
-    style={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-      zIndex: 0,
-      cursor: "pointer",
-    }}
-  />
-)}
 
-{/* OVERLAY (FIXED) */}
-{showComments && (
-  <div
-    style={{
-      position: "absolute",
-      inset: 0,
-      background: "rgba(0,0,0,0.55)",
-      zIndex: 1,
-      pointerEvents: "none",
-    }}
-  />
-)}
-  
-    {/* BURST */}
-    {showBurst && (
-      <div
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 20,
-          pointerEvents: "none",
-        }}
-      >
-        <Heart size={90} fill="white" stroke="none" />
-      </div>
-    )}
-    
-    {/* RIGHT RAIL */}
-    <RightRail
-  liked={liked}
-  onLike={onDoubleTapLike}
-  onComment={() => onOpenComments(post.id)}
-  onShare={() => onShare(post.id)}
-  onReward={() => onReward(post.id)}
-  onCreate={() => onCreate()}
-  onHome={() => onHome()}
-  rewardCount={rewardCount}
-  username={post.handle || post.userEmail}
-  isFollowing={isFollowing}
-  onFollowToggle={onFollowToggle}
-/>
+  return (
+    <div
+      style={{
+        height: "100dvh",
+        width: "100%",
+        maxWidth: 420,
+        margin: "0 auto",
+        position: "relative",
+        overflow: "hidden",
+        scrollSnapAlign: "start",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+      }}
+    >
+      {post.imageUrl && (
+        <img
+          src={post.imageUrl}
+          onClick={handleTap}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            zIndex: 0,
+            cursor: "pointer",
+          }}
+        />
+      )}
 
-{/* CONTENT */}
-<div
-  style={{
-    position: "relative",
-    zIndex: 1,
-    padding: 20,
-    background: showComments
-      ? "transparent"
-      : "linear-gradient(transparent, rgba(0,0,0,0.6))",
-  }}
->
-      <div
-        style={{
-          fontSize: 16,
-          opacity: 0.75,
-          fontWeight: 500,
-        }}
-      >
-        {post.handle || post.userEmail || "user"}
-      </div>
+      {showComments && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "rgba(0,0,0,0.55)",
+            zIndex: 1,
+            pointerEvents: "none",
+          }}
+        />
+      )}
 
-      {post.caption && (
-        <div style={{ marginTop: 6 }}>
-          {post.caption}
+      {showBurst && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 20,
+            pointerEvents: "none",
+          }}
+        >
+          <Heart size={90} fill="white" stroke="none" />
         </div>
       )}
-</div>
-);
+
+      <RightRail
+        liked={liked}
+        onLike={onDoubleTapLike}
+        onComment={() => onOpenComments(post.id)}
+        onShare={() => onShare(post.id)}
+        onReward={() => onReward(post.id)}
+        onCreate={() => onCreate()}
+        onHome={() => onHome()}
+        rewardCount={rewardCount}
+        username={post.handle || post.userEmail}
+        isFollowing={isFollowing}
+        onFollowToggle={onFollowToggle}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: 20,
+          background: showComments
+            ? "transparent"
+            : "linear-gradient(transparent, rgba(0,0,0,0.6))",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 16,
+            opacity: 0.75,
+            fontWeight: 500,
+          }}
+        >
+          {post.handle || post.userEmail || "user"}
+        </div>
+
+        {post.caption && (
+          <div style={{ marginTop: 6 }}>
+            {post.caption}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
