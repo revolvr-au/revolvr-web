@@ -420,7 +420,7 @@ function Post({
   rewardCount: number;
   isFollowing: boolean;
   onFollowToggle: () => void;
-})
+}) {
   const [showBurst, setShowBurst] = useState(false);
   const [lastTap, setLastTap] = useState(0);
 
@@ -524,7 +524,7 @@ function Post({
       ? "transparent"
       : "linear-gradient(transparent, rgba(0,0,0,0.6))",
   }}
-></div>
+>
       <div
         style={{
           fontSize: 16,
@@ -540,6 +540,6 @@ function Post({
           {post.caption}
         </div>
       )}
-    </div>
+</div>
 );
 }
