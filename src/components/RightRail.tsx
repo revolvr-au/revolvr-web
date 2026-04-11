@@ -1,6 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+
 import {
   Heart,
   MessageCircle,
@@ -48,6 +51,9 @@ useEffect(() => {
 }, [isFollowing]);
   const [bursting, setBursting] = useState(false);
 
+  const router = useRouter();
+const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+const [pressStart, setPressStart] = useState(0);
   const handleFollow = () => {
   const next = !followed;
   setFollowed(next);
@@ -59,7 +65,21 @@ useEffect(() => {
 };
 
   const circumference = 2 * Math.PI * 23;
-
+const handleAvatarTap = () => {
+  const pressDuration = Date.now() - pressStart;
+  if (pressDuration < 300) {
+    // quick tap → go to profile
+    if (username) {
+      const handle = username.includes("@")
+        ? username.split("@")[0]
+        : username;
+      router.push(`/u/${handle}`);
+    }
+  } else {
+    // held → follow toggle
+    handleFollow();
+  }
+};
   return (
     <div
       style={{
@@ -78,15 +98,17 @@ useEffect(() => {
     >
       {/* ── ARC AVATAR ── */}
       <div
-        onClick={handleFollow}
+        onMouseDown={() => setPressStart(Date.now())}
+        onTouchStart={() => setPressStart(Date.now())}
+        onClick={handleAvatarTap}
         style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 4,
-          cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+        cursor: "pointer",
         }}
-      >
+        >
         <div style={{ position: "relative", width: 50, height: 50 }}>
           <svg
             width="50"
