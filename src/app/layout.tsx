@@ -20,7 +20,7 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1, width=device-width, initial-scale=1, viewport-fit=cover"
         />
       </head>
-      <body className="min-h-screen bg-[#050814] text-white">
+      <body className="min-h-screen text-white">
         <KeyboardHandler />
         {children}
       </body>
