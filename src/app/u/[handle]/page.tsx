@@ -28,13 +28,13 @@ export default async function ProfilePage({
       },
     },
     select: {
-      email: true,
-      displayName: true,
-      handle: true,
-      avatarUrl: true,
-      bio: true,
-      isVerified: true,
-    },
+  email: true,
+  displayName: true,
+  handle: true,
+  avatar_url: true,
+  bio: true,
+  is_verified: true,
+},
   });
 
   if (!creator) {
@@ -70,19 +70,18 @@ export default async function ProfilePage({
     <div className="min-h-screen bg-[#050814] text-white">
       <main className="max-w-4xl mx-auto px-4 py-6">
         <ProfileClient
-          profile={{
-            email: creator.email,
-            displayName:
-              creator.displayName ?? creator.handle ?? creator.email,
-            handle: creator.handle ?? "",
-            avatarUrl: creator.avatarUrl,
-            bio: creator.bio,
-            followersCount,
-            followingCount,
-            isVerified: creator.isVerified ?? false,
-          }}
-          posts={posts}
-        />
+  profile={{
+    email: creator.email,
+    displayName: creator.displayName ?? creator.handle ?? creator.email,
+    handle: creator.handle ?? "",
+    avatarUrl: creator.avatar_url,
+    bio: creator.bio,
+    followersCount,
+    followingCount,
+    isVerified: creator.is_verified ?? false,
+  }}
+  posts={posts}
+/>
       </main>
     </div>
   );
