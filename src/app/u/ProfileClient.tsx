@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState } from "react";
 
 export type ProfilePost = {
   id: string;
@@ -36,12 +36,6 @@ export default function ProfileClient({
   const following = profile.followingCount ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
   const circumference = 2 * Math.PI * 28;
-  const arcRef = useRef<SVGCircleElement>(null);
-useEffect(() => {
-  if (arcRef.current) {
-    arcRef.current.style.animation = "arcSpin 1.8s linear infinite";
-  }
-}, [followed]);
 
   const media = useMemo(() => {
     return (posts ?? []).filter((p) => {
@@ -60,10 +54,6 @@ useEffect(() => {
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        @keyframes arcSpin {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(360deg); }
-        }
       `}</style>
 
       {/* ── HEADER ── */}
@@ -112,11 +102,11 @@ useEffect(() => {
                 }}
               />
             ) : (
-              <circle ref={arcRef} cx="40" cy="40" r="28" fill="none"
+              <circle cx="40" cy="40" r="28" fill="none"
                 stroke="#00e5ff" strokeWidth="2.5" strokeLinecap="round"
                 strokeDasharray="95 82"
+                className="arc-spin"
                 style={{
-                  transformOrigin: "40px 40px",
                   filter: "drop-shadow(0 0 5px #00e5ff)",
                 }}
               />
