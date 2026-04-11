@@ -38,11 +38,11 @@ export default function ProfileClient({
   const circumference = 2 * Math.PI * 28;
 
   const media = useMemo(() => {
-    return (posts ?? []).filter((p) => {
-      const url = p.imageUrl ?? p.image_Url ?? "";
-      return url.trim().length > 0;
-    });
-  }, [posts]);
+  return (posts ?? []).filter((p) => {
+    const url = p.imageUrl ?? p.image_Url ?? "";
+    return url.trim().length > 0;
+  });
+}, [posts]);
 
   return (
     <div style={{
