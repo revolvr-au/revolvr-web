@@ -49,11 +49,11 @@ export default async function ProfilePage({
     where: { userEmail: creator.email },
     orderBy: { createdAt: "desc" },
     select: {
-      id: true,
-      image_Url: true,
-      caption: true,
-      createdAt: true,
-    },
+  id: true,
+  imageUrl: true,
+  caption: true,
+  createdAt: true,
+},
     take: 60,
   });
 
