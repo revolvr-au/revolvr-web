@@ -35,7 +35,7 @@ export default function ProfileClient({
   const followers = profile.followersCount ?? 0;
   const following = profile.followingCount ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
-  const circumference = 2 * Math.PI * 28;
+
 
   const media = useMemo(() => {
     return (posts ?? []).filter((p) => {
@@ -86,31 +86,17 @@ export default function ProfileClient({
 
         {/* Arc Avatar */}
         <div style={{ position: "relative", width: 80, height: 80 }}>
-          <svg width="80" height="80" viewBox="0 0 80 80"
-            style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-            <circle cx="40" cy="40" r="28" fill="none"
-              stroke="#00e5ff" strokeWidth="1.5" opacity="0.07"/>
-            {followed ? (
-              <circle cx="40" cy="40" r="28" fill="none"
-                stroke="#00e5ff" strokeWidth="2.5" strokeLinecap="round"
-                strokeDasharray={circumference} strokeDashoffset="0"
-                style={{
-                  transformOrigin: "40px 40px",
-                  transform: "rotate(-90deg)",
-                  filter: "drop-shadow(0 0 8px #00e5ff)",
-                  transition: "stroke-dashoffset 0.55s cubic-bezier(0.22,1,0.36,1)",
-                }}
-              />
-            ) : (
-              <g className="arc-spin">
-                <circle cx="40" cy="40" r="28" fill="none"
-                  stroke="#00e5ff" strokeWidth="3.5" strokeLinecap="round"
-                  strokeDasharray="140 36"
-                  style={{ filter: "drop-shadow(0 0 8px #00e5ff)" }}
-                />
-              </g>
-            )}
-          </svg>
+          {/* Arc spinner */}
+          <div style={{
+            position: "absolute",
+            inset: -4,
+            borderRadius: "50%",
+            border: "2.5px solid transparent",
+            borderTopColor: "#00e5ff",
+            borderRightColor: "#00e5ff",
+            filter: "drop-shadow(0 0 6px #00e5ff)",
+            animation: "arcSpin 1.8s linear infinite",
+          }} />
 
           {/* Avatar */}
           <div style={{
