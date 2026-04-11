@@ -39,6 +39,10 @@ export default function ProfileClient({
   const following = profile.followingCount ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
 
+  const offerings = isCreator
+    ? ["🎵 Music", "🎛️ Production", "🎤 Features", "🎬 Videos", "📻 Podcasts", "🎧 Sessions"]
+    : ["🎵 Music", "🏋️ Fitness", "🎮 Gaming", "📸 Photography", "✈️ Travel", "🍔 Food"];
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -69,6 +73,12 @@ export default function ProfileClient({
           lineHeight: 1,
           padding: "4px 2px",
         }}>←</a>
+        <div style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: 16,
+          letterSpacing: 6,
+          color: "white",
+        }}>REVOLVR</div>
         <button style={{
           background: "transparent",
           border: "none",
@@ -100,8 +110,8 @@ export default function ProfileClient({
           }}>CREATOR</div>
         )}
 
-        {/* Arc Avatar 120px */}
-        <div style={{ position: "relative", width: 120, height: 120 }}>
+        {/* Arc Avatar 140px */}
+        <div style={{ position: "relative", width: 140, height: 140 }}>
           <div style={followed ? {
             position: "absolute",
             inset: -5,
@@ -124,14 +134,14 @@ export default function ProfileClient({
             position: "absolute",
             top: "50%", left: "50%",
             transform: "translate(-50%, -50%)",
-            width: 96, height: 96,
+            width: 112, height: 112,
             borderRadius: "50%",
             background: profile.avatarUrl
               ? `url(${profile.avatarUrl}) center/cover`
               : "linear-gradient(135deg, #1a1a2e, #16213e)",
             border: "1.5px solid rgba(255,255,255,0.08)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 36, fontWeight: 700,
+            fontSize: 42, fontWeight: 700,
           }}>
             {!profile.avatarUrl && initial}
           </div>
@@ -153,14 +163,24 @@ export default function ProfileClient({
           </div>
         </div>
 
-        {/* Stats row */}
+        {/* Audio intro placeholder */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          fontFamily: "monospace",
+        }}>
+          <span style={{ fontSize: 12 }}>🎙️</span>
+          <span style={{ fontSize: 10, color: "#00e5ff", letterSpacing: 0.5 }}>Intro</span>
+          <span style={{ fontSize: 10, color: "#333" }}>▶ ────────── 0:30</span>
+        </div>
+
+        {/* Stats row — no box, floating */}
         {isCreator ? (
           <div style={{
-            display: "flex", gap: 0,
-            background: "#0d0d0d",
-            border: "1px solid #141414",
-            borderRadius: 14, overflow: "hidden",
+            display: "flex", gap: 24,
             width: "100%", maxWidth: 320,
+            justifyContent: "center",
           }}>
             {([
               { val: "⚡ 0", label: "VOLTAGE", cyan: true },
@@ -168,13 +188,13 @@ export default function ProfileClient({
               { val: String(postsCount), label: "POSTS", cyan: false },
             ] as { val: string; label: string; cyan: boolean }[]).map((s, i) => (
               <div key={i} style={{
-                flex: 1, padding: "12px 8px",
+                flex: 1,
+                padding: "8px 0",
                 textAlign: "center",
-                borderRight: i < 2 ? "1px solid #141414" : "none",
               }}>
                 <div style={{
                   fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 18, letterSpacing: 1,
+                  fontSize: 28, letterSpacing: 1,
                   color: s.cyan ? "#00e5ff" : "#fff",
                 }}>{s.val}</div>
                 <div style={{
@@ -187,11 +207,9 @@ export default function ProfileClient({
           </div>
         ) : (
           <div style={{
-            display: "flex", gap: 0,
-            background: "#0d0d0d",
-            border: "1px solid #141414",
-            borderRadius: 14, overflow: "hidden",
+            display: "flex", gap: 24,
             width: "100%", maxWidth: 320,
+            justifyContent: "center",
           }}>
             {[
               { val: followers, label: "FOLLOWERS" },
@@ -199,13 +217,13 @@ export default function ProfileClient({
               { val: postsCount, label: "POSTS" },
             ].map((s, i) => (
               <div key={i} style={{
-                flex: 1, padding: "12px 8px",
+                flex: 1,
+                padding: "8px 0",
                 textAlign: "center",
-                borderRight: i < 2 ? "1px solid #141414" : "none",
               }}>
                 <div style={{
                   fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 20, letterSpacing: 1, color: "#fff",
+                  fontSize: 28, letterSpacing: 1, color: "#fff",
                 }}>{s.val}</div>
                 <div style={{
                   fontSize: 8, color: "#333",
@@ -255,13 +273,42 @@ export default function ProfileClient({
           </button>
         </div>
 
+        {/* Offerings shelf — 2 rows of 3 pills */}
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 8,
+          width: "100%",
+          maxWidth: 320,
+          marginTop: 4,
+        }}>
+          {offerings.map((item, i) => (
+            <div key={i} style={{
+              background: "#0d0d0d",
+              border: "1px solid #1a1a1a",
+              borderRadius: 20,
+              padding: "6px 14px",
+              fontSize: 11,
+              fontFamily: "monospace",
+              color: "#666",
+              textAlign: "center",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}>
+              {item}
+            </div>
+          ))}
+        </div>
+
         {/* Bio */}
         {profile.bio?.trim() && (
           <div style={{
-            fontSize: 12, color: "#555",
+            fontSize: 14, color: "#555",
             textAlign: "center",
             lineHeight: 1.7,
             maxWidth: 280,
+            marginTop: 8,
           }}>
             {profile.bio}
           </div>
