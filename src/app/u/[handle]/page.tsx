@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 import ProfileClient from "./ProfileClient";
 
 export const dynamic = "force-dynamic";
@@ -57,14 +58,24 @@ export default async function ProfilePage({
     take: 60,
   });
 
-  const [followersCount, followingCount] = await Promise.all([
+  const currentUserEmail = await getAuthedEmailOrNull();
+
+  const [followersCount, followingCount, followRecord] = await Promise.all([
     prisma.follow.count({
       where: { followingEmail: creator.email },
     }),
     prisma.follow.count({
       where: { followerEmail: creator.email },
     }),
+    currentUserEmail
+      ? prisma.follow.findFirst({
+          where: { followerEmail: currentUserEmail, followingEmail: creator.email },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
   ]);
+
+  const isFollowing = !!followRecord;
 
   return (
     <div className="min-h-screen bg-[#050814] text-white">
@@ -81,6 +92,7 @@ export default async function ProfilePage({
     isVerified: creator.isVerified ?? false,
   }}
   posts={posts}
+  isFollowing={isFollowing}
 />
       </main>
     </div>

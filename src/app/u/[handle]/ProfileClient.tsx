@@ -24,12 +24,14 @@ export type Profile = {
 export default function ProfileClient({
   profile,
   posts,
+  isFollowing = false,
 }: {
   profile: Profile;
   posts: ProfilePost[];
+  isFollowing?: boolean;
 }) {
   const [tab, setTab] = useState<"posts" | "media" | "about">("posts");
-  const [followed, setFollowed] = useState(false);
+  const [followed, setFollowed] = useState(isFollowing);
 
   const postsCount = posts?.length ?? 0;
   const followers = profile.followersCount ?? 0;
@@ -87,19 +89,23 @@ export default function ProfileClient({
         {/* Arc Avatar */}
         <div style={{ position: "relative", width: 80, height: 80 }}>
           {/* Arc spinner */}
-          <div style={{
+          <div style={followed ? {
+            position: "absolute",
+            inset: -4,
+            borderRadius: "50%",
+            border: "2.5px solid #00e5ff",
+            filter: "drop-shadow(0 0 6px #00e5ff)",
+            boxShadow: "0 0 12px rgba(0,229,255,0.4)",
+            animation: "none",
+          } : {
             position: "absolute",
             inset: -4,
             borderRadius: "50%",
             border: "2.5px solid transparent",
             borderTopColor: "#00e5ff",
             borderRightColor: "#00e5ff",
-            ...(followed ? {
-              borderBottomColor: "#00e5ff",
-              borderLeftColor: "#00e5ff",
-            } : {}),
             filter: "drop-shadow(0 0 6px #00e5ff)",
-            animation: followed ? "none" : "arcSpin 1.8s linear infinite",
+            animation: "arcSpin 1.8s linear infinite",
           }} />
 
           {/* Avatar */}
