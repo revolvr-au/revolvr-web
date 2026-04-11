@@ -94,8 +94,12 @@ export default function ProfileClient({
             border: "2.5px solid transparent",
             borderTopColor: "#00e5ff",
             borderRightColor: "#00e5ff",
+            ...(followed ? {
+              borderBottomColor: "#00e5ff",
+              borderLeftColor: "#00e5ff",
+            } : {}),
             filter: "drop-shadow(0 0 6px #00e5ff)",
-            animation: "arcSpin 1.8s linear infinite",
+            animation: followed ? "none" : "arcSpin 1.8s linear infinite",
           }} />
 
           {/* Avatar */}
