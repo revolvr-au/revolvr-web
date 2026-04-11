@@ -360,25 +360,31 @@ const handleFollow = async (targetEmail: string, currentlyFollowing: boolean) =>
 
   return (
     <Post
-      key={post.id || i}
-      post={post}
-      liked={!!likedMap[String(post.id ?? i)]}
-      onDoubleTapLike={() => {
-        const key = String(post.id ?? i);
-        setLikedMap((prev) => ({
-          ...prev,
-          [key]: true,
-        }));
-      }}
-      onOpenComments={openComments}
-      onShare={handleShare}
-      onReward={handleReward}
-      onCreate={handleCreate}
-      onHome={handleHome}
-      onLive={handleLive}
-      showComments={showComments}
-      rewardCount={rewardMap[post.id] || 0}
-    />
+  key={post.id || i}
+  post={post}
+  liked={!!likedMap[String(post.id ?? i)]}
+  onDoubleTapLike={() => {
+    const key = String(post.id ?? i);
+    setLikedMap((prev) => ({ ...prev, [key]: true }));
+  }}
+  onOpenComments={openComments}
+  onShare={handleShare}
+  onReward={handleReward}
+  onCreate={handleCreate}
+  onHome={handleHome}
+  onLive={handleLive}
+  showComments={showComments}
+  rewardCount={rewardMap[post.id] || 0}
+  isFollowing={!!followMap[post.userEmail]}
+  onFollowToggle={() => {
+    const current = !!followMap[post.userEmail];
+    setFollowMap(prev => ({
+      ...prev,
+      [post.userEmail]: !current,
+    }));
+    handleFollow(post.userEmail, current);
+  }}
+/>
   );
 })}
       </div>
@@ -397,7 +403,9 @@ function Post({
   onHome,
   onLive,
   showComments,
-  rewardCount, // ✅ ADD THIS
+  rewardCount,
+  isFollowing,
+  onFollowToggle,
 }: {
   post: any;
   liked: boolean;
@@ -409,8 +417,10 @@ function Post({
   onHome: () => void;
   onLive: () => void;
   showComments: boolean;
-  rewardCount: number; // ✅ ADD THIS
-}) {
+  rewardCount: number;
+  isFollowing: boolean;
+  onFollowToggle: () => void;
+})
   const [showBurst, setShowBurst] = useState(false);
   const [lastTap, setLastTap] = useState(0);
 
@@ -490,25 +500,18 @@ function Post({
     )}
     
     {/* RIGHT RAIL */}
-<RightRail
-  liked={!!likedMap[String(post.id ?? i)]}
+    <RightRail
+  liked={liked}
   onLike={onDoubleTapLike}
   onComment={() => onOpenComments(post.id)}
   onShare={() => onShare(post.id)}
   onReward={() => onReward(post.id)}
   onCreate={() => onCreate()}
   onHome={() => onHome()}
-  rewardCount={rewardMap[post.id] || 0}
-  username={post.userEmail}
-  isFollowing={!!followMap[post.userEmail]}
-  onFollowToggle={() => {
-    const current = !!followMap[post.userEmail];
-    setFollowMap(prev => ({
-      ...prev,
-      [post.userEmail]: !current,
-    }));
-    handleFollow(post.userEmail, current);
-  }}
+  rewardCount={rewardCount}
+  username={post.handle || post.userEmail}
+  isFollowing={isFollowing}
+  onFollowToggle={onFollowToggle}
 />
 
 {/* CONTENT */}
