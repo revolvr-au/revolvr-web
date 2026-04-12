@@ -68,18 +68,17 @@ const [pressStart, setPressStart] = useState(0);
 const handleAvatarTap = () => {
   const pressDuration = Date.now() - pressStart;
   if (pressDuration < 300) {
-    // quick tap → go to profile
     if (username) {
-      const handle = username.includes("@")
-        ? username.split("@")[0]
+      const handle = username.startsWith("@")
+        ? username.slice(1)
         : username;
-      router.push(`/u/${handle}`);
+      if (handle) router.push(`/u/${handle}`);
     }
   } else {
-    // held → follow toggle
     handleFollow();
   }
 };
+  
   return (
     <div
       style={{
@@ -217,7 +216,9 @@ const handleAvatarTap = () => {
                 : "none",
             }}
           >
-            {!avatarUrl && (username?.[0]?.toUpperCase() ?? "?")}
+            {!avatarUrl && (
+  (username?.startsWith("@") ? username.slice(1) : username)?.[0]?.toUpperCase() ?? "?"
+)}
           </div>
         </div>
 
