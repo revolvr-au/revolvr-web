@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
+import { createSupabaseServerClient } from "@/lib/supabaseServer";
 import ProfileClient from "./ProfileClient";
 
 export const dynamic = "force-dynamic";
@@ -70,8 +70,22 @@ export default async function ProfilePage({
     take: 60,
   });
 
-  const currentUserEmail = await getAuthedEmailOrNull();
-  const isOwnProfile = currentUserEmail === creator.email;
+  let currentUserEmail: string | null = null;
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (!error && data?.user?.email) {
+      currentUserEmail = data.user.email.trim().toLowerCase();
+    }
+  } catch (err) {
+    console.error("ProfilePage: auth lookup failed", err);
+  }
+
+  console.log("currentUserEmail:", currentUserEmail, "profile email:", creator.email);
+
+  const isOwnProfile =
+    !!currentUserEmail &&
+    currentUserEmail === (creator.email ?? "").trim().toLowerCase();
 
   const [followersCount, followingCount, followRecord, commentsCount] = await Promise.all([
     prisma.follow.count({
