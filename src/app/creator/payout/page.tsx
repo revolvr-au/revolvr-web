@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-export default function CreatorEarningsPage() {
+export default function CreatorPayoutPage() {
   const router = useRouter();
 
   return (
@@ -40,12 +40,12 @@ export default function CreatorEarningsPage() {
         margin: "0 0 10px",
         lineHeight: 1,
       }}>
-        Earnings Dashboard
+        Payout Settings
       </h1>
 
       {/* Subtitle */}
       <p style={{ fontSize: 13, color: "#888", margin: "0 0 36px", lineHeight: 1.6 }}>
-        Your earnings overview will appear here.
+        Configure your payout preferences and connected accounts.
       </p>
 
       <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />

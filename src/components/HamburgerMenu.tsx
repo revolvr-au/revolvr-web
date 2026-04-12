@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
@@ -13,6 +14,11 @@ type Props = {
 
 export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile, handle }: Props) {
   const router = useRouter();
+  const [logoutPending, setLogoutPending] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) setLogoutPending(false);
+  }, [isOpen]);
 
   const navigate = (path: string) => {
     onClose();
@@ -83,7 +89,51 @@ export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile
             <MenuItem onClick={() => navigate(`/u/${handle}`)}>Edit Profile</MenuItem>
           )}
           <MenuItem onClick={() => {}} badge="Coming Soon">Notifications</MenuItem>
-          <MenuItem onClick={handleLogout}>Log Out</MenuItem>
+          {logoutPending ? (
+            <div style={{ padding: "10px 20px" }}>
+              <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>Confirm log out?</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={handleLogout}
+                  style={{
+                    flex: 1,
+                    padding: "7px 0",
+                    borderRadius: 50,
+                    background: "transparent",
+                    border: "1px solid #ff3b30",
+                    color: "#ff3b30",
+                    fontSize: 11,
+                    fontFamily: "monospace",
+                    letterSpacing: 1,
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={() => setLogoutPending(false)}
+                  style={{
+                    flex: 1,
+                    padding: "7px 0",
+                    borderRadius: 50,
+                    background: "transparent",
+                    border: "1px solid #333",
+                    color: "#555",
+                    fontSize: 11,
+                    fontFamily: "monospace",
+                    letterSpacing: 1,
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <MenuItem onClick={() => setLogoutPending(true)}>Log Out</MenuItem>
+          )}
           <MenuItem onClick={() => navigate("/account/delete")}>Delete Account</MenuItem>
         </MenuSection>
 
