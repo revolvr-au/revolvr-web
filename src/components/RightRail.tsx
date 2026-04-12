@@ -116,15 +116,16 @@ const handleAvatarTap = () => {
   ></div>
         <div style={{ position: "relative", width: 50, height: 50 }}>
           <svg
-            width="50"
-            height="50"
-            viewBox="0 0 50 50"
-            style={{
-              position: "absolute",
-              inset: 0,
-              overflow: "visible",
-            }}
-          >
+  width="50"
+  height="50"
+  viewBox="0 0 50 50"
+  style={{
+    position: "absolute",
+    inset: 0,
+    overflow: "visible",
+    pointerEvents: "none",
+  }}
+>
             {/* Ghost track */}
             <circle
               cx="25" cy="25" r="23"

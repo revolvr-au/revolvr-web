@@ -493,19 +493,22 @@ function Post({
       )}
 
       <RightRail
-        liked={liked}
-        onLike={onDoubleTapLike}
-        onComment={() => onOpenComments(post.id)}
-        onShare={() => onShare(post.id)}
-        onReward={() => onReward(post.id)}
-        onCreate={() => onCreate()}
-        onHome={() => onHome()}
-        rewardCount={rewardCount}
-        avatarUrl={post.avatarUrl}
-        username={post.handle ? `@${post.handle}` : undefined}
-        isFollowing={isFollowing}
-        onFollowToggle={onFollowToggle}
-      />
+  liked={liked}
+  onLike={onDoubleTapLike}
+  onComment={() => onOpenComments(post.id)}
+  onShare={() => onShare(post.id)}
+  onReward={() => onReward(post.id)}
+  onCreate={() => onCreate()}
+  onHome={() => onHome()}
+  rewardCount={rewardCount}
+  avatarUrl={post.avatarUrl}
+  username={post.handle ? `@${post.handle}` : undefined}
+  isFollowing={isFollowing}
+  onFollowToggle={onFollowToggle}
+  onAvatarTap={() => {
+    if (post.handle) router.push(`/u/${post.handle}`);
+  }}
+/>
 
       <div
         style={{
