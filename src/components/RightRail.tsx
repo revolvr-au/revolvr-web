@@ -98,8 +98,9 @@ const handleAvatarTap = () => {
       {/* ── ARC AVATAR ── */}
       <div
         onMouseDown={() => { pressStartRef.current = Date.now(); }}
-        onTouchStart={() => { pressStartRef.current = Date.now(); }}
-        onClick={handleAvatarTap}
+onTouchStart={() => { pressStartRef.current = Date.now(); }}
+onTouchEnd={handleAvatarTap}
+onClick={handleAvatarTap}
         style={{
         display: "flex",
         flexDirection: "column",
