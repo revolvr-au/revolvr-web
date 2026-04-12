@@ -47,6 +47,13 @@ export default function RightRail({
     onFollowToggle?.();
   };
 
+  const navigateToProfile = () => {
+    if (username) {
+      const handle = username.startsWith("@") ? username.slice(1) : username;
+      if (handle) router.push(`/u/${handle}`);
+    }
+  };
+
   return (
     <div style={{
       position: "absolute",
@@ -62,11 +69,10 @@ export default function RightRail({
 
       {/* ── ARC AVATAR ── */}
       <div
-        onClick={() => {
-          if (username) {
-            const handle = username.startsWith("@") ? username.slice(1) : username;
-            if (handle) router.push(`/u/${handle}`);
-          }
+        onClick={navigateToProfile}
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          navigateToProfile();
         }}
         style={{
           display: "flex",
