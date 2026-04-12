@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export type ProfilePost = {
   id: string;
@@ -27,14 +28,17 @@ export default function ProfileClient({
   isFollowing = false,
   isCreator = false,
   commentsCount = 0,
+  isOwnProfile = false,
 }: {
   profile: Profile;
   posts: ProfilePost[];
   isFollowing?: boolean;
   isCreator?: boolean;
   commentsCount?: number;
+  isOwnProfile?: boolean;
 }) {
   const [followed, setFollowed] = useState(isFollowing);
+  const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? null);
 
   const postsCount = posts?.length ?? 0;
   const followers = profile.followersCount ?? 0;
@@ -44,6 +48,35 @@ export default function ProfileClient({
   const offerings = isCreator
     ? ["🎵 Music", "🎛️ Production", "🎤 Features", "🎬 Videos", "📻 Podcasts", "🎧 Sessions"]
     : ["🎵 Music", "🏋️ Fitness", "🎮 Gaming", "📸 Photography", "✈️ Travel", "🍔 Food"];
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const path = `${profile.handle}/avatar.${ext}`;
+
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (error) {
+      console.error("Avatar upload failed:", error);
+      return;
+    }
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    const newUrl = data.publicUrl;
+
+    setAvatarUrl(newUrl);
+
+    await fetch("/api/profile/avatar", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatarUrl: newUrl }),
+    });
+  };
 
   return (
     <div style={{
@@ -132,21 +165,67 @@ export default function ProfileClient({
             animation: "arcSpin 1.8s linear infinite",
           }} />
 
-          <div style={{
-            position: "absolute",
-            top: "50%", left: "50%",
-            transform: "translate(-50%, -50%)",
-            width: 112, height: 112,
-            borderRadius: "50%",
-            background: profile.avatarUrl
-              ? `url(${profile.avatarUrl}) center/cover`
-              : "linear-gradient(135deg, #1a1a2e, #16213e)",
-            border: "1.5px solid rgba(255,255,255,0.08)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 42, fontWeight: 700,
-          }}>
-            {!profile.avatarUrl && initial}
-          </div>
+          {isOwnProfile && (
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              style={{ display: "none" }}
+            />
+          )}
+
+          {isOwnProfile ? (
+            <label htmlFor="avatar-upload" style={{
+              position: "absolute",
+              top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 112, height: 112,
+              borderRadius: "50%",
+              cursor: "pointer",
+              display: "block",
+            }}>
+              <div style={{
+                width: "100%", height: "100%",
+                borderRadius: "50%",
+                background: avatarUrl
+                  ? `url(${avatarUrl}) center/cover`
+                  : "linear-gradient(135deg, #1a1a2e, #16213e)",
+                border: "1.5px solid rgba(255,255,255,0.08)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 42, fontWeight: 700,
+                position: "relative",
+                overflow: "hidden",
+              }}>
+                {!avatarUrl && initial}
+                <span style={{
+                  position: "absolute",
+                  bottom: 6, right: 6,
+                  fontSize: 16,
+                  background: "rgba(0,0,0,0.55)",
+                  borderRadius: "50%",
+                  padding: "3px 4px",
+                  lineHeight: 1,
+                }}>📷</span>
+              </div>
+            </label>
+          ) : (
+            <div style={{
+              position: "absolute",
+              top: "50%", left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 112, height: 112,
+              borderRadius: "50%",
+              background: avatarUrl
+                ? `url(${avatarUrl}) center/cover`
+                : "linear-gradient(135deg, #1a1a2e, #16213e)",
+              border: "1.5px solid rgba(255,255,255,0.08)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 42, fontWeight: 700,
+            }}>
+              {!avatarUrl && initial}
+            </div>
+          )}
         </div>
 
         {/* Name + handle */}

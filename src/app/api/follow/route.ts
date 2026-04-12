@@ -10,8 +10,22 @@ export async function POST(req: Request) {
 
     // incoming payload (UI/API)
     const viewerEmail = String(body?.viewerEmail ?? "").trim().toLowerCase();
-    const targetEmail = String(body?.targetEmail ?? "").trim().toLowerCase();
     const action = String(body?.action ?? "").trim().toLowerCase();
+
+    // Accept either targetEmail or targetHandle
+    let targetEmail = String(body?.targetEmail ?? "").trim().toLowerCase();
+    const targetHandle = String(body?.targetHandle ?? "").trim();
+
+    if (!targetEmail.includes("@") && targetHandle) {
+      const creator = await prisma.creatorProfile.findFirst({
+        where: { handle: { equals: targetHandle, mode: "insensitive" } },
+        select: { email: true },
+      });
+      if (!creator) {
+        return NextResponse.json({ ok: false, error: "handle_not_found" }, { status: 404 });
+      }
+      targetEmail = creator.email;
+    }
 
     if (!viewerEmail.includes("@") || !targetEmail.includes("@")) {
       return NextResponse.json({ ok: false, error: "invalid_email" }, { status: 400 });

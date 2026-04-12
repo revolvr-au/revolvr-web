@@ -141,15 +141,15 @@ const handleHome = () => {
 const handleLive = () => {
   router.push("/live");
 };
-const handleFollow = async (targetEmail: string, currentlyFollowing: boolean) => {
+const handleFollow = async (targetHandle: string, currentlyFollowing: boolean) => {
   if (!userEmail) return;
-  
+
   await fetch("/api/follow", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       viewerEmail: userEmail,
-      targetEmail: targetEmail,
+      targetHandle,
       action: currentlyFollowing ? "unfollow" : "follow",
     }),
   });
@@ -375,14 +375,14 @@ const handleFollow = async (targetEmail: string, currentlyFollowing: boolean) =>
   onLive={handleLive}
   showComments={showComments}
   rewardCount={rewardMap[post.id] || 0}
-  isFollowing={!!followMap[post.userEmail]}
+  isFollowing={!!followMap[post.handle]}
   onFollowToggle={() => {
-    const current = !!followMap[post.userEmail];
+    const current = !!followMap[post.handle];
     setFollowMap(prev => ({
       ...prev,
-      [post.userEmail]: !current,
+      [post.handle]: !current,
     }));
-    handleFollow(post.userEmail, current);
+    handleFollow(post.handle, current);
   }}
 />
   );
@@ -501,7 +501,8 @@ function Post({
         onCreate={() => onCreate()}
         onHome={() => onHome()}
         rewardCount={rewardCount}
-        username={post.handle || post.userEmail}
+        avatarUrl={post.avatarUrl}
+        username={post.handle ? `@${post.handle}` : undefined}
         isFollowing={isFollowing}
         onFollowToggle={onFollowToggle}
       />
@@ -523,7 +524,7 @@ function Post({
             fontWeight: 500,
           }}
         >
-          {post.handle || post.userEmail || "user"}
+          {post.handle ? `@${post.handle}` : "user"}
         </div>
 
         {post.caption && (
