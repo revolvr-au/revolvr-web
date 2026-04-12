@@ -64,6 +64,7 @@ export default function DeleteAccountPage() {
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        .delete-email-input::placeholder { color: #555; }
         .delete-email-input:focus {
           outline: none;
           border-color: #00e5ff !important;
@@ -105,7 +106,7 @@ export default function DeleteAccountPage() {
       </h1>
 
       {/* Subtitle */}
-      <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, margin: "0 0 24px" }}>
+      <p style={{ fontSize: 13, color: "#888", lineHeight: 1.7, margin: "0 0 24px" }}>
         This is permanent and cannot be undone.
       </p>
 
@@ -116,7 +117,7 @@ export default function DeleteAccountPage() {
       {warnings.map((item, i) => (
         <div key={i} style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
           <span style={{ color: "#ff3b30", fontSize: 12, marginTop: 1, flexShrink: 0, fontWeight: 700 }}>×</span>
-          <span style={{ fontSize: 13, color: "#555", lineHeight: 1.6 }}>{item}</span>
+          <span style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6 }}>{item}</span>
         </div>
       ))}
 
@@ -140,7 +141,7 @@ export default function DeleteAccountPage() {
           borderRadius: 50,
           background: "#0f0d0a",
           border: `1px solid ${focusEmail ? "#00e5ff" : "#1e1a14"}`,
-          color: "#ccc",
+          color: "white",
           fontSize: 13,
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           marginBottom: 16,
@@ -163,8 +164,8 @@ export default function DeleteAccountPage() {
           padding: "15px 0",
           borderRadius: 50,
           background: "transparent",
-          border: `1px solid ${emailMatches ? "#ff3b30" : "#2a2218"}`,
-          color: emailMatches ? "#ff3b30" : "#3a3020",
+          border: `1px solid ${emailMatches ? "#ff3b30" : "#333"}`,
+          color: emailMatches ? "white" : "#444",
           fontSize: 18,
           fontFamily: "'Bebas Neue', sans-serif",
           letterSpacing: 2,
