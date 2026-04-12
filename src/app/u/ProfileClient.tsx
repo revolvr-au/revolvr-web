@@ -184,9 +184,9 @@ export default function ProfileClient({
 
         {/* Stats row — 3 equal circular pills */}
         {isCreator ? (
-          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20 }}>
             {([
-              { val: "0", label: "VOLTAGE" },
+              { val: "⚡ 0", label: "VOLTAGE" },
               { val: String(followers), label: "FOLLOWERS" },
               { val: String(postsCount), label: "POSTS" },
             ] as { val: string; label: string }[]).map((s, i) => (
@@ -194,6 +194,7 @@ export default function ProfileClient({
                 width: 80, height: 80,
                 borderRadius: "50%",
                 background: "#f5f0e8",
+                border: s.label === "VOLTAGE" ? "2px solid rgba(0,229,255,0.3)" : "none",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -215,7 +216,7 @@ export default function ProfileClient({
             ))}
           </div>
         ) : (
-          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20 }}>
             {[
               { val: String(followers), label: "FOLLOWERS" },
               { val: String(following), label: "FOLLOWING" },
@@ -248,7 +249,7 @@ export default function ProfileClient({
         )}
 
         {/* Action buttons */}
-        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320 }}>
+        <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320, marginTop: 20 }}>
           <button
             onClick={() => setFollowed(prev => !prev)}
             style={{
