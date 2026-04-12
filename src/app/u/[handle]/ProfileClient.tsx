@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
+import HamburgerMenu from "@/components/HamburgerMenu";
 
 export type ProfilePost = {
   id: string;
@@ -38,17 +39,19 @@ export default function ProfileClient({
   const [followed, setFollowed] = useState(isFollowing);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user?.email && profile.email) {
-        setIsOwnProfile(
-          user.email.trim().toLowerCase() === profile.email.trim().toLowerCase()
-        );
-      }
-    });
-  }, [profile.email]);
+  const supabase = createSupabaseBrowserClient();
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    console.log("AUTH EMAIL:", user?.email, "PROFILE EMAIL:", profile.email);
+    if (user?.email && profile.email) {
+      setIsOwnProfile(
+        user.email.trim().toLowerCase() === profile.email.trim().toLowerCase()
+      );
+    }
+  });
+}, [profile.email]);
 
   const postsCount = posts?.length ?? 0;
   const followers = profile.followersCount ?? 0;
@@ -124,16 +127,27 @@ export default function ProfileClient({
           letterSpacing: 6,
           color: "white",
         }}>REVOLVR</div>
-        <button style={{
-          background: "transparent",
-          border: "none",
-          color: "#555",
-          fontSize: 22,
-          cursor: "pointer",
-          lineHeight: 1,
-          padding: "4px 2px",
-        }}>≡</button>
+        <button
+          onClick={() => setMenuOpen(true)}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#555",
+            fontSize: 22,
+            cursor: "pointer",
+            lineHeight: 1,
+            padding: "4px 2px",
+          }}
+        >≡</button>
       </div>
+
+      <HamburgerMenu
+        isOpen={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        isCreator={isCreator}
+        isOwnProfile={isOwnProfile}
+        handle={profile.handle}
+      />
 
       {/* ── HERO ── */}
       <div style={{
