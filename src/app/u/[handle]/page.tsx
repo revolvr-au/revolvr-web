@@ -60,7 +60,7 @@ export default async function ProfilePage({
 
   const currentUserEmail = await getAuthedEmailOrNull();
 
-  const [followersCount, followingCount, followRecord] = await Promise.all([
+  const [followersCount, followingCount, followRecord, commentsCount] = await Promise.all([
     prisma.follow.count({
       where: { followingEmail: creator.email },
     }),
@@ -73,6 +73,9 @@ export default async function ProfilePage({
           select: { id: true },
         })
       : Promise.resolve(null),
+    prisma.comment.count({
+      where: { post: { userEmail: creator.email } },
+    }),
   ]);
 
   const isFollowing = !!followRecord;
@@ -93,6 +96,7 @@ export default async function ProfilePage({
       posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
       isFollowing={isFollowing}
       isCreator={isCreator}
+      commentsCount={commentsCount}
     />
     </div>
   );

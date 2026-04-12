@@ -26,11 +26,13 @@ export default function ProfileClient({
   posts,
   isFollowing = false,
   isCreator = false,
+  commentsCount = 0,
 }: {
   profile: Profile;
   posts: ProfilePost[];
   isFollowing?: boolean;
   isCreator?: boolean;
+  commentsCount?: number;
 }) {
   const [followed, setFollowed] = useState(isFollowing);
 
@@ -182,19 +184,21 @@ export default function ProfileClient({
           <span style={{ fontSize: 10, color: "#333", fontFamily: "monospace" }}>0:30</span>
         </div>
 
-        {/* Stats row — 3 equal circular pills */}
+        {/* Stats row — 4 equal circular pills */}
         {isCreator ? (
           <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20 }}>
             {([
               { val: "⚡ 0", label: "VOLTAGE" },
               { val: String(followers), label: "FOLLOWERS" },
+              { val: `💬 ${commentsCount}`, label: "COMMENTS" },
               { val: String(postsCount), label: "POSTS" },
             ] as { val: string; label: string }[]).map((s, i) => (
               <div key={i} style={{
                 width: 80, height: 80,
                 borderRadius: "50%",
                 background: "#f5f0e8",
-                border: s.label === "VOLTAGE" ? "2px solid rgba(0,229,255,0.3)" : "none",
+                border: s.label === "VOLTAGE" ? "2px solid rgba(0,229,255,0.3)" : "2px solid transparent",
+                boxSizing: "border-box",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -226,6 +230,8 @@ export default function ProfileClient({
                 width: 80, height: 80,
                 borderRadius: "50%",
                 background: "#f5f0e8",
+                border: "2px solid transparent",
+                boxSizing: "border-box",
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
