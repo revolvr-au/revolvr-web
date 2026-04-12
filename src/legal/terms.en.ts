@@ -89,7 +89,7 @@ Apple Inc. and Google LLC are not parties to these Terms and have no responsibil
 Revolvr may modify these Terms at any time. Continued use of the Platform constitutes acceptance of the updated Terms.
 
 ## 22. Governing Law & Jurisdiction
-These Terms are governed by the laws of England and Wales, subject to mandatory consumer protections.
+These Terms are governed by the laws of New South Wales, Australia, subject to mandatory consumer protections applicable in your jurisdiction, including Australian Consumer Law.
 
 ## 23. Severability
 If any provision is unenforceable, the remaining provisions remain in effect.
