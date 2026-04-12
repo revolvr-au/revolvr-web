@@ -53,7 +53,7 @@ useEffect(() => {
 
   const router = useRouter();
 const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-const [pressStart, setPressStart] = useState(0);
+const pressStartRef = useRef(0);
   const handleFollow = () => {
   const next = !followed;
   setFollowed(next);
@@ -66,7 +66,7 @@ const [pressStart, setPressStart] = useState(0);
 
   const circumference = 2 * Math.PI * 23;
 const handleAvatarTap = () => {
-  const pressDuration = Date.now() - pressStart;
+  const pressDuration = Date.now() - pressStartRef.current;
   if (pressDuration < 300) {
     if (username) {
       const handle = username.startsWith("@")
@@ -97,8 +97,8 @@ const handleAvatarTap = () => {
     >
       {/* ── ARC AVATAR ── */}
       <div
-        onMouseDown={() => setPressStart(Date.now())}
-        onTouchStart={() => setPressStart(Date.now())}
+        onMouseDown={() => { pressStartRef.current = Date.now(); }}
+        onTouchStart={() => { pressStartRef.current = Date.now(); }}
         onClick={handleAvatarTap}
         style={{
         display: "flex",
