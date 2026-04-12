@@ -97,137 +97,42 @@ const handleAvatarTap = () => {
     >
       {/* ── ARC AVATAR ── */}
 <div
+  onClick={() => {
+    if (username) {
+      const handle = username.startsWith("@") ? username.slice(1) : username;
+      if (handle) router.push(`/u/${handle}`);
+    }
+  }}
   style={{
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     gap: 4,
     cursor: "pointer",
+    zIndex: 400,
   }}
 >
-  <div
-    onClick={() => {
-      if (username) {
-        const handle = username.startsWith("@") ? username.slice(1) : username;
-        if (handle) router.push(`/u/${handle}`);
-      }
-    }}
-    style={{ position: "relative", width: 50, height: 50 }}
-  ></div>
-        <div style={{ position: "relative", width: 50, height: 50 }}>
-          <svg
-  width="50"
-  height="50"
-  viewBox="0 0 50 50"
-  style={{
-    position: "absolute",
-    inset: 0,
-    overflow: "visible",
-    pointerEvents: "none",
-  }}
->
-            {/* Ghost track */}
-            <circle
-              cx="25" cy="25" r="23"
-              fill="none"
-              stroke="#00e5ff"
-              strokeWidth="1.5"
-              opacity="0.08"
-            />
-
-            {/* Burst rings */}
-            {bursting && (
-              <>
-                <circle
-                  cx="25" cy="25" r="23"
-                  fill="none"
-                  stroke="#00e5ff"
-                  strokeWidth="1.5"
-                  style={{
-                    animation: "arcBurst 0.6s ease forwards",
-                  }}
-                />
-                <circle
-                  cx="25" cy="25" r="23"
-                  fill="none"
-                  stroke="#00e5ff"
-                  strokeWidth="1"
-                  style={{
-                    animation: "arcBurst 0.6s ease 0.1s forwards",
-                  }}
-                />
-              </>
-            )}
-
-            {/* Spinning arc — unfollowed */}
-            {!followed && (
-              <circle
-                cx="25" cy="25" r="23"
-                fill="none"
-                stroke="#00e5ff"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeDasharray="95 50"
-                style={{
-                  transformOrigin: "25px 25px",
-                  animation: "arcSpin 1.8s linear infinite",
-                  filter: "drop-shadow(0 0 5px #00e5ff)",
-                }}
-              />
-            )}
-
-            {/* Complete ring — followed */}
-            {followed && (
-              <circle
-                cx="25" cy="25" r="23"
-                fill="none"
-                stroke="#00e5ff"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset="0"
-                style={{
-                  transformOrigin: "25px 25px",
-                  transform: "rotate(-90deg)",
-                  filter: "drop-shadow(0 0 8px #00e5ff)",
-                  transition: "stroke-dashoffset 0.55s cubic-bezier(0.22,1,0.36,1)",
-                }}
-              />
-            )}
-          </svg>
-
-          {/* Avatar image or initials */}
-          <div
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: 38,
-              height: 38,
-              borderRadius: "50%",
-              background: avatarUrl
-                ? `url(${avatarUrl}) center/cover`
-                : "linear-gradient(135deg, #1a1a2e, #16213e)",
-              border: "1.5px solid rgba(255,255,255,0.1)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14,
-              fontWeight: 700,
-              color: "white",
-              zIndex: 2,
-              transition: "box-shadow 0.4s ease",
-              boxShadow: followed
-                ? "0 0 0 2px rgba(0,229,255,0.2)"
-                : "none",
-            }}
-          >
-            {!avatarUrl && (
-  (username?.startsWith("@") ? username.slice(1) : username)?.[0]?.toUpperCase() ?? "?"
-)}
-          </div>
-        </div>
+  <div style={{
+    width: 50,
+    height: 50,
+    borderRadius: "50%",
+    background: avatarUrl
+      ? `url(${avatarUrl}) center/cover`
+      : "linear-gradient(135deg, #1a1a2e, #16213e)",
+    border: "2px solid #00e5ff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 14,
+    fontWeight: 700,
+    color: "white",
+    boxShadow: "0 0 8px rgba(0,229,255,0.4)",
+  }}>
+    {!avatarUrl && (
+      (username?.startsWith("@") ? username.slice(1) : username)?.[0]?.toUpperCase() ?? "?"
+    )}
+  </div>
+</div>
 
         {/* Follow label */}
         <span
