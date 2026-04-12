@@ -96,19 +96,24 @@ const handleAvatarTap = () => {
       }}
     >
       {/* ── ARC AVATAR ── */}
-      <div
-        onMouseDown={() => { pressStartRef.current = Date.now(); }}
-onTouchStart={() => { pressStartRef.current = Date.now(); }}
-onTouchEnd={handleAvatarTap}
-onClick={handleAvatarTap}
-        style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 4,
-        cursor: "pointer",
-        }}
-        >
+<div
+  style={{
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 4,
+    cursor: "pointer",
+  }}
+>
+  <div
+    onClick={() => {
+      if (username) {
+        const handle = username.startsWith("@") ? username.slice(1) : username;
+        if (handle) router.push(`/u/${handle}`);
+      }
+    }}
+    style={{ position: "relative", width: 50, height: 50 }}
+  ></div>
         <div style={{ position: "relative", width: 50, height: 50 }}>
           <svg
             width="50"
