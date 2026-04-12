@@ -20,7 +20,7 @@ export default async function ProfilePage({
     return <div style={{ padding: 40 }}>Handle missing</div>;
   }
 
-  // Look up by handle in CreatorProfile
+  // Handle lookup: CreatorProfile.handle only — profiles has no handle column
   const creator = await prisma.creatorProfile.findFirst({
     where: {
       handle: {
@@ -46,7 +46,7 @@ export default async function ProfilePage({
     );
   }
 
-  // Fetch profiles row for supplementary data — takes precedence over CreatorProfile
+  // Fetch profiles row for supplementary display data (falls back to CreatorProfile fields if null)
   const profileRow = await prisma.profiles.findFirst({
     where: { email: creator.email },
     select: { display_name: true, avatar_url: true, bio: true },
@@ -85,7 +85,7 @@ export default async function ProfilePage({
   const { data: { user } } = await supabase.auth.getUser();
   const currentUserEmail = user?.email ?? null;
 
-  console.log("currentUserEmail:", currentUserEmail, "profile email:", creator.email);
+  console.log("AUTH USER:", user?.id, user?.email, "SESSION:", user ? "valid" : "null");
 
   const isOwnProfile =
     !!currentUserEmail &&
