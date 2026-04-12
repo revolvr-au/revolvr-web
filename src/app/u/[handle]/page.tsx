@@ -87,10 +87,6 @@ export default async function ProfilePage({
 
   console.log("AUTH USER:", user?.id, user?.email, "SESSION:", user ? "valid" : "null");
 
-  const isOwnProfile =
-    !!currentUserEmail &&
-    currentUserEmail.trim().toLowerCase() === (creator.email ?? "").trim().toLowerCase();
-
   const [followersCount, followingCount, followRecord, commentsCount] = await Promise.all([
     prisma.follow.count({
       where: { followingEmail: creator.email },
@@ -128,7 +124,6 @@ export default async function ProfilePage({
         isFollowing={isFollowing}
         isCreator={isCreator}
         commentsCount={commentsCount}
-        isOwnProfile={isOwnProfile}
       />
     </div>
   );

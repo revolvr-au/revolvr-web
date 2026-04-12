@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export type ProfilePost = {
@@ -28,17 +28,27 @@ export default function ProfileClient({
   isFollowing = false,
   isCreator = false,
   commentsCount = 0,
-  isOwnProfile = false,
 }: {
   profile: Profile;
   posts: ProfilePost[];
   isFollowing?: boolean;
   isCreator?: boolean;
   commentsCount?: number;
-  isOwnProfile?: boolean;
 }) {
   const [followed, setFollowed] = useState(isFollowing);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? null);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email && profile.email) {
+        setIsOwnProfile(
+          user.email.trim().toLowerCase() === profile.email.trim().toLowerCase()
+        );
+      }
+    });
+  }, [profile.email]);
 
   const postsCount = posts?.length ?? 0;
   const followers = profile.followersCount ?? 0;
