@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { createSupabaseServerClient } from "@/lib/supabaseServer";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import ProfileClient from "./ProfileClient";
 
 export const dynamic = "force-dynamic";
@@ -70,22 +71,25 @@ export default async function ProfilePage({
     take: 60,
   });
 
-  let currentUserEmail: string | null = null;
-  try {
-    const supabase = await createSupabaseServerClient();
-    const { data, error } = await supabase.auth.getUser();
-    if (!error && data?.user?.email) {
-      currentUserEmail = data.user.email.trim().toLowerCase();
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: () => {},
+      },
     }
-  } catch (err) {
-    console.error("ProfilePage: auth lookup failed", err);
-  }
+  );
+  const { data: { user } } = await supabase.auth.getUser();
+  const currentUserEmail = user?.email ?? null;
 
   console.log("currentUserEmail:", currentUserEmail, "profile email:", creator.email);
 
   const isOwnProfile =
     !!currentUserEmail &&
-    currentUserEmail === (creator.email ?? "").trim().toLowerCase();
+    currentUserEmail.trim().toLowerCase() === (creator.email ?? "").trim().toLowerCase();
 
   const [followersCount, followingCount, followRecord, commentsCount] = await Promise.all([
     prisma.follow.count({
