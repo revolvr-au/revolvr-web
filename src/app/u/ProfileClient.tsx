@@ -163,71 +163,83 @@ export default function ProfileClient({
           </div>
         </div>
 
-        {/* Audio intro placeholder */}
+        {/* Audio intro — full width rounded pill */}
         <div style={{
+          width: "100%",
+          maxWidth: 300,
+          background: "transparent",
+          border: "1px solid #1a1510",
+          borderRadius: 24,
+          padding: "10px 16px",
           display: "flex",
           alignItems: "center",
-          gap: 8,
-          fontFamily: "monospace",
+          gap: 10,
         }}>
-          <span style={{ fontSize: 12 }}>🎙️</span>
-          <span style={{ fontSize: 10, color: "#00e5ff", letterSpacing: 0.5 }}>Intro</span>
-          <span style={{ fontSize: 10, color: "#333" }}>▶ ────────── 0:30</span>
+          <span style={{ fontSize: 16 }}>🎙️</span>
+          <span style={{ fontSize: 11, color: "#00e5ff", fontFamily: "monospace", letterSpacing: 2 }}>Intro</span>
+          <span style={{ fontSize: 10, color: "#333" }}>▶</span>
+          <div style={{ flex: 1, height: 1, background: "#1a1510" }} />
+          <span style={{ fontSize: 10, color: "#333", fontFamily: "monospace" }}>0:30</span>
         </div>
 
-        {/* Stats row — no box, floating */}
+        {/* Stats row — 3 equal circular pills */}
         {isCreator ? (
-          <div style={{
-            display: "flex", gap: 24,
-            width: "100%", maxWidth: 320,
-            justifyContent: "center",
-          }}>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
             {([
-              { val: "⚡ 0", label: "VOLTAGE", cyan: true },
-              { val: String(followers), label: "FOLLOWERS", cyan: false },
-              { val: String(postsCount), label: "POSTS", cyan: false },
-            ] as { val: string; label: string; cyan: boolean }[]).map((s, i) => (
+              { val: "0", label: "VOLTAGE" },
+              { val: String(followers), label: "FOLLOWERS" },
+              { val: String(postsCount), label: "POSTS" },
+            ] as { val: string; label: string }[]).map((s, i) => (
               <div key={i} style={{
-                flex: 1,
-                padding: "8px 0",
-                textAlign: "center",
+                width: 80, height: 80,
+                borderRadius: "50%",
+                background: "#f5f0e8",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
               }}>
                 <div style={{
                   fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 28, letterSpacing: 1,
-                  color: s.cyan ? "#00e5ff" : "#fff",
+                  fontSize: 22,
+                  color: "#0a0806",
                 }}>{s.val}</div>
                 <div style={{
-                  fontSize: 8, color: "#333",
-                  fontFamily: "monospace", letterSpacing: 1.5,
+                  fontSize: 8,
+                  fontFamily: "monospace",
+                  letterSpacing: 2,
+                  color: "#888",
                   marginTop: 2,
                 }}>{s.label}</div>
               </div>
             ))}
           </div>
         ) : (
-          <div style={{
-            display: "flex", gap: 24,
-            width: "100%", maxWidth: 320,
-            justifyContent: "center",
-          }}>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center" }}>
             {[
-              { val: followers, label: "FOLLOWERS" },
-              { val: following, label: "FOLLOWING" },
-              { val: postsCount, label: "POSTS" },
+              { val: String(followers), label: "FOLLOWERS" },
+              { val: String(following), label: "FOLLOWING" },
+              { val: String(postsCount), label: "POSTS" },
             ].map((s, i) => (
               <div key={i} style={{
-                flex: 1,
-                padding: "8px 0",
-                textAlign: "center",
+                width: 80, height: 80,
+                borderRadius: "50%",
+                background: "#f5f0e8",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
               }}>
                 <div style={{
                   fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 28, letterSpacing: 1, color: "#fff",
+                  fontSize: 22,
+                  color: "#0a0806",
                 }}>{s.val}</div>
                 <div style={{
-                  fontSize: 8, color: "#333",
-                  fontFamily: "monospace", letterSpacing: 1.5,
+                  fontSize: 8,
+                  fontFamily: "monospace",
+                  letterSpacing: 2,
+                  color: "#888",
                   marginTop: 2,
                 }}>{s.label}</div>
               </div>
@@ -241,7 +253,7 @@ export default function ProfileClient({
             onClick={() => setFollowed(prev => !prev)}
             style={{
               flex: 1, padding: "11px 0",
-              borderRadius: 12,
+              borderRadius: 50,
               background: followed
                 ? "rgba(0,229,255,0.08)"
                 : "rgba(255,255,255,0.95)",
@@ -260,7 +272,7 @@ export default function ProfileClient({
           </button>
           <button style={{
             flex: 1, padding: "11px 0",
-            borderRadius: 12,
+            borderRadius: 50,
             background: "transparent",
             border: "1px solid #1a1a1a",
             color: "#555",
@@ -269,32 +281,33 @@ export default function ProfileClient({
             letterSpacing: 0.5,
             fontFamily: "monospace",
           }}>
-            {isCreator ? "Gift" : "Message"}
+            {isCreator ? "⚡ Gift" : "Message"}
           </button>
         </div>
 
-        {/* Offerings shelf — 2 rows of 3 pills */}
+        {/* Offerings shelf — single horizontal scroll row */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
+          display: "flex",
+          flexDirection: "row",
+          overflowX: "auto",
           gap: 8,
+          padding: "4px 20px",
+          scrollbarWidth: "none",
           width: "100%",
-          maxWidth: 320,
-          marginTop: 4,
         }}>
           {offerings.map((item, i) => (
             <div key={i} style={{
-              background: "#0e0b08",
-              border: "1px solid #1a1a1a",
+              flexShrink: 0,
+              background: "#f5f0e8",
               borderRadius: 20,
               padding: "6px 14px",
               fontSize: 11,
               fontFamily: "monospace",
-              color: "#666",
-              textAlign: "center",
+              color: "#0a0806",
               whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
             }}>
               {item}
             </div>
@@ -304,11 +317,11 @@ export default function ProfileClient({
         {/* Bio */}
         {profile.bio?.trim() && (
           <div style={{
-            fontSize: 14, color: "#555",
+            fontSize: 14, color: "#444",
             textAlign: "center",
             lineHeight: 1.7,
-            maxWidth: 280,
-            marginTop: 8,
+            marginTop: 16,
+            padding: "0 24px",
           }}>
             {profile.bio}
           </div>
