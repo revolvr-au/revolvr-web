@@ -25,11 +25,15 @@ export async function createSupabaseServerClient() {
         return typeof cookieStore.getAll === "function" ? cookieStore.getAll() : [];
       },
       setAll(cookiesToSet: CookieToSet[]) {
-        if (typeof cookieStore.set !== "function") return;
-
-        cookiesToSet.forEach(({ name, value, options }) => {
-          cookieStore.set?.(name, value, options);
-        });
+        // Silently ignored when called from a Server Component.
+        // Cookie writes only succeed in Route Handlers / Server Actions.
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set?.(name, value, options);
+          });
+        } catch {
+          // noop
+        }
       },
     },
   });
