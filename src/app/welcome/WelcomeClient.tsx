@@ -184,65 +184,87 @@ export default function WelcomeClient() {
         background: "linear-gradient(to bottom, rgba(6,6,6,0.4) 0%, rgba(6,6,6,0.85) 60%, #060606 100%)",
       }} />
 
-      {/* Avatar 1 — left, spinning cyan arc (unfollowed) */}
-      <div style={{ position: "absolute", left: "10%", top: 80 }}>
-        {/* Spinning arc ring */}
-        <div style={{
-          position: "absolute",
-          inset: -4,
-          borderRadius: "50%",
-          border: "2px solid transparent",
-          borderTopColor: "#00e5ff",
-          borderRightColor: "#00e5ff",
-          animation: "arcSpin 3s linear infinite",
-        }} />
-        <img
-          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
-          alt=""
-          aria-hidden="true"
-          style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", display: "block" }}
-        />
-      </div>
+      {/* Content */}
+      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: 40, paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
 
-      {/* Avatar 2 — right, solid cyan ring (followed) */}
-      <div style={{ position: "absolute", right: "12%", top: 130 }}>
-        <img
-          src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150"
-          alt=""
-          aria-hidden="true"
-          style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #00e5ff" }}
-        />
-      </div>
+        {/* Avatar cluster */}
+        <div style={{ position: "relative", width: "100%", maxWidth: 320, margin: "0 auto", height: 220 }}>
 
-      {/* Avatar 3 — centre, red ring + LIVE badge */}
-      <div style={{ position: "absolute", left: "42%", top: 180 }}>
-        {/* LIVE badge */}
-        <div style={{
-          position: "absolute",
-          top: -18,
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "#ff3b30",
-          color: "white",
-          fontFamily: "monospace",
-          fontSize: 8,
-          borderRadius: 999,
-          padding: "2px 6px",
-          whiteSpace: "nowrap",
-          animation: "pulse 1.5s ease-in-out infinite",
-        }}>
-          ● LIVE
+          {/* Avatar 1 — top left: spinning cyan arc */}
+          <div style={{ position: "absolute", left: 20, top: 0 }}>
+            <div style={{
+              position: "absolute",
+              inset: -4,
+              borderRadius: "50%",
+              border: "2px solid transparent",
+              borderTopColor: "#00e5ff",
+              borderRightColor: "#00e5ff",
+              animation: "arcSpin 3s linear infinite",
+            }} />
+            <img
+              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+              alt=""
+              aria-hidden="true"
+              style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", display: "block" }}
+            />
+          </div>
+
+          {/* Avatar 2 — top right: solid cyan ring */}
+          <div style={{ position: "absolute", right: 20, top: 20 }}>
+            <img
+              src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150"
+              alt=""
+              aria-hidden="true"
+              style={{ width: 76, height: 76, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #00e5ff" }}
+            />
+          </div>
+
+          {/* Avatar 3 — centre middle: red ring + pulsing LIVE badge */}
+          <div style={{ position: "absolute", left: "50%", top: 80, transform: "translateX(-50%)" }}>
+            <div style={{
+              position: "absolute",
+              top: -18,
+              left: "50%",
+              transform: "translateX(-50%)",
+              background: "#ff3b30",
+              color: "white",
+              fontFamily: "monospace",
+              fontSize: 8,
+              borderRadius: 999,
+              padding: "2px 6px",
+              whiteSpace: "nowrap",
+              animation: "pulse 1.5s ease-in-out infinite",
+            }}>
+              ● LIVE
+            </div>
+            <img
+              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+              alt=""
+              aria-hidden="true"
+              style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #ff3b30" }}
+            />
+          </div>
+
+          {/* Avatar 4 — bottom centre-left: spinning cyan arc */}
+          <div style={{ position: "absolute", left: 30, bottom: 0 }}>
+            <div style={{
+              position: "absolute",
+              inset: -4,
+              borderRadius: "50%",
+              border: "2px solid transparent",
+              borderTopColor: "#00e5ff",
+              borderRightColor: "#00e5ff",
+              animation: "arcSpin 3s linear infinite",
+            }} />
+            <img
+              src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150"
+              alt=""
+              aria-hidden="true"
+              style={{ width: 68, height: 68, borderRadius: "50%", objectFit: "cover", display: "block" }}
+            />
+          </div>
+
         </div>
-        <img
-          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
-          alt=""
-          aria-hidden="true"
-          style={{ width: 68, height: 68, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #ff3b30" }}
-        />
-      </div>
-
-      {/* Content — bottom half */}
-      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: 280, paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
 
         {/* Wordmark */}
         <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white" }}>
