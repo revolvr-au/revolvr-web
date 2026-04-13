@@ -35,20 +35,26 @@ export async function PATCH(req: NextRequest) {
   const email = user.email;
   const now = new Date();
 
-  await prisma.profiles.upsert({
-    where: { email },
-    create: {
-      email,
-      display_name: displayName.trim(),
-      avatar_url: avatarUrl ?? null,
-      updated_at: now,
-    },
-    update: {
-      display_name: displayName.trim(),
-      avatar_url: avatarUrl ?? null,
-      updated_at: now,
-    },
-  });
+  try {
+    await prisma.profiles.upsert({
+      where: { email },
+      create: {
+        email,
+        display_name: displayName.trim(),
+        avatar_url: avatarUrl ?? null,
+        created_at: now,
+        updated_at: now,
+      },
+      update: {
+        display_name: displayName.trim(),
+        avatar_url: avatarUrl ?? null,
+        updated_at: now,
+      },
+    });
+  } catch (e) {
+    console.error("profiles upsert failed:", e);
+    return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
+  }
 
   const existing = await prisma.creatorProfile.findUnique({ where: { email } });
   if (existing) {
