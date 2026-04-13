@@ -100,8 +100,9 @@ export default function WelcomeClient() {
       return;
     }
 
-    // SSR cookies now exist; go where you want
-    window.location.href = redirectTo;
+    // SSR cookies now exist; give them a moment to settle
+    await new Promise(resolve => setTimeout(resolve, 500));
+    window.location.href = "/";
   }
 
   const inputStyle: React.CSSProperties = {
