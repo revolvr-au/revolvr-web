@@ -145,11 +145,14 @@ export default function WelcomeClient() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
+        width: "100%",
         background: "#060606",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        padding: "20px",
       }}
     >
       <style>{`
