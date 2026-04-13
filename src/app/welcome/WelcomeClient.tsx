@@ -199,13 +199,13 @@ export default function WelcomeClient() {
       }}>REVOLVR</div>
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: "clamp(200px, 45vw, 260px)", paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
+      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: "clamp(180px, 40vw, 240px)", paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
 
         {/* Avatar cluster */}
         <div style={{ position: "relative", width: "100%", maxWidth: 420, margin: "0 auto", marginTop: "-20px", height: 220 }}>
 
           {/* Avatar 1 — top left: spinning cyan arc */}
-          <div style={{ position: "absolute", left: 0, top: 40 }}>
+          <div style={{ position: "absolute", left: "10%", top: 40 }}>
             <div style={{
               position: "absolute",
               inset: -4,
@@ -224,7 +224,7 @@ export default function WelcomeClient() {
           </div>
 
           {/* Avatar 2 — top right: solid cyan ring */}
-          <div style={{ position: "absolute", right: 0, top: 20 }}>
+          <div style={{ position: "absolute", right: "10%", top: 20 }}>
             <img
               src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150"
               alt=""
@@ -234,7 +234,7 @@ export default function WelcomeClient() {
           </div>
 
           {/* Avatar 3 — centre middle: red ring + pulsing LIVE badge */}
-          <div style={{ position: "absolute", left: "50%", top: 100, transform: "translateX(-50%)" }}>
+          <div style={{ position: "absolute", left: "50%", top: 90, transform: "translateX(-50%)" }}>
             <div style={{
               position: "absolute",
               top: -18,
@@ -260,7 +260,7 @@ export default function WelcomeClient() {
           </div>
 
           {/* Avatar 4 — bottom centre-left: spinning cyan arc */}
-          <div style={{ position: "absolute", left: 60, bottom: 0 }}>
+          <div style={{ position: "absolute", left: "25%", bottom: 10 }}>
             <div style={{
               position: "absolute",
               inset: -4,
