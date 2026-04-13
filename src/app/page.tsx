@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 export default async function Page() {
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -25,7 +27,13 @@ export default async function Page() {
     prisma.creatorProfile.findUnique({ where: { email }, select: { handle: true } }),
   ]);
 
+  console.log("EMAIL:", email);
+  console.log("PROFILE:", JSON.stringify(profile));
+  console.log("CREATOR:", JSON.stringify(creator));
+
   const hasHandle = !!(profile?.display_name || creator?.handle);
+  console.log("HAS HANDLE:", hasHandle);
+
   if (!hasHandle) redirect("/onboard");
   redirect("/public-feed");
 }
