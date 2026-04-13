@@ -184,6 +184,19 @@ export default function WelcomeClient() {
         background: "linear-gradient(to bottom, rgba(6,6,6,0.4) 0%, rgba(6,6,6,0.85) 60%, #060606 100%)",
       }} />
 
+      {/* Wordmark — top-left header */}
+      <div style={{
+        position: "absolute",
+        top: 24,
+        left: 24,
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: 42,
+        letterSpacing: 6,
+        color: "white",
+        zIndex: 10,
+        lineHeight: 1,
+      }}>REVOLVR</div>
+
       {/* Content */}
       <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: 40, paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
 
@@ -266,19 +279,14 @@ export default function WelcomeClient() {
 
         </div>
 
-        {/* Wordmark */}
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white" }}>
-          REVOLVR
-        </div>
-
         {/* Headline */}
         <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, color: "white", lineHeight: 1.05, margin: "12px 0 0", letterSpacing: 1 }}>
-          THE PLATFORM THAT PAYS CREATORS.
+          THE STAGE IS YOURS.
         </h1>
 
         {/* Subline */}
         <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555", letterSpacing: 2, margin: "8px 0 0" }}>
-          Watch, create, earn.
+          Live. Create. Earn.
         </p>
 
         {/* Form */}
