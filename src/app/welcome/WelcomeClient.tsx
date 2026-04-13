@@ -199,10 +199,10 @@ export default function WelcomeClient() {
       }}>REVOLVR</div>
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: "clamp(180px, 40vw, 240px)", paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
+      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: "clamp(160px, 35vw, 200px)", paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
 
         {/* Avatar cluster */}
-        <div style={{ position: "relative", width: "100%", maxWidth: 420, margin: "0 auto", marginTop: "-20px", height: 220 }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: 420, margin: "0 auto", marginTop: "-60px", height: 220 }}>
 
           {/* Avatar 1 — top left: spinning cyan arc */}
           <div style={{ position: "absolute", left: "10%", top: 40 }}>
