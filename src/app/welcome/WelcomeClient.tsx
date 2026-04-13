@@ -143,88 +143,124 @@ export default function WelcomeClient() {
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100dvh",
-        width: "100%",
-        background: "#060606",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
+    <div style={{ position: "relative", minHeight: "100dvh", overflow: "hidden", background: "#060606" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        .rvlr-input:focus {
-          border-color: #00e5ff !important;
+        .rvlr-input:focus { border-color: #00e5ff !important; }
+        @keyframes arcSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
         }
       `}</style>
 
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 380,
-          padding: "40px 24px",
-          textAlign: "center",
-        }}
-      >
+      {/* Background image tiles */}
+      <img
+        src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400"
+        alt=""
+        aria-hidden="true"
+        style={{ position: "absolute", left: 0, top: 0, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
+      />
+      <img
+        src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400"
+        alt=""
+        aria-hidden="true"
+        style={{ position: "absolute", right: 0, top: 0, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
+      />
+      <img
+        src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400"
+        alt=""
+        aria-hidden="true"
+        style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
+      />
+
+      {/* Dark gradient overlay */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        background: "linear-gradient(to bottom, rgba(6,6,6,0.4) 0%, rgba(6,6,6,0.85) 60%, #060606 100%)",
+      }} />
+
+      {/* Avatar 1 — left, spinning cyan arc (unfollowed) */}
+      <div style={{ position: "absolute", left: "10%", top: 80 }}>
+        {/* Spinning arc ring */}
+        <div style={{
+          position: "absolute",
+          inset: -4,
+          borderRadius: "50%",
+          border: "2px solid transparent",
+          borderTopColor: "#00e5ff",
+          borderRightColor: "#00e5ff",
+          animation: "arcSpin 3s linear infinite",
+        }} />
+        <img
+          src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
+          alt=""
+          aria-hidden="true"
+          style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", display: "block" }}
+        />
+      </div>
+
+      {/* Avatar 2 — right, solid cyan ring (followed) */}
+      <div style={{ position: "absolute", right: "12%", top: 130 }}>
+        <img
+          src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150"
+          alt=""
+          aria-hidden="true"
+          style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #00e5ff" }}
+        />
+      </div>
+
+      {/* Avatar 3 — centre, red ring + LIVE badge */}
+      <div style={{ position: "absolute", left: "42%", top: 180 }}>
+        {/* LIVE badge */}
+        <div style={{
+          position: "absolute",
+          top: -18,
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "#ff3b30",
+          color: "white",
+          fontFamily: "monospace",
+          fontSize: 8,
+          borderRadius: 999,
+          padding: "2px 6px",
+          whiteSpace: "nowrap",
+          animation: "pulse 1.5s ease-in-out infinite",
+        }}>
+          ● LIVE
+        </div>
+        <img
+          src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
+          alt=""
+          aria-hidden="true"
+          style={{ width: 68, height: 68, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #ff3b30" }}
+        />
+      </div>
+
+      {/* Content — bottom half */}
+      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: 280, paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
+
         {/* Wordmark */}
-        <div
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 32,
-            letterSpacing: 8,
-            color: "white",
-          }}
-        >
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white" }}>
           REVOLVR
         </div>
 
-        {/* Cyan arc decoration */}
-        <div
-          style={{
-            width: 60,
-            height: 14,
-            borderTop: "2px solid #00e5ff",
-            borderLeft: "2px solid #00e5ff",
-            borderRight: "2px solid #00e5ff",
-            borderRadius: "50% 50% 0 0",
-            opacity: 0.4,
-            margin: "10px auto 0",
-          }}
-        />
-
         {/* Headline */}
-        <h1
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 48,
-            color: "white",
-            letterSpacing: 1,
-            margin: "20px 0 0",
-            lineHeight: 1.05,
-          }}
-        >
-          The platform that pays creators.
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, color: "white", lineHeight: 1.05, margin: "12px 0 0", letterSpacing: 1 }}>
+          THE PLATFORM THAT PAYS CREATORS.
         </h1>
 
         {/* Subline */}
-        <p
-          style={{
-            fontFamily: "monospace",
-            fontSize: 14,
-            color: "#555",
-            letterSpacing: 2,
-            margin: "12px 0 0",
-          }}
-        >
-          Watch, create, earn. Built in Australia.
+        <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555", letterSpacing: 2, margin: "8px 0 0" }}>
+          Watch, create, earn.
         </p>
 
-        {/* Form area */}
-        <div style={{ marginTop: 40 }}>
+        {/* Form */}
+        <div style={{ marginTop: 32, maxWidth: 340, margin: "32px auto 0" }}>
           {/* OAuth — coming soon */}
 
           {step === "email" ? (
@@ -245,14 +281,7 @@ export default function WelcomeClient() {
               </button>
 
               {status === "sent" && (
-                <p
-                  style={{
-                    marginTop: 12,
-                    fontFamily: "monospace",
-                    fontSize: 13,
-                    color: "#00e5ff",
-                  }}
-                >
+                <p style={{ marginTop: 12, fontFamily: "monospace", fontSize: 13, color: "#00e5ff" }}>
                   Check your inbox — we&apos;ve sent you a code.
                 </p>
               )}
@@ -264,9 +293,7 @@ export default function WelcomeClient() {
                 inputMode="numeric"
                 placeholder="12345678"
                 value={code}
-                onChange={(e) =>
-                  setCode(e.target.value.replace(/\D/g, "").slice(0, 8))
-                }
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 disabled={loading}
                 className="rvlr-input"
                 style={inputStyle}
@@ -278,12 +305,7 @@ export default function WelcomeClient() {
               <button
                 type="button"
                 disabled={loading}
-                onClick={() => {
-                  setStatus("idle");
-                  setError("");
-                  setCode("");
-                  setStep("email");
-                }}
+                onClick={() => { setStatus("idle"); setError(""); setCode(""); setStep("email"); }}
                 style={{
                   display: "block",
                   margin: "12px auto 0",
@@ -309,8 +331,8 @@ export default function WelcomeClient() {
           )}
         </div>
 
-        {/* Explore first — very bottom */}
-        <div style={{ marginTop: 48 }}>
+        {/* Explore first */}
+        <div style={{ marginTop: 40 }}>
           <button
             type="button"
             onClick={() => router.push("/public-feed")}
@@ -318,7 +340,7 @@ export default function WelcomeClient() {
               background: "transparent",
               border: "none",
               color: "#333",
-              fontSize: 12,
+              fontSize: 11,
               fontFamily: "monospace",
               letterSpacing: 2,
               textDecoration: "none",
