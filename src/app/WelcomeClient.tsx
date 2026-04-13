@@ -31,7 +31,7 @@ export default function WelcomeClient() {
 
   const loading = status === "loading";
 
-  async function signInWithProvider(provider: "google" | "apple") {
+  async function _signInWithProvider(provider: "google" | "apple") {
     // OAuth not configured yet
     console.warn(`[auth] ${provider} sign-in coming soon`);
     return;
@@ -104,159 +104,226 @@ export default function WelcomeClient() {
     window.location.href = redirectTo;
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    background: "#0d0d0d",
+    border: "1px solid #1a1a1a",
+    color: "white",
+    borderRadius: 50,
+    padding: "14px 20px",
+    fontSize: 15,
+    boxSizing: "border-box",
+    outline: "none",
+  };
+
+  const ctaButtonStyle: React.CSSProperties = {
+    marginTop: 12,
+    width: "100%",
+    background: "transparent",
+    border: "1px solid #00e5ff",
+    color: "#00e5ff",
+    borderRadius: 50,
+    fontFamily: "'Bebas Neue', sans-serif",
+    fontSize: 16,
+    letterSpacing: 2,
+    padding: "14px",
+    cursor: loading ? "not-allowed" : "pointer",
+    opacity: loading ? 0.6 : 1,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontFamily: "monospace",
+    fontSize: 10,
+    color: "#555",
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    textAlign: "left",
+    marginBottom: 8,
+  };
+
   return (
-    <div className="min-h-screen w-full bg-white text-neutral-900">
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col md:flex-row">
-        {/* LEFT (desktop) */}
-        <div className="hidden w-1/2 items-center justify-center md:flex">
-          <div className="flex items-center justify-center">
-            <img
-              src="/brand/r-black.png"
-              alt="Revolvr"
-              className="h-auto w-[340px] select-none"
-              draggable={false}
-            />
-          </div>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#060606",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        .rvlr-input:focus {
+          border-color: #00e5ff !important;
+        }
+      `}</style>
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 380,
+          padding: "40px 24px",
+          textAlign: "center",
+        }}
+      >
+        {/* Wordmark */}
+        <div
+          style={{
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 32,
+            letterSpacing: 8,
+            color: "white",
+          }}
+        >
+          REVOLVR
         </div>
 
-        {/* RIGHT */}
-        <div className="flex w-full flex-col items-start justify-start px-6 pb-10 pt-10 md:w-1/2 md:px-8 md:pt-12">
-          <div className="mb-6 flex w-full justify-center md:hidden">
-            <img
-              src="/brand/r-black.png"
-              alt="Revolvr"
-              className="h-auto w-[92px] select-none"
-              draggable={false}
-            />
-          </div>
+        {/* Cyan arc decoration */}
+        <div
+          style={{
+            width: 60,
+            height: 14,
+            borderTop: "2px solid #00e5ff",
+            borderLeft: "2px solid #00e5ff",
+            borderRight: "2px solid #00e5ff",
+            borderRadius: "50% 50% 0 0",
+            opacity: 0.4,
+            margin: "10px auto 0",
+          }}
+        />
 
-          <div className="w-full max-w-[560px]">
-            <p className="text-xl font-semibold tracking-wide text-neutral-700 md:text-2xl">
-              Welcome to REVOLVR
-            </p>
+        {/* Headline */}
+        <h1
+          style={{
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 48,
+            color: "white",
+            letterSpacing: 1,
+            margin: "20px 0 0",
+            lineHeight: 1.05,
+          }}
+        >
+          The platform that pays creators.
+        </h1>
 
-            <h1 className="mt-2 text-[40px] font-extrabold leading-[1.05] tracking-tight md:text-[46px]">
-              Discover moments as they happen.
-            </h1>
+        {/* Subline */}
+        <p
+          style={{
+            fontFamily: "monospace",
+            fontSize: 14,
+            color: "#555",
+            letterSpacing: 2,
+            margin: "12px 0 0",
+          }}
+        >
+          Watch, create, earn. Built in Australia.
+        </p>
 
-            <p className="mt-3 text-base leading-relaxed text-neutral-600 md:text-[17px]">
-              Watch, listen, or join in — live or quietly.
-            </p>
+        {/* Form area */}
+        <div style={{ marginTop: 40 }}>
+          {/* OAuth — coming soon */}
 
-            <div className="mt-7 rounded-[26px] border border-neutral-200 bg-white p-6 shadow-[0_18px_55px_rgba(0,0,0,0.07)]">
-              <button
-                type="button"
-                onClick={() => signInWithProvider("apple")}
+          {step === "email" ? (
+            <form onSubmit={sendCode}>
+              <label style={labelStyle}>Email</label>
+              <input
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
-                className="w-full rounded-2xl bg-neutral-950 px-5 py-3 text-center text-[15px] font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Continue with Apple
+                className="rvlr-input"
+                style={inputStyle}
+              />
+              <button type="submit" disabled={loading} style={ctaButtonStyle}>
+                {loading ? "Sending…" : "Send code"}
               </button>
-              <div style={{ marginTop: 6, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
-                Coming soon
-              </div>
 
-              <button
-                type="button"
-                onClick={() => signInWithProvider("google")}
-                disabled={loading}
-                className="mt-3 w-full rounded-2xl bg-neutral-950 px-5 py-3 text-center text-[15px] font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Continue with Google
-              </button>
-              <div style={{ marginTop: 6, fontSize: 12, color: "rgba(0,0,0,0.55)" }}>
-                Coming soon
-              </div>
-
-              <div className="my-5 flex items-center gap-3">
-                <div className="h-px w-full bg-neutral-200" />
-                <div className="text-xs font-medium text-neutral-500">or</div>
-                <div className="h-px w-full bg-neutral-200" />
-              </div>
-
-              {step === "email" ? (
-                <form onSubmit={sendCode}>
-                  <label className="mb-2 block text-xs font-semibold text-neutral-600">
-                    Email
-                  </label>
-                  <input
-  type="email"
-  autoComplete="email"
-  placeholder="you@example.com"
-  value={email}
-  onChange={(e) => setEmail(e.target.value)}
-  disabled={loading}
-  className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-[15px] outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-50"
-/>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-3 w-full rounded-2xl bg-neutral-950 px-5 py-3 text-center text-[15px] font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {loading ? "Sending…" : "Send code"}
-                  </button>
-
-                  {status === "sent" && (
-                    <p className="mt-3 text-sm text-neutral-700">
-                      Check your inbox — we’ve sent you a code.
-                    </p>
-                  )}
-                </form>
-              ) : (
-                <form onSubmit={verifyCode}>
-                  <label className="mb-2 block text-xs font-semibold text-neutral-600">
-                    Code
-                  </label>
-                  <input
-                    inputMode="numeric"
-                    placeholder="12345678"
-                    value={code}
-                    onChange={(e) =>
-                    setCode(e.target.value.replace(/\D/g, "").slice(0, 8))
-}
-
-                    disabled={loading}
-                    className="w-full rounded-2xl border border-neutral-200 px-4 py-3 text-[15px] outline-none transition focus:border-neutral-400 disabled:cursor-not-allowed disabled:bg-neutral-50"
-                  />
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-3 w-full rounded-2xl bg-neutral-950 px-5 py-3 text-center text-[15px] font-semibold text-white shadow-sm transition hover:opacity-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {loading ? "Verifying…" : "Verify code"}
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => { setStatus("idle"); setError(""); setCode(""); setStep("email"); }}
-                    className="mt-3 w-full text-sm font-semibold text-neutral-700 underline decoration-neutral-300 underline-offset-4 hover:decoration-neutral-900 disabled:opacity-60"
-                  >
-                    Use a different email
-                  </button>
-                </form>
-              )}
-
-              {status === "error" && (
-                <p className="mt-3 text-sm text-red-600">
-                  {error || "Something went wrong. Please try again."}
+              {status === "sent" && (
+                <p
+                  style={{
+                    marginTop: 12,
+                    fontFamily: "monospace",
+                    fontSize: 13,
+                    color: "#00e5ff",
+                  }}
+                >
+                  Check your inbox — we&apos;ve sent you a code.
                 </p>
               )}
+            </form>
+          ) : (
+            <form onSubmit={verifyCode}>
+              <label style={labelStyle}>Code</label>
+              <input
+                inputMode="numeric"
+                placeholder="12345678"
+                value={code}
+                onChange={(e) =>
+                  setCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+                }
+                disabled={loading}
+                className="rvlr-input"
+                style={inputStyle}
+              />
+              <button type="submit" disabled={loading} style={ctaButtonStyle}>
+                {loading ? "Verifying…" : "Verify code"}
+              </button>
 
               <button
                 type="button"
-                onClick={() => router.push("/public-feed")}
-                className="mt-5 text-sm font-semibold text-neutral-900 underline decoration-neutral-300 underline-offset-4 hover:decoration-neutral-900"
+                disabled={loading}
+                onClick={() => {
+                  setStatus("idle");
+                  setError("");
+                  setCode("");
+                  setStep("email");
+                }}
+                style={{
+                  display: "block",
+                  margin: "12px auto 0",
+                  background: "transparent",
+                  border: "none",
+                  color: "#444",
+                  fontSize: 12,
+                  fontFamily: "monospace",
+                  cursor: "pointer",
+                  textDecoration: "none",
+                  opacity: loading ? 0.6 : 1,
+                }}
               >
-                Explore first
+                Use a different email
               </button>
-            </div>
+            </form>
+          )}
 
-            <div className="mt-6 text-[11px] text-neutral-400">
-              REVOLVR_BUILD_SHA: NO_SHA
-            </div>
-          </div>
+          {status === "error" && (
+            <p style={{ marginTop: 12, fontSize: 13, color: "#ff3b30" }}>
+              {error || "Something went wrong. Please try again."}
+            </p>
+          )}
+        </div>
+
+        {/* Explore first — very bottom */}
+        <div style={{ marginTop: 48 }}>
+          <button
+            type="button"
+            onClick={() => router.push("/public-feed")}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#333",
+              fontSize: 12,
+              fontFamily: "monospace",
+              letterSpacing: 2,
+              textDecoration: "none",
+              cursor: "pointer",
+            }}
+          >
+            Explore first
+          </button>
         </div>
       </div>
     </div>
