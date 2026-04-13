@@ -162,19 +162,19 @@ export default function WelcomeClient() {
         src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400"
         alt=""
         aria-hidden="true"
-        style={{ position: "absolute", left: 0, top: 0, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
+        style={{ position: "absolute", left: 0, top: 60, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
       />
       <img
         src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400"
         alt=""
         aria-hidden="true"
-        style={{ position: "absolute", right: 0, top: 0, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
+        style={{ position: "absolute", right: 0, top: 60, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
       />
       <img
         src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400"
         alt=""
         aria-hidden="true"
-        style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
+        style={{ position: "absolute", left: "50%", top: 60, transform: "translateX(-50%)", width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
       />
 
       {/* Dark gradient overlay */}
@@ -199,10 +199,10 @@ export default function WelcomeClient() {
       }}>REVOLVR</div>
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: 320, paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
+      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: "clamp(200px, 45vw, 260px)", paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
 
         {/* Avatar cluster */}
-        <div style={{ position: "relative", width: "100%", maxWidth: 420, margin: "0 auto", height: 220 }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: 420, margin: "0 auto", marginTop: "-20px", height: 220 }}>
 
           {/* Avatar 1 — top left: spinning cyan arc */}
           <div style={{ position: "absolute", left: 0, top: 40 }}>
