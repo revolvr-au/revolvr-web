@@ -184,27 +184,28 @@ export default function WelcomeClient() {
         background: "linear-gradient(to bottom, rgba(6,6,6,0.4) 0%, rgba(6,6,6,0.85) 60%, #060606 100%)",
       }} />
 
-      {/* Wordmark — top-left header */}
+      {/* Wordmark — centred header */}
       <div style={{
         position: "absolute",
-        top: 24,
-        left: 24,
+        top: 28,
+        left: "50%",
+        transform: "translateX(-50%)",
         fontFamily: "'Bebas Neue', sans-serif",
-        fontSize: 42,
-        letterSpacing: 6,
+        fontSize: 28,
+        letterSpacing: 10,
         color: "white",
         zIndex: 10,
-        lineHeight: 1,
+        whiteSpace: "nowrap",
       }}>REVOLVR</div>
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: 40, paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
+      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: 320, paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
 
         {/* Avatar cluster */}
-        <div style={{ position: "relative", width: "100%", maxWidth: 320, margin: "0 auto", height: 220 }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: 420, margin: "0 auto", height: 220 }}>
 
           {/* Avatar 1 — top left: spinning cyan arc */}
-          <div style={{ position: "absolute", left: 20, top: 0 }}>
+          <div style={{ position: "absolute", left: 0, top: 40 }}>
             <div style={{
               position: "absolute",
               inset: -4,
@@ -223,7 +224,7 @@ export default function WelcomeClient() {
           </div>
 
           {/* Avatar 2 — top right: solid cyan ring */}
-          <div style={{ position: "absolute", right: 20, top: 20 }}>
+          <div style={{ position: "absolute", right: 0, top: 20 }}>
             <img
               src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150"
               alt=""
@@ -233,7 +234,7 @@ export default function WelcomeClient() {
           </div>
 
           {/* Avatar 3 — centre middle: red ring + pulsing LIVE badge */}
-          <div style={{ position: "absolute", left: "50%", top: 80, transform: "translateX(-50%)" }}>
+          <div style={{ position: "absolute", left: "50%", top: 100, transform: "translateX(-50%)" }}>
             <div style={{
               position: "absolute",
               top: -18,
@@ -259,7 +260,7 @@ export default function WelcomeClient() {
           </div>
 
           {/* Avatar 4 — bottom centre-left: spinning cyan arc */}
-          <div style={{ position: "absolute", left: 30, bottom: 0 }}>
+          <div style={{ position: "absolute", left: 60, bottom: 0 }}>
             <div style={{
               position: "absolute",
               inset: -4,
