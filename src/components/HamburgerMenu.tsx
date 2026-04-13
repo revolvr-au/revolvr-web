@@ -29,7 +29,7 @@ export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile
     const supabase = createSupabaseBrowserClient();
     await supabase.auth.signOut();
     onClose();
-    router.push("/public-feed");
+    router.push("/welcome");
   };
 
   return (
