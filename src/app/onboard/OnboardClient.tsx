@@ -67,7 +67,7 @@ export default function OnboardClient() {
       });
       const json = await res.json().catch(() => null);
       if (!res.ok) { setError(json?.error || "Something went wrong."); return; }
-      router.push("/public-feed");
+      window.location.href = "/public-feed";
     } catch (e: any) {
       setError(e?.message || "Something went wrong.");
     } finally {
