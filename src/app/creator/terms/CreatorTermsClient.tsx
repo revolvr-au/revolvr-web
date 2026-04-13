@@ -159,7 +159,7 @@ export default function CreatorTermsPage() {
         <section className="space-y-2">
           <h2 className="text-base font-semibold">3. Revenue Share</h2>
           <p className="text-white/75">
-            You receive <span className="font-semibold text-white">45%</span> of eligible monetisation revenue. Stripe fees and
+            You receive <span className="font-semibold text-white">50%</span> of eligible monetisation revenue. Stripe fees and
             payout fees are deducted from your share.
           </p>
         </section>
