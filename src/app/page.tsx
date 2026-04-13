@@ -31,7 +31,7 @@ export default async function Page() {
   console.log("PROFILE:", JSON.stringify(profile));
   console.log("CREATOR:", JSON.stringify(creator));
 
-  const hasHandle = !!(profile?.display_name || creator?.handle);
+  const hasHandle = !!(creator?.handle?.trim());
   console.log("HAS HANDLE:", hasHandle);
 
   if (!hasHandle) redirect("/onboard");
