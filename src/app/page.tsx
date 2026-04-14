@@ -22,13 +22,13 @@ export default async function Page() {
   if (!user) redirect("/welcome");
 
   const email = user.email ?? "";
+
   const [profile, creator] = await Promise.all([
     prisma.profiles.findUnique({ where: { email }, select: { display_name: true } }),
     prisma.creatorProfile.findUnique({ where: { email }, select: { handle: true } }),
   ]);
 
-  const hasHandle = !!(profile?.display_name?.trim() || creator?.handle?.trim());
-
-  if (!hasHandle) redirect("/onboard");
+  const hasProfile = !!(profile?.display_name?.trim() || creator?.handle?.trim());
+  if (!hasProfile) redirect("/onboard");
   redirect("/public-feed");
 }
