@@ -39,9 +39,9 @@ export async function GET() {
       const profile = profileByEmail[email];
       const creator = creatorByEmail[email];
 
-      const handle = creator?.handle ?? email.split("@")[0] ?? "user";
+      const handle = creator?.handle?.trim() || email.split("@")[0] || "user";
       const avatarUrl = profile?.avatar_url ?? creator?.avatarUrl ?? null;
-      const displayName = profile?.display_name ?? creator?.displayName ?? handle;
+      const displayName = profile?.display_name?.trim() || creator?.displayName?.trim() || handle;
 
       return {
         id: p.id,
