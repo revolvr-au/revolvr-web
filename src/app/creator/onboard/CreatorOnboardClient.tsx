@@ -34,7 +34,8 @@ export default function CreatorOnboardClient() {
             return;
           }
 
-          const stripeRes = await fetch("/api/stripe/connect/create", {
+          const stripeRes = await fetch("/api/stripe/connect/link", {
+
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
             cache: "no-store",
@@ -117,7 +118,7 @@ export default function CreatorOnboardClient() {
 
       setRedirectingStripe(true);
 
-      const stripeRes = await fetch("/api/stripe/connect/create", {
+      const stripeRes = await fetch("/api/stripe/connect/link", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
