@@ -1,1 +1,1 @@
-echo 'export { POST } from "@/app/api/stripe/connect/link/route";' > src/app/api/stripe/connect/create/route.ts
+export { POST } from "@/app/api/stripe/connect/link/route";
