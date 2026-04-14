@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+export { POST } from "@/app/api/stripe/connect/link/route";
 
 export async function POST(req: Request) {
   const auth = req.headers.get("authorization") || "";
