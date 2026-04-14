@@ -75,8 +75,8 @@ export async function POST(req: Request) {
     }
 
     const app = appBaseUrl();
-    const returnUrl = `${app}/creator/payouts?status=return`;
-    const refreshUrl = `${app}/creator/payouts?status=refresh`;
+    const returnUrl = `${app}/feed?stripe=connected`;
+    const refreshUrl = `${app}/creator/onboard?continue=stripe`;
 
     const link = await stripe.accountLinks.create({
       account: stripeAccountId,
