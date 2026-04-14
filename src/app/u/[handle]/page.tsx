@@ -20,47 +20,39 @@ export default async function ProfilePage({
     return <div style={{ padding: 40 }}>Handle missing</div>;
   }
 
-  // Handle lookup: CreatorProfile.handle only — profiles has no handle column
-  const creator = await prisma.creatorProfile.findFirst({
-    where: {
-      handle: {
-        equals: handle,
-        mode: "insensitive",
-      },
-    },
-    select: {
-      email: true,
-      displayName: true,
-      handle: true,
-      avatarUrl: true,
-      bio: true,
-      isVerified: true,
-    },
+  // First try CreatorProfile by handle
+  let creator = await prisma.creatorProfile.findFirst({
+    where: { handle: { equals: handle, mode: "insensitive" } },
+    select: { email: true, displayName: true, handle: true, avatarUrl: true, bio: true, isVerified: true, status: true },
   });
 
+  // If not found, try deriving handle from email in profiles table
+  // handle = email.split("@")[0] lowercased
+  let profileRow: { email: string; display_name: string | null; avatar_url: string | null; bio: string | null } | null = null;
   if (!creator) {
-    return (
-      <div style={{ padding: 40, color: "white" }}>
-        Creator not found. Handle: {handle}
-      </div>
-    );
+    profileRow = await prisma.profiles.findFirst({
+      where: { email: { contains: `${handle}@` } },
+      select: { email: true, display_name: true, avatar_url: true, bio: true },
+    });
+    if (!profileRow) {
+      return <div>Creator not found. Handle: {handle}</div>;
+    }
+  } else {
+    // Fetch profiles row for the creator so we can apply correct display priority
+    profileRow = await prisma.profiles.findFirst({
+      where: { email: creator.email },
+      select: { email: true, display_name: true, avatar_url: true, bio: true },
+    });
   }
 
-  // Fetch profiles row for supplementary display data (falls back to CreatorProfile fields if null)
-  const profileRow = await prisma.profiles.findFirst({
-    where: { email: creator.email },
-    select: { display_name: true, avatar_url: true, bio: true },
-  });
-
-  const isCreator = true;
-
-  const mergedDisplayName =
-    profileRow?.display_name ?? creator.displayName ?? creator.handle ?? creator.email;
-  const mergedAvatarUrl = profileRow?.avatar_url ?? creator.avatarUrl ?? null;
-  const mergedBio = profileRow?.bio ?? creator.bio ?? null;
+  const email = creator?.email ?? profileRow?.email ?? "";
+  const displayName = profileRow?.display_name?.trim() || creator?.displayName?.trim() || handle;
+  const avatarUrl = profileRow?.avatar_url ?? creator?.avatarUrl ?? null;
+  const bio = profileRow?.bio ?? creator?.bio ?? null;
+  const isCreator = !!creator;
 
   const posts = await prisma.post.findMany({
-    where: { userEmail: creator.email },
+    where: { userEmail: email },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -85,23 +77,21 @@ export default async function ProfilePage({
   const { data: { user } } = await supabase.auth.getUser();
   const currentUserEmail = user?.email ?? null;
 
-  console.log("AUTH USER:", user?.id, user?.email, "SESSION:", user ? "valid" : "null");
-
   const [followersCount, followingCount, followRecord, commentsCount] = await Promise.all([
     prisma.follow.count({
-      where: { followingEmail: creator.email },
+      where: { followingEmail: email },
     }),
     prisma.follow.count({
-      where: { followerEmail: creator.email },
+      where: { followerEmail: email },
     }),
     currentUserEmail
       ? prisma.follow.findFirst({
-          where: { followerEmail: currentUserEmail, followingEmail: creator.email },
+          where: { followerEmail: currentUserEmail, followingEmail: email },
           select: { id: true },
         })
       : Promise.resolve(null),
     prisma.comment.count({
-      where: { post: { userEmail: creator.email } },
+      where: { post: { userEmail: email } },
     }),
   ]);
 
@@ -111,14 +101,14 @@ export default async function ProfilePage({
     <div style={{ minHeight: "100vh", background: "#0a0806" }}>
       <ProfileClient
         profile={{
-          email: creator.email,
-          displayName: mergedDisplayName,
-          handle: creator.handle ?? "",
-          avatarUrl: mergedAvatarUrl,
-          bio: mergedBio,
+          email,
+          displayName,
+          handle: creator?.handle ?? handle,
+          avatarUrl,
+          bio,
           followersCount,
           followingCount,
-          isVerified: creator.isVerified ?? false,
+          isVerified: creator?.isVerified ?? false,
         }}
         posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
         isFollowing={isFollowing}
