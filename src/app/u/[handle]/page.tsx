@@ -21,7 +21,7 @@ export default async function ProfilePage({
   }
 
   // First try CreatorProfile by handle
-  let creator = await prisma.creatorProfile.findFirst({
+  const creator = await prisma.creatorProfile.findFirst({
     where: { handle: { equals: handle, mode: "insensitive" } },
     select: { email: true, displayName: true, handle: true, avatarUrl: true, bio: true, isVerified: true, status: true },
   });
