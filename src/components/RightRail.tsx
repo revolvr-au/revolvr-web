@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, Gift, Plus, Home } from "lucide-react";
+import { Heart, MessageCircle, Share2, Gift, Plus, User } from "lucide-react";
+
 
 type Props = {
   liked: boolean;
@@ -182,8 +183,8 @@ export default function RightRail({
       {/* ── CREATE ── */}
       <Plus size={30} strokeWidth={1.5} onClick={onCreate} style={{ cursor: "pointer" }} />
 
-      {/* ── HOME ── */}
-      <Home size={26} strokeWidth={1.5} onClick={onHome} style={{ marginTop: 4, cursor: "pointer" }} />
+      {/* ── PROFILE ── */}
+<User size={26} strokeWidth={1.5} onClick={() => router.push("/me")} style={{ marginTop: 4, cursor: "pointer" }} />
 
       <style>{`
         @keyframes rewardFloat {
