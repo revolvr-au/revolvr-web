@@ -50,7 +50,7 @@ export default function RightRail({
   const spacerLabel = <span className="text-[11px] font-semibold text-white/90">&nbsp;</span>;
 
   return (
-    <div className="absolute right-4 bottom-36 z-30 flex flex-col items-center gap-4 text-white">
+    <div className="absolute right-4 bottom-36 flex flex-col items-center gap-4">
 
       {/* ── ARC AVATAR ── */}
       <div
