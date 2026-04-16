@@ -4,11 +4,11 @@ export default function BottomBar() {
   return (
     <div
       style={{
-        position: "fixed",
+        position: "absolute",
         bottom: 28,
         left: "50%",
         transform: "translateX(-50%)",
-        width: 420,
+        width: "100%",
         display: "flex",
         justifyContent: "center",
         zIndex: 200
