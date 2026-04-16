@@ -815,17 +815,19 @@ const Post = memo(function Post({
         />
       )}
 
-      <RightRail
-        liked={liked}
-        onLike={handleInteract}
-        onComment={handleOpenComments}
-        onShare={handleShare}
-        onReward={handleReward}
-        onCreate={handleCreate}
-        rewardCount={rewardCount}
-        avatarUrl={post.avatarUrl}
-        username={post.handle ? `@${post.handle}` : undefined}
-      />
+      <div className="fixed right-4 bottom-36 z-30">
+        <RightRail
+          liked={liked}
+          onLike={handleInteract}
+          onComment={handleOpenComments}
+          onShare={handleShare}
+          onReward={handleReward}
+          onCreate={handleCreate}
+          rewardCount={rewardCount}
+          avatarUrl={post.avatarUrl}
+          username={post.handle ? `@${post.handle}` : undefined}
+        />
+      </div>
 
       {post.caption && !isCommentsActive && (
         <div

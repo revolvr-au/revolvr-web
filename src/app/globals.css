@@ -160,3 +160,7 @@ body {
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
+html, body {
+  background-color: #050814;
+  color: #ffffff;
+}

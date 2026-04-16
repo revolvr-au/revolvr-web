@@ -29,7 +29,7 @@ export default async function StudioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050814] p-6 text-white">
+    <div className="min-h-screen bg-[#050814] p-6 text-white" style={{ color: "#fff" }}>
       <h1 className="mb-6 text-xl font-semibold tracking-wide">
         REVOLVR Studio
       </h1>
