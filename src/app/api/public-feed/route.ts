@@ -47,6 +47,7 @@ export async function GET() {
         id: p.id,
         caption: p.caption,
         imageUrl: p.imageUrl,
+        userEmail: p.userEmail,
         handle,
         avatarUrl,
         displayName,

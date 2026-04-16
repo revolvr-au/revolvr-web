@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type ActionMode = "tip" | "boost" | "spin" | "reaction" | "vote";
+type ActionMode = "tip" | "boost" | "spin" | "reaction";
 
 type PostLite = { id: string };
 
@@ -80,7 +80,6 @@ export default function PublicFeedDock({
       { mode: "boost", label: "Highlight", icon: "⭐" },
       { mode: "spin", label: "Pulse", icon: "💫" },
       { mode: "reaction", label: "Bloom", icon: "🌸" },
-      { mode: "vote", label: "Signal", icon: "🐝" },
     ],
     []
   );

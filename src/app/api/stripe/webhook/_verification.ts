@@ -5,10 +5,12 @@ export const dynamic = "force-dynamic";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
+function getStripe() {
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
-const stripe = new Stripe(stripeSecretKey);
+  return new Stripe(stripeSecretKey);
+}
 
 // Stripe SDK typings differ across versions. Some fields exist at runtime but not in TS types.
 function unwrapStripe<T>(obj: Stripe.Response<T> | T): T {
@@ -43,6 +45,7 @@ export async function upsertCreatorVerificationFromSubscription(params: {
 }) {
   const { creatorEmail, subscriptionId, tier } = params;
 
+  const stripe = getStripe();
   const subResp = await stripe.subscriptions.retrieve(subscriptionId);
   const sub = unwrapStripe(subResp) as unknown;
 

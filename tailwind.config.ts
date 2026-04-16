@@ -15,6 +15,9 @@ const config: Config = {
       borderRadius: {
         "2xl": "1rem",
       },
+      letterSpacing: {
+        revolvr: "0.15em",
+      },
     },
   },
   plugins: [],

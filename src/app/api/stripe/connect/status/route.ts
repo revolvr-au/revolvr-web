@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-12-15.clover",
-});
+function getStripe() {
+  const apiKey = process.env.STRIPE_SECRET_KEY;
+  if (!apiKey) throw new Error("Missing STRIPE_SECRET_KEY");
+
+  return new Stripe(apiKey, {
+    apiVersion: "2025-12-15.clover",
+  });
+}
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -32,6 +37,8 @@ async function getUserEmailFromBearer(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    const stripe = getStripe();
+
     const email = await getUserEmailFromBearer(req);
     if (!email) return jsonError("Not authenticated", 401);
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import HamburgerMenu from "@/components/HamburgerMenu";
+import ProfileHeader from "@/components/ProfileHeader";
 
 export type ProfilePost = {
   id: string;
@@ -18,9 +19,10 @@ export type Profile = {
   handle: string;
   avatarUrl?: string | null;
   bio?: string | null;
-  followersCount?: number | null;
-  followingCount?: number | null;
   isVerified?: boolean | null;
+  totalVoltage: number;
+  recentVoltage: number;
+  postCount: number;
 };
 
 export default function ProfileClient({
@@ -28,13 +30,11 @@ export default function ProfileClient({
   posts,
   isFollowing = false,
   isCreator = false,
-  commentsCount = 0,
 }: {
   profile: Profile;
   posts: ProfilePost[];
   isFollowing?: boolean;
   isCreator?: boolean;
-  commentsCount?: number;
 }) {
   const [followed, setFollowed] = useState(isFollowing);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? null);
@@ -54,8 +54,6 @@ export default function ProfileClient({
 }, [profile.email]);
 
   const postsCount = posts?.length ?? 0;
-  const followers = profile.followersCount ?? 0;
-  const following = profile.followingCount ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
 
   const offerings = isCreator
@@ -252,19 +250,21 @@ export default function ProfileClient({
           )}
         </div>
 
-        {/* Name + handle */}
-        <div style={{ textAlign: "center" }}>
-          <div style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 32, letterSpacing: 1, color: "white",
-          }}>
-            {profile.displayName}
-          </div>
-          <div style={{
-            fontSize: 11, color: "#00e5ff",
-            fontFamily: "monospace", letterSpacing: 1, marginTop: 4,
-          }}>
-            @{profile.handle}
+        <div style={{ width: "100%", maxWidth: 320 }}>
+          <ProfileHeader
+            name={profile.displayName}
+            totalVoltage={profile.totalVoltage}
+            recentVoltage={profile.recentVoltage}
+            postCount={profile.postCount}
+          />
+
+          <div style={{ textAlign: "center", marginTop: 4 }}>
+            <div style={{
+              fontSize: 11, color: "#00e5ff",
+              fontFamily: "monospace", letterSpacing: 1,
+            }}>
+              @{profile.handle}
+            </div>
           </div>
         </div>
 
@@ -286,76 +286,6 @@ export default function ProfileClient({
           <div style={{ flex: 1, height: 1, background: "#1a1510" }} />
           <span style={{ fontSize: 10, color: "#333", fontFamily: "monospace" }}>0:30</span>
         </div>
-
-        {/* Stats row — 4 equal circular pills */}
-        {isCreator ? (
-          <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20 }}>
-            {([
-              { val: "⚡ 0", label: "VOLTAGE" },
-              { val: String(followers), label: "FOLLOWERS" },
-              { val: `💬 ${commentsCount}`, label: "COMMENTS" },
-              { val: String(postsCount), label: "POSTS" },
-            ] as { val: string; label: string }[]).map((s, i) => (
-              <div key={i} style={{
-                width: 80, height: 80,
-                borderRadius: "50%",
-                background: "#f5f0e8",
-                border: s.label === "VOLTAGE" ? "2px solid rgba(0,229,255,0.3)" : "2px solid transparent",
-                boxSizing: "border-box",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-                <div style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 22,
-                  color: "#0a0806",
-                }}>{s.val}</div>
-                <div style={{
-                  fontSize: 8,
-                  fontFamily: "monospace",
-                  letterSpacing: 2,
-                  color: "#888",
-                  marginTop: 2,
-                }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 20 }}>
-            {[
-              { val: String(followers), label: "FOLLOWERS" },
-              { val: String(following), label: "FOLLOWING" },
-              { val: String(postsCount), label: "POSTS" },
-            ].map((s, i) => (
-              <div key={i} style={{
-                width: 80, height: 80,
-                borderRadius: "50%",
-                background: "#f5f0e8",
-                border: "2px solid transparent",
-                boxSizing: "border-box",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-              }}>
-                <div style={{
-                  fontFamily: "'Bebas Neue', sans-serif",
-                  fontSize: 22,
-                  color: "#0a0806",
-                }}>{s.val}</div>
-                <div style={{
-                  fontSize: 8,
-                  fontFamily: "monospace",
-                  letterSpacing: 2,
-                  color: "#888",
-                  marginTop: 2,
-                }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320, marginTop: 20 }}>

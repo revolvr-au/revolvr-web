@@ -4,11 +4,17 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-12-15.clover",
-});
+function getStripe() {
+  const apiKey = process.env.STRIPE_SECRET_KEY;
+  if (!apiKey) throw new Error("Missing STRIPE_SECRET_KEY");
+
+  return new Stripe(apiKey, {
+    apiVersion: "2025-12-15.clover",
+  });
+}
 
 export async function POST(req: Request) {
+  const stripe = getStripe();
   const sig = req.headers.get("stripe-signature");
   if (!sig) {
     return NextResponse.json({ error: "Missing Stripe signature" }, { status: 400 });

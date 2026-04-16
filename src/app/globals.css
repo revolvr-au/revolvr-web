@@ -19,6 +19,72 @@
     opacity: 0;
   }
 }
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes voltagePulse {
+  0% {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+  40% {
+    box-shadow: 0 0 14px rgba(255,255,255,0.12);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+}
+@keyframes postPulse {
+  0% {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+  20% {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255,255,255,0.06);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(255,255,255,0);
+  }
+}
+@keyframes heartPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.84) translateY(8px);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.05) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.12) translateY(-10px);
+  }
+}
+@keyframes heartFloat {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  35% {
+    opacity: 1;
+    transform: scale(1.08) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.18) translateY(-14px);
+  }
+}
+.animate-heart {
+  animation: heartFloat 0.65s ease-out forwards;
+}
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
@@ -71,4 +137,26 @@ body {
     transform: translate(-50%, -40px) scale(0.9);
     opacity: 0;
   }
+}
+/* ================================
+   REVOLVR TYPOGRAPHY SYSTEM
+================================ */
+
+/* Username */
+.rv-username {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Caption */
+.rv-caption {
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* Headers (REVOLVR branding) */
+.rv-header {
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }

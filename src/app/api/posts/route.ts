@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { awardVoltage } from "@/lib/serverVoltage";
 
 // GET posts
 export async function GET() {
@@ -54,6 +55,16 @@ export async function POST(req: Request) {
     imageUrl: body.media_url, // ✅ FIX
     userEmail: body.userEmail,
   },
+});
+const email = body.userEmail;
+
+await awardVoltage({
+  creatorEmail: email,
+  eventType: "post_created",
+  actorEmail: email,
+  targetType: "post",
+  targetId: post.id,
+  dedupeKey: `post:${post.id}`,
 });
 
     return NextResponse.json({ post });

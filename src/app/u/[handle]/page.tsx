@@ -23,7 +23,16 @@ export default async function ProfilePage({
   // First try CreatorProfile by handle
   const creator = await prisma.creatorProfile.findFirst({
     where: { handle: { equals: handle, mode: "insensitive" } },
-    select: { email: true, displayName: true, handle: true, avatarUrl: true, bio: true, isVerified: true, status: true },
+    select: {
+      email: true,
+      displayName: true,
+      handle: true,
+      avatarUrl: true,
+      bio: true,
+      isVerified: true,
+      status: true,
+      voltage: true,
+    },
   });
 
   // If not found, try deriving handle from email in profiles table
@@ -51,18 +60,6 @@ export default async function ProfilePage({
   const bio = profileRow?.bio ?? creator?.bio ?? null;
   const isCreator = !!creator;
 
-  const posts = await prisma.post.findMany({
-    where: { userEmail: email },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      imageUrl: true,
-      caption: true,
-      createdAt: true,
-    },
-    take: 60,
-  });
-
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -77,25 +74,38 @@ export default async function ProfilePage({
   const { data: { user } } = await supabase.auth.getUser();
   const currentUserEmail = user?.email ?? null;
 
-  const [followersCount, followingCount, followRecord, commentsCount] = await Promise.all([
-    prisma.follow.count({
-      where: { followingEmail: email },
+  const [posts, recentVoltageEvents, followRecord] = await Promise.all([
+    prisma.post.findMany({
+      where: { userEmail: email },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        imageUrl: true,
+        caption: true,
+        createdAt: true,
+      },
+      take: 60,
     }),
-    prisma.follow.count({
-      where: { followerEmail: email },
-    }),
+    creator
+      ? prisma.creatorVoltageEvent.findMany({
+          where: { creatorEmail: email },
+          orderBy: { createdAt: "desc" },
+          select: { points: true },
+          take: 5,
+        })
+      : Promise.resolve([]),
     currentUserEmail
       ? prisma.follow.findFirst({
           where: { followerEmail: currentUserEmail, followingEmail: email },
           select: { id: true },
         })
       : Promise.resolve(null),
-    prisma.comment.count({
-      where: { post: { userEmail: email } },
-    }),
   ]);
 
   const isFollowing = !!followRecord;
+  const totalVoltage = creator?.voltage ?? 0;
+  const recentVoltage = recentVoltageEvents.reduce((sum, event) => sum + (event.points || 0), 0);
+  const postCount = posts.length;
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0806" }}>
@@ -106,14 +116,14 @@ export default async function ProfilePage({
           handle: creator?.handle ?? handle,
           avatarUrl,
           bio,
-          followersCount,
-          followingCount,
           isVerified: creator?.isVerified ?? false,
+          totalVoltage,
+          recentVoltage,
+          postCount,
         }}
         posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
         isFollowing={isFollowing}
         isCreator={isCreator}
-        commentsCount={commentsCount}
       />
     </div>
   );

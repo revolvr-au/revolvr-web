@@ -1,18 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CreatePage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   // 📁 Handle file select
   const handleFile = (f: File) => {
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };
+  const router = useRouter();
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
+    }
+  }, [caption]);
 
   // 📤 Upload
   const handleSubmit = async () => {
@@ -40,31 +51,35 @@ export default function CreatePage() {
 
     // STEP 2: Create post in DB
     const postRes = await fetch("/api/posts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-      caption,
-      media_url: uploadData.url,
-      userEmail: "test@user.com", // TEMP (we wire auth later)
-      }),
-    });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    caption,
+    media_url: uploadData.url,
+    userEmail: "test@user.com",
+  }),
+});
 
-    const postData = await postRes.json();
+if (!postRes.ok) {
+  alert("Post creation failed");
+  setLoading(false);
+  return;
+}
 
-    if (!postRes.ok) {
-      alert("Post creation failed");
-      setLoading(false);
-      return;
-    }
+// ✅ Option A (instant redirect)
+router.push("/public-feed");
+
+// OPTIONAL cleanup (safe to keep)
+setFile(null);
+setPreview(null);
+setCaption("");
 
     // STEP 3: Reset UI
     setFile(null);
     setPreview(null);
     setCaption("");
-
-    alert("Post created");
 
   } catch (err) {
     console.error(err);
@@ -161,20 +176,19 @@ export default function CreatePage() {
       </div>
 
       {/* ✏️ Caption */}
-      <input
-        value={caption}
-        onChange={(e) => setCaption(e.target.value)}
-        placeholder="Say something..."
-        style={{
-          width: "100%",
-          padding: 12,
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.1)",
-          background: "rgba(255,255,255,0.04)",
-          color: "white",
-          marginBottom: 16,
-        }}
-      />
+      <div className="px-4 py-3">
+        <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
+          <textarea
+            ref={textareaRef}
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Say something about this..."
+            rows={1}
+            style={{ minHeight: "40px" }}
+            className="w-full bg-transparent text-white text-sm leading-relaxed outline-none resize-none overflow-hidden"
+          />
+        </div>
+      </div>
 
       {/* 🚀 Post Button */}
       <button
