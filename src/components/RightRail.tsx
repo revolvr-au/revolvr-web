@@ -34,7 +34,7 @@ export default function RightRail({
   const [followed, setFollowed] = useState(isFollowing);
   const router = useRouter();
   const actionButtonClass =
-    "flex h-12 w-12 items-center justify-center rounded-full bg-black/25 backdrop-blur-sm border border-white/10 text-white shadow-sm transition-all duration-150 active:scale-95 hover:bg-black/40";
+  "flex h-12 w-12 items-center justify-center rounded-full text-white transition-all duration-150 active:scale-95";
 
   useEffect(() => {
     setFollowed(isFollowing);

@@ -19,13 +19,14 @@ export default function FeedLayout({ children }: Props) {
     >
       {/* SINGLE FEED CONTAINER */}
       <div
-        style={{
-          width: 420,
-          height: "100vh",
-          overflow: "hidden",
-          position: "relative"
-        }}
-      >
+  style={{
+    width: "100%",
+    maxWidth: 420,
+    height: "100vh",
+    overflow: "hidden",
+    position: "relative"
+  }}
+>
         <TopBar />
         <BottomBar />
 
