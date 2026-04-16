@@ -6,11 +6,11 @@ type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
 type CookieStoreLike = {
   getAll?: () => Array<{ name: string; value: string }>;
+  get?: (name: string) => { value: string } | undefined;
   set?: (name: string, value: string, options?: CookieOptions) => void;
 };
 
 export async function createSupabaseServerClient() {
-  // Next cookies() can be sync in some Next versions; this handles both.
   const cookieStore = (await Promise.resolve(cookies())) as unknown as CookieStoreLike;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -25,8 +25,6 @@ export async function createSupabaseServerClient() {
         return typeof cookieStore.getAll === "function" ? cookieStore.getAll() : [];
       },
       setAll(cookiesToSet: CookieToSet[]) {
-        // Silently ignored when called from a Server Component.
-        // Cookie writes only succeed in Route Handlers / Server Actions.
         try {
           cookiesToSet.forEach(({ name, value, options }) => {
             cookieStore.set?.(name, value, options);
@@ -40,10 +38,28 @@ export async function createSupabaseServerClient() {
 }
 
 export async function getAuthedEmailOrNull() {
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.getUser();
-  const email = data?.user?.email;
+  try {
+    const cookieStore = await Promise.resolve(cookies());
 
-  if (error || !email) return null;
-  return String(email).trim().toLowerCase();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    return user?.email ?? null;
+  } catch (e) {
+    console.error("Auth fetch failed:", e);
+    return null;
+  }
 }
