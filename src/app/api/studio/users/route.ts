@@ -1,3 +1,5 @@
+// src/app/api/studio/users/route.ts
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
@@ -9,21 +11,27 @@ const supabase = createClient(
 );
 
 export async function GET() {
-  const email = await getAuthedEmailOrNull();
+  try {
+    const email = await getAuthedEmailOrNull();
 
-  if (!isAdminEmail(email)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdminEmail(email)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 🔴 TEMP: disable DB call completely to prove route works
+    return NextResponse.json({
+      users: [],
+      debug: "studio route alive",
+      email,
+    });
+
+  } catch (e: any) {
+    console.error("Studio API fatal error:", e);
+
+    return NextResponse.json({
+      users: [],
+      error: "Studio API crashed",
+      details: e?.message || "unknown",
+    });
   }
-
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, email, created_at")
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ users: data });
 }
