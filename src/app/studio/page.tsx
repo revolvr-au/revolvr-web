@@ -15,7 +15,7 @@ export default async function StudioPage() {
   // 🔴 If auth fails, SHOW something instead of blank page
   if (!email) {
     return (
-      <div className="min-h-screen bg-[#050814] p-6 text-white" style={{ color: "#fff" }}>
+      <div className="relative min-h-screen overflow-hidden bg-[#050814] p-6 text-white" style={{ color: "#fff" }}>
         <h1 className="text-lg font-semibold mb-4">REVOLVR Studio</h1>
         <div className="text-red-400 text-sm">
           Auth failed — check session / cookies / supabaseServer
@@ -29,7 +29,7 @@ export default async function StudioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050814] p-6 text-white" style={{ color: "#fff" }}>
+    <div className="relative min-h-screen overflow-hidden bg-[#050814] p-6 text-white" style={{ color: "#fff" }}>
       <h1 className="mb-6 text-xl font-semibold tracking-wide">
         REVOLVR Studio
       </h1>
@@ -39,9 +39,11 @@ export default async function StudioPage() {
         Logged in as: {email}
       </div>
 
-      <div className="grid gap-6">
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.06),transparent_60%)]" />
 
-  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm">
+      <div className="relative grid gap-6">
+
+  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm shadow-[0_0_30px_rgba(255,255,255,0.05)] shadow-inner shadow-white/5">
     <div className="mb-2 text-sm text-white/60">Feed State</div>
 
     <div className="flex justify-between text-sm">
@@ -55,7 +57,7 @@ export default async function StudioPage() {
     </div>
   </div>
 
-  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm">
+  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm shadow-[0_0_30px_rgba(255,255,255,0.05)] shadow-inner shadow-white/5">
     <div className="mb-2 text-sm text-white/60">
       Top Posts (Live)
     </div>
@@ -63,7 +65,7 @@ export default async function StudioPage() {
     <div className="text-sm text-white/80">Loading...</div>
   </div>
 
-  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm">
+  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm shadow-[0_0_30px_rgba(255,255,255,0.05)] shadow-inner shadow-white/5">
     <div className="mb-2 text-sm text-white/60">
       Engagement
     </div>
