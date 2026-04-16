@@ -1,5 +1,10 @@
-import { redirect } from "next/navigation";
+import FeedLayout from "@/components/FeedLayout";
+import PublicFeedClient from "./PublicFeedClient";
 
-export default function LegacyFeedRedirect() {
-  redirect("/feed");
+export default function Page() {
+  return (
+    <FeedLayout>
+      <PublicFeedClient />
+    </FeedLayout>
+  );
 }
