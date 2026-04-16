@@ -41,7 +41,7 @@ export default async function StudioPage() {
 
       <div className="grid gap-6">
 
-  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-white">
+  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm">
     <div className="mb-2 text-sm text-white/60">Feed State</div>
 
     <div className="flex justify-between text-sm">
@@ -55,7 +55,7 @@ export default async function StudioPage() {
     </div>
   </div>
 
-  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-white">
+  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm">
     <div className="mb-2 text-sm text-white/60">
       Top Posts (Live)
     </div>
@@ -63,7 +63,7 @@ export default async function StudioPage() {
     <div className="text-sm text-white/80">Loading...</div>
   </div>
 
-  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-white">
+  <div className="rounded-xl border border-white/10 bg-white/10 p-4 text-white backdrop-blur-sm">
     <div className="mb-2 text-sm text-white/60">
       Engagement
     </div>
