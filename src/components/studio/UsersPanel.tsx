@@ -26,7 +26,7 @@ export default function UsersPanel() {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-4">
+    className="rounded-xl border border-white/10 bg-white/5 p-4 text-white"
       <div className="mb-3 text-sm text-white/60">Users</div>
 
       <div className="max-h-[400px] space-y-3 overflow-y-auto">
