@@ -16,7 +16,7 @@ export async function GET() {
   }
 
   const { data, error } = await supabase
-    .from("users")
+    .from("profiles")
     .select("id, email, created_at")
     .order("created_at", { ascending: false })
     .limit(50);
