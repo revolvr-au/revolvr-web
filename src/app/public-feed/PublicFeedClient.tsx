@@ -667,13 +667,6 @@ const Post = memo(function Post({
       ? "animate-[postPulse_1.2s_ease-out]"
       : "";
   const activeBoost = isActive ? "scale-[1.008]" : "";
-  const feedbackMessage = useCreatorFeedback({
-    voltage,
-    recentVoltage: baseVoltage,
-    lastPostTime: post.createdAt
-      ? new Date(post.createdAt).getTime()
-      : Date.now(),
-  });
 
   useEffect(() => {
     return () => {
