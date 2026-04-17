@@ -3,11 +3,8 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Heart } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
-import CreatorHint from "@/components/CreatorHint";
-import CreatorPanel from "@/components/CreatorPanel";
 import RightRail from "@/components/RightRail";
 import PostCaption from "@/components/PostCaption";
-import { useCreatorFeedback } from "@/hooks/useCreatorFeedback";
 import { useRouter } from "next/navigation";
 import CommentsList from "../../components/CommentsList";
 
@@ -803,17 +800,6 @@ const Post = memo(function Post({
             ⚡
           </div>
         </div>
-      )}
-
-      {isOwner && <CreatorHint message={feedbackMessage} />}
-
-      {isOwner && (
-        <CreatorPanel
-          voltage={voltage}
-          interactions={interactionCount}
-          comments={post.commentCount || 0}
-          momentum={momentumStrength}
-        />
       )}
 
       <RightRail

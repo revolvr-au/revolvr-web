@@ -458,3 +458,63 @@ enum creator_status {
 
   @@schema("public")
 }
+model PostShare {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String?
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model PostView {
+  id          String   @id @default(uuid())
+  postId      String
+  userEmail   String?
+  watchMs     Int      @default(0)
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([postId])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model UserStatus {
+  email     String   @id
+  status    String   @default("active")
+  reason    String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@schema("public")
+}
+
+model StudioConfig {
+  id               String   @id @default("singleton")
+  voltageWeight    Float    @default(1.0)
+  interactionWeight Float   @default(7.0)
+  clusterWeight    Float    @default(4.0)
+  momentumWeight   Float    @default(5.0)
+  momentumEnabled  Boolean  @default(true)
+  clusteringEnabled Boolean @default(true)
+  feedPaused       Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+  updatedBy        String?
+
+  @@schema("public")
+}
+
+model Broadcast {
+  id          String   @id @default(uuid())
+  subject     String
+  body        String
+  sentBy      String
+  targetType  String   @default("all")
+  targetValue String?
+  sentAt      DateTime @default(now())
+
+  @@schema("public")
+}
