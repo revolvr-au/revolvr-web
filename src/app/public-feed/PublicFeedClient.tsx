@@ -775,6 +775,7 @@ const Post = memo(function Post({
             width: "100%",
             height: "100%",
             objectFit: "cover",
+             objectPosition: "center center",
             zIndex: 0,
             cursor: "pointer",
           }}
