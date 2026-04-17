@@ -17,14 +17,6 @@ export default function CreatePage() {
   };
   const router = useRouter();
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height =
-        textareaRef.current.scrollHeight + "px";
-    }
-  }, [caption]);
-
   // 📤 Upload
   const handleSubmit = async () => {
   if (!file) return;
@@ -175,20 +167,38 @@ setCaption("");
         )}
       </div>
 
-      {/* ✏️ Caption */}
-      <div className="px-4 py-3">
-        <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-          <textarea
-            ref={textareaRef}
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Say something about this..."
-            rows={1}
-            style={{ minHeight: "40px" }}
-            className="w-full bg-transparent text-white text-sm leading-relaxed outline-none resize-none overflow-hidden"
-          />
-        </div>
-      </div>
+     {/* ✏️ Caption */}
+<div style={{ padding: "12px 0" }}>
+  <div style={{
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
+    borderRadius: 16,
+    padding: "12px 16px",
+  }}>
+    <textarea
+      ref={textareaRef}
+      value={caption}
+      onChange={(e) => setCaption(e.target.value)}
+      placeholder="Say something about this..."
+      rows={2}
+      style={{
+        width: "100%",
+        minHeight: "44px",
+        maxHeight: "100px",
+        color: "white",
+        caretColor: "white",
+        background: "transparent",
+        border: "none",
+        outline: "none",
+        resize: "none",
+        overflowY: "auto",
+        fontSize: 14,
+        lineHeight: 1.6,
+        fontFamily: "inherit",
+      }}
+    />
+  </div>
+</div>
 
       {/* 🚀 Post Button */}
       <button
