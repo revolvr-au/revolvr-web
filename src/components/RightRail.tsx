@@ -12,10 +12,12 @@ type Props = {
   onShare: () => void;
   onReward: () => void;
   onCreate: () => void;
+  onHome: () => void;
   rewardCount: number;
   avatarUrl?: string;
   username?: string;
   isFollowing?: boolean;
+  onFollowToggle?: () => void;
 };
 
 export default function RightRail({
@@ -25,20 +27,26 @@ export default function RightRail({
   onShare,
   onReward,
   onCreate,
+  onHome,
   rewardCount,
   avatarUrl,
   username,
   isFollowing = false,
+  onFollowToggle,
 }: Props) {
   const [rewardBursts, setRewardBursts] = useState<number[]>([]);
   const [followed, setFollowed] = useState(isFollowing);
   const router = useRouter();
-  const actionButtonClass =
-  "flex h-12 w-12 items-center justify-center rounded-full bg-transparent border-0 outline-none text-white transition-all duration-150 active:scale-95";
 
   useEffect(() => {
     setFollowed(isFollowing);
   }, [isFollowing]);
+
+  const handleFollow = () => {
+    const next = !followed;
+    setFollowed(next);
+    onFollowToggle?.();
+  };
 
   const navigateToProfile = () => {
     if (username) {
@@ -47,10 +55,18 @@ export default function RightRail({
     }
   };
 
-  const spacerLabel = <span className="text-[11px] font-semibold text-white/90">&nbsp;</span>;
-
   return (
-    <div className="flex flex-col items-center gap-4" style={{ position: "absolute", right: "1rem", bottom: "9rem" }}>
+    <div style={{
+      position: "absolute",
+      right: 12,
+      bottom: 90,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 20,
+      zIndex: 300,
+      color: "white",
+    }}>
 
       {/* ── ARC AVATAR ── */}
       <div
@@ -59,138 +75,116 @@ export default function RightRail({
           e.preventDefault();
           navigateToProfile();
         }}
-        className="flex flex-col items-center gap-1.5 cursor-pointer"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+          cursor: "pointer",
+        }}
       >
-        <div
-          className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-bold text-white transition-transform duration-150 active:scale-95"
-          style={{
-            background: avatarUrl
-              ? `url(${avatarUrl}) center/cover`
-              : "linear-gradient(135deg, #1a1a2e, #16213e)",
-            border: followed ? "2px solid #00e5ff" : "2px solid rgba(0,229,255,0.4)",
-            boxShadow: followed ? "0 0 12px rgba(0,229,255,0.5)" : "0 0 6px rgba(0,229,255,0.2)",
-          }}
-        >
+        <div style={{
+          width: 50,
+          height: 50,
+          borderRadius: "50%",
+          background: avatarUrl
+            ? `url(${avatarUrl}) center/cover`
+            : "linear-gradient(135deg, #1a1a2e, #16213e)",
+          border: followed ? "2px solid #00e5ff" : "2px solid rgba(0,229,255,0.4)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 14,
+          fontWeight: 700,
+          color: "white",
+          boxShadow: followed ? "0 0 12px rgba(0,229,255,0.5)" : "0 0 6px rgba(0,229,255,0.2)",
+        }}>
           {!avatarUrl && (
             (username?.startsWith("@") ? username.slice(1) : username)?.[0]?.toUpperCase() ?? "?"
           )}
         </div>
-        <span
-          className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#00e5ff] transition-opacity duration-200"
-          style={{ opacity: followed ? 0.7 : 0 }}
-        >
+        <span style={{
+          fontSize: 7,
+          letterSpacing: "1.5px",
+          fontFamily: "monospace",
+          textTransform: "uppercase",
+          color: "#00e5ff",
+          opacity: followed ? 0.7 : 0,
+          transition: "opacity 0.4s ease",
+        }}>
           following
         </span>
       </div>
 
       {/* ── LIKE ── */}
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          className={actionButtonClass}
-          onClick={onLike}
-          type="button"
-        >
-          <Heart
-            size={26}
-            strokeWidth={1.5}
-            fill={liked ? "white" : "none"}
-            style={{
-              transform: liked ? "scale(1.15)" : "scale(1)",
-              transition: "all 0.2s ease",
-            }}
-          />
-        </button>
-        {spacerLabel}
-      </div>
+      <Heart
+        size={26}
+        strokeWidth={1.5}
+        onClick={onLike}
+        fill={liked ? "white" : "none"}
+        style={{
+          cursor: "pointer",
+          transform: liked ? "scale(1.15)" : "scale(1)",
+          transition: "all 0.2s ease",
+        }}
+      />
 
       {/* ── COMMENT ── */}
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          className={actionButtonClass}
-          onClick={onComment}
-          type="button"
-        >
-          <MessageCircle size={26} strokeWidth={1.5} />
-        </button>
-        {spacerLabel}
-      </div>
+      <MessageCircle size={26} strokeWidth={1.5} onClick={onComment} style={{ cursor: "pointer" }} />
 
       {/* ── SHARE ── */}
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          className={actionButtonClass}
-          onClick={onShare}
-          type="button"
-        >
-          <Share2 size={26} strokeWidth={1.5} />
-        </button>
-        {spacerLabel}
-      </div>
+      <Share2 size={26} strokeWidth={1.5} onClick={onShare} style={{ cursor: "pointer" }} />
 
       {/* ── REWARD ── */}
-      <div className="flex flex-col items-center gap-1.5">
-        <div className="relative">
-          <button
-            className={actionButtonClass}
-            onClick={() => {
-              onReward();
-              const id = Date.now();
-              setRewardBursts((prev) => [...prev, id]);
-              setTimeout(() => {
-                setRewardBursts((prev) => prev.filter((burstId) => burstId !== id));
-              }, 600);
-            }}
-            type="button"
-          >
-            <Gift size={26} strokeWidth={1.5} />
-          </button>
-          {rewardBursts.map((id) => (
-            <div
-              key={id}
-              style={{
-                position: "absolute",
-                bottom: 12,
-                left: "50%",
-                transform: "translateX(-50%)",
-                color: "#FFD700",
-                fontSize: 18,
-                fontWeight: 800,
-                animation: "rewardFloat 1s ease forwards",
-                pointerEvents: "none",
-              }}
-            >
-              +1
-            </div>
-          ))}
-        </div>
-        <span className="text-[11px] font-semibold text-white/90">
-          {rewardCount > 0 ? rewardCount : "\u00A0"}
-        </span>
+      <div style={{ position: "relative" }}>
+        <Gift
+          size={26}
+          strokeWidth={1.5}
+          onClick={() => {
+            onReward();
+            const id = Date.now();
+            setRewardBursts(prev => [...prev, id]);
+            setTimeout(() => {
+              setRewardBursts(prev => prev.filter(b => b !== id));
+            }, 600);
+          }}
+          style={{ cursor: "pointer" }}
+        />
+        {rewardBursts.map(id => (
+          <div key={id} style={{
+            position: "absolute",
+            bottom: 12,
+            left: "50%",
+            transform: "translateX(-50%)",
+            color: "#FFD700",
+            fontSize: 18,
+            fontWeight: 800,
+            animation: "rewardFloat 1s ease forwards",
+            pointerEvents: "none",
+          }}>+1</div>
+        ))}
+        {rewardCount > 0 && (
+          <div style={{
+            position: "absolute",
+            bottom: -14,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 11,
+            fontWeight: 600,
+            color: "white",
+            background: "rgba(0,0,0,0.6)",
+            padding: "2px 6px",
+            borderRadius: 999,
+            whiteSpace: "nowrap",
+          }}>{rewardCount}</div>
+        )}
       </div>
 
       {/* ── CREATE ── */}
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          className={actionButtonClass}
-          onClick={onCreate}
-          type="button"
-        >
-          <Plus size={28} strokeWidth={1.5} />
-        </button>
-        {spacerLabel}
-      </div>
+      <Plus size={30} strokeWidth={1.5} onClick={onCreate} style={{ cursor: "pointer" }} />
 
       {/* ── PROFILE ── */}
-      <div className="flex flex-col items-center gap-1.5">
-        <button
-          className={actionButtonClass}
-          onClick={() => router.push("/me")}
-          type="button"
-        >
-          <User size={26} strokeWidth={1.5} />
-        </button>
-        {spacerLabel}
-      </div>
+<User size={26} strokeWidth={1.5} onClick={() => router.push("/me")} style={{ marginTop: 4, cursor: "pointer" }} />
 
       <style>{`
         @keyframes rewardFloat {
