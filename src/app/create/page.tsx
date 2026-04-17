@@ -1,14 +1,23 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function CreatePage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+  }, []);
 
   const handleFile = (f: File) => {
     setFile(f);
@@ -16,7 +25,7 @@ export default function CreatePage() {
   };
 
   const handleSubmit = async () => {
-    if (!file) return;
+    if (!file || !userEmail) return;
     setLoading(true);
 
     try {
@@ -41,7 +50,7 @@ export default function CreatePage() {
         body: JSON.stringify({
           caption,
           media_url: uploadData.url,
-          userEmail: "test@user.com",
+          userEmail: userEmail,
         }),
       });
 
@@ -89,7 +98,7 @@ export default function CreatePage() {
         <div style={{ width: 32 }} />
       </div>
 
-      {/* PREVIEW — matches feed 9:16 ratio */}
+      {/* PREVIEW */}
       <div style={{
         width: "100%",
         aspectRatio: "9/16",
