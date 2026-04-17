@@ -7,38 +7,32 @@ type Props = {
   postCount: number;
 };
 
-export default function ProfileHeader({
-  name,
-  totalVoltage,
-  recentVoltage,
-  postCount,
-}: Props) {
-  const momentumState =
-    totalVoltage > 0 && recentVoltage > totalVoltage * 0.2 ? "Rising" : "Stable";
+export default function ProfileHeader({ name, totalVoltage, recentVoltage, postCount }: Props) {
+  const momentumState = totalVoltage > 0 && recentVoltage > totalVoltage * 0.2 ? "Rising" : "Stable";
 
   return (
-    <div className="px-4 py-5 text-white">
-      <div className="text-lg font-semibold tracking-wide">{name}</div>
+    <div style={{ textAlign: "center", color: "white" }}>
+      <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1 }}>{name}</div>
 
-      <div className="mt-3 flex gap-6 text-sm text-white/70">
-        <div>
-          <div className="font-semibold text-white">{Math.round(totalVoltage)}</div>
-          <div>Voltage</div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(totalVoltage)}</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>VOLTAGE</div>
         </div>
-
-        <div>
-          <div className="font-semibold text-white">{postCount}</div>
-          <div>Posts</div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{postCount}</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>POSTS</div>
         </div>
-
-        <div>
-          <div className="font-semibold text-white">{momentumState}</div>
-          <div>Momentum</div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 700 }}>{momentumState}</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>MOMENTUM</div>
         </div>
       </div>
 
       {momentumState === "Rising" && (
-        <div className="mt-2 text-xs text-white/50">gaining attention</div>
+        <div style={{ marginTop: 6, fontSize: 10, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>
+          gaining attention
+        </div>
       )}
     </div>
   );

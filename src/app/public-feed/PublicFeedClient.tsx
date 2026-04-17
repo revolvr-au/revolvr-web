@@ -15,7 +15,7 @@ const getClusterKey = (post: any) => {
   return post?.category || post?.type || "general";
 };
 
-const VISIBLE_LIMIT = 5;
+const VISIBLE_LIMIT = 20;
 
 const areNumberMapsEqual = (
   a: Record<string, number>,
