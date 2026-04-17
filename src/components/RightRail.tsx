@@ -34,7 +34,7 @@ export default function RightRail({
   const [followed, setFollowed] = useState(isFollowing);
   const router = useRouter();
   const actionButtonClass =
-  "flex h-12 w-12 items-center justify-center rounded-full text-white transition-all duration-150 active:scale-95";
+  "flex h-12 w-12 items-center justify-center rounded-full bg-transparent border-0 outline-none text-white transition-all duration-150 active:scale-95";
 
   useEffect(() => {
     setFollowed(isFollowing);
@@ -50,7 +50,7 @@ export default function RightRail({
   const spacerLabel = <span className="text-[11px] font-semibold text-white/90">&nbsp;</span>;
 
   return (
-    <div className="absolute right-4 bottom-36 flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-4" style={{ position: "absolute", right: "1rem", bottom: "9rem" }}>
 
       {/* ── ARC AVATAR ── */}
       <div
