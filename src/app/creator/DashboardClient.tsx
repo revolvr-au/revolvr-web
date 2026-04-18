@@ -105,8 +105,8 @@ export default function DashboardClient() {
   }, [ready, userEmail, loadPosts, loadCredits]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.replace("/login");
+    await supabase.auth.signOut({ scope: "global" });
+    window.location.href = "/welcome";
   };
 
   const handleCreatePost = async (e: FormEvent) => {

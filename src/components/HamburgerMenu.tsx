@@ -27,9 +27,9 @@ export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile
 
   const handleLogout = async () => {
     const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "global" });
     onClose();
-    router.push("/welcome");
+    window.location.href = "/welcome";
   };
 
   return (

@@ -154,8 +154,8 @@ export default function DashboardClient() {
   }, [ready, userEmail, loadPosts, loadSpins, loadCredits]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.replace("/creator");
+    await supabase.auth.signOut({ scope: "global" });
+    window.location.href = "/welcome";
   };
 
   // Stripe Connect button behaviour (frontend)

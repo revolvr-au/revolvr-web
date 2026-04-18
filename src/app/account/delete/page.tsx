@@ -36,8 +36,8 @@ export default function DeleteAccountPage() {
         throw new Error(body?.error ?? `Request failed (${res.status})`);
       }
       const supabase = createSupabaseBrowserClient();
-      await supabase.auth.signOut();
-      router.push("/public-feed");
+      await supabase.auth.signOut({ scope: "global" });
+      window.location.href = "/welcome";
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
       setLoading(false);
