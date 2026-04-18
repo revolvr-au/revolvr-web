@@ -8,6 +8,23 @@ import PostCaption from "@/components/PostCaption";
 import { useRouter } from "next/navigation";
 import CommentsList from "../../components/CommentsList";
 
+type AnalyticsPayload = {
+  surface: string;
+  eventName: string;
+  userEmail: string | null;
+  postId: string | null;
+  creatorEmail: string | null;
+  properties: Record<string, unknown>;
+};
+
+function fireAnalytics(payload: AnalyticsPayload) {
+  fetch("/api/analytics/event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+}
+
 const getClusterKey = (post: any) => {
   return post?.category || post?.type || "general";
 };
@@ -61,6 +78,7 @@ export default function PublicFeedClient() {
   userEmail: string;
 } | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const userEmailRef = useRef<string | null>(null);
   const listRef = useRef(null);
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -73,8 +91,31 @@ export default function PublicFeedClient() {
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data }) => {
-      setUserEmail(data.user?.email ?? null);
+      const email = data.user?.email ?? null;
+      userEmailRef.current = email;
+      setUserEmail(email);
     });
+  }, []);
+
+  useEffect(() => {
+    fireAnalytics({
+      surface: "feed",
+      eventName: "session_start",
+      userEmail: userEmailRef.current,
+      postId: null,
+      creatorEmail: null,
+      properties: {},
+    });
+    return () => {
+      fireAnalytics({
+        surface: "feed",
+        eventName: "session_end",
+        userEmail: userEmailRef.current,
+        postId: null,
+        creatorEmail: null,
+        properties: {},
+      });
+    };
   }, []);
 
   const sendComment = async () => {
@@ -357,18 +398,34 @@ useEffect(() => {
         await navigator.clipboard.writeText(shareUrl);
         alert("Link copied");
       }
+      fireAnalytics({
+        surface: "feed",
+        eventName: "post_share",
+        userEmail: userEmailRef.current,
+        postId,
+        creatorEmail: post.userEmail ?? null,
+        properties: {},
+      });
     } catch (err) {
       console.error("Share failed", err);
     }
   }, [posts]);
 
   const handleReward = useCallback((postId: string) => {
-    console.log("REWARD CLICKED", postId);
+    const post = posts.find((candidate) => String(candidate.id) === postId);
+    fireAnalytics({
+      surface: "feed",
+      eventName: "post_reward",
+      userEmail: userEmailRef.current,
+      postId,
+      creatorEmail: post?.userEmail ?? null,
+      properties: {},
+    });
     setRewardMap((prev) => ({
       ...prev,
       [postId]: (prev[postId] || 0) + 1,
     }));
-  }, []);
+  }, [posts]);
 
   const handleCreate = useCallback(() => {
     router.push("/create");
@@ -679,6 +736,18 @@ const Post = memo(function Post({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isActive) return;
+    fireAnalytics({
+      surface: "feed",
+      eventName: "post_view",
+      userEmail: currentUserId,
+      postId,
+      creatorEmail: post.userEmail ?? null,
+      properties: {},
+    });
+  }, [isActive]);
 
   const handleInteract = useCallback(() => {
     if (boostTimeoutRef.current) return false;

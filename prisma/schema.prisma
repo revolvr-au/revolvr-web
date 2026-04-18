@@ -518,3 +518,94 @@ model Broadcast {
 
   @@schema("public")
 }
+// ── STUDIO ACCESS CONTROL ──
+model StudioUser {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  role      StudioRole  @default(SUPPORT)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  createdBy String?
+  lastLogin DateTime?
+
+  auditLogs StudioAuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@schema("public")
+}
+
+model StudioAuditLog {
+  id          String     @id @default(uuid())
+  studioUser  StudioUser @relation(fields: [actorEmail], references: [email])
+  actorEmail  String
+  action      String
+  targetType  String?
+  targetId    String?
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+
+  @@index([actorEmail])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+// ── ANALYTICS EVENTS ──
+model AnalyticsEvent {
+  id          String   @id @default(uuid())
+  version     Int      @default(1)
+  surface     String   // "feed" | "profile" | "live" | "tranche" | "create"
+  eventName   String   // "post_view" | "post_like" | "post_share" | "comment" etc
+  userEmail   String?
+  sessionId   String?
+  postId      String?
+  creatorEmail String?
+  properties  Json?
+  createdAt   DateTime @default(now())
+
+  @@index([eventName, createdAt])
+  @@index([userEmail, createdAt])
+  @@index([postId, createdAt])
+  @@index([surface, createdAt])
+  @@schema("public")
+}
+
+// ── CREATOR HEALTH SCORE ──
+model CreatorHealthScore {
+  email              String   @id
+  postingConsistency Float    @default(0)
+  responseRate       Float    @default(0)
+  engagementVelocity Float    @default(0)
+  followerGrowthRate Float    @default(0)
+  churnRisk          Float    @default(0)
+  overallScore       Float    @default(0)
+  calculatedAt       DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@schema("public")
+}
+
+// ── USER SESSIONS ──
+model UserSession {
+  id          String   @id @default(uuid())
+  userEmail   String
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  durationMs  Int?
+  postsViewed Int      @default(0)
+  platform    String?  // "web" | "ios" | "android"
+  country     String?
+
+  @@index([userEmail])
+  @@index([startedAt])
+  @@schema("public")
+}
+
+enum StudioRole {
+  ADMIN
+  MODERATOR
+  SUPPORT
+
+  @@schema("public")
+}
