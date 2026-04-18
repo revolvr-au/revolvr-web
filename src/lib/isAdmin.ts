@@ -8,5 +8,5 @@ export function isAdminEmail(email: string | null | undefined): boolean {
       ? ADMIN_EMAILS
       : [SUPPORT_EMAIL];
 
-  return admins.includes(email);
+  return admins.includes(email.toLowerCase());
 }

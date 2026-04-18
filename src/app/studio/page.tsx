@@ -10,12 +10,14 @@ const supabase = createSupabaseBrowserClient();
 
 export default function StudioPage() {
   const router = useRouter();
-  const [email, setEmail] = useState<string | null | undefined>(undefined);
+  const [email, setEmail] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       const userEmail = data.session?.user?.email ?? null;
+      console.log("[studio] getSession email:", userEmail);
       if (!userEmail || !isAdminEmail(userEmail)) {
+        console.log("[studio] not admin, redirecting. isAdmin:", isAdminEmail(userEmail));
         router.replace("/");
       } else {
         setEmail(userEmail);
