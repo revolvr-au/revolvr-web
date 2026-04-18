@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { isAdminEmail } from "@/lib/isAdmin";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -14,10 +15,8 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  // IMPORTANT: create the response FIRST and write cookies onto it
-  const res = NextResponse.redirect(`${origin}${redirectTo}`);
-
   const cookieStore = await cookies();
+  const pendingCookies: { name: string; value: string; options: object }[] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,10 +25,7 @@ export async function GET(req: Request) {
       cookies: {
         getAll: () => cookieStore.getAll(),
         setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            // Write to the actual outgoing response
-            res.cookies.set(name, value, options);
-          });
+          pendingCookies.push(...cookiesToSet);
         },
       },
     }
@@ -41,6 +37,14 @@ export async function GET(req: Request) {
     console.error("[auth/callback] exchange failed", error);
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  const destination = isAdminEmail(user?.email ?? null) ? "/studio" : redirectTo;
+
+  const res = NextResponse.redirect(`${origin}${destination}`);
+  pendingCookies.forEach(({ name, value, options }) => {
+    res.cookies.set(name, value, options as Parameters<typeof res.cookies.set>[2]);
+  });
 
   return res;
 }
