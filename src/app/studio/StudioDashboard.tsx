@@ -148,9 +148,31 @@ function statusColor(status: string): string {
   return "#22c55e";
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function clearanceBadge(role: string): { label: string; color: string; bg: string } {
+  if (role === "MODERATOR") return { label: "MODERATOR", color: "#fbbf24", bg: "rgba(251,191,36,0.12)" };
+  if (role === "SUPPORT") return { label: "SUPPORT", color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.08)" };
+  return { label: "ADMIN", color: CYAN, bg: "rgba(0,229,255,0.12)" };
+}
+
+function formatCountdown(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function StudioDashboard({ email }: { email: string }) {
+export default function StudioDashboard({
+  email,
+  studioRole = "ADMIN",
+  lockCountdown = null,
+}: {
+  email: string;
+  studioRole?: string;
+  lockCountdown?: number | null;
+}) {
   const [pulse, setPulse] = useState<Pulse | null>(null);
   const [topPosts, setTopPosts] = useState<TopPost[] | null>(null);
 
@@ -327,22 +349,49 @@ export default function StudioDashboard({ email }: { email: string }) {
               fontFamily: '"Bebas Neue", cursive',
               fontSize: 42,
               letterSpacing: "0.1em",
-              color: CYAN,
+              color: "#ffffff",
               lineHeight: 1,
-              textShadow: `0 0 40px rgba(0,229,255,0.3)`,
             }}
           >
             REVOLVR STUDIO
           </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4, letterSpacing: "0.12em" }}>
-            COMMAND & CONTROL
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4, letterSpacing: "0.12em", fontFamily: "monospace" }}>
+            COMMAND &amp; CONTROL
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.1em" }}>
-            Logged in as
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+          {lockCountdown !== null && (
+            <div style={{ fontSize: 11, color: "#fbbf24", letterSpacing: "0.06em", fontFamily: "monospace" }}>
+              Session locks in {formatCountdown(lockCountdown)}
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: "50%",
+              background: "rgba(0,229,255,0.12)",
+              border: "1px solid rgba(0,229,255,0.3)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: '"Bebas Neue", cursive',
+              fontSize: 18, color: CYAN,
+            }}>
+              {email[0].toUpperCase()}
+            </div>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", textAlign: "center", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {email}
+            </div>
+            {(() => {
+              const badge = clearanceBadge(studioRole);
+              return (
+                <div style={{
+                  fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
+                  padding: "2px 8px", borderRadius: 4,
+                  color: badge.color, background: badge.bg,
+                }}>
+                  {badge.label}
+                </div>
+              );
+            })()}
           </div>
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 3 }}>{email}</div>
         </div>
       </div>
 
