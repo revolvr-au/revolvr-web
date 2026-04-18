@@ -1,37 +1,45 @@
-import { redirect } from "next/navigation";
-import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
 import { isAdminEmail } from "@/lib/isAdmin";
 import StudioDashboard from "./StudioDashboard";
 
-export default async function StudioPage() {
-  let email: string | null = null;
+const supabase = createSupabaseBrowserClient();
 
-  try {
-    email = await getAuthedEmailOrNull();
-  } catch (e) {
-    console.error("Studio auth error:", e);
-  }
+export default function StudioPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState<string | null | undefined>(undefined);
 
-  if (!email) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const userEmail = data.session?.user?.email ?? null;
+      if (!userEmail || !isAdminEmail(userEmail)) {
+        router.replace("/");
+      } else {
+        setEmail(userEmail);
+      }
+    });
+  }, [router]);
+
+  if (email === undefined) {
     return (
       <div
         style={{
           minHeight: "100vh",
           background: "#050814",
-          padding: 24,
-          color: "#fff",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#6b7280",
           fontFamily: "sans-serif",
+          fontSize: 14,
         }}
       >
-        <div style={{ color: "#ef4444", fontSize: 14 }}>
-          Auth failed — check session / cookies / supabaseServer
-        </div>
+        Loading…
       </div>
     );
-  }
-
-  if (!isAdminEmail(email)) {
-    redirect("/");
   }
 
   return <StudioDashboard email={email} />;
