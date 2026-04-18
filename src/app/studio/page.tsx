@@ -13,11 +13,11 @@ export default function StudioPage() {
   const [email, setEmail] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      const userEmail = data.session?.user?.email ?? null;
-      console.log("[studio] getSession email:", userEmail);
+    supabase.auth.getUser().then(({ data }) => {
+      const userEmail = data.user?.email ?? null;
+      console.log("[studio] getUser email:", userEmail);
       if (!userEmail || !isAdminEmail(userEmail)) {
-        console.log("[studio] not admin, redirecting. isAdmin:", isAdminEmail(userEmail));
+        console.log("[studio] not admin, redirecting");
         router.replace("/");
       } else {
         setEmail(userEmail);
