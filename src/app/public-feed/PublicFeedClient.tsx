@@ -723,7 +723,7 @@ const Post = memo(function Post({
       : localBoost > 0
       ? "animate-[postPulse_1.2s_ease-out]"
       : "";
-  const activeBoost = isActive ? "scale-[1.008]" : "";
+  const activeBoost = "";
 
   useEffect(() => {
     return () => {
