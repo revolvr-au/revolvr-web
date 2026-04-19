@@ -203,17 +203,18 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: 8,
-        padding: "18px 10px 14px",
+        gap: 6,
+        padding: 12,
         background: "rgba(255,255,255,0.04)",
-        borderRadius: 14,
+        borderRadius: 12,
         border: "1px solid rgba(0,229,255,0.1)",
         cursor: "pointer",
+        overflow: "hidden",
       }}
     >
-      <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={88} arcRing />
+      <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={56} arcRing />
       <div style={{
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: 700,
         color: "white",
         fontFamily: "Inter, system-ui, sans-serif",
@@ -222,12 +223,11 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         whiteSpace: "nowrap",
         maxWidth: "100%",
         textAlign: "center",
-        marginTop: 4,
       }}>
         {person.displayName}
       </div>
       <div style={{
-        fontSize: 11,
+        fontSize: 10,
         color: "rgba(255,255,255,0.4)",
         fontFamily: "Inter, system-ui, sans-serif",
         overflow: "hidden",
@@ -241,17 +241,14 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
 
       {hrs !== null && hrs >= 0 && (
         <div style={{
-          fontSize: 10,
+          fontSize: 9,
           color: "#ff3c3c",
           background: "rgba(255,60,60,0.1)",
           border: "1px solid rgba(255,60,60,0.3)",
           borderRadius: 20,
-          padding: "2px 8px",
+          padding: "2px 7px",
           fontFamily: "monospace",
           letterSpacing: "0.5px",
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
         }}>
           LIVE in {hrs}hrs 🔔
         </div>
@@ -259,58 +256,42 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
 
       {person.latestComment && (
         <div style={{
-          fontSize: 10,
-          color: "rgba(255,255,255,0.35)",
-          fontFamily: "Inter, system-ui, sans-serif",
-          fontStyle: "italic",
+          width: "100%",
           overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          maxWidth: "100%",
-          padding: "0 4px",
+          marginTop: 2,
         }}>
-          "{person.latestComment.length > 40
-            ? person.latestComment.slice(0, 40) + "…"
-            : person.latestComment}"
+          <div style={{
+            display: "inline-block",
+            whiteSpace: "nowrap",
+            fontSize: 10,
+            color: "rgba(255,255,255,0.5)",
+            fontFamily: "Inter, system-ui, sans-serif",
+            fontStyle: "italic",
+            animation: "marquee 10s linear infinite",
+          }}>
+            {person.latestComment}
+          </div>
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 6, marginTop: 4, width: "100%" }}>
-        <button
-          style={{
-            flex: 1,
-            fontSize: 11,
-            fontWeight: 600,
-            color: "rgba(255,255,255,0.85)",
-            background: "rgba(255,255,255,0.07)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: 20,
-            padding: "5px 0",
-            fontFamily: "Inter, system-ui, sans-serif",
-            cursor: "pointer",
-          }}
-          onClick={e => { e.stopPropagation(); }}
-        >
-          Follow
-        </button>
-        <button
-          style={{
-            flex: 1,
-            fontSize: 11,
-            fontWeight: 600,
-            color: "#00e5ff",
-            background: "transparent",
-            border: "1.5px solid #00e5ff",
-            borderRadius: 20,
-            padding: "5px 0",
-            fontFamily: "Inter, system-ui, sans-serif",
-            cursor: "pointer",
-          }}
-          onClick={e => { e.stopPropagation(); }}
-        >
-          Ring
-        </button>
-      </div>
+      <button
+        style={{
+          width: "100%",
+          fontSize: 11,
+          fontWeight: 600,
+          color: "rgba(255,255,255,0.85)",
+          background: "rgba(255,255,255,0.07)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: 20,
+          padding: "5px 0",
+          fontFamily: "Inter, system-ui, sans-serif",
+          cursor: "pointer",
+          marginTop: 2,
+        }}
+        onClick={e => { e.stopPropagation(); }}
+      >
+        Follow
+      </button>
     </div>
   );
 }
@@ -419,6 +400,10 @@ export default function PeoplePage() {
         @keyframes arcSpin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+        @keyframes marquee {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
         }
       `}</style>
       <div style={{
