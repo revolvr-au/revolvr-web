@@ -203,8 +203,8 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: 6,
-        padding: 12,
+        gap: 5,
+        padding: 10,
         background: "rgba(255,255,255,0.04)",
         borderRadius: 12,
         border: "1px solid rgba(0,229,255,0.1)",
@@ -254,39 +254,18 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         </div>
       )}
 
-      {person.latestComment && (
-        <div style={{
-          width: "100%",
-          overflow: "hidden",
-          marginTop: 2,
-        }}>
-          <div style={{
-            display: "inline-block",
-            whiteSpace: "nowrap",
-            fontSize: 10,
-            color: "rgba(255,255,255,0.5)",
-            fontFamily: "Inter, system-ui, sans-serif",
-            fontStyle: "italic",
-            animation: "marquee 10s linear infinite",
-          }}>
-            {person.latestComment}
-          </div>
-        </div>
-      )}
-
       <button
         style={{
           width: "100%",
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: 600,
           color: "rgba(255,255,255,0.85)",
           background: "rgba(255,255,255,0.07)",
           border: "1px solid rgba(255,255,255,0.15)",
           borderRadius: 20,
-          padding: "5px 0",
+          height: 28,
           fontFamily: "Inter, system-ui, sans-serif",
           cursor: "pointer",
-          marginTop: 2,
         }}
         onClick={e => { e.stopPropagation(); }}
       >
@@ -477,7 +456,7 @@ export default function PeoplePage() {
                 <SectionHeader label="RISING" />
                 <div style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gridTemplateColumns: "repeat(3, 1fr)",
                   gap: 10,
                 }}>
                   {data!.creators.map(p => (
