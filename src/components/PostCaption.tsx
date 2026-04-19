@@ -11,37 +11,48 @@ export default function PostCaption({ username, caption }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="absolute bottom-24 left-4 right-28 z-20">
-      {/* Gradient overlay for readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+    <div style={{
+      position: "absolute",
+      bottom: 80,
+      left: 16,
+      right: 80,
+      zIndex: 20,
+      pointerEvents: "auto",
+    }}>
+      {/* Gradient for readability */}
+      <div style={{
+        position: "absolute",
+        inset: "-20px -16px -16px -16px",
+        background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)",
+        pointerEvents: "none",
+        zIndex: 0,
+      }} />
 
       <div
-        className="relative z-10 text-white cursor-pointer max-w-[70%]"
+        style={{ position: "relative", zIndex: 1, cursor: "pointer" }}
         onClick={() => setExpanded(!expanded)}
       >
-        
-        {/* Username */}
-        <p className="text-sm font-semibold tracking-wide">
+        <p style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: "white",
+          marginBottom: 4,
+          fontFamily: "monospace",
+          letterSpacing: 1,
+        }}>
           @{username}
         </p>
-
-        {/* Caption */}
-        <p
-          className={`text-sm leading-relaxed text-white/90 transition-all duration-200 ${
-            expanded ? "" : "line-clamp-2"
-          }`}
-          style={
-            !expanded
-              ? {
-                  WebkitMaskImage:
-                    "linear-gradient(to bottom, black 60%, transparent 100%)",
-                }
-              : {}
-          }
-        >
+        <p style={{
+          fontSize: 13,
+          color: "rgba(255,255,255,0.9)",
+          lineHeight: 1.5,
+          display: "-webkit-box",
+          WebkitLineClamp: expanded ? "unset" : 2,
+          WebkitBoxOrient: "vertical",
+          overflow: expanded ? "visible" : "hidden",
+        }}>
           {caption}
         </p>
-
       </div>
     </div>
   );
