@@ -635,13 +635,7 @@ useEffect(() => {
         {limitedPosts.map((post, i) => (
     <div
       key={post.id ?? i}
-      className="flex-shrink-0 transition-transform transition-shadow duration-300 ease-out"
-      style={{
-        width: "100vw",
-        height: "100dvh",
-        scrollSnapAlign: "start",
-        scrollSnapStop: "always",
-      }}
+      className="h-full w-full flex-shrink-0 transition-transform transition-shadow duration-300 ease-out"
     >
       <Post
         post={post}
@@ -817,9 +811,12 @@ const Post = memo(function Post({
       className={`relative h-full w-full flex-shrink-0 transition-transform transition-shadow duration-300 ease-out active:scale-[0.995] ${voltageScale} ${voltageGlow} ${voltagePulse} ${activeBoost}`}
       style={{
         height: "100dvh",
-        width: "100vw",
+        width: "100%",
+        maxWidth: 420,
+        margin: "0 auto",
         position: "relative",
         overflow: "hidden",
+        scrollSnapAlign: "start",
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
