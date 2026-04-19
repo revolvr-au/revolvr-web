@@ -58,7 +58,7 @@ export default function RightRail({
   return (
     <div style={{
       position: "absolute",
-      right: "16px",
+      right: 12,
       bottom: 90,
       display: "flex",
       flexDirection: "column",
@@ -66,7 +66,6 @@ export default function RightRail({
       gap: 20,
       zIndex: 300,
       color: "white",
-      paddingRight: "env(safe-area-inset-right)",
     }}>
 
       {/* ── ARC AVATAR ── */}
