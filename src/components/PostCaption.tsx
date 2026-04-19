@@ -7,10 +7,9 @@ type Props = {
   caption: string;
   avatarUrl?: string;
   postId: string;
-  voltage: number;
 };
 
-export default function PostCaption({ username, caption, avatarUrl, postId, voltage }: Props) {
+export default function PostCaption({ username, caption, avatarUrl, postId }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [latestComment, setLatestComment] = useState<{ body: string; userEmail: string } | null>(null);
 
@@ -93,12 +92,6 @@ export default function PostCaption({ username, caption, avatarUrl, postId, volt
             </span>
           </div>
         )}
-
-        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5 }}>
-          <span style={{ fontSize: 11 }}>⚡</span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#00e5ff" }}>{voltage}</span>
-          <span style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: "1.5px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>voltage</span>
-        </div>
       </div>
     </div>
   );

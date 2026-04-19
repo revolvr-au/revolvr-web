@@ -1,7 +1,6 @@
 "use client";
 
 import BottomBar from "./BottomBar";
-import PeopleRail from "./PeopleRail";
 import TopBar from "./TopBar";
 
 type Props = {
@@ -29,7 +28,6 @@ export default function FeedLayout({ children }: Props) {
   }}
 >
         <TopBar />
-        <PeopleRail />
         <BottomBar />
 
         {children}

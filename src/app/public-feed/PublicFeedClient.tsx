@@ -889,7 +889,6 @@ const Post = memo(function Post({
             caption={post.caption}
             avatarUrl={post.avatarUrl}
             postId={String(post.id)}
-            voltage={post.voltage || 0}
           />
         </div>
       )}
