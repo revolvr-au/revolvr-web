@@ -627,7 +627,9 @@ useEffect(() => {
     scrollSnapType: "y mandatory",
     scrollbarWidth: "none",
     msOverflowStyle: "none",
-  }}
+    overscrollBehaviorY: "none",
+    WebkitOverflowScrolling: "touch",
+  } as React.CSSProperties}
   className="no-scrollbar"
    >
       
@@ -815,6 +817,7 @@ const Post = memo(function Post({
   return (
     <div
       className={`relative h-full w-full flex-shrink-0 transition-transform transition-shadow duration-300 ease-out active:scale-[0.995] ${voltageScale} ${voltageGlow} ${voltagePulse} ${activeBoost}`}
+      onClick={handleTap}
       style={{
         height: "100dvh",
         width: "100vw",
@@ -823,13 +826,13 @@ const Post = memo(function Post({
         display: "flex",
         flexDirection: "column",
         justifyContent: "flex-end",
+        cursor: "pointer",
       }}
     >
       {post.imageUrl && (
         <img
           src={post.imageUrl}
           loading="lazy"
-          onClick={handleTap}
           style={{
             position: "absolute",
             top: 0,
@@ -837,9 +840,12 @@ const Post = memo(function Post({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-             objectPosition: "center center",
+            objectPosition: "center center",
             zIndex: 0,
-            cursor: "pointer",
+            touchAction: "none",
+            userSelect: "none",
+            WebkitUserSelect: "none",
+            pointerEvents: "none",
           }}
         />
       )}
