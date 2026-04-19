@@ -5,15 +5,16 @@ import { useState } from "react";
 type Props = {
   username: string;
   caption: string;
+  avatarUrl?: string;
 };
 
-export default function PostCaption({ username, caption }: Props) {
+export default function PostCaption({ username, caption, avatarUrl }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   return (
     <div style={{
       position: "absolute",
-      bottom: 80,
+      bottom: 100,
       left: 16,
       right: 80,
       zIndex: 20,
@@ -32,16 +33,29 @@ export default function PostCaption({ username, caption }: Props) {
         style={{ position: "relative", zIndex: 1, cursor: "pointer" }}
         onClick={() => setExpanded(!expanded)}
       >
-        <p style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: "white",
-          marginBottom: 4,
-          fontFamily: "monospace",
-          letterSpacing: 1,
-        }}>
-          @{username}
-        </p>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <div style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: avatarUrl
+              ? `url(${avatarUrl}) center/cover`
+              : "linear-gradient(135deg, #1a1a2e, #16213e)",
+            border: "2px solid rgba(0,229,255,0.4)",
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            fontWeight: 700,
+            color: "white",
+          }}>
+            {!avatarUrl && (username?.[0]?.toUpperCase() ?? "?")}
+          </div>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "white" }}>
+            {username}
+          </span>
+        </div>
         <p style={{
           fontSize: 13,
           color: "rgba(255,255,255,0.9)",

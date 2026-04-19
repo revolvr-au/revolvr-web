@@ -887,6 +887,7 @@ const Post = memo(function Post({
           <PostCaption
             username={post.handle || "user"}
             caption={post.caption}
+            avatarUrl={post.avatarUrl}
           />
         </div>
       )}
