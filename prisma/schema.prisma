@@ -369,6 +369,7 @@ model CreatorProfile {
   verificationPriceId            String?   @map("verification_price_id")
   verificationStatus             String    @default("inactive") @map("verification_status")
   verifiedSince                  DateTime? @map("verified_since") @db.Timestamptz(6)
+  scheduledLiveAt                DateTime? @map("scheduled_live_at") @db.Timestamptz(6)
 
   @@index([blue_tick_sub_id], map: "creatorprofile_blue_tick_sub_id_idx")
   @@map("CreatorProfile")
