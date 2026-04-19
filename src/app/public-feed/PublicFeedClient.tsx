@@ -888,6 +888,8 @@ const Post = memo(function Post({
             username={post.handle || "user"}
             caption={post.caption}
             avatarUrl={post.avatarUrl}
+            postId={String(post.id)}
+            voltage={post.voltage || 0}
           />
         </div>
       )}

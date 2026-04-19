@@ -1,15 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Props = {
   username: string;
   caption: string;
   avatarUrl?: string;
+  postId: string;
+  voltage: number;
 };
 
-export default function PostCaption({ username, caption, avatarUrl }: Props) {
+export default function PostCaption({ username, caption, avatarUrl, postId, voltage }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [latestComment, setLatestComment] = useState<{ body: string; userEmail: string } | null>(null);
+
+  useEffect(() => {
+    if (!postId) return;
+    fetch(`/api/comments?postId=${postId}&limit=1`)
+      .then(r => r.json())
+      .then(data => {
+        const first = Array.isArray(data.comments) ? data.comments[data.comments.length - 1] : null;
+        setLatestComment(first ?? null);
+      })
+      .catch(() => {});
+  }, [postId]);
 
   return (
     <div style={{
@@ -20,7 +34,6 @@ export default function PostCaption({ username, caption, avatarUrl }: Props) {
       zIndex: 20,
       pointerEvents: "auto",
     }}>
-      {/* Gradient for readability */}
       <div style={{
         position: "absolute",
         inset: "-20px -16px -16px -16px",
@@ -56,6 +69,7 @@ export default function PostCaption({ username, caption, avatarUrl }: Props) {
             {username}
           </span>
         </div>
+
         <p style={{
           fontSize: 13,
           color: "rgba(255,255,255,0.9)",
@@ -67,6 +81,24 @@ export default function PostCaption({ username, caption, avatarUrl }: Props) {
         }}>
           {caption}
         </p>
+
+        {latestComment && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6 }}>
+            <span style={{ fontSize: 11 }}>💬</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {latestComment.body.length > 40 ? latestComment.body.slice(0, 40) + "…" : latestComment.body}
+            </span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+              — @{latestComment.userEmail.split("@")[0]}
+            </span>
+          </div>
+        )}
+
+        <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 5 }}>
+          <span style={{ fontSize: 11 }}>⚡</span>
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#00e5ff" }}>{voltage}</span>
+          <span style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: "1.5px", color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>voltage</span>
+        </div>
       </div>
     </div>
   );
