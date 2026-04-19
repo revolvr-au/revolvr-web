@@ -21,7 +21,6 @@ export default function FeedLayout({ children }: Props) {
       <div
   style={{
     width: "100%",
-    maxWidth: 420,
     height: "100vh",
     overflow: "hidden",
     position: "relative"
