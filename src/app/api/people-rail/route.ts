@@ -31,30 +31,6 @@ export async function GET() {
       }),
     ]);
 
-    // Fetch latest comment for each top creator (from their most recent post)
-    const topEmails = topCreators.map(c => c.email);
-    const latestPostsPerCreator = await prisma.post.findMany({
-      where: { userEmail: { in: topEmails } },
-      orderBy: { createdAt: "desc" },
-      distinct: ["userEmail"],
-      select: { id: true, userEmail: true },
-    });
-
-    const postIds = latestPostsPerCreator.map(p => p.id);
-    const latestComments = postIds.length > 0
-      ? await prisma.comment.findMany({
-          where: { postId: { in: postIds } },
-          orderBy: { createdAt: "desc" },
-          distinct: ["postId"],
-          select: { postId: true, body: true, userEmail: true },
-        })
-      : [];
-
-    const commentByPostId = Object.fromEntries(latestComments.map(c => [c.postId, c.body]));
-    const commentByEmail = Object.fromEntries(
-      latestPostsPerCreator.map(p => [p.userEmail, commentByPostId[p.id] ?? null])
-    );
-
     const liveEmails = liveSessions.map(s => s.creatorName);
     const liveCreatorProfiles = liveEmails.length > 0
       ? await prisma.creatorProfile.findMany({
@@ -80,27 +56,95 @@ export async function GET() {
       .filter((p): p is NonNullable<typeof p> => p !== null);
 
     const liveHandles = new Set(livePeople.map(p => p.handle));
+
+    // Fetch all posts for top creators to compute stats
+    const topEmails = topCreators.map(c => c.email);
+    const allPosts = await prisma.post.findMany({
+      where: { userEmail: { in: topEmails } },
+      select: { id: true, userEmail: true },
+    });
+
+    const postIdsByEmail: Record<string, string[]> = {};
+    for (const p of allPosts) {
+      if (!postIdsByEmail[p.userEmail]) postIdsByEmail[p.userEmail] = [];
+      postIdsByEmail[p.userEmail].push(p.id);
+    }
+
+    const allPostIds = allPosts.map(p => p.id);
+
+    const [commentCounts, shareCounts, recentComments] = await Promise.all([
+      allPostIds.length > 0
+        ? prisma.comment.groupBy({
+            by: ["postId"],
+            where: { postId: { in: allPostIds } },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
+      allPostIds.length > 0
+        ? prisma.postShare.groupBy({
+            by: ["postId"],
+            where: { postId: { in: allPostIds } },
+            _count: { id: true },
+          })
+        : Promise.resolve([]),
+      allPostIds.length > 0
+        ? prisma.comment.findMany({
+            where: { postId: { in: allPostIds } },
+            orderBy: { createdAt: "desc" },
+            take: 500,
+            select: { postId: true, body: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const commentCountByPostId: Record<string, number> = {};
+    for (const c of commentCounts) commentCountByPostId[c.postId] = c._count.id;
+
+    const shareCountByPostId: Record<string, number> = {};
+    for (const s of shareCounts) shareCountByPostId[s.postId] = s._count.id;
+
+    const postToEmail: Record<string, string> = {};
+    for (const p of allPosts) postToEmail[p.id] = p.userEmail;
+
+    // Latest comment across all posts per creator (recentComments already ordered by createdAt desc)
+    const latestCommentByEmail: Record<string, string> = {};
+    for (const c of recentComments) {
+      const email = postToEmail[c.postId];
+      if (email && !latestCommentByEmail[email]) latestCommentByEmail[email] = c.body;
+    }
+
+    const commentCountByEmail: Record<string, number> = {};
+    const shareCountByEmail: Record<string, number> = {};
+    for (const [email, postIds] of Object.entries(postIdsByEmail)) {
+      commentCountByEmail[email] = postIds.reduce((sum, pid) => sum + (commentCountByPostId[pid] ?? 0), 0);
+      shareCountByEmail[email] = postIds.reduce((sum, pid) => sum + (shareCountByPostId[pid] ?? 0), 0);
+    }
+
     const now = new Date();
     const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     const topPeople = topCreators
-      .filter(c => c.handle && !liveHandles.has(c.handle))
+      .filter(c => c.handle)
       .map(c => {
         const sla = c.scheduledLiveAt;
         const scheduledLiveAt = sla && sla > now && sla < in24h ? sla.toISOString() : null;
+        const postIds = postIdsByEmail[c.email] ?? [];
         return {
           handle: c.handle!,
           displayName: c.displayName ?? c.handle!,
           avatarUrl: c.avatarUrl ?? undefined,
-          isLive: false,
+          isLive: liveHandles.has(c.handle!),
           voltage: c.voltage,
           scheduledLiveAt,
-          latestComment: commentByEmail[c.email] ?? null,
+          latestComment: latestCommentByEmail[c.email] ?? null,
+          commentCount: commentCountByEmail[c.email] ?? 0,
+          shareCount: shareCountByEmail[c.email] ?? 0,
+          postCount: postIds.length,
         };
       });
 
     const newPeople = newCreators
-      .filter(c => c.handle && !liveHandles.has(c.handle!))
+      .filter(c => c.handle)
       .map(c => ({
         handle: c.handle!,
         displayName: c.displayName ?? c.handle!,

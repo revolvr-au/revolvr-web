@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import FeedLayout from "@/components/FeedLayout";
+import { RevolvrIcon } from "@/components/RevolvrIcon";
 
 type LivePerson = {
   handle: string;
@@ -16,10 +17,13 @@ type RisingPerson = {
   handle: string;
   displayName: string;
   avatarUrl?: string;
-  isLive: false;
+  isLive: boolean;
   voltage: number;
   scheduledLiveAt: string | null;
   latestComment: string | null;
+  commentCount: number;
+  shareCount: number;
+  postCount: number;
 };
 
 type NewPerson = {
@@ -204,7 +208,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         flexDirection: "column",
         alignItems: "center",
         gap: 5,
-        padding: 10,
+        padding: "12px 8px 10px",
         background: "rgba(255,255,255,0.04)",
         borderRadius: 12,
         border: "1px solid rgba(0,229,255,0.1)",
@@ -237,7 +241,59 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
       }}>
         @{person.handle}
       </div>
-      <VoltageTag voltage={person.voltage} />
+
+      {/* Stats row */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        flexWrap: "wrap",
+        justifyContent: "center",
+        fontSize: 10,
+        fontFamily: "Inter, system-ui, sans-serif",
+      }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+          <span style={{ fontSize: 10 }}>⚡</span>
+          <span style={{ color: "#00e5ff", fontFamily: "monospace", fontWeight: 700 }}>
+            {person.voltage.toLocaleString()}
+          </span>
+        </span>
+
+        {person.isLive && (
+          <div style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: "#ff3c3c",
+            flexShrink: 0,
+            animation: "livePulse 1.4s ease-in-out infinite",
+          }} />
+        )}
+
+        <span
+          title={`${person.commentCount} comments`}
+          style={{ display: "inline-flex", alignItems: "center", gap: 2, cursor: "default" }}
+          onClick={e => e.stopPropagation()}
+        >
+          <RevolvrIcon name="chat" size={10} />
+          <span style={{ color: "rgba(255,255,255,0.6)" }}>{person.commentCount}</span>
+        </span>
+
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+          <RevolvrIcon name="share" size={10} />
+          <span style={{ color: "rgba(255,255,255,0.6)" }}>{person.shareCount}</span>
+        </span>
+      </div>
+
+      {/* Post count */}
+      <div style={{
+        fontSize: 9,
+        fontFamily: "monospace",
+        color: "rgba(255,255,255,0.4)",
+        letterSpacing: "0.5px",
+      }}>
+        {person.postCount} POSTS
+      </div>
 
       {hrs !== null && hrs >= 0 && (
         <div style={{
@@ -271,6 +327,21 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
       >
         Follow
       </button>
+
+      {/* Scrolling marquee comment */}
+      {person.latestComment && (
+        <div style={{ overflow: "hidden", height: 16, width: "100%" }}>
+          <div style={{
+            fontSize: 10,
+            color: "rgba(255,255,255,0.5)",
+            whiteSpace: "nowrap",
+            fontFamily: "Inter, system-ui, sans-serif",
+            animation: "marquee 12s linear infinite",
+          }}>
+            💬 {person.latestComment}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
