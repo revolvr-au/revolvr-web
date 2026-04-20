@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
 export const runtime = "nodejs";
+// Cache at the edge for 30s — public feed is identical for every visitor.
+// stale-while-revalidate lets the CDN serve the old copy while refreshing.
+export const revalidate = 30;
 
 export async function GET() {
   try {
@@ -55,7 +56,9 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ posts: formatted });
+    return NextResponse.json({ posts: formatted }, {
+      headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=60" },
+    });
   } catch (err: any) {
     console.error(err);
     return NextResponse.json(

@@ -739,14 +739,18 @@ const Post = memo(function Post({
 
   useEffect(() => {
     if (!isActive) return;
-    fireAnalytics({
-      surface: "feed",
-      eventName: "post_view",
-      userEmail: currentUserId,
-      postId,
-      creatorEmail: post.userEmail ?? null,
-      properties: {},
-    });
+    // Only count a view if the user dwells for 600ms — prevents firing on every swipe-through.
+    const t = window.setTimeout(() => {
+      fireAnalytics({
+        surface: "feed",
+        eventName: "post_view",
+        userEmail: currentUserId,
+        postId,
+        creatorEmail: post.userEmail ?? null,
+        properties: {},
+      });
+    }, 600);
+    return () => window.clearTimeout(t);
   }, [isActive]);
 
   const handleInteract = useCallback(() => {
