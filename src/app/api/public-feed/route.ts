@@ -4,16 +4,18 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-function stripQueryParams(url: string | null | undefined): string | null {
+function sanitizeImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  try {
-    const parsed = new URL(url);
-    return parsed.origin + parsed.pathname;
-  } catch {
-    const base = url.split("?")[0];
-    if (/^\/[^/]/.test(base)) return base;
-    return null;
+  if (url.startsWith("http")) {
+    try {
+      const parsed = new URL(url);
+      return parsed.origin + parsed.pathname;
+    } catch {
+      return null;
+    }
   }
+  if (url.startsWith("/")) return url;
+  return null;
 }
 
 export async function GET() {
@@ -67,10 +69,10 @@ export async function GET() {
       return {
         id: p.id,
         caption: p.caption,
-        imageUrl: stripQueryParams(p.imageUrl),
+        imageUrl: sanitizeImageUrl(p.imageUrl),
         userEmail: p.userEmail,
         handle,
-        avatarUrl: avatarUrl ? stripQueryParams(avatarUrl) : null,
+        avatarUrl: avatarUrl ? sanitizeImageUrl(avatarUrl) : null,
         displayName,
         createdAt: p.createdAt,
         latestComment,
