@@ -893,6 +893,7 @@ const Post = memo(function Post({
             caption={post.caption}
             avatarUrl={post.avatarUrl}
             postId={String(post.id)}
+            latestComment={post.latestComment ?? null}
           />
         </div>
       )}

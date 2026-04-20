@@ -1,28 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 type Props = {
   username: string;
   caption: string;
   avatarUrl?: string;
   postId: string;
+  latestComment?: { body: string; userEmail: string } | null;
 };
 
-export default function PostCaption({ username, caption, avatarUrl, postId }: Props) {
+export default function PostCaption({ username, caption, avatarUrl, postId, latestComment = null }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const [latestComment, setLatestComment] = useState<{ body: string; userEmail: string } | null>(null);
-
-  useEffect(() => {
-    if (!postId) return;
-    fetch(`/api/comments?postId=${postId}&limit=1`)
-      .then(r => r.json())
-      .then(data => {
-        const first = Array.isArray(data.comments) ? data.comments[data.comments.length - 1] : null;
-        setLatestComment(first ?? null);
-      })
-      .catch(() => {});
-  }, [postId]);
 
   return (
     <div style={{

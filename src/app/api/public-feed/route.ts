@@ -6,10 +6,14 @@ export const runtime = "nodejs";
 
 function stripQueryParams(url: string | null | undefined): string | null {
   if (!url) return null;
-  const base = url.split("?")[0];
-  // Must be an absolute https URL or a root-relative path
-  if (/^https?:\/\/.+/.test(base) || /^\/[^/]/.test(base)) return base;
-  return null;
+  try {
+    const parsed = new URL(url);
+    return parsed.origin + parsed.pathname;
+  } catch {
+    const base = url.split("?")[0];
+    if (/^\/[^/]/.test(base)) return base;
+    return null;
+  }
 }
 
 export async function GET() {
@@ -17,6 +21,14 @@ export async function GET() {
     const posts = await prisma.post.findMany({
       orderBy: { createdAt: "desc" },
       take: 20,
+      include: {
+        comments: {
+          where: { parentId: null },
+          orderBy: { createdAt: "desc" },
+          take: 1,
+          select: { id: true, body: true, userEmail: true },
+        },
+      },
     });
 
     const emails = [
@@ -50,6 +62,8 @@ export async function GET() {
       const avatarUrl = profile?.avatar_url ?? creator?.avatarUrl ?? null;
       const displayName = profile?.display_name?.trim() || creator?.displayName?.trim() || handle;
 
+      const latestComment = p.comments[0] ?? null;
+
       return {
         id: p.id,
         caption: p.caption,
@@ -59,6 +73,7 @@ export async function GET() {
         avatarUrl: avatarUrl ? stripQueryParams(avatarUrl) : null,
         displayName,
         createdAt: p.createdAt,
+        latestComment,
       };
     });
 
