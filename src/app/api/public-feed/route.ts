@@ -6,13 +6,10 @@ export const runtime = "nodejs";
 
 function stripQueryParams(url: string | null | undefined): string | null {
   if (!url) return null;
-  try {
-    const u = new URL(url);
-    return u.origin + u.pathname;
-  } catch {
-    // Not a full URL (relative path) — return as-is
-    return url;
-  }
+  const base = url.split("?")[0];
+  // Must be an absolute https URL or a root-relative path
+  if (/^https?:\/\/.+/.test(base) || /^\/[^/]/.test(base)) return base;
+  return null;
 }
 
 export async function GET() {
