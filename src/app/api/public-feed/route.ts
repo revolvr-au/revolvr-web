@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-// Cache at the edge for 30s — public feed is identical for every visitor.
-// stale-while-revalidate lets the CDN serve the old copy while refreshing.
-export const revalidate = 30;
+
+function stripQueryParams(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.origin + u.pathname;
+  } catch {
+    // Not a full URL (relative path) — return as-is
+    return url;
+  }
+}
 
 export async function GET() {
   try {
@@ -47,17 +56,19 @@ export async function GET() {
       return {
         id: p.id,
         caption: p.caption,
-        imageUrl: p.imageUrl,
+        imageUrl: stripQueryParams(p.imageUrl),
         userEmail: p.userEmail,
         handle,
-        avatarUrl,
+        avatarUrl: avatarUrl ? stripQueryParams(avatarUrl) : null,
         displayName,
         createdAt: p.createdAt,
       };
     });
 
     return NextResponse.json({ posts: formatted }, {
-      headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=60" },
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
     });
   } catch (err: any) {
     console.error(err);
