@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import FeedLayout from "@/components/FeedLayout";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 import RingRim from "@/components/RingRim";
+import { useRingStatus } from "@/hooks/useRingStatus";
+import { hasRing } from "@/lib/ringGates";
 
 type LivePerson = {
   handle: string;
@@ -431,6 +433,9 @@ export function PeoplePageContent() {
   const router = useRouter();
   const [data, setData] = useState<PeopleData | null>(() => peopleCache?.data ?? null);
   const [loading, setLoading] = useState(peopleCache === null);
+  const { ringTier, loading: ringLoading } = useRingStatus();
+  const isBlue = hasRing(ringTier, "BLUE");
+  const showGate = !ringLoading && !isBlue;
 
   const fetchData = useCallback(() => {
     fetch("/api/people-rail")
@@ -528,54 +533,124 @@ export function PeoplePageContent() {
             </div>
           </div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 36 }}>
+          <div style={{ position: "relative" }}>
+            {/* Content — blurred when gated */}
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 36,
+              filter: showGate ? "blur(8px) brightness(0.5)" : "none",
+              pointerEvents: showGate ? "none" : "auto",
+              userSelect: showGate ? "none" : "auto",
+              transition: "filter 0.3s ease",
+            }}>
 
-            {/* SECTION 1 — LIVE NOW */}
-            {(data?.live?.length ?? 0) > 0 && (
-              <section>
-                <SectionHeader label="LIVE NOW" />
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {data!.live.map(p => (
-                    <LiveCard key={p.handle} person={p} onClick={() => go(p.handle)} />
-                  ))}
+              {/* SECTION 1 — LIVE NOW */}
+              {(data?.live?.length ?? 0) > 0 && (
+                <section>
+                  <SectionHeader label="LIVE NOW" />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {data!.live.map(p => (
+                      <LiveCard key={p.handle} person={p} onClick={() => go(p.handle)} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* SECTION 2 — RISING */}
+              {(data?.creators?.length ?? 0) > 0 && (
+                <section>
+                  <SectionHeader label="RISING" />
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 10,
+                  }}>
+                    {data!.creators.map(p => (
+                      <RisingCard key={p.handle} person={p} onClick={() => go(p.handle)} />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* SECTION 3 — NEW HERE */}
+              {(data?.newPeople?.length ?? 0) > 0 && (
+                <section>
+                  <SectionHeader label="NEW HERE" />
+                  <div style={{
+                    display: "flex",
+                    gap: 10,
+                    overflowX: "auto",
+                    scrollbarWidth: "none",
+                    paddingBottom: 4,
+                  }}>
+                    {data!.newPeople.map(p => (
+                      <NewCard key={p.handle} person={p} onClick={() => go(p.handle)} />
+                    ))}
+                  </div>
+                </section>
+              )}
+            </div>
+
+            {/* Gate overlay — fixed so it always centres in the visible area */}
+            {showGate && (
+              <div style={{
+                position: "fixed",
+                top: 72,
+                bottom: 80,
+                left: 0,
+                right: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 18,
+                zIndex: 50,
+                pointerEvents: "auto",
+                padding: "0 32px",
+                textAlign: "center",
+              }}>
+                <div style={{ fontSize: 36 }}>🔵</div>
+                <div>
+                  <div style={{
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: 26,
+                    letterSpacing: 2,
+                    color: "#3B82F6",
+                    marginBottom: 8,
+                  }}>
+                    BLUE RING REQUIRED
+                  </div>
+                  <p style={{
+                    fontSize: 13,
+                    color: "rgba(255,255,255,0.5)",
+                    lineHeight: 1.7,
+                    margin: 0,
+                    maxWidth: 260,
+                  }}>
+                    Get a Blue Ring to discover and connect with creators on REVOLVR.
+                  </p>
                 </div>
-              </section>
+                <a
+                  href="/rings"
+                  style={{
+                    display: "inline-block",
+                    background: "#3B82F6",
+                    color: "white",
+                    fontFamily: "monospace",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "1px",
+                    padding: "11px 28px",
+                    borderRadius: 999,
+                    textDecoration: "none",
+                    marginTop: 4,
+                  }}
+                >
+                  GET BLUE RING
+                </a>
+              </div>
             )}
-
-            {/* SECTION 2 — RISING */}
-            {(data?.creators?.length ?? 0) > 0 && (
-              <section>
-                <SectionHeader label="RISING" />
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: 10,
-                }}>
-                  {data!.creators.map(p => (
-                    <RisingCard key={p.handle} person={p} onClick={() => go(p.handle)} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* SECTION 3 — NEW HERE */}
-            {(data?.newPeople?.length ?? 0) > 0 && (
-              <section>
-                <SectionHeader label="NEW HERE" />
-                <div style={{
-                  display: "flex",
-                  gap: 10,
-                  overflowX: "auto",
-                  scrollbarWidth: "none",
-                  paddingBottom: 4,
-                }}>
-                  {data!.newPeople.map(p => (
-                    <NewCard key={p.handle} person={p} onClick={() => go(p.handle)} />
-                  ))}
-                </div>
-              </section>
-            )}
-
           </div>
         )}
       </div>

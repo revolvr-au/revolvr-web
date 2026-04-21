@@ -5,6 +5,7 @@ import { createSupabaseBrowserClient } from "@/supabase-browser";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import ProfileHeader from "@/components/ProfileHeader";
 import { getRingColor } from "@/components/RingRim";
+import { hasRing } from "@/lib/ringGates";
 
 export type ProfilePost = {
   id: string;
@@ -273,24 +274,44 @@ export default function ProfileClient({
           </div>
         </div>
 
-        {/* Audio intro — full width rounded pill */}
-        <div style={{
-          width: "100%",
-          maxWidth: 300,
-          background: "transparent",
-          border: "1px solid #1a1510",
-          borderRadius: 24,
-          padding: "10px 16px",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-        }}>
-          <span style={{ fontSize: 16 }}>🎙️</span>
-          <span style={{ fontSize: 11, color: "#00e5ff", fontFamily: "monospace", letterSpacing: 2 }}>Intro</span>
-          <span style={{ fontSize: 10, color: "#333" }}>▶</span>
-          <div style={{ flex: 1, height: 1, background: "#1a1510" }} />
-          <span style={{ fontSize: 10, color: "#333", fontFamily: "monospace" }}>0:30</span>
-        </div>
+        {/* Voice bio — Blue Ring required */}
+        {hasRing(profile.ringTier, "BLUE") ? (
+          <div style={{
+            width: "100%",
+            maxWidth: 300,
+            background: "transparent",
+            border: "1px solid #1a1510",
+            borderRadius: 24,
+            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}>
+            <span style={{ fontSize: 16 }}>🎙️</span>
+            <span style={{ fontSize: 11, color: "#00e5ff", fontFamily: "monospace", letterSpacing: 2 }}>Intro</span>
+            <span style={{ fontSize: 10, color: "#333" }}>▶</span>
+            <div style={{ flex: 1, height: 1, background: "#1a1510" }} />
+            <span style={{ fontSize: 10, color: "#333", fontFamily: "monospace" }}>0:30</span>
+          </div>
+        ) : isOwnProfile ? (
+          <a href="/rings" style={{
+            width: "100%",
+            maxWidth: 300,
+            background: "transparent",
+            border: "1px dashed rgba(59,130,246,0.3)",
+            borderRadius: 24,
+            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            textDecoration: "none",
+          }}>
+            <span style={{ fontSize: 14 }}>🔒</span>
+            <span style={{ fontSize: 11, color: "rgba(59,130,246,0.7)", fontFamily: "monospace", letterSpacing: 1 }}>
+              Voice intro · Blue Ring
+            </span>
+          </a>
+        ) : null}
 
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320, marginTop: 20 }}>

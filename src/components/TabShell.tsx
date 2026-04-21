@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import FeedLayout from "./FeedLayout";
 import PublicFeedClient from "@/app/public-feed/PublicFeedClient";
 import { PeoplePageContent } from "@/app/people/page";
+import { TrancheContent } from "@/app/tranche/page";
 
 const TAB_PATHS = new Set(["/public-feed", "/people", "/tranche"]);
 
@@ -20,6 +21,9 @@ export default function TabShell() {
       </div>
       <div style={{ display: pathname === "/people" ? "block" : "none" }}>
         <PeoplePageContent />
+      </div>
+      <div style={{ display: pathname === "/tranche" ? "block" : "none" }}>
+        <TrancheContent />
       </div>
     </>
   );
