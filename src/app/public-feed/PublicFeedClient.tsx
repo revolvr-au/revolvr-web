@@ -53,8 +53,11 @@ const getStableNoise = (key: string) => {
   return (Math.abs(hash) % 200) / 100;
 };
 
+let feedCache: { posts: any[]; ts: number } | null = null;
+const FEED_CACHE_TTL = 30_000;
+
 export default function PublicFeedClient() {
-  const [posts, setPosts] = useState<any[]>([]);
+  const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
@@ -263,15 +266,17 @@ useEffect(() => {
   const MAX_MOMENTUM_STRENGTH = 4;
 
   useEffect(() => {
-  fetch("/api/public-feed")
-    .then((res) => res.json())
-    .then((data) => {
-      if (Array.isArray(data.posts)) {
-        setPosts(data.posts);
-      }
-    })
-    .catch((err) => console.error(err));
-}, []);
+    if (feedCache && Date.now() - feedCache.ts < FEED_CACHE_TTL) return;
+    fetch("/api/public-feed")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.posts)) {
+          feedCache = { posts: data.posts, ts: Date.now() };
+          setPosts(data.posts);
+        }
+      })
+      .catch((err) => console.error(err));
+  }, []);
 
   useEffect(() => {
     posts.forEach((post, index) => {

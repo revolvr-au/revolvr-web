@@ -416,7 +416,7 @@ function SectionHeader({ label }: { label: string }) {
 let peopleCache: { data: PeopleData; ts: number } | null = null;
 const PEOPLE_CACHE_TTL = 30_000;
 
-export default function PeoplePage() {
+export function PeoplePageContent() {
   const router = useRouter();
   const [data, setData] = useState<PeopleData | null>(() => peopleCache?.data ?? null);
   const [loading, setLoading] = useState(peopleCache === null);
@@ -571,3 +571,6 @@ export default function PeoplePage() {
     </FeedLayout>
   );
 }
+
+// Route stub — visual content is rendered by TabShell in the root layout
+export default function PeoplePage() { return null; }

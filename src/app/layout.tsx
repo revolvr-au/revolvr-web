@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import KeyboardHandler from "@/components/KeyboardHandler";
+import TabShell from "@/components/TabShell";
 
 export const metadata: Metadata = {
   title: "Revolvr",
@@ -22,6 +23,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#050814] text-white">
         <KeyboardHandler />
+        <TabShell />
         {children}
       </body>
     </html>
