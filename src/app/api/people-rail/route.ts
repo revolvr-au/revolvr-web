@@ -32,12 +32,21 @@ export async function GET() {
     ]);
 
     const liveEmails = liveSessions.map(s => s.creatorName);
-    const liveCreatorProfiles = liveEmails.length > 0
-      ? await prisma.creatorProfile.findMany({
-          where: { email: { in: liveEmails } },
-          select: { email: true, handle: true, displayName: true, avatarUrl: true, voltage: true },
-        })
-      : [];
+    const topEmails = topCreators.map(c => c.email);
+
+    // Fetch liveCreatorProfiles and allPosts in parallel (both depend only on round-1 data)
+    const [liveCreatorProfiles, allPosts] = await Promise.all([
+      liveEmails.length > 0
+        ? prisma.creatorProfile.findMany({
+            where: { email: { in: liveEmails } },
+            select: { email: true, handle: true, displayName: true, avatarUrl: true, voltage: true },
+          })
+        : Promise.resolve([]),
+      prisma.post.findMany({
+        where: { userEmail: { in: topEmails } },
+        select: { id: true, userEmail: true },
+      }),
+    ]);
 
     const liveByEmail = Object.fromEntries(liveCreatorProfiles.map(c => [c.email, c]));
 
@@ -56,13 +65,6 @@ export async function GET() {
       .filter((p): p is NonNullable<typeof p> => p !== null);
 
     const liveHandles = new Set(livePeople.map(p => p.handle));
-
-    // Fetch all posts for top creators to compute stats
-    const topEmails = topCreators.map(c => c.email);
-    const allPosts = await prisma.post.findMany({
-      where: { userEmail: { in: topEmails } },
-      select: { id: true, userEmail: true },
-    });
 
     const postIdsByEmail: Record<string, string[]> = {};
     for (const p of allPosts) {
@@ -153,7 +155,10 @@ export async function GET() {
         voltage: c.voltage,
       }));
 
-    return NextResponse.json({ live: livePeople, creators: topPeople, newPeople });
+    return NextResponse.json(
+      { live: livePeople, creators: topPeople, newPeople },
+      { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60" } },
+    );
   } catch (err: unknown) {
     console.error(err);
     return NextResponse.json({ live: [], creators: [], newPeople: [] }, { status: 500 });

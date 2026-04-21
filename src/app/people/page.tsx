@@ -413,22 +413,32 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
+let peopleCache: { data: PeopleData; ts: number } | null = null;
+const PEOPLE_CACHE_TTL = 30_000;
+
 export default function PeoplePage() {
   const router = useRouter();
-  const [data, setData] = useState<PeopleData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<PeopleData | null>(() => peopleCache?.data ?? null);
+  const [loading, setLoading] = useState(peopleCache === null);
 
   const fetchData = useCallback(() => {
     fetch("/api/people-rail")
       .then(r => r.json())
-      .then((d: PeopleData) => setData(d))
+      .then((d: PeopleData) => {
+        peopleCache = { data: d, ts: Date.now() };
+        setData(d);
+      })
       .catch(() => setData({ live: [], creators: [], newPeople: [] }))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
+    if (peopleCache && Date.now() - peopleCache.ts < PEOPLE_CACHE_TTL) {
+      // Cache is fresh — no network request needed
+      return;
+    }
     fetchData();
-    const interval = setInterval(fetchData, 30_000);
+    const interval = setInterval(fetchData, PEOPLE_CACHE_TTL);
     return () => clearInterval(interval);
   }, [fetchData]);
 
