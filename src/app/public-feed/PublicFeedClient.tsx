@@ -56,8 +56,45 @@ const getStableNoise = (key: string) => {
 let feedCache: { posts: any[]; ts: number } | null = null;
 const FEED_CACHE_TTL = 30_000;
 
+function PostSkeleton() {
+  return (
+    <div
+      style={{
+        height: "100dvh",
+        width: "100%",
+        maxWidth: 420,
+        margin: "0 auto",
+        position: "relative",
+        background: "linear-gradient(180deg, #0a0f1e 0%, #070b1b 100%)",
+        overflow: "hidden",
+        scrollSnapAlign: "start",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-end",
+      }}
+    >
+      {/* Right rail */}
+      <div style={{ position: "absolute", right: 12, bottom: 120, display: "flex", flexDirection: "column", gap: 22, alignItems: "center" }}>
+        {[52, 44, 44, 44, 44].map((size, i) => (
+          <div key={i} className="animate-pulse" style={{ width: size, height: size, borderRadius: "50%", background: "rgba(255,255,255,0.07)" }} />
+        ))}
+      </div>
+      {/* Caption */}
+      <div style={{ padding: "20px 16px 50px", background: "linear-gradient(to top, rgba(5,8,20,0.95) 0%, transparent 100%)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+          <div className="animate-pulse" style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.1)", flexShrink: 0 }} />
+          <div className="animate-pulse" style={{ height: 12, width: 90, borderRadius: 6, background: "rgba(255,255,255,0.1)" }} />
+        </div>
+        <div className="animate-pulse" style={{ height: 11, width: "75%", borderRadius: 6, background: "rgba(255,255,255,0.07)", marginBottom: 8 }} />
+        <div className="animate-pulse" style={{ height: 11, width: "50%", borderRadius: 6, background: "rgba(255,255,255,0.07)" }} />
+      </div>
+    </div>
+  );
+}
+
 export default function PublicFeedClient() {
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
+  const [loading, setLoading] = useState(feedCache === null);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
@@ -266,7 +303,10 @@ useEffect(() => {
   const MAX_MOMENTUM_STRENGTH = 4;
 
   useEffect(() => {
-    if (feedCache && Date.now() - feedCache.ts < FEED_CACHE_TTL) return;
+    if (feedCache && Date.now() - feedCache.ts < FEED_CACHE_TTL) {
+      setLoading(false);
+      return;
+    }
     fetch("/api/public-feed")
       .then((res) => res.json())
       .then((data) => {
@@ -275,7 +315,8 @@ useEffect(() => {
           setPosts(data.posts);
         }
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error(err))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -637,6 +678,7 @@ useEffect(() => {
    >
       
       
+        {loading && limitedPosts.length === 0 && <PostSkeleton />}
         {limitedPosts.map((post, i) => (
     <div
       key={post.id ?? i}

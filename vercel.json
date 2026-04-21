@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/public-feed",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/people-rail",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
