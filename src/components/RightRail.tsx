@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Heart, MessageCircle, Share2, Gift, Plus, User } from "lucide-react";
+import RingRim from "@/components/RingRim";
 
 
 type Props = {
@@ -12,12 +13,13 @@ type Props = {
   onShare: () => void;
   onReward: () => void;
   onCreate: () => void;
-  onHome: () => void;
+  onHome?: () => void;
   rewardCount: number;
   avatarUrl?: string;
   username?: string;
   isFollowing?: boolean;
   onFollowToggle?: () => void;
+  ringTier?: string | null;
 };
 
 export default function RightRail({
@@ -27,16 +29,17 @@ export default function RightRail({
   onShare,
   onReward,
   onCreate,
-  onHome,
   rewardCount,
   avatarUrl,
   username,
   isFollowing = false,
   onFollowToggle,
+  ringTier,
 }: Props) {
   const [rewardBursts, setRewardBursts] = useState<number[]>([]);
   const [followed, setFollowed] = useState(isFollowing);
   const router = useRouter();
+  const hasRing = ringTier && ringTier !== "NONE";
 
   useEffect(() => {
     setFollowed(isFollowing);
@@ -83,26 +86,28 @@ export default function RightRail({
           cursor: "pointer",
         }}
       >
-        <div style={{
-          width: 50,
-          height: 50,
-          borderRadius: "50%",
-          background: avatarUrl
-            ? `url(${avatarUrl}) center/cover`
-            : "linear-gradient(135deg, #1a1a2e, #16213e)",
-          border: followed ? "2px solid #00e5ff" : "2px solid rgba(0,229,255,0.4)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 14,
-          fontWeight: 700,
-          color: "white",
-          boxShadow: followed ? "0 0 12px rgba(0,229,255,0.5)" : "0 0 6px rgba(0,229,255,0.2)",
-        }}>
-          {!avatarUrl && (
-            (username?.startsWith("@") ? username.slice(1) : username)?.[0]?.toUpperCase() ?? "?"
-          )}
-        </div>
+        <RingRim tier={ringTier} size={50}>
+          <div style={{
+            width: 50,
+            height: 50,
+            borderRadius: "50%",
+            background: avatarUrl
+              ? `url(${avatarUrl}) center/cover`
+              : "linear-gradient(135deg, #1a1a2e, #16213e)",
+            border: hasRing ? "none" : (followed ? "2px solid #00e5ff" : "2px solid rgba(0,229,255,0.4)"),
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            fontWeight: 700,
+            color: "white",
+            boxShadow: hasRing ? "none" : (followed ? "0 0 12px rgba(0,229,255,0.5)" : "0 0 6px rgba(0,229,255,0.2)"),
+          }}>
+            {!avatarUrl && (
+              (username?.startsWith("@") ? username.slice(1) : username)?.[0]?.toUpperCase() ?? "?"
+            )}
+          </div>
+        </RingRim>
         <span style={{
           fontSize: 7,
           letterSpacing: "1.5px",

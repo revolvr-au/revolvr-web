@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import HamburgerMenu from "@/components/HamburgerMenu";
 import ProfileHeader from "@/components/ProfileHeader";
+import { getRingColor } from "@/components/RingRim";
 
 export type ProfilePost = {
   id: string;
@@ -23,6 +24,7 @@ export type Profile = {
   totalVoltage: number;
   recentVoltage: number;
   postCount: number;
+  ringTier?: string | null;
 };
 
 export default function ProfileClient({
@@ -40,6 +42,7 @@ export default function ProfileClient({
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const ringColor = getRingColor(profile.ringTier);
 
   useEffect(() => {
   const supabase = createSupabaseBrowserClient();
@@ -206,6 +209,7 @@ export default function ProfileClient({
               borderRadius: "50%",
               cursor: "pointer",
               display: "block",
+              boxShadow: ringColor ? `0 0 0 3px ${ringColor}, 0 0 14px ${ringColor}50` : undefined,
             }}>
               <div style={{
                 width: "100%", height: "100%",
@@ -213,7 +217,7 @@ export default function ProfileClient({
                 background: avatarUrl
                   ? `url(${avatarUrl}) center/cover`
                   : "linear-gradient(135deg, #1a1a2e, #16213e)",
-                border: "1.5px solid rgba(255,255,255,0.08)",
+                border: ringColor ? "none" : "1.5px solid rgba(255,255,255,0.08)",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 42, fontWeight: 700,
                 position: "relative",
@@ -241,9 +245,10 @@ export default function ProfileClient({
               background: avatarUrl
                 ? `url(${avatarUrl}) center/cover`
                 : "linear-gradient(135deg, #1a1a2e, #16213e)",
-              border: "1.5px solid rgba(255,255,255,0.08)",
+              border: ringColor ? "none" : "1.5px solid rgba(255,255,255,0.08)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 42, fontWeight: 700,
+              boxShadow: ringColor ? `0 0 0 3px ${ringColor}, 0 0 14px ${ringColor}50` : undefined,
             }}>
               {!avatarUrl && initial}
             </div>

@@ -371,6 +371,12 @@ model CreatorProfile {
   verifiedSince                  DateTime? @map("verified_since") @db.Timestamptz(6)
   scheduledLiveAt                DateTime? @map("scheduled_live_at") @db.Timestamptz(6)
 
+  // ── RING VERIFICATION SYSTEM ──
+  ringTier         RingTier  @default(NONE) @map("ring_tier")
+  ringActivatedAt  DateTime? @map("ring_activated_at") @db.Timestamptz(6)
+  ringExpiresAt    DateTime? @map("ring_expires_at") @db.Timestamptz(6)
+  voltageQualified Boolean   @default(false) @map("voltage_qualified")
+
   @@index([blue_tick_sub_id], map: "creatorprofile_blue_tick_sub_id_idx")
   @@map("CreatorProfile")
   @@schema("public")
@@ -607,6 +613,18 @@ enum StudioRole {
   ADMIN
   MODERATOR
   SUPPORT
+
+  @@schema("public")
+}
+
+enum RingTier {
+  NONE
+  BLUE
+  GOLD
+  BUSINESS
+  CORPORATE
+  RED
+  GOVERNMENT
 
   @@schema("public")
 }

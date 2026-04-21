@@ -32,6 +32,8 @@ export default async function ProfilePage({
       isVerified: true,
       status: true,
       voltage: true,
+      ringTier: true,
+      ringExpiresAt: true,
     },
   });
 
@@ -106,6 +108,10 @@ export default async function ProfilePage({
   const totalVoltage = creator?.voltage ?? 0;
   const recentVoltage = recentVoltageEvents.reduce((sum, event) => sum + (event.points || 0), 0);
   const postCount = posts.length;
+  const now = new Date();
+  const ringTier = creator?.ringExpiresAt && creator.ringExpiresAt < now
+    ? "NONE"
+    : (creator?.ringTier as string | undefined) ?? "NONE";
 
   return (
     <div style={{ minHeight: "100vh", background: "#0a0806" }}>
@@ -120,6 +126,7 @@ export default async function ProfilePage({
           totalVoltage,
           recentVoltage,
           postCount,
+          ringTier,
         }}
         posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
         isFollowing={isFollowing}

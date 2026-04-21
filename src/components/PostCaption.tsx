@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import RingRim from "@/components/RingRim";
 
 type Props = {
   username: string;
@@ -8,10 +9,12 @@ type Props = {
   avatarUrl?: string;
   postId: string;
   latestComment?: { body: string; userEmail: string } | null;
+  ringTier?: string | null;
 };
 
-export default function PostCaption({ username, caption, avatarUrl, postId, latestComment = null }: Props) {
+export default function PostCaption({ username, caption, avatarUrl, postId, latestComment = null, ringTier }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const hasRing = ringTier && ringTier !== "NONE";
 
   return (
     <div style={{
@@ -35,24 +38,26 @@ export default function PostCaption({ username, caption, avatarUrl, postId, late
         onClick={() => setExpanded(!expanded)}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <div style={{
-            width: 32,
-            height: 32,
-            borderRadius: "50%",
-            background: avatarUrl
-              ? `url(${avatarUrl}) center/cover`
-              : "linear-gradient(135deg, #1a1a2e, #16213e)",
-            border: "2px solid rgba(0,229,255,0.4)",
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 13,
-            fontWeight: 700,
-            color: "white",
-          }}>
-            {!avatarUrl && (username?.[0]?.toUpperCase() ?? "?")}
-          </div>
+          <RingRim tier={ringTier} size={32}>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: "50%",
+              background: avatarUrl
+                ? `url(${avatarUrl}) center/cover`
+                : "linear-gradient(135deg, #1a1a2e, #16213e)",
+              border: hasRing ? "none" : "2px solid rgba(0,229,255,0.4)",
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "white",
+            }}>
+              {!avatarUrl && (username?.[0]?.toUpperCase() ?? "?")}
+            </div>
+          </RingRim>
           <span style={{ fontSize: 13, fontWeight: 600, color: "white" }}>
             {username}
           </span>

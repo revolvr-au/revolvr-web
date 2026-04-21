@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import FeedLayout from "@/components/FeedLayout";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
+import RingRim from "@/components/RingRim";
 
 type LivePerson = {
   handle: string;
@@ -11,6 +12,7 @@ type LivePerson = {
   avatarUrl?: string;
   isLive: true;
   voltage: number;
+  ringTier?: string;
 };
 
 type RisingPerson = {
@@ -24,6 +26,7 @@ type RisingPerson = {
   commentCount: number;
   shareCount: number;
   postCount: number;
+  ringTier?: string;
 };
 
 type NewPerson = {
@@ -32,6 +35,7 @@ type NewPerson = {
   avatarUrl?: string;
   isLive: false;
   voltage: number;
+  ringTier?: string;
 };
 
 type PeopleData = {
@@ -45,15 +49,20 @@ function Avatar({
   avatarUrl,
   size = 56,
   arcRing = false,
+  ringTier,
 }: {
   handle: string;
   avatarUrl?: string;
   size?: number;
   arcRing?: boolean;
+  ringTier?: string | null;
 }) {
+  const hasRing = ringTier && ringTier !== "NONE";
+  const showArc = arcRing && !hasRing;
+
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      {arcRing && (
+      {showArc && (
         <svg
           width={size + 8}
           height={size + 8}
@@ -85,27 +94,29 @@ function Avatar({
           </defs>
         </svg>
       )}
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: "50%",
-          background: avatarUrl
-            ? `url(${avatarUrl}) center/cover`
-            : "linear-gradient(135deg, #0d1b2e, #1a2744)",
-          border: arcRing ? "none" : "2px solid rgba(0,229,255,0.25)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: size * 0.35,
-          fontWeight: 700,
-          color: "rgba(255,255,255,0.7)",
-          fontFamily: "Inter, system-ui, sans-serif",
-          overflow: "hidden",
-        }}
-      >
-        {!avatarUrl && (handle[0]?.toUpperCase() ?? "?")}
-      </div>
+      <RingRim tier={ringTier} size={size}>
+        <div
+          style={{
+            width: size,
+            height: size,
+            borderRadius: "50%",
+            background: avatarUrl
+              ? `url(${avatarUrl}) center/cover`
+              : "linear-gradient(135deg, #0d1b2e, #1a2744)",
+            border: showArc || hasRing ? "none" : "2px solid rgba(0,229,255,0.25)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: size * 0.35,
+            fontWeight: 700,
+            color: "rgba(255,255,255,0.7)",
+            fontFamily: "Inter, system-ui, sans-serif",
+            overflow: "hidden",
+          }}
+        >
+          {!avatarUrl && (handle[0]?.toUpperCase() ?? "?")}
+        </div>
+      </RingRim>
     </div>
   );
 }
@@ -137,7 +148,7 @@ function LiveCard({ person, onClick }: { person: LivePerson; onClick: () => void
       }}
     >
       <div style={{ position: "relative", flexShrink: 0 }}>
-        <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={100} />
+        <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={100} ringTier={person.ringTier} />
         <div
           style={{
             position: "absolute",
@@ -216,7 +227,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         overflow: "hidden",
       }}
     >
-      <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={56} arcRing />
+      <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={56} arcRing ringTier={person.ringTier} />
       <div style={{
         fontSize: 12,
         fontWeight: 700,
@@ -364,7 +375,7 @@ function NewCard({ person, onClick }: { person: NewPerson; onClick: () => void }
         width: 110,
       }}
     >
-      <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={60} />
+      <Avatar handle={person.handle} avatarUrl={person.avatarUrl} size={60} ringTier={person.ringTier} />
       <div style={{
         fontSize: 12,
         fontWeight: 600,

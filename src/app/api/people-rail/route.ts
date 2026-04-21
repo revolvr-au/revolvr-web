@@ -21,13 +21,15 @@ export async function GET() {
           avatarUrl: true,
           voltage: true,
           scheduledLiveAt: true,
+          ringTier: true,
+          ringExpiresAt: true,
         },
       }),
       prisma.creatorProfile.findMany({
         where: { handle: { not: null } },
         orderBy: { createdAt: "desc" },
         take: 10,
-        select: { email: true, handle: true, displayName: true, avatarUrl: true, createdAt: true, voltage: true },
+        select: { email: true, handle: true, displayName: true, avatarUrl: true, createdAt: true, voltage: true, ringTier: true, ringExpiresAt: true },
       }),
     ]);
 
@@ -39,7 +41,7 @@ export async function GET() {
       liveEmails.length > 0
         ? prisma.creatorProfile.findMany({
             where: { email: { in: liveEmails } },
-            select: { email: true, handle: true, displayName: true, avatarUrl: true, voltage: true },
+            select: { email: true, handle: true, displayName: true, avatarUrl: true, voltage: true, ringTier: true, ringExpiresAt: true },
           })
         : Promise.resolve([]),
       prisma.post.findMany({
@@ -49,6 +51,10 @@ export async function GET() {
     ]);
 
     const liveByEmail = Object.fromEntries(liveCreatorProfiles.map(c => [c.email, c]));
+
+    const now = new Date();
+    const effectiveTier = (ringTier: string, ringExpiresAt: Date | null) =>
+      ringExpiresAt && ringExpiresAt < now ? "NONE" : ringTier;
 
     const livePeople = liveSessions
       .map(s => {
@@ -60,6 +66,7 @@ export async function GET() {
           avatarUrl: creator.avatarUrl ?? undefined,
           isLive: true,
           voltage: creator.voltage,
+          ringTier: effectiveTier(creator.ringTier as string, creator.ringExpiresAt),
         };
       })
       .filter((p): p is NonNullable<typeof p> => p !== null);
@@ -122,7 +129,6 @@ export async function GET() {
       shareCountByEmail[email] = postIds.reduce((sum, pid) => sum + (shareCountByPostId[pid] ?? 0), 0);
     }
 
-    const now = new Date();
     const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
     const topPeople = topCreators
@@ -142,6 +148,7 @@ export async function GET() {
           commentCount: commentCountByEmail[c.email] ?? 0,
           shareCount: shareCountByEmail[c.email] ?? 0,
           postCount: postIds.length,
+          ringTier: effectiveTier(c.ringTier as string, c.ringExpiresAt),
         };
       });
 
@@ -153,6 +160,7 @@ export async function GET() {
         avatarUrl: c.avatarUrl ?? undefined,
         isLive: false,
         voltage: c.voltage,
+        ringTier: effectiveTier(c.ringTier as string, c.ringExpiresAt),
       }));
 
     return NextResponse.json(

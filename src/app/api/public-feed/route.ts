@@ -44,7 +44,7 @@ export async function GET() {
       }),
       prisma.creatorProfile.findMany({
         where: { email: { in: emails } },
-        select: { email: true, handle: true, displayName: true, avatarUrl: true },
+        select: { email: true, handle: true, displayName: true, avatarUrl: true, ringTier: true, ringExpiresAt: true },
       }),
     ]);
 
@@ -55,6 +55,7 @@ export async function GET() {
       creatorRows.map((c) => [c.email, c])
     );
 
+    const now = new Date();
     const formatted = posts.map((p) => {
       const email = p.userEmail ?? "";
       const profile = profileByEmail[email];
@@ -65,6 +66,9 @@ export async function GET() {
       const displayName = profile?.display_name?.trim() || creator?.displayName?.trim() || handle;
 
       const latestComment = p.comments[0] ?? null;
+      const ringTier = creator?.ringExpiresAt && creator.ringExpiresAt < now
+        ? "NONE"
+        : (creator?.ringTier as string | undefined) ?? "NONE";
 
       return {
         id: p.id,
@@ -76,6 +80,7 @@ export async function GET() {
         displayName,
         createdAt: p.createdAt,
         latestComment,
+        ringTier,
       };
     });
 

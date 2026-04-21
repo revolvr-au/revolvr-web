@@ -925,6 +925,7 @@ const Post = memo(function Post({
         rewardCount={rewardCount}
         avatarUrl={post.avatarUrl}
         username={post.handle ? `@${post.handle}` : undefined}
+        ringTier={post.ringTier}
       />
 
       {post.caption && !isCommentsActive && (
@@ -941,6 +942,7 @@ const Post = memo(function Post({
             avatarUrl={post.avatarUrl}
             postId={String(post.id)}
             latestComment={post.latestComment ?? null}
+            ringTier={post.ringTier}
           />
         </div>
       )}
