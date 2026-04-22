@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const SPARK_VOLTAGE_THRESHOLD = 10;
+const SPARK_VOLTAGE_THRESHOLD = 0; // TODO: raise to 10 before launch
 
 function sanitizeUrl(url: string | null | undefined): string | null {
   if (!url) return null;
