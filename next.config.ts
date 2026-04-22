@@ -6,12 +6,24 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "esnyldnbxlwvrczwbkmy.supabase.co",
-        pathname: "/**",
       },
     ],
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-store",
+          },
+        ],
+      },
+    ];
   },
 };
 
