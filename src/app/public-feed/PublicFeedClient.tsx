@@ -632,8 +632,7 @@ useEffect(() => {
       flexShrink: 0,
       borderTop: "1px solid rgba(255,255,255,0.08)",
       background: "#050814",
-      padding: "10px 16px",
-      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 72px)",
+      padding: "10px 16px 8px",
     }}>
       {replyTo && (
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
@@ -641,7 +640,7 @@ useEffect(() => {
           <span onClick={() => setReplyTo(null)} style={{ marginLeft: 8, cursor: "pointer" }}>✕</span>
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 16 }}>
         <input
           autoFocus
           value={commentText}
