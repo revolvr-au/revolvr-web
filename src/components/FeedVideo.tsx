@@ -127,6 +127,7 @@ export default function FeedVideo({
         controls
         playsInline
         muted
+        loop
         preload="metadata"
         className={[
           "w-full max-h-[520px] object-cover",
