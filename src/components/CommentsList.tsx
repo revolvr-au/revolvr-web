@@ -56,9 +56,9 @@ export default function CommentsList({
   const getMessage = (comment: any) => comment.message || comment.body || "";
 
   return (
-    <div className="space-y-4 pb-20">
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 8 }}>
       {rootComments.length === 0 ? (
-        <div className="flex h-full min-h-40 items-center justify-center text-sm text-white/40">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 0", fontSize: 14, color: "rgba(255,255,255,0.4)" }}>
           No comments yet
         </div>
       ) : (
