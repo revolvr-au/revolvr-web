@@ -193,21 +193,13 @@ useEffect(() => {
 
 useEffect(() => {
   if (!showComments) return;
-
-  const handler = () => {
-    const overlay = document.getElementById('comments-overlay');
-    if (!overlay || !window.visualViewport) return;
-    overlay.style.height = `${window.visualViewport.height}px`;
-    overlay.style.top = `${window.visualViewport.offsetTop}px`;
-  };
-
-  window.visualViewport?.addEventListener('resize', handler);
-  window.visualViewport?.addEventListener('scroll', handler);
-  handler();
-
+  const meta = document.querySelector('meta[name="viewport"]');
+  const original = meta?.getAttribute('content') ?? '';
+  meta?.setAttribute('content',
+    'width=device-width, initial-scale=1, interactive-widget=resizes-content'
+  );
   return () => {
-    window.visualViewport?.removeEventListener('resize', handler);
-    window.visualViewport?.removeEventListener('scroll', handler);
+    meta?.setAttribute('content', original);
   };
 }, [showComments]);
 
@@ -587,6 +579,7 @@ useEffect(() => {
       color: "white",
       transform: commentsOpen ? `translateY(${dragY}px)` : "translateY(100%)",
       transition: isDragging ? "none" : "transform 0.3s ease",
+      willChange: "transform",
     }}
   >
     {/* Drag handle */}
