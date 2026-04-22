@@ -96,11 +96,11 @@ export default function CommentsList({
                     isRecent ? "bg-white/5" : ""
                   }`}
                 >
-              <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-white/10">
+              <div style={{ width: 36, height: 36, minWidth: 36, borderRadius: "50%", overflow: "hidden", background: "rgba(255,255,255,0.1)", flexShrink: 0 }}>
                 <img
                   src={c.avatar_url || "/default-avatar.png"}
                   alt=""
-                  className="h-full w-full object-cover"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                 />
               </div>
 
@@ -132,11 +132,11 @@ export default function CommentsList({
                         key={`${r.id}-${c.id}`}
                         className="flex items-start gap-3 rounded-lg px-2 py-1 transition-colors duration-150 hover:bg-white/5"
                       >
-                        <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-white/10">
+                        <div style={{ width: 30, height: 30, minWidth: 30, borderRadius: "50%", overflow: "hidden", background: "rgba(255,255,255,0.1)", flexShrink: 0 }}>
                           <img
                             src={r.avatar_url || "/default-avatar.png"}
                             alt=""
-                            className="h-full w-full object-cover"
+                            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                           />
                         </div>
 
