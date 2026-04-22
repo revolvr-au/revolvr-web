@@ -630,7 +630,6 @@ useEffect(() => {
         minHeight: 0,
         overflowY: "auto",
         padding: "12px 16px",
-        paddingBottom: 80,
         overscrollBehavior: "contain",
         WebkitOverflowScrolling: "touch",
       }}
@@ -643,16 +642,12 @@ useEffect(() => {
       />
     </div>
 
-    {/* Input bar — fixed independently so iOS keyboard cannot push it */}
+    {/* Input bar — pinned to bottom of full-screen overlay */}
     <div style={{
-      position: "fixed",
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "#050814",
+      flexShrink: 0,
       borderTop: "1px solid rgba(255,255,255,0.08)",
-      padding: "8px 16px 32px",
-      zIndex: 301,
+      background: "#050814",
+      padding: "8px 16px",
     }}>
       {replyTo && (
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
@@ -660,7 +655,7 @@ useEffect(() => {
           <span onClick={() => setReplyTo(null)} style={{ marginLeft: 8, cursor: "pointer" }}>✕</span>
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 16 }}>
         <input
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
