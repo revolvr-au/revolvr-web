@@ -1,12 +1,11 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart, SendHorizontal, X } from "lucide-react";
+import { Heart } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import RightRail from "@/components/RightRail";
 import PostCaption from "@/components/PostCaption";
 import { useRouter } from "next/navigation";
-import CommentsList from "../../components/CommentsList";
 
 type AnalyticsPayload = {
   surface: string;
@@ -108,24 +107,9 @@ export default function PublicFeedClient() {
     strength: 0,
   });
   const router = useRouter();
-  const [showComments, setShowComments] = useState(false);
-  const [commentsOpen, setCommentsOpen] = useState(false);
-  const [activePostId, setActivePostId] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState("");
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [replyTo, setReplyTo] = useState<{
-  id: string;
-  userEmail: string;
-} | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const userEmailRef = useRef<string | null>(null);
-  const listRef = useRef(null);
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startY, setStartY] = useState(0);
-  const [sheetHeight, setSheetHeight] = useState(70);
   const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
-  const closeSheetTimeoutRef = useRef<number | null>(null);
   const stableNoiseRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -157,57 +141,6 @@ export default function PublicFeedClient() {
       });
     };
   }, []);
-
-  const sendComment = async () => {
-  if (!commentText.trim() || !userEmail || !activePostId) return;
-
-  const payload = {
-    postId: activePostId,
-    userEmail: userEmail,
-    body: commentText,
-    parentId: replyTo?.id ?? null,
-  };
-
-  const res = await fetch("/api/comments", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (res.ok) {
-    setCommentText("");
-    setReplyTo(null);
-    setRefreshKey((prev) => prev + 1);
-  } else {
-    console.error("Comment failed", await res.text());
-  }
-};
-
-useEffect(() => {
-  document.body.style.overflow = showComments ? "hidden" : "";
-
-  return () => {
-    document.body.style.overflow = "";
-  };
-}, [showComments]);
-
-useEffect(() => {
-  if (!showComments) return;
-  const meta = document.querySelector('meta[name="viewport"]');
-  const original = meta?.getAttribute('content') ?? '';
-  meta?.setAttribute('content',
-    'width=device-width, initial-scale=1, interactive-widget=resizes-content'
-  );
-  return () => {
-    meta?.setAttribute('content', original);
-  };
-}, [showComments]);
-
-useEffect(() => {
-  if (listRef.current) {
-    listRef.current.scrollTop = listRef.current.scrollHeight;
-  }
-}, [refreshKey, showComments]);
 
 useEffect(() => {
   const interval = window.setInterval(() => {
@@ -413,31 +346,8 @@ useEffect(() => {
   );
 
   const openComments = useCallback((postId: string) => {
-    if (closeSheetTimeoutRef.current) {
-      window.clearTimeout(closeSheetTimeoutRef.current);
-      closeSheetTimeoutRef.current = null;
-    }
-
-    setActivePostId(postId);
-    setShowComments(true);
-
-    requestAnimationFrame(() => {
-      setCommentsOpen(true);
-    });
-  }, []);
-
-  const closeComments = useCallback(() => {
-    setCommentsOpen(false);
-    setReplyTo(null);
-
-    closeSheetTimeoutRef.current = window.setTimeout(() => {
-      setShowComments(false);
-      setActivePostId(null);
-      setSheetHeight(70);
-      setDragY(0);
-      closeSheetTimeoutRef.current = null;
-    }, 200);
-  }, []);
+    router.push(`/comments/${postId}`);
+  }, [router]);
 
   const handleShare = useCallback(async (postId: string) => {
     const post = posts.find((candidate) => String(candidate.id) === postId);
@@ -530,14 +440,6 @@ useEffect(() => {
     setActiveIndex((prev) => (prev === index ? prev : index));
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (closeSheetTimeoutRef.current) {
-        window.clearTimeout(closeSheetTimeoutRef.current);
-      }
-    };
-  }, []);
-
   return (
     <div
   style={{
@@ -548,166 +450,11 @@ useEffect(() => {
     overflow: "hidden"
   }}
 >
-{showComments && (
-  <div
-    onTouchStart={(e) => {
-      setIsDragging(true);
-      setStartY(e.touches[0].clientY);
-    }}
-    onTouchMove={(e) => {
-      if (!isDragging) return;
-      const delta = e.touches[0].clientY - startY;
-      if (delta > 0) setDragY(delta);
-    }}
-    onTouchEnd={() => {
-      setIsDragging(false);
-      if (dragY > 120) { closeComments(); setDragY(0); return; }
-      setDragY(0);
-    }}
-    id="comments-overlay"
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: "#050814",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden",
-      zIndex: 300,
-      color: "white",
-      transform: commentsOpen ? `translateY(${dragY}px)` : "translateY(100%)",
-      transition: isDragging ? "none" : "transform 0.3s ease",
-      willChange: "transform",
-    }}
-  >
-    {/* Drag handle */}
-    <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px", flexShrink: 0 }}>
-      <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.2)" }} />
-    </div>
-
-    {/* Header */}
-    <div style={{
-      flexShrink: 0,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      position: "relative",
-      padding: "4px 16px 14px",
-      borderBottom: "1px solid rgba(255,255,255,0.08)",
-    }}>
-      <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.02em" }}>Comments</span>
-      <button
-        onClick={closeComments}
-        type="button"
-        style={{
-          position: "absolute",
-          right: 16,
-          top: "50%",
-          transform: "translateY(-55%)",
-          background: "rgba(255,255,255,0.08)",
-          border: "none",
-          borderRadius: "50%",
-          width: 30,
-          height: 30,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          cursor: "pointer",
-          color: "rgba(255,255,255,0.6)",
-        }}
-      >
-        <X size={16} />
-      </button>
-    </div>
-
-    {/* Scrollable list */}
-    <div
-      ref={listRef}
-      style={{
-        flex: 1,
-        minHeight: 0,
-        overflowY: "auto",
-        padding: "12px 16px",
-        overscrollBehavior: "contain",
-        WebkitOverflowScrolling: "touch",
-      }}
-    >
-      <CommentsList
-        postId={activePostId}
-        refreshKey={refreshKey}
-        setReplyTo={setReplyTo}
-        replyTo={replyTo}
-      />
-    </div>
-
-    {/* Input bar — pinned to bottom of full-screen overlay */}
-    <div className="comments-input-bar" style={{
-      flexShrink: 0,
-      borderTop: "1px solid rgba(255,255,255,0.08)",
-      background: "#050814",
-      padding: "8px 16px",
-    }}>
-      {replyTo && (
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
-          Replying to @{replyTo.userEmail}
-          <span onClick={() => setReplyTo(null)} style={{ marginLeft: 8, cursor: "pointer" }}>✕</span>
-        </div>
-      )}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 16 }}>
-        <input
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && sendComment()}
-          onFocus={(e) => {
-            e.preventDefault();
-            setTimeout(() => {
-              e.target.scrollIntoView({ block: "end" });
-            }, 300);
-          }}
-          placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
-          style={{
-            flex: 1,
-            borderRadius: 20,
-            background: "rgba(255,255,255,0.1)",
-            border: "none",
-            padding: "8px 14px",
-            height: 40,
-            fontSize: 14,
-            color: "white",
-            outline: "none",
-            minWidth: 0,
-          }}
-        />
-        <button
-          onClick={sendComment}
-          type="button"
-          style={{
-            width: 40,
-            height: 40,
-            minWidth: 40,
-            borderRadius: "50%",
-            background: "#00e5ff",
-            border: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            flexShrink: 0,
-          }}
-        >
-          <SendHorizontal size={18} color="#050814" strokeWidth={2} />
-        </button>
-      </div>
-    </div>
-  </div>
-)}
         <div
   onScroll={handleFeedScroll}
   style={{
     height: "100dvh",
-    overflowY: showComments ? "hidden" : "auto",
+    overflowY: "auto",
     scrollSnapType: "y mandatory",
     scrollbarWidth: "none",
     msOverflowStyle: "none",
@@ -734,8 +481,6 @@ useEffect(() => {
         currentUserId={userEmail}
         interactionCount={interactionMap[String(post.id)] || 0}
         momentumStrength={momentum.strength}
-        showComments={showComments}
-        activePostId={activePostId}
         isActive={i === activeIndex}
         rewardCount={rewardMap[post.id] || 0}
       />
@@ -757,8 +502,6 @@ const Post = memo(function Post({
   currentUserId,
   interactionCount,
   momentumStrength,
-  showComments,
-  activePostId,
   isActive,
   rewardCount,
 }: {
@@ -773,8 +516,6 @@ const Post = memo(function Post({
   currentUserId: string | null;
   interactionCount: number;
   momentumStrength: number;
-  showComments: boolean;
-  activePostId: string | null;
   isActive: boolean;
   rewardCount: number;
 }) {
@@ -892,7 +633,6 @@ const Post = memo(function Post({
     onCreate();
   }, [onCreate]);
 
-  const isCommentsActive = showComments && activePostId === post.id;
   const isOwner = post.userEmail === currentUserId;
 
   return (
@@ -953,8 +693,7 @@ const Post = memo(function Post({
         </div>
       )}
 
-      {!showComments && (
-        <RightRail
+      <RightRail
           liked={liked}
           onLike={handleInteract}
           onComment={handleOpenComments}
@@ -966,14 +705,12 @@ const Post = memo(function Post({
           username={post.handle ? `@${post.handle}` : undefined}
           ringTier={post.ringTier}
         />
-      )}
 
-      {post.caption && !isCommentsActive && (
+      {post.caption && (
         <div
           style={{
             position: "relative",
             zIndex: 2,
-            pointerEvents: showComments ? "none" : "auto",
           }}
         >
           <PostCaption
