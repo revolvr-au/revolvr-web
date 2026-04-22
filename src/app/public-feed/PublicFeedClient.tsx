@@ -543,8 +543,7 @@ useEffect(() => {
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.55)",
-        backdropFilter: "blur(2px)",
+        background: "rgba(5,8,20,0.98)",
         zIndex: 299,
       }}
       onClick={closeComments}
@@ -627,7 +626,7 @@ useEffect(() => {
       position: "fixed",
       left: 0,
       right: 0,
-      bottom: "calc(env(safe-area-inset-bottom, 0px) + 56px)",
+      bottom: "calc(env(safe-area-inset-bottom, 0px) + 64px)",
       borderTop: "1px solid rgba(255,255,255,0.08)",
       background: "#050814",
       padding: "10px 16px",

@@ -92,66 +92,66 @@ export default function CommentsList({
                 }`}
               >
                 <div
-                  className={`flex items-start gap-3 rounded-lg px-2 py-1 transition-all duration-150 hover:bg-white/5 ${voltageClass} ${glowClass} ${pulseClass} ${newCommentPulse} ${
-                    isRecent ? "bg-white/5" : ""
-                  }`}
+                  className={`${voltageClass} ${glowClass} ${pulseClass} ${newCommentPulse}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
+                    borderRadius: 8,
+                    padding: "4px 8px",
+                    background: isRecent ? "rgba(255,255,255,0.05)" : "transparent",
+                  }}
                 >
-              <div style={{ width: 36, height: 36, minWidth: 36, maxWidth: 36, borderRadius: "50%", overflow: "hidden", background: "rgba(255,255,255,0.1)", flexShrink: 0, position: "relative" }}>
-                <img
-                  src={c.avatar_url || "/default-avatar.png"}
-                  alt=""
-                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
+                  <div style={{ width: 36, height: 36, minWidth: 36, maxWidth: 36, borderRadius: "50%", overflow: "hidden", background: "rgba(255,255,255,0.1)", flexShrink: 0, position: "relative" }}>
+                    <img
+                      src={c.avatar_url || "/default-avatar.png"}
+                      alt=""
+                      style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
 
-                  <div className="flex-1">
-                <span className="text-[13px] font-semibold text-white/90">
-                  {getDisplayName(c)}
-                </span>
-                <p className="mt-0.5 text-[13px] leading-relaxed text-white/80">
-                  {getMessage(c)}
-                </p>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.9)", display: "block" }}>
+                      {getDisplayName(c)}
+                    </span>
+                    <p style={{ margin: "2px 0 0", fontSize: 13, lineHeight: 1.5, color: "rgba(255,255,255,0.8)", wordBreak: "break-word" }}>
+                      {getMessage(c)}
+                    </p>
 
-                <button
-                  onClick={() =>
-                    setReplyTo({
-                      id: c.id,
-                      userEmail: c.userEmail,
-                    })
-                  }
-                  type="button"
-                  className="mt-2 text-xs font-medium text-white/50"
-                >
-                  Reply
-                </button>
+                    <button
+                      onClick={() => setReplyTo({ id: c.id, userEmail: c.userEmail })}
+                      type="button"
+                      style={{ marginTop: 8, fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.5)", background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                    >
+                      Reply
+                    </button>
 
                     {repliesMap[c.id]?.length ? (
-                  <div className="mt-4 space-y-4 border-l border-white/10 pl-4">
-                    {repliesMap[c.id].map((r) => (
-                      <div
-                        key={`${r.id}-${c.id}`}
-                        className="flex items-start gap-3 rounded-lg px-2 py-1 transition-colors duration-150 hover:bg-white/5"
-                      >
-                        <div style={{ width: 30, height: 30, minWidth: 30, maxWidth: 30, borderRadius: "50%", overflow: "hidden", background: "rgba(255,255,255,0.1)", flexShrink: 0, position: "relative" }}>
-                          <img
-                            src={r.avatar_url || "/default-avatar.png"}
-                            alt=""
-                            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        </div>
-
-                        <div className="flex-1">
-                          <span className="text-[13px] font-semibold text-white/90">
-                            {getDisplayName(r)}
-                          </span>
-                          <p className="mt-0.5 text-[13px] leading-relaxed text-white/80">
-                            {getMessage(r)}
-                          </p>
-                        </div>
+                      <div style={{ marginTop: 16, borderLeft: "1px solid rgba(255,255,255,0.1)", paddingLeft: 16, display: "flex", flexDirection: "column", gap: 16 }}>
+                        {repliesMap[c.id].map((r) => (
+                          <div
+                            key={`${r.id}-${c.id}`}
+                            style={{ display: "flex", alignItems: "flex-start", gap: 10, borderRadius: 8, padding: "4px 8px" }}
+                          >
+                            <div style={{ width: 30, height: 30, minWidth: 30, maxWidth: 30, borderRadius: "50%", overflow: "hidden", background: "rgba(255,255,255,0.1)", flexShrink: 0, position: "relative" }}>
+                              <img
+                                src={r.avatar_url || "/default-avatar.png"}
+                                alt=""
+                                style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.9)", display: "block" }}>
+                                {getDisplayName(r)}
+                              </span>
+                              <p style={{ margin: "2px 0 0", fontSize: 13, lineHeight: 1.5, color: "rgba(255,255,255,0.8)", wordBreak: "break-word" }}>
+                                {getMessage(r)}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : null}
+                    ) : null}
                   </div>
                 </div>
               </div>
