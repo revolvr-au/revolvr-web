@@ -614,6 +614,7 @@ useEffect(() => {
       ref={listRef}
       style={{
         flex: 1,
+        minHeight: 0,
         overflowY: "auto",
         padding: "12px 16px",
         overscrollBehavior: "contain",
@@ -642,7 +643,6 @@ useEffect(() => {
       )}
       <div style={{ display: "flex", alignItems: "center", gap: 10, paddingRight: 16 }}>
         <input
-          autoFocus
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendComment()}
