@@ -9,20 +9,25 @@ datasource db {
 }
 
 model Post {
-  id        String         @id @default(uuid())
-  userEmail String         @map("user_Email")
-  imageUrl  String
-  caption   String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  media_url String?
-  comments  Comment[]      @relation("PostComments")
-  likes     Like[]         @relation("PostLikes")
-  media     PostMedia[]    @relation("PostMedia")
-  reactions PostReaction[] @relation("PostReactions")
+  id            String         @id @default(uuid())
+  userEmail     String         @map("user_Email")
+  imageUrl      String
+  caption       String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  media_url     String?
+  postType      PostType       @default(FEED)
+  sparkEligible Boolean        @default(false)
+  voltage       Int            @default(0)
+  expiresAt     DateTime?
+  comments      Comment[]      @relation("PostComments")
+  likes         Like[]         @relation("PostLikes")
+  media         PostMedia[]    @relation("PostMedia")
+  reactions     PostReaction[] @relation("PostReactions")
 
   @@index([createdAt])
   @@index([userEmail], map: "Post_userEmail_idx")
+  @@index([sparkEligible, voltage(sort: Desc)], map: "Post_spark_voltage_idx")
   @@schema("public")
 }
 
@@ -454,6 +459,15 @@ enum SupportKind {
 enum SupportSource {
   FEED
   LIVE
+
+  @@schema("public")
+}
+
+enum PostType {
+  FEED
+  SPARK
+  RAW
+  PODCAST
 
   @@schema("public")
 }
