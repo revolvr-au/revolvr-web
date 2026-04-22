@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart } from "lucide-react";
+import { Heart, SendHorizontal, X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import RightRail from "@/components/RightRail";
 import PostCaption from "@/components/PostCaption";
@@ -537,100 +537,103 @@ useEffect(() => {
   }}
 >
 {showComments && (
-  <>
-    {/* Fixed backdrop — viewport-relative, never touches feed layout */}
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(5,8,20,0.98)",
-        zIndex: 299,
-      }}
-      onClick={closeComments}
-    />
+  <div
+    onTouchStart={(e) => {
+      setIsDragging(true);
+      setStartY(e.touches[0].clientY);
+    }}
+    onTouchMove={(e) => {
+      if (!isDragging) return;
+      const delta = e.touches[0].clientY - startY;
+      if (delta > 0) setDragY(delta);
+    }}
+    onTouchEnd={() => {
+      setIsDragging(false);
+      if (dragY > 120) { closeComments(); setDragY(0); return; }
+      setDragY(0);
+    }}
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: "100dvh",
+      background: "#050814",
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+      zIndex: 300,
+      color: "white",
+      transform: commentsOpen ? `translateY(${dragY}px)` : "translateY(100%)",
+      transition: isDragging ? "none" : "transform 0.3s ease",
+    }}
+  >
+    {/* Drag handle */}
+    <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 6px", flexShrink: 0 }}>
+      <div style={{ width: 40, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.2)" }} />
+    </div>
 
-    {/* Fixed sheet — viewport-relative so keyboard can't affect the feed */}
+    {/* Header */}
+    <div style={{
+      flexShrink: 0,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+      padding: "4px 16px 14px",
+      borderBottom: "1px solid rgba(255,255,255,0.08)",
+    }}>
+      <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: "0.02em" }}>Comments</span>
+      <button
+        onClick={closeComments}
+        type="button"
+        style={{
+          position: "absolute",
+          right: 16,
+          top: "50%",
+          transform: "translateY(-55%)",
+          background: "rgba(255,255,255,0.08)",
+          border: "none",
+          borderRadius: "50%",
+          width: 30,
+          height: 30,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          color: "rgba(255,255,255,0.6)",
+        }}
+      >
+        <X size={16} />
+      </button>
+    </div>
+
+    {/* Scrollable list */}
     <div
-      onTouchStart={(e) => {
-        setIsDragging(true);
-        setStartY(e.touches[0].clientY);
-      }}
-      onTouchMove={(e) => {
-        if (!isDragging) return;
-        const delta = e.touches[0].clientY - startY;
-        if (delta > 0) setDragY(delta);
-        if (delta < 0) setSheetHeight((h) => Math.min(90, h + Math.abs(delta / 8)));
-      }}
-      onTouchEnd={() => {
-        setIsDragging(false);
-        if (dragY > 140) { closeComments(); setDragY(0); return; }
-        setSheetHeight((h) => (h > 75 ? 90 : 65));
-        setDragY(0);
-      }}
+      ref={listRef}
       style={{
-        position: "fixed",
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: `${sheetHeight}dvh`,
-        background: "#050814",
-        borderTop: "1px solid rgba(255,255,255,0.1)",
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        boxShadow: "0 -8px 32px rgba(0,0,0,0.6)",
-        zIndex: 300,
-        color: "white",
-        transform: commentsOpen ? `translateY(${dragY}px)` : "translateY(100%)",
-        transition: isDragging ? "none" : "transform 0.25s ease",
+        flex: 1,
+        overflowY: "auto",
+        padding: "12px 16px",
         overscrollBehavior: "contain",
       }}
     >
-      {/* Drag handle */}
-      <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", flexShrink: 0 }}>
-        <div style={{ width: 40, height: 5, borderRadius: 3, background: "rgba(255,255,255,0.2)" }} />
-      </div>
-
-      {/* Header */}
-      <div style={{
-        flexShrink: 0,
-        textAlign: "center",
-        padding: "4px 16px 12px",
-        borderBottom: "1px solid rgba(255,255,255,0.08)",
-        fontSize: 14,
-        fontWeight: 600,
-        letterSpacing: "0.02em",
-      }}>
-        Comments
-      </div>
-
-      {/* Scrollable list — constrained, owns its own scroll */}
-      <div
-        ref={listRef}
-        style={{ flex: 1, overflowY: "auto", padding: "12px 16px 76px", overscrollBehavior: "contain" }}
-      >
-        <CommentsList
-          postId={activePostId}
-          refreshKey={refreshKey}
-          setReplyTo={setReplyTo}
-          replyTo={replyTo}
-        />
-      </div>
-
+      <CommentsList
+        postId={activePostId}
+        refreshKey={refreshKey}
+        setReplyTo={setReplyTo}
+        replyTo={replyTo}
+      />
     </div>
 
-    {/* Input bar — fixed above bottom nav, never inside the sheet */}
+    {/* Input bar — pinned to bottom of full-screen overlay */}
     <div style={{
-      position: "fixed",
-      left: 0,
-      right: 0,
-      bottom: "calc(env(safe-area-inset-bottom, 0px) + 64px)",
+      flexShrink: 0,
       borderTop: "1px solid rgba(255,255,255,0.08)",
       background: "#050814",
       padding: "10px 16px",
-      zIndex: 310,
+      paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 72px)",
     }}>
       {replyTo && (
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
@@ -638,7 +641,7 @@ useEffect(() => {
           <span onClick={() => setReplyTo(null)} style={{ marginLeft: 8, cursor: "pointer" }}>✕</span>
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <input
           autoFocus
           value={commentText}
@@ -650,7 +653,7 @@ useEffect(() => {
             borderRadius: 999,
             background: "rgba(255,255,255,0.1)",
             border: "none",
-            padding: "9px 16px",
+            padding: "10px 16px",
             fontSize: 14,
             color: "white",
             outline: "none",
@@ -660,13 +663,25 @@ useEffect(() => {
         <button
           onClick={sendComment}
           type="button"
-          style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.8)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
+          style={{
+            width: 44,
+            height: 44,
+            minWidth: 44,
+            borderRadius: "50%",
+            background: "#00e5ff",
+            border: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
         >
-          Send
+          <SendHorizontal size={18} color="#050814" strokeWidth={2} />
         </button>
       </div>
     </div>
-  </>
+  </div>
 )}
         <div
   onScroll={handleFeedScroll}
