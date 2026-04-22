@@ -16,11 +16,11 @@ export default function BottomBar() {
   return (
     <div
       style={{
-        position: "absolute",
-        bottom: "calc(env(safe-area-inset-bottom, 8px) + 8px)",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "100%",
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
         display: "flex",
         justifyContent: "center",
         zIndex: 200,
@@ -28,15 +28,14 @@ export default function BottomBar() {
     >
       <div
         style={{
+          height: 56,
           background: "transparent",
-          backdropFilter: "none",
           padding: "0 22px",
           borderRadius: 999,
           border: "none",
           display: "flex",
           alignItems: "center",
           gap: 20,
-          boxShadow: "none",
         }}
       >
         {TABS.map(({ label, href }) => {

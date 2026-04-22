@@ -20,7 +20,7 @@ export function TrancheContent() {
         height: "100dvh",
         overflowY: "auto",
         paddingTop: 72,
-        paddingBottom: 80,
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         paddingLeft: 20,
         paddingRight: 20,
         scrollbarWidth: "none",

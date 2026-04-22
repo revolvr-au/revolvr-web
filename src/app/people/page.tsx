@@ -486,7 +486,7 @@ export function PeoplePageContent() {
         height: "100dvh",
         overflowY: "auto",
         paddingTop: 72,
-        paddingBottom: 80,
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         paddingLeft: 16,
         paddingRight: 16,
         scrollbarWidth: "none",

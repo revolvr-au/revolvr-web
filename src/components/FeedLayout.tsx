@@ -22,7 +22,7 @@ export default function FeedLayout({ children }: Props) {
   style={{
     width: "100%",
     maxWidth: "100%",
-    height: "100vh",
+    height: "100dvh",
     overflow: "hidden",
     position: "relative"
   }}

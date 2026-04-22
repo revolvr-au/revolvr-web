@@ -554,7 +554,7 @@ export function SparkContent() {
         height: "100dvh",
         overflowY: "auto",
         paddingTop: 72,
-        paddingBottom: 80,
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
         scrollbarWidth: "none",
       }}>
         {/* Header */}
