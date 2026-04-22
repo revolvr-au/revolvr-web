@@ -545,7 +545,7 @@ useEffect(() => {
         inset: 0,
         background: "rgba(0,0,0,0.55)",
         backdropFilter: "blur(2px)",
-        zIndex: 40,
+        zIndex: 299,
       }}
       onClick={closeComments}
     />
@@ -582,7 +582,7 @@ useEffect(() => {
         flexDirection: "column",
         overflow: "hidden",
         boxShadow: "0 -8px 32px rgba(0,0,0,0.6)",
-        zIndex: 50,
+        zIndex: 300,
         color: "white",
         transform: commentsOpen ? `translateY(${dragY}px)` : "translateY(100%)",
         transition: isDragging ? "none" : "transform 0.25s ease",
@@ -610,7 +610,7 @@ useEffect(() => {
       {/* Scrollable list — constrained, owns its own scroll */}
       <div
         ref={listRef}
-        style={{ flex: 1, overflowY: "auto", padding: "12px 16px", overscrollBehavior: "contain" }}
+        style={{ flex: 1, overflowY: "auto", padding: "12px 16px 76px", overscrollBehavior: "contain" }}
       >
         <CommentsList
           postId={activePostId}
@@ -620,47 +620,51 @@ useEffect(() => {
         />
       </div>
 
-      {/* Input bar — sticks to bottom of the sheet */}
-      <div style={{
-        flexShrink: 0,
-        borderTop: "1px solid rgba(255,255,255,0.08)",
-        background: "#050814",
-        padding: "10px 16px",
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-      }}>
-        {replyTo && (
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
-            Replying to @{replyTo.userEmail}
-            <span onClick={() => setReplyTo(null)} style={{ marginLeft: 8, cursor: "pointer" }}>✕</span>
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <input
-            autoFocus
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendComment()}
-            placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
-            style={{
-              flex: 1,
-              borderRadius: 999,
-              background: "rgba(255,255,255,0.1)",
-              border: "none",
-              padding: "9px 16px",
-              fontSize: 14,
-              color: "white",
-              outline: "none",
-              minWidth: 0,
-            }}
-          />
-          <button
-            onClick={sendComment}
-            type="button"
-            style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.8)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
-          >
-            Send
-          </button>
+    </div>
+
+    {/* Input bar — fixed above bottom nav, never inside the sheet */}
+    <div style={{
+      position: "fixed",
+      left: 0,
+      right: 0,
+      bottom: "calc(env(safe-area-inset-bottom, 0px) + 56px)",
+      borderTop: "1px solid rgba(255,255,255,0.08)",
+      background: "#050814",
+      padding: "10px 16px",
+      zIndex: 310,
+    }}>
+      {replyTo && (
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
+          Replying to @{replyTo.userEmail}
+          <span onClick={() => setReplyTo(null)} style={{ marginLeft: 8, cursor: "pointer" }}>✕</span>
         </div>
+      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <input
+          autoFocus
+          value={commentText}
+          onChange={(e) => setCommentText(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendComment()}
+          placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
+          style={{
+            flex: 1,
+            borderRadius: 999,
+            background: "rgba(255,255,255,0.1)",
+            border: "none",
+            padding: "9px 16px",
+            fontSize: 14,
+            color: "white",
+            outline: "none",
+            minWidth: 0,
+          }}
+        />
+        <button
+          onClick={sendComment}
+          type="button"
+          style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.8)", background: "none", border: "none", cursor: "pointer", flexShrink: 0 }}
+        >
+          Send
+        </button>
       </div>
     </div>
   </>
