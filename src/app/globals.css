@@ -9,3 +9,10 @@ html, body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overscroll-behavior: none;
 }
+
+@supports (-webkit-touch-callout: none) {
+  .comments-input-bar {
+    position: sticky;
+    bottom: 0;
+  }
+}

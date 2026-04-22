@@ -643,7 +643,7 @@ useEffect(() => {
     </div>
 
     {/* Input bar — pinned to bottom of full-screen overlay */}
-    <div style={{
+    <div className="comments-input-bar" style={{
       flexShrink: 0,
       borderTop: "1px solid rgba(255,255,255,0.08)",
       background: "#050814",
@@ -660,6 +660,12 @@ useEffect(() => {
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendComment()}
+          onFocus={(e) => {
+            e.preventDefault();
+            setTimeout(() => {
+              e.target.scrollIntoView({ block: "end" });
+            }, 300);
+          }}
           placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
           style={{
             flex: 1,
