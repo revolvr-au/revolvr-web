@@ -579,7 +579,6 @@ useEffect(() => {
       left: 0,
       right: 0,
       bottom: 0,
-      height: "100vh",
       background: "#050814",
       display: "flex",
       flexDirection: "column",
@@ -639,6 +638,7 @@ useEffect(() => {
         overflowY: "auto",
         padding: "12px 16px",
         overscrollBehavior: "contain",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       <CommentsList
