@@ -69,6 +69,7 @@ export default function RightRail({
       gap: 20,
       zIndex: 300,
       color: "white",
+      filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.9))",
     }}>
 
       {/* ── ARC AVATAR ── */}
@@ -123,7 +124,7 @@ export default function RightRail({
 
       {/* ── LIKE ── */}
       <Heart
-        size={26}
+        size={30}
         strokeWidth={1.5}
         onClick={onLike}
         fill={liked ? "white" : "none"}
@@ -135,15 +136,15 @@ export default function RightRail({
       />
 
       {/* ── COMMENT ── */}
-      <MessageCircle size={26} strokeWidth={1.5} onClick={onComment} style={{ cursor: "pointer" }} />
+      <MessageCircle size={30} strokeWidth={1.5} onClick={onComment} style={{ cursor: "pointer" }} />
 
       {/* ── SHARE ── */}
-      <Share2 size={26} strokeWidth={1.5} onClick={onShare} style={{ cursor: "pointer" }} />
+      <Share2 size={30} strokeWidth={1.5} onClick={onShare} style={{ cursor: "pointer" }} />
 
       {/* ── REWARD ── */}
       <div style={{ position: "relative" }}>
         <Gift
-          size={26}
+          size={30}
           strokeWidth={1.5}
           onClick={() => {
             onReward();
@@ -186,10 +187,10 @@ export default function RightRail({
       </div>
 
       {/* ── CREATE ── */}
-      <Plus size={30} strokeWidth={1.5} onClick={onCreate} style={{ cursor: "pointer" }} />
+      <Plus size={32} strokeWidth={1.5} onClick={onCreate} style={{ cursor: "pointer" }} />
 
       {/* ── PROFILE ── */}
-<User size={26} strokeWidth={1.5} onClick={() => router.push("/me")} style={{ marginTop: 4, cursor: "pointer" }} />
+      <User size={30} strokeWidth={1.5} onClick={() => router.push("/me")} style={{ marginTop: 4, cursor: "pointer" }} />
 
       <style>{`
         @keyframes rewardFloat {

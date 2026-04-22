@@ -17,7 +17,7 @@ export default function BottomBar() {
     <div
       style={{
         position: "absolute",
-        bottom: 28,
+        bottom: "calc(env(safe-area-inset-bottom, 8px) + 8px)",
         left: "50%",
         transform: "translateX(-50%)",
         width: "100%",
@@ -30,7 +30,7 @@ export default function BottomBar() {
         style={{
           background: "transparent",
           backdropFilter: "none",
-          padding: "10px 22px",
+          padding: "0 22px",
           borderRadius: 999,
           border: "none",
           display: "flex",
@@ -46,7 +46,11 @@ export default function BottomBar() {
               key={href}
               onClick={() => router.push(href)}
               style={{
-                fontSize: 15,
+                minHeight: 48,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 4px",
+                fontSize: 16,
                 letterSpacing: "0.06em",
                 fontWeight: 500,
                 fontFamily: "Inter, system-ui, sans-serif",
