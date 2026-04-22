@@ -1,709 +1,671 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
+import RingRim from "@/components/RingRim";
+import { useRingStatus } from "@/hooks/useRingStatus";
 
 const supabase = createSupabaseBrowserClient();
 
-type CreatorMeResponse = {
-  loggedIn?: boolean;
-  user?: { email?: string | null };
-  creator?: {
-    email?: string;
-    handle?: string | null;
-    displayName?: string | null;
-    verificationTier?: "blue" | "gold" | null;
-    verificationStatus?: "blue" | "gold" | null;
-    stripeConnectAccountId?: string | null;
-    stripeConnectChargesEnabled?: boolean | null;
-    stripeConnectPayoutsEnabled?: boolean | null;
-    avatarUrl?: string | null;
-    bio?: string | null;
-  } | null;
-  isCreator?: boolean;
+// ── Ring display config ──────────────────────────────────────────────────────
+const RING_DISPLAY: Record<string, { color: string; label: string }> = {
+  NONE:       { color: "rgba(255,255,255,0.25)", label: "No Ring" },
+  BLUE:       { color: "#3B82F6",  label: "Blue Ring" },
+  GOLD:       { color: "#F59E0B",  label: "Gold Ring" },
+  BUSINESS:   { color: "#8B5CF6",  label: "Business Ring" },
+  CORPORATE:  { color: "#6366F1",  label: "Corporate Ring" },
+  RED:        { color: "#EF4444",  label: "Red Ring" },
+  GOVERNMENT: { color: "#10B981",  label: "Government Ring" },
 };
 
-type ConnectStatus = {
-  connected?: boolean;
-  accountId?: string | null;
-  chargesEnabled?: boolean;
-  payoutsEnabled?: boolean;
-  error?: string;
+// ── Shared style tokens ──────────────────────────────────────────────────────
+const card: React.CSSProperties = {
+  background: "rgba(255,255,255,0.03)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  borderRadius: 16,
+  padding: "20px 20px",
+  marginBottom: 12,
 };
 
-function clsx(...s: Array<string | false | null | undefined>) {
-  return s.filter(Boolean).join(" ");
+const sectionLabel: React.CSSProperties = {
+  fontFamily: "monospace",
+  fontSize: 10,
+  letterSpacing: "0.15em",
+  textTransform: "uppercase",
+  color: "rgba(255,255,255,0.35)",
+  marginBottom: 16,
+};
+
+const fieldLabel: React.CSSProperties = {
+  display: "block",
+  fontSize: 11,
+  fontFamily: "monospace",
+  letterSpacing: "0.08em",
+  color: "rgba(255,255,255,0.45)",
+  marginBottom: 6,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  background: "rgba(0,0,0,0.35)",
+  border: "1px solid rgba(255,255,255,0.1)",
+  borderRadius: 10,
+  padding: "10px 14px",
+  fontSize: 14,
+  color: "white",
+  outline: "none",
+  boxSizing: "border-box",
+  fontFamily: "inherit",
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function formatCents(cents: number): string {
+  return `AUD $${(cents / 100).toFixed(2)}`;
 }
 
-function badgeForTier(tier: "blue" | "gold" | null | undefined) {
-  if (tier === "gold")
-    return {
-      label: "GOLD",
-      className: "bg-yellow-400/20 text-yellow-200 border-yellow-300/20",
-    };
-  if (tier === "blue")
-    return {
-      label: "BLUE",
-      className: "bg-blue-400/20 text-blue-200 border-blue-300/20",
-    };
-  return {
-    label: "NONE",
-    className: "bg-white/10 text-white/70 border-white/10",
-  };
+function memberSince(raw: string | null | undefined): string {
+  if (!raw) return "—";
+  try {
+    return new Date(raw).toLocaleDateString("en-AU", { month: "long", year: "numeric" });
+  } catch {
+    return "—";
+  }
 }
 
-function safeKeyFromEmail(email: string) {
+function safeKey(email: string): string {
   return email.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 }
 
+function InfoRow({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", fontFamily: "monospace", letterSpacing: "0.06em" }}>
+        {label}
+      </span>
+      <span style={{
+        fontSize: 13,
+        color: accent ?? "rgba(255,255,255,0.7)",
+        maxWidth: "62%",
+        textAlign: "right",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+// ── Component ────────────────────────────────────────────────────────────────
 export default function MeClient() {
   const router = useRouter();
+  const { ringTier, voltage, loading: ringLoading } = useRingStatus();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
-  const [me, setMe] = useState<CreatorMeResponse | null>(null);
-  const [connect, setConnect] = useState<ConnectStatus | null>(null);
-
-  // editable fields
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [handle, setHandle] = useState("");
-  const [bio, setBio] = useState("");
-
-  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [saving,        setSaving]        = useState(false);
+  const [me,            setMe]            = useState<Record<string, unknown> | null>(null);
+  const [connect,       setConnect]       = useState<Record<string, unknown> | null>(null);
+  const [error,         setError]         = useState<string | null>(null);
+  const [notice,        setNotice]        = useState<string | null>(null);
+  const [avatarUrl,     setAvatarUrl]     = useState("");
+  const [displayName,   setDisplayName]   = useState("");
+  const [handle,        setHandle]        = useState("");
+  const [bio,           setBio]           = useState("");
+  const [avatarBusy,    setAvatarBusy]    = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const email     = (me?.user?.email ?? "").toLowerCase();
+  const creator   = me?.creator  ?? null;
+  const balance   = me?.balance  ?? null;
+  const isCreator = Boolean(creator);
+  const ring      = RING_DISPLAY[ringTier] ?? RING_DISPLAY.NONE;
+  const hasRing   = ringTier !== "NONE";
 
-  const email = (me?.user?.email || "").toLowerCase();
-  const isCreator = Boolean(me?.creator || me?.isCreator);
-
-  const tier = useMemo(() => {
-    const t =
-      me?.creator?.verificationTier || me?.creator?.verificationStatus || null;
-    return t === "gold" || t === "blue" ? t : null;
-  }, [me]);
-
-  const tierBadge = useMemo(() => badgeForTier(tier), [tier]);
-
+  // ── Load ──────────────────────────────────────────────────────────────────
   useEffect(() => {
-    let cancelled = false;
+    let dead = false;
 
     async function run() {
-      setError(null);
-      setNotice(null);
       setLoading(true);
-
+      setError(null);
       try {
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
+        const { data: sd } = await supabase.auth.getSession();
+        const token = sd.session?.access_token;
+        if (!token) { router.replace("/login"); return; }
 
-        if (!token) {
-          router.replace("/login");
-          return;
-        }
+        const meRes  = await fetch("/api/creator/me", { cache: "no-store" });
+        const meJson = await meRes.json().catch(() => null);
+        if (dead) return;
+        if (!meRes.ok || !meJson?.loggedIn) { router.replace("/login"); return; }
 
-        // 1) Base identity
-        const meRes = await fetch("/api/creator/me", {
+        setMe(meJson);
+        const c = meJson.creator ?? null;
+        setDisplayName(c?.displayName ?? "");
+        setHandle(c?.handle ?? "");
+        setAvatarUrl(c?.avatarUrl ?? "");
+        setBio(c?.bio ?? "");
+
+        // Stripe connect status (non-fatal)
+        const stRes  = await fetch("/api/stripe/connect/status", {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });
-        const meJson = await meRes.json().catch(() => null);
-
-        if (cancelled) return;
-
-        if (!meRes.ok || !meJson?.loggedIn) {
-          router.replace("/login");
-          return;
-        }
-
-        setMe(meJson);
-
-        // seed fields
-        const c = meJson?.creator || null;
-        setDisplayName(c?.displayName || "");
-        setHandle(c?.handle || "");
-        setAvatarUrl((c as any)?.avatarUrl || (c as any)?.image_Url || "");
-        setBio((c as any)?.bio || "");
-
-        // 2) Stripe connect status (creator-only)
-        if (meJson?.creator) {
-          const st = await fetch("/api/stripe/connect/status", {
-            method: "GET",
-            headers: { Authorization: `Bearer ${token}` },
-            cache: "no-store",
-          });
-          const stJson = await st.json().catch(() => null);
-          if (!cancelled) {
-            if (st.ok) setConnect(stJson);
-            else
-              setConnect({
-                error: stJson?.error || "Could not load payouts status.",
-              });
-          }
-        } else {
-          setConnect(null);
-        }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || "Failed to load your profile.");
+        const stJson = await stRes.json().catch(() => null);
+        if (!dead) setConnect(stRes.ok ? stJson : { error: stJson?.error ?? "Could not load payouts status." });
+      } catch (e: unknown) {
+        if (!dead) setError(e instanceof Error ? e.message : "Failed to load profile.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!dead) setLoading(false);
       }
     }
 
     run();
-    return () => {
-      cancelled = true;
-    };
+    return () => { dead = true; };
   }, [router]);
 
-  async function uploadAvatarToStorage(file: File) {
+  // ── Avatar upload ─────────────────────────────────────────────────────────
+  async function uploadAvatar(file: File): Promise<string> {
     if (!email) throw new Error("Not signed in");
-
-    const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-    const key = `avatars/${safeKeyFromEmail(email)}/${Date.now()}.${ext}`;
-
-    const { error: upErr } = await supabase.storage
-      .from("avatars")
-      .upload(key, file, {
-        cacheControl: "3600",
-        upsert: true,
-        contentType: file.type || "image/jpeg",
-      });
-
+    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const key = `avatars/${safeKey(email)}/${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from("avatars").upload(key, file, {
+      cacheControl: "3600", upsert: true, contentType: file.type || "image/jpeg",
+    });
     if (upErr) throw upErr;
-
     const { data } = supabase.storage.from("avatars").getPublicUrl(key);
-    const publicUrl = data?.publicUrl;
-    if (!publicUrl) throw new Error("Could not resolve avatar URL");
-
-    return publicUrl;
+    if (!data?.publicUrl) throw new Error("Could not resolve avatar URL");
+    return data.publicUrl;
   }
 
-  async function startVerificationCheckout(t: "blue" | "gold") {
-    setError(null);
-    setNotice(null);
-
-    if (!email) {
-      setError("Missing email.");
-      return;
-    }
-
-    setSaving(true);
+  // ── Save profile ──────────────────────────────────────────────────────────
+  async function saveProfile() {
+    if (!displayName.trim()) { setError("Display name is required."); return; }
+    setError(null); setNotice(null); setSaving(true);
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-
-      const res = await fetch("/api/payments/verification/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ tier: t, creatorEmail: email }),
+      const res = await fetch("/api/profile/setup", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          displayName: displayName.trim(),
+          handle: handle.trim() || null,
+          avatarUrl: avatarUrl.trim() || null,
+          bio: bio.trim() || null,
+        }),
       });
-
-        const payload = await res.json().catch(() => null);
-
-        if (!res.ok) {
-          setError(payload?.error || "Could not start verification checkout.");
-          return;
-        }
-
-        const url: string | null = payload?.url || null;
-        if (!url) {
-          setError("Missing checkout URL.");
-          return;
-        }
-
-        window.location.assign(url);
-
-  } catch (e: any) {
-    setError(e?.message || "Could not start verification checkout.");
-  } finally {
-    setSaving(false);
-  }
-}
-
-
-
-
-  async function openVerificationPortal() {
-    setError(null);
-    setNotice(null);
-    setSaving(true);
-
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-
-      const res = await fetch("/api/payments/verification/portal", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + token },
-      });
-
       const payload = await res.json().catch(() => null);
-      const url: string | null = payload?.url || null;
-
-      if (!res.ok || !url) {
-        setError(payload?.error || "Could not open verification portal.");
-        return;
-      }
-
-      window.location.assign(url);
-    } catch (e: any) {
-      setError(e?.message || "Could not open verification portal.");
+      if (!res.ok) { setError(payload?.error ?? "Save failed."); return; }
+      setNotice("Profile saved.");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Save failed.");
     } finally {
       setSaving(false);
     }
   }
 
+  // ── Connect Stripe ────────────────────────────────────────────────────────
   async function connectStripe() {
-    setError(null);
-    setNotice(null);
-    setSaving(true);
-
+    setError(null); setNotice(null); setSaving(true);
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
+      const { data: sd } = await supabase.auth.getSession();
+      const token = sd.session?.access_token;
+      if (!token) { router.replace("/login"); return; }
 
       const res = await fetch("/api/stripe/connect/link", {
         method: "POST",
-        headers: { Authorization: "Bearer " + token },
+        headers: { Authorization: `Bearer ${token}` },
       });
-
-      
-
-      setNotice("Stripe connect HTTP: " + res.status);
-const payload = await res.json().catch(() => null);
-
-      // Terms not accepted → send them to terms page and come back to /me
-      if (res.status === 403) {
-        router.push("/creator/terms?next=" + encodeURIComponent("/me"));
-        return;
-      }
-
-      const url: string | null = payload?.url || null;
-
-      if (!res.ok || !url) {
-        setError(payload?.error || "Could not start Stripe onboarding.");
-        return;
-      }
-
-      window.location.assign(url);
-    } catch (e: any) {
-      setError(e?.message || "Could not start Stripe onboarding.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function saveCreatorProfile() {
-    setError(null);
-    setNotice(null);
-
-    setSaving(true);
-    try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) {
-        router.replace("/login");
-        return;
-      }
-
-      const res = await fetch("/api/creator/profile/update", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          displayName: displayName.trim(),
-          handle: handle.trim(),
-          avatarUrl: avatarUrl.trim(),
-          bio: bio.trim(),
-        }),
-      });
-
+      if (res.status === 403) { router.push("/creator/terms?next=/me"); return; }
       const payload = await res.json().catch(() => null);
-
-      if (!res.ok) {
-        setError(payload?.error || "Save failed.");
-        return;
-      }
-
-      setNotice("Saved.");
-    } catch (e: any) {
-      setError(e?.message || "Save failed.");
+      if (!res.ok || !payload?.url) { setError(payload?.error ?? "Could not start Stripe onboarding."); return; }
+      window.location.assign(payload.url);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not start Stripe onboarding.");
     } finally {
       setSaving(false);
     }
   }
-  const statItems = [
-    { label: "Tips received", value: "—" },
-    { label: "Tips sent", value: "—" },
-    { label: "Boosts used", value: "—" },
-    { label: "Spins used", value: "—" },
-  ];
 
+  // ── Sign out ──────────────────────────────────────────────────────────────
+  async function signOut() {
+    await supabase.auth.signOut({ scope: "global" });
+    window.location.href = "/welcome";
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <a href="/feed" className="text-sm text-white/70 hover:text-white">
-          ← Back to feed
-        </a>
-        <div className="text-sm text-white/60">Account</div>
-        <div className="w-[92px]" />
+    <div style={{ minHeight: "100dvh", background: "#050814", color: "white", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+
+      {/* ── HEADER ── */}
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 50,
+        background: "rgba(5,8,20,0.94)",
+        backdropFilter: "blur(14px)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        display: "flex",
+        alignItems: "center",
+        height: 56,
+        padding: "0 16px",
+      }}>
+        <button
+          onClick={() => router.push("/public-feed")}
+          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", cursor: "pointer", fontSize: 22, padding: "0 12px 0 0", lineHeight: 1, flexShrink: 0 }}
+          aria-label="Back"
+        >
+          ←
+        </button>
+        <span style={{ flex: 1, textAlign: "center", fontFamily: "monospace", fontSize: 13, letterSpacing: "0.18em", color: "white" }}>
+          ACCOUNT
+        </span>
+        <div style={{ width: 44 }} />
       </div>
 
-      <h1 className="mt-8 text-3xl font-semibold">Personal profile</h1>
-      <p className="mt-2 text-sm text-white/60">
-        Manage your public identity, verification, and account settings.
-      </p>
+      {/* ── BODY ── */}
+      <div style={{
+        maxWidth: 480,
+        margin: "0 auto",
+        padding: "20px 16px",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 100px)",
+      }}>
 
-      {/* Alerts */}
-      {error && (
-        <div className="mt-6 rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {error}
-        </div>
-      )}
-      {notice && (
-        <div className="mt-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {notice}
-        </div>
-      )}
+        {/* Alerts */}
+        {error && (
+          <div style={{ background: "rgba(239,68,68,0.09)", border: "1px solid rgba(239,68,68,0.22)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#fca5a5", marginBottom: 14 }}>
+            {error}
+          </div>
+        )}
+        {notice && (
+          <div style={{ background: "rgba(0,229,255,0.07)", border: "1px solid rgba(0,229,255,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#00e5ff", marginBottom: 14 }}>
+            {notice}
+          </div>
+        )}
 
-      {/* Loading skeleton */}
-      {loading ? (
-        <div className="mt-8 space-y-4">
-          <div className="h-24 rounded-2xl bg-white/5 border border-white/10" />
-          <div className="h-40 rounded-2xl bg-white/5 border border-white/10" />
-          <div className="h-56 rounded-2xl bg-white/5 border border-white/10" />
-        </div>
-      ) : (
-        <div className="mt-8 space-y-6">
-          {/* 1) Account Summary */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm font-semibold">Account summary</div>
-            <div className="mt-4 flex items-start gap-4">
-              {/* square avatar box (click to upload) */}
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                disabled={avatarUploading}
-                className={clsx(
-                  "h-16 w-16 rounded-xl bg-white/10 border border-white/10 overflow-hidden flex items-center justify-center",
-                  avatarUploading ? "opacity-70" : "hover:bg-white/15"
-                )}
-                title="Upload avatar"
-              >
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <span className="text-lg font-semibold text-white/60">
-                    {(displayName?.[0] || email?.[0] || "U").toUpperCase()}
-                  </span>
-                )}
-              </button>
+        {/* Loading */}
+        {loading ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {[116, 76, 120, 112, 64, 88].map((h, i) => (
+              <div key={i} style={{ height: h, borderRadius: 16, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.05)" }} />
+            ))}
+          </div>
+        ) : (
+          <>
+            {/* ────────────────────────────────── SECTION 1 — IDENTITY */}
+            <div style={card}>
+              <div style={sectionLabel}>Identity</div>
 
+              {/* Avatar */}
+              <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+                <div style={{ position: "relative", display: "inline-block" }}>
+                  <RingRim tier={ringLoading ? null : ringTier} size={112}>
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      disabled={avatarBusy}
+                      aria-label="Change photo"
+                      style={{
+                        width: 112,
+                        height: 112,
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        border: "none",
+                        cursor: avatarBusy ? "not-allowed" : "pointer",
+                        opacity: avatarBusy ? 0.55 : 1,
+                        background: avatarUrl
+                          ? `url(${avatarUrl}) center/cover no-repeat`
+                          : "linear-gradient(135deg, #0d1224, #1a1f35)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 40,
+                        color: "rgba(255,255,255,0.35)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {!avatarUrl && ((displayName || email)?.[0]?.toUpperCase() ?? "?")}
+                    </button>
+                  </RingRim>
+                  {/* Change photo badge */}
+                  <div
+                    onClick={() => !avatarBusy && fileRef.current?.click()}
+                    style={{
+                      position: "absolute",
+                      bottom: 4,
+                      right: 4,
+                      width: 30,
+                      height: 30,
+                      borderRadius: "50%",
+                      background: "#00e5ff",
+                      color: "#050814",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 18,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                      lineHeight: 1,
+                    }}
+                  >
+                    +
+                  </div>
+                </div>
+              </div>
+
+              {/* Hidden file input */}
               <input
                 ref={fileRef}
                 type="file"
                 accept="image/*"
-                className="hidden"
+                style={{ display: "none" }}
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
-
-                  setError(null);
-                  setNotice(null);
-                  setAvatarUploading(true);
-
+                  setError(null); setAvatarBusy(true);
                   try {
-                    const url = await uploadAvatarToStorage(f);
-                    setAvatarUrl(url); // show immediately
-                    setNotice("Avatar uploaded. Hit “Save changes” to publish.");
-                  } catch (err: any) {
-                    setError(err?.message || "Avatar upload failed.");
+                    const url = await uploadAvatar(f);
+                    setAvatarUrl(url);
+                    setNotice("Photo uploaded — tap Save to publish.");
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : "Upload failed.");
                   } finally {
-                    setAvatarUploading(false);
+                    setAvatarBusy(false);
                     e.currentTarget.value = "";
                   }
                 }}
               />
 
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="text-lg font-semibold truncate">
-                    {displayName || email.split("@")[0] || "User"}
-                  </div>
-
-                  <span
-                    className={clsx(
-                      "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold",
-                      tierBadge.className
-                    )}
-                    title="Verification tier"
-                  >
-                    ✓ {tierBadge.label}
-                  </span>
-
-                  <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/70">
-                    {isCreator ? "Creator" : "User"}
-                  </span>
-                </div>
-
-                <div className="mt-1 text-sm text-white/60 truncate">
-                  {email}
-                </div>
+              {/* Display name */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={fieldLabel}>Display name</label>
+                <input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Your name"
+                  style={inputStyle}
+                />
               </div>
-            </div>
-          </section>
 
-          {/* 2) Verification */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm font-semibold">Verification</div>
-            <div className="mt-1 text-xs text-white/60">
-              Blue = Verified Individual. Gold = Verified Business.
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => startVerificationCheckout("blue")}
-                className="rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400 disabled:opacity-60"
-              >
-                Buy Blue
-              </button>
-
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => startVerificationCheckout("gold")}
-                className="rounded-xl bg-yellow-500 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-400 disabled:opacity-60"
-              >
-                Buy Gold
-              </button>
-
-              <button
-                type="button"
-                disabled={saving}
-                onClick={openVerificationPortal}
-                className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15 disabled:opacity-60"
-              >
-                Manage
-              </button>
-            </div>
-
-            <div className="mt-3 text-xs text-white/50">
-              You’ll be redirected to Stripe.
-            </div>
-          </section>
-
-          {/* 3) Public Profile Controls (NO URL FIELD) */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm font-semibold">Public profile</div>
-            <div className="mt-1 text-xs text-white/60">
-              These details appear on your public profile.
-            </div>
-
-            {!isCreator ? (
-              <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-4">
-                <div className="text-sm text-white/80">
-                  Public profile editing is currently enabled for creators.
-                </div>
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => router.push("/creator/onboard")}
-                    className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90"
-                  >
-                    Become a Creator
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-white/70">
-                      Display name
-                    </label>
-                    <input
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your name"
-                      className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-white/70">
-                      Handle
-                    </label>
-                    <input
-                      value={handle}
-                      onChange={(e) => setHandle(e.target.value)}
-                      placeholder="handle"
-                      className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-white/70">
-                    Bio
-                  </label>
-                  <textarea
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
-                    placeholder="A short description…"
-                    rows={4}
-                    className="w-full rounded-xl bg-black/30 border border-white/10 px-3 py-2 text-sm outline-none"
+              {/* Handle */}
+              <div style={{ marginBottom: 14 }}>
+                <label style={fieldLabel}>Handle</label>
+                <div style={{ position: "relative" }}>
+                  <span style={{
+                    position: "absolute", left: 14, top: "50%",
+                    transform: "translateY(-50%)",
+                    color: "rgba(255,255,255,0.3)", fontSize: 14,
+                    pointerEvents: "none",
+                  }}>
+                    @
+                  </span>
+                  <input
+                    value={handle}
+                    onChange={(e) => setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                    placeholder="yourhandle"
+                    style={{ ...inputStyle, paddingLeft: 28 }}
                   />
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={saveCreatorProfile}
-                    className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-60"
-                  >
-                    {saving ? "Saving…" : "Save changes"}
-                  </button>
-
-                  <a
-                    href={`/u/${handle}`}
-                    className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
-                  >
-                    View public profile
-                  </a>
-                </div>
               </div>
-            )}
-          </section>
 
-          {/* 4) Account Type */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm font-semibold">Account type</div>
-
-            {!isCreator ? (
-              <div className="mt-4">
-                <div className="text-sm text-white/80">Standard user</div>
-                <div className="mt-1 text-xs text-white/60">
-                  Become a creator to unlock payouts and creator tools.
-                </div>
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() => router.push("/creator/onboard")}
-                    className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90"
-                  >
-                    Become a Creator
-                  </button>
-                </div>
+              {/* Bio */}
+              <div style={{ marginBottom: 22 }}>
+                <label style={fieldLabel}>
+                  Bio
+                  <span style={{
+                    marginLeft: 8,
+                    color: bio.length > 140 ? (bio.length >= 160 ? "#ef4444" : "#F59E0B") : "rgba(255,255,255,0.2)",
+                  }}>
+                    {bio.length}/160
+                  </span>
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value.slice(0, 160))}
+                  placeholder="Short bio…"
+                  rows={3}
+                  style={{ ...inputStyle, resize: "none", lineHeight: 1.6 }}
+                />
               </div>
-            ) : (
-              <div className="mt-4 space-y-4">
-                <div className="text-sm text-white/80">Creator</div>
 
-                <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-4">
-                  <div className="text-xs font-semibold text-white/70">
-                    Payouts
-                  </div>
-                  <div className="mt-2 text-sm text-white/85">
-                    {connect?.error
-                      ? connect.error
-                      : connect?.connected
-                      ? `Connected${
-                          connect.chargesEnabled ? " · Charges enabled" : ""
-                        }${connect.payoutsEnabled ? " · Payouts enabled" : ""}`
-                      : "Not connected"}
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={connectStripe}
-                      className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15 disabled:opacity-60"
-                    >
-                      {connect?.connected ? "Update Stripe" : "Connect Stripe"}
-                    </button>
-
-                    <a
-                      href="/creator/earnings"
-                      className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white hover:bg-white/15"
-                    >
-                      View earnings
-                    </a>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* 5) Activity Summary */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm font-semibold">Activity summary</div>
-            <div className="mt-1 text-xs text-white/60">
-              Quick snapshot. Wiring to live counts is next.
+              {/* Save */}
+              <button
+                type="button"
+                disabled={saving || !displayName.trim()}
+                onClick={saveProfile}
+                style={{
+                  width: "100%",
+                  height: 48,
+                  borderRadius: 12,
+                  background: (saving || !displayName.trim()) ? "rgba(0,229,255,0.1)" : "#00e5ff",
+                  color: (saving || !displayName.trim()) ? "rgba(0,229,255,0.6)" : "#050814",
+                  border: "none",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  fontFamily: "monospace",
+                  letterSpacing: "0.1em",
+                  cursor: (saving || !displayName.trim()) ? "not-allowed" : "pointer",
+                  transition: "all 0.18s",
+                }}
+              >
+                {saving ? "SAVING…" : "SAVE CHANGES"}
+              </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {statItems.map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+            {/* ────────────────────────────────── SECTION 2 — RING STATUS */}
+            <div style={card}>
+              <div style={sectionLabel}>Ring Status</div>
+
+              {ringLoading ? (
+                <div style={{ height: 36, background: "rgba(255,255,255,0.04)", borderRadius: 8 }} />
+              ) : hasRing ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{
+                      width: 12, height: 12, borderRadius: "50%",
+                      background: ring.color,
+                      boxShadow: `0 0 10px ${ring.color}80`,
+                      flexShrink: 0,
+                    }} />
+                    <span style={{ fontSize: 15, fontWeight: 600, color: ring.color }}>
+                      {ring.label}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => router.push("/rings")}
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 8,
+                      padding: "7px 14px",
+                      fontSize: 11,
+                      fontFamily: "monospace",
+                      letterSpacing: "0.1em",
+                      color: "rgba(255,255,255,0.7)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    MANAGE RING
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", margin: "0 0 14px", lineHeight: 1.7 }}>
+                    Get a Ring to unlock creator tools, monetisation, and exclusive features.
+                  </p>
+                  <button
+                    onClick={() => router.push("/rings")}
+                    style={{
+                      width: "100%",
+                      height: 44,
+                      borderRadius: 10,
+                      background: "rgba(59,130,246,0.1)",
+                      border: "1px solid rgba(59,130,246,0.28)",
+                      color: "#3B82F6",
+                      fontSize: 12,
+                      fontFamily: "monospace",
+                      letterSpacing: "0.1em",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    GET VERIFIED →
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* ────────────────────────────────── SECTION 3 — ACCOUNT INFO */}
+            <div style={card}>
+              <div style={sectionLabel}>Account Info</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <InfoRow label="Email" value={email || "—"} />
+                <InfoRow label="Account type" value={isCreator ? "Creator" : "Standard user"} />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", fontFamily: "monospace", letterSpacing: "0.06em" }}>
+                    Voltage
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#F59E0B", fontFamily: "monospace" }}>
+                    ⚡ {voltage ?? 0}
+                  </span>
+                </div>
+                <InfoRow
+                  label="Member since"
+                  value={memberSince(me?.profile?.createdAt ?? creator?.createdAt)}
+                />
+              </div>
+            </div>
+
+            {/* ────────────────────────────────── SECTION 4 — MONETISATION */}
+            <div style={card}>
+              <div style={sectionLabel}>Monetisation</div>
+
+              {connect?.error ? (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", margin: "0 0 14px" }}>
+                  {connect.error}
+                </p>
+              ) : connect?.connected ? (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#10B981", boxShadow: "0 0 6px #10B98180" }} />
+                    <span style={{ fontSize: 12, color: "#10B981", fontFamily: "monospace", letterSpacing: "0.08em" }}>
+                      STRIPE CONNECTED
+                    </span>
+                  </div>
+                  {(balance?.totalEarnedCents ?? 0) > 0 && (
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+                      Total earned:{" "}
+                      <span style={{ color: "white", fontWeight: 600 }}>
+                        {formatCents(balance.totalEarnedCents)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 14px", lineHeight: 1.7 }}>
+                  Connect Stripe to receive gifts and tips from your viewers.
+                </p>
+              )}
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  disabled={saving}
+                  onClick={connectStripe}
+                  style={{
+                    flex: 1,
+                    height: 42,
+                    borderRadius: 10,
+                    background: connect?.connected ? "rgba(255,255,255,0.04)" : "rgba(16,185,129,0.1)",
+                    border: connect?.connected ? "1px solid rgba(255,255,255,0.1)" : "1px solid rgba(16,185,129,0.28)",
+                    color: connect?.connected ? "rgba(255,255,255,0.6)" : "#10B981",
+                    fontSize: 11,
+                    fontFamily: "monospace",
+                    letterSpacing: "0.1em",
+                    fontWeight: 700,
+                    cursor: saving ? "not-allowed" : "pointer",
+                  }}
                 >
-                  <div className="text-[11px] text-white/60">{s.label}</div>
-                  <div className="mt-1 text-lg font-semibold">{s.value}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 6) Safety & Preferences */}
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="text-sm font-semibold">Safety & preferences</div>
-            <div className="mt-1 text-xs text-white/60">
-              This section will expand later. For now it’s informational.
-            </div>
-
-            <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-4">
-              <div className="text-sm text-white/80">Age verification</div>
-              <div className="mt-1 text-xs text-white/60">
-                Status is managed by platform policy.
+                  {connect?.connected ? "UPDATE STRIPE" : "CONNECT STRIPE"}
+                </button>
+                <button
+                  onClick={() => router.push("/creator/earnings")}
+                  style={{
+                    flex: 1,
+                    height: 42,
+                    borderRadius: 10,
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.55)",
+                    fontSize: 11,
+                    fontFamily: "monospace",
+                    letterSpacing: "0.1em",
+                    cursor: "pointer",
+                  }}
+                >
+                  VIEW EARNINGS
+                </button>
               </div>
             </div>
-          </section>
-        </div>
-      )}
+
+            {/* ────────────────────────────────── SECTION 5 — MESSAGES */}
+            <div style={{ ...card, opacity: 0.55 }}>
+              <div style={sectionLabel}>Messages</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 5 }}>
+                    🔒 Direct Messages
+                  </div>
+                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.38)" }}>
+                    Coming soon — Gold Ring
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ────────────────────────────────── SECTION 6 — SETTINGS */}
+            <div style={card}>
+              <div style={sectionLabel}>Settings</div>
+
+              {/* Safety placeholder */}
+              <div style={{
+                padding: "12px 14px",
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                marginBottom: 14,
+              }}>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>
+                  Safety &amp; preferences
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.28)", lineHeight: 1.6 }}>
+                  Content filters, blocked accounts, and privacy settings — coming soon.
+                </div>
+              </div>
+
+              {/* Sign out */}
+              <button
+                onClick={signOut}
+                style={{
+                  width: "100%",
+                  height: 46,
+                  borderRadius: 10,
+                  background: "rgba(239,68,68,0.08)",
+                  border: "1px solid rgba(239,68,68,0.22)",
+                  color: "#ef4444",
+                  fontSize: 13,
+                  fontFamily: "monospace",
+                  letterSpacing: "0.12em",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                SIGN OUT
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

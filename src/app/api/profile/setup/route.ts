@@ -22,10 +22,11 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { handle, displayName, avatarUrl } = body as {
+  const { handle, displayName, avatarUrl, bio } = body as {
     handle?: string;
     displayName?: string;
     avatarUrl?: string | null;
+    bio?: string;
   };
 
   if (!displayName?.trim()) {
@@ -34,6 +35,7 @@ export async function PATCH(req: NextRequest) {
 
   const email = user.email;
   const now = new Date();
+  const bioTrimmed = bio?.trim() ?? null;
 
   try {
     await prisma.profiles.upsert({
@@ -42,12 +44,14 @@ export async function PATCH(req: NextRequest) {
         email,
         display_name: displayName.trim(),
         avatar_url: avatarUrl ?? null,
+        bio: bioTrimmed,
         created_at: now,
         updated_at: now,
       },
       update: {
         display_name: displayName.trim(),
         avatar_url: avatarUrl ?? null,
+        bio: bioTrimmed,
         updated_at: now,
       },
     });
@@ -64,6 +68,7 @@ export async function PATCH(req: NextRequest) {
         handle: handle?.trim() || existing.handle,
         displayName: displayName.trim(),
         avatarUrl: avatarUrl ?? existing.avatarUrl,
+        bio: bioTrimmed ?? existing.bio,
         updatedAt: now,
       },
     });
