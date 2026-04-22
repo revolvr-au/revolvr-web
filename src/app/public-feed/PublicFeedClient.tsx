@@ -192,6 +192,26 @@ useEffect(() => {
 }, [showComments]);
 
 useEffect(() => {
+  if (!showComments) return;
+
+  const handler = () => {
+    const overlay = document.getElementById('comments-overlay');
+    if (!overlay || !window.visualViewport) return;
+    overlay.style.height = `${window.visualViewport.height}px`;
+    overlay.style.top = `${window.visualViewport.offsetTop}px`;
+  };
+
+  window.visualViewport?.addEventListener('resize', handler);
+  window.visualViewport?.addEventListener('scroll', handler);
+  handler();
+
+  return () => {
+    window.visualViewport?.removeEventListener('resize', handler);
+    window.visualViewport?.removeEventListener('scroll', handler);
+  };
+}, [showComments]);
+
+useEffect(() => {
   if (listRef.current) {
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }
@@ -552,13 +572,14 @@ useEffect(() => {
       if (dragY > 120) { closeComments(); setDragY(0); return; }
       setDragY(0);
     }}
+    id="comments-overlay"
     style={{
       position: "fixed",
       top: 0,
       left: 0,
       right: 0,
       bottom: 0,
-      height: "100dvh",
+      height: "100vh",
       background: "#050814",
       display: "flex",
       flexDirection: "column",
