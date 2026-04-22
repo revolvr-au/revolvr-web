@@ -632,7 +632,7 @@ useEffect(() => {
       flexShrink: 0,
       borderTop: "1px solid rgba(255,255,255,0.08)",
       background: "#050814",
-      padding: "10px 16px 8px",
+      padding: "8px 16px",
     }}>
       {replyTo && (
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
@@ -649,10 +649,11 @@ useEffect(() => {
           placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add a comment..."}
           style={{
             flex: 1,
-            borderRadius: 999,
+            borderRadius: 20,
             background: "rgba(255,255,255,0.1)",
             border: "none",
-            padding: "10px 16px",
+            padding: "8px 14px",
+            height: 40,
             fontSize: 14,
             color: "white",
             outline: "none",
@@ -663,9 +664,9 @@ useEffect(() => {
           onClick={sendComment}
           type="button"
           style={{
-            width: 44,
-            height: 44,
-            minWidth: 44,
+            width: 40,
+            height: 40,
+            minWidth: 40,
             borderRadius: "50%",
             background: "#00e5ff",
             border: "none",
