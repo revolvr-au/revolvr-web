@@ -43,23 +43,22 @@ export default function CreatePage() {
   };
 
   const uploadVideoToCloudflare = async (f: File): Promise<{ videoId: string; thumbnailUrl: string | null }> => {
-    setStatusMsg("Preparing upload...");
-    const initRes = await fetch("/api/video/upload", { method: "POST" });
-    if (!initRes.ok) throw new Error("Failed to get upload URL");
-    const { uploadURL, videoId } = await initRes.json();
-
     setStatusMsg("Uploading video...");
-    const uploadResponse = await fetch(uploadURL, {
-      method: "PUT",
-      body: f,
-      headers: {
-        "Content-Type": f.type,
-      },
+
+    const formData = new FormData();
+    formData.append("file", f);
+
+    const res = await fetch("/api/video/upload", {
+      method: "POST",
+      body: formData,
     });
 
-    if (!uploadResponse.ok) {
-      throw new Error(`Upload failed: ${uploadResponse.status}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error ?? "Upload failed");
     }
+
+    const { videoId } = await res.json();
 
     setStatusMsg("Processing video...");
     setUploadProgress(100);
@@ -72,7 +71,7 @@ export default function CreatePage() {
       }
       await new Promise((r) => setTimeout(r, 2000));
     }
-    throw new Error("Video processing timed out. Try again in a moment.");
+    throw new Error("Video processing timed out.");
   };
 
   const handleSubmit = async () => {
