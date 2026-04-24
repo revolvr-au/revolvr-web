@@ -14,7 +14,6 @@ export async function POST() {
     cors_origin: "https://www.revolvr.net",
     new_asset_settings: {
       playback_policy: ["public"],
-      mp4_support: "standard",
     },
   });
 
