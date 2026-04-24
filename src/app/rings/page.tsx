@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useRingStatus } from "@/hooks/useRingStatus";
 import { hasRing } from "@/lib/ringGates";
 import { RING_COLORS } from "@/components/RingRim";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 type TierConfig = {
   tier: string;
@@ -144,9 +145,13 @@ function RingsPageInner() {
     setError(null);
     setLoadingTier(tier);
     try {
+      const { data: { session } } = await createSupabaseBrowserClient().auth.getSession();
       const res = await fetch("/api/ring/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ tier }),
       });
       const data = await res.json();

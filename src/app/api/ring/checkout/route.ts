@@ -60,9 +60,23 @@ export async function POST(req: NextRequest) {
     }
   );
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser();
+  let user = cookieUser;
 
+  // If cookie auth fails, try Authorization header (iOS Safari fallback)
   if (!user || authError) {
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      const { data: { user: tokenUser }, error: tokenError } =
+        await supabase.auth.getUser(token);
+      if (tokenUser && !tokenError) {
+        user = tokenUser;
+      }
+    }
+  }
+
+  if (!user) {
     console.error("[Checkout] No active session found", authError?.message);
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
