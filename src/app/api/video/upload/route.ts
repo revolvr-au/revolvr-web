@@ -28,8 +28,12 @@ export async function POST() {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    console.error("[video/upload] Cloudflare error:", err);
-    return NextResponse.json({ error: "Failed to create upload URL" }, { status: 500 });
+    console.error("[video/upload] Cloudflare error:", res.status, JSON.stringify(err));
+    return NextResponse.json({
+      error: "Failed to create upload URL",
+      status: res.status,
+      detail: err,
+    }, { status: 500 });
   }
 
   const { result } = await res.json();
