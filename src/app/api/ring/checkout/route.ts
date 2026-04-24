@@ -38,6 +38,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
   }
 
+  // Parse body first so accessToken is available for all auth fallbacks
+  let body: { tier?: string; accessToken?: string };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const { accessToken } = body;
+  const tier = String(body.tier ?? "").toUpperCase() as RingTier;
+
 // Auth - Next.js 15/16 Async Handshake
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -77,6 +88,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Final fallback: token passed explicitly in request body (mobile Safari)
+  if (!user && accessToken) {
+    const { data: { user: tokenUser } } = await supabase.auth.getUser(accessToken);
+    if (tokenUser) user = tokenUser;
+  }
+
   if (!user) {
     console.error("[Checkout] No active session found", authError?.message);
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
@@ -87,15 +104,6 @@ export async function POST(req: NextRequest) {
   }
 
   const email = user.email.trim().toLowerCase();
-
-  let body: { tier?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
-  const tier = String(body.tier ?? "").toUpperCase() as RingTier;
 
   // Validate tier is a purchasable paid tier
   if (!PAID_TIERS.has(tier)) {

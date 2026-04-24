@@ -162,7 +162,7 @@ function RingsPageInner() {
             "Authorization": `Bearer ${session.access_token}`
           } : {}),
         },
-        body: JSON.stringify({ tier }),
+        body: JSON.stringify({ tier, accessToken: session?.access_token ?? null }),
       });
       const data = await res.json();
       console.log("Checkout response:", data);
