@@ -652,21 +652,19 @@ const Post = memo(function Post({
       }}
     >
       {post.cloudflareVideoId ? (
-        <stream
-          src={post.cloudflareVideoId}
-          autoplay
-          muted
-          loop
-          playsinline
+        <iframe
+          src={`https://iframe.videodelivery.net/${post.cloudflareVideoId}`}
           style={{
             position: "absolute",
             top: 0,
             left: 0,
             width: "100%",
             height: "100%",
-            objectFit: "cover",
+            border: "none",
             zIndex: 0,
           }}
+          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+          allowFullScreen
         />
       ) : post.imageUrl ? (
         <img

@@ -20,7 +20,6 @@ export default function RootLayout({
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
-        <script defer src="https://embed.cloudflare.com/embed/r4.js" />
       </head>
       <body className="min-h-screen bg-[#050814] text-white">
         <KeyboardHandler />
