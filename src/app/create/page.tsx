@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
-import * as tus from "tus-js-client";
 
 export default function CreatePage() {
   const [file, setFile] = useState<File | null>(null);
@@ -43,50 +42,33 @@ export default function CreatePage() {
     return data.publicUrl;
   };
 
-  const uploadVideoToCloudflare = async (f: File): Promise<{ videoId: string; thumbnailUrl: string | null }> => {
+  const uploadVideoToMux = async (f: File): Promise<{ playbackId: string }> => {
     setStatusMsg("Preparing upload...");
 
-    const initRes = await fetch("/api/video/upload", {
-      method: "POST",
-      headers: { "Upload-Length": f.size.toString() },
-    });
-
-    if (!initRes.ok) {
-      const err = await initRes.json().catch(() => ({}));
-      throw new Error(err.error ?? "Failed to prepare upload");
-    }
-
-    const { uploadURL, videoId } = await initRes.json();
+    const initRes = await fetch("/api/video/upload", { method: "POST" });
+    if (!initRes.ok) throw new Error("Failed to get upload URL");
+    const { uploadURL, uploadId } = await initRes.json();
 
     setStatusMsg("Uploading video...");
 
-    await new Promise<void>((resolve, reject) => {
-      const upload = new tus.Upload(f, {
-        endpoint: uploadURL,
-        retryDelays: [0, 3000, 5000, 10000, 20000],
-        metadata: {
-          filename: f.name,
-          filetype: f.type,
-        },
-        onProgress: (bytesUploaded, bytesTotal) => {
-          setUploadProgress(Math.round((bytesUploaded / bytesTotal) * 100));
-        },
-        onSuccess: () => resolve(),
-        onError: (error) => reject(error),
-      });
-      upload.start();
+    const uploadRes = await fetch(uploadURL, {
+      method: "PUT",
+      body: f,
+      headers: { "Content-Type": f.type },
     });
+
+    if (!uploadRes.ok) throw new Error("Upload failed");
 
     setStatusMsg("Processing video...");
     setUploadProgress(100);
 
-    for (let i = 0; i < 30; i++) {
-      const statusRes = await fetch(`/api/video/status/${videoId}`);
+    for (let i = 0; i < 60; i++) {
+      const statusRes = await fetch(`/api/video/status/${uploadId}`);
       const status = await statusRes.json();
-      if (status.ready) {
-        return { videoId, thumbnailUrl: status.thumbnailUrl ?? null };
+      if (status.ready && status.playbackId) {
+        return { playbackId: status.playbackId };
       }
-      await new Promise((r) => setTimeout(r, 2000));
+      await new Promise((r) => setTimeout(r, 3000));
     }
     throw new Error("Video processing timed out.");
   };
@@ -100,12 +82,12 @@ export default function CreatePage() {
       let postBody: Record<string, string | null>;
 
       if (isVideo) {
-        const { videoId, thumbnailUrl } = await uploadVideoToCloudflare(file);
+        const { playbackId } = await uploadVideoToMux(file);
         postBody = {
           caption,
           userEmail,
-          cloudflareVideoId: videoId,
-          media_url: thumbnailUrl,
+          muxPlaybackId: playbackId,
+          media_url: null,
         };
       } else {
         const mediaUrl = await uploadImageToSupabase(file);

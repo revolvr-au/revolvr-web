@@ -651,9 +651,9 @@ const Post = memo(function Post({
         justifyContent: "flex-end",
       }}
     >
-      {post.cloudflareVideoId ? (
+      {post.muxPlaybackId ? (
         <video
-          src={`https://videodelivery.net/${post.cloudflareVideoId}/manifest/video.m3u8`}
+          src={`https://stream.mux.com/${post.muxPlaybackId}/high.mp4`}
           autoPlay
           muted
           loop

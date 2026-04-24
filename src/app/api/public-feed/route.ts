@@ -75,6 +75,7 @@ export async function GET() {
         caption: p.caption,
         imageUrl: sanitizeImageUrl(p.imageUrl),
         cloudflareVideoId: p.cloudflareVideoId ?? null,
+        muxPlaybackId: p.muxPlaybackId ?? null,
         userEmail: p.userEmail,
         handle,
         avatarUrl: avatarUrl ? sanitizeImageUrl(avatarUrl) : null,

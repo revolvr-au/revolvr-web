@@ -17,6 +17,7 @@
   "dependencies": {
     "@livekit/components-react": "^2.9.20",
     "@livekit/components-styles": "^1.2.0",
+    "@mux/mux-node": "^14.0.1",
     "@prisma/client": "^6.19.0",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/ssr": "^0.7.0",

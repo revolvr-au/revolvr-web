@@ -17,6 +17,7 @@ model Post {
   updatedAt         DateTime       @updatedAt
   media_url         String?
   cloudflareVideoId String?
+  muxPlaybackId     String?
   postType          PostType       @default(FEED)
   sparkEligible     Boolean        @default(false)
   voltage           Int            @default(0)
