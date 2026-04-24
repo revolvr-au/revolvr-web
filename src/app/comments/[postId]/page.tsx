@@ -1,19 +1,25 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { use, useEffect, useRef, useState } from "react"; // 1. Added 'use' here
+import { useRouter } from "next/navigation"; // 2. Removed 'useParams'
 import { ArrowLeft, SendHorizontal } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import CommentsList from "@/components/CommentsList";
 
-export default function CommentsPage() {
+// 3. Update the function to accept 'params' as a Promise
+export default function CommentsPage({ params }: { params: Promise<{ postId: string }> }) {
   const router = useRouter();
-  const { postId } = useParams<{ postId: string }>();
+  
+  // 4. Unwrap the promise to get the postId
+  const { postId } = use(params); 
+
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [replyTo, setReplyTo] = useState<{ id: string; userEmail: string } | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  
+  // ... rest of your file stays exactly the same
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
