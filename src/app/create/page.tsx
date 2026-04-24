@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
+import * as tus from "tus-js-client";
 
 export default function CreatePage() {
   const [file, setFile] = useState<File | null>(null);
@@ -43,22 +44,38 @@ export default function CreatePage() {
   };
 
   const uploadVideoToCloudflare = async (f: File): Promise<{ videoId: string; thumbnailUrl: string | null }> => {
-    setStatusMsg("Uploading video...");
+    setStatusMsg("Preparing upload...");
 
-    const formData = new FormData();
-    formData.append("file", f);
-
-    const res = await fetch("/api/video/upload", {
+    const initRes = await fetch("/api/video/upload", {
       method: "POST",
-      body: formData,
+      headers: { "Upload-Length": f.size.toString() },
     });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error ?? "Upload failed");
+    if (!initRes.ok) {
+      const err = await initRes.json().catch(() => ({}));
+      throw new Error(err.error ?? "Failed to prepare upload");
     }
 
-    const { videoId } = await res.json();
+    const { uploadURL, videoId } = await initRes.json();
+
+    setStatusMsg("Uploading video...");
+
+    await new Promise<void>((resolve, reject) => {
+      const upload = new tus.Upload(f, {
+        endpoint: uploadURL,
+        retryDelays: [0, 3000, 5000, 10000, 20000],
+        metadata: {
+          filename: f.name,
+          filetype: f.type,
+        },
+        onProgress: (bytesUploaded, bytesTotal) => {
+          setUploadProgress(Math.round((bytesUploaded / bytesTotal) * 100));
+        },
+        onSuccess: () => resolve(),
+        onError: (error) => reject(error),
+      });
+      upload.start();
+    });
 
     setStatusMsg("Processing video...");
     setUploadProgress(100);
