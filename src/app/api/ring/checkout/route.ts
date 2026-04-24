@@ -60,12 +60,14 @@ export async function POST(req: NextRequest) {
     }
   );
 
-  // ✅ Changed variable name to authSession to avoid collision
-  const { data: { session: authSession } } = await supabase.auth.getSession();
-  const user = authSession?.user;
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  if (!user?.email) {
-    console.error("[Checkout] No active session found");
+  if (!user || authError) {
+    console.error("[Checkout] No active session found", authError?.message);
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
+  if (!user.email) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
