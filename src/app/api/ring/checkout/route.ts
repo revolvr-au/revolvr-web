@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
   }
 
-  // Auth - Next.js 15 Async Handshake
+// Auth - Next.js 15/16 Async Handshake
   const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,19 +53,19 @@ export async function POST(req: NextRequest) {
               cookieStore.set(name, value, options)
             );
           } catch {
-            // The setAll can be ignored if called from a Server Component
+            // Safe to ignore in API routes
           }
         },
       },
     }
   );
 
-  // Use { data: { session } } instead of just getUser to verify the token is alive
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user;
+  // ✅ Changed variable name to authSession to avoid collision
+  const { data: { session: authSession } } = await supabase.auth.getSession();
+  const user = authSession?.user;
 
   if (!user?.email) {
-    console.error("[Checkout] No active session found for request");
+    console.error("[Checkout] No active session found");
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
