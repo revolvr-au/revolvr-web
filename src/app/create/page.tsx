@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function CreatePage() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [isVideo, setIsVideo] = useState(false);
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
 
@@ -21,50 +24,107 @@ export default function CreatePage() {
 
   const handleFile = (f: File) => {
     setFile(f);
+    setIsVideo(f.type.startsWith("video/"));
     setPreview(URL.createObjectURL(f));
+    setUploadProgress(0);
+    setStatusMsg("");
+  };
+
+  const uploadImageToSupabase = async (f: File): Promise<string> => {
+    const supabase = createSupabaseBrowserClient();
+    const ext = f.name.split(".").pop() ?? "bin";
+    const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage
+      .from("posts")
+      .upload(path, f, { contentType: f.type, upsert: false });
+    if (error) throw new Error(error.message);
+    const { data } = supabase.storage.from("posts").getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const uploadVideoToCloudflare = async (f: File): Promise<{ videoId: string; thumbnailUrl: string | null }> => {
+    setStatusMsg("Preparing upload...");
+    const initRes = await fetch("/api/video/upload", { method: "POST" });
+    if (!initRes.ok) throw new Error("Failed to get upload URL");
+    const { uploadURL, videoId } = await initRes.json();
+
+    setStatusMsg("Uploading video...");
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        }
+      });
+      xhr.open("PUT", uploadURL);
+      xhr.onload = () => (xhr.status < 400 ? resolve() : reject(new Error("Upload to Cloudflare failed")));
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(f);
+    });
+
+    setStatusMsg("Processing video...");
+    setUploadProgress(100);
+
+    for (let i = 0; i < 30; i++) {
+      const statusRes = await fetch(`/api/video/status/${videoId}`);
+      const status = await statusRes.json();
+      if (status.ready) {
+        return { videoId, thumbnailUrl: status.thumbnailUrl ?? null };
+      }
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+    throw new Error("Video processing timed out. Try again in a moment.");
   };
 
   const handleSubmit = async () => {
     if (!file || !userEmail) return;
     setLoading(true);
+    setStatusMsg(isVideo ? "Preparing upload..." : "Uploading...");
 
     try {
-      const supabase = createSupabaseBrowserClient();
-      const ext = file.name.split(".").pop() ?? "bin";
-      const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      let postBody: Record<string, string | null>;
 
-      const { error: uploadError } = await supabase.storage
-        .from("posts")
-        .upload(path, file, { contentType: file.type, upsert: false });
+      if (isVideo) {
+        const { videoId, thumbnailUrl } = await uploadVideoToCloudflare(file);
+        postBody = {
+          caption,
+          userEmail,
+          cloudflareVideoId: videoId,
+          media_url: thumbnailUrl,
+        };
+      } else {
+        const mediaUrl = await uploadImageToSupabase(file);
+        postBody = { caption, userEmail, media_url: mediaUrl };
+      }
 
-      if (uploadError) throw new Error(uploadError.message);
-
-      const { data: urlData } = supabase.storage.from("posts").getPublicUrl(path);
-      const mediaUrl = urlData.publicUrl;
-
+      setStatusMsg("Creating post...");
       const postRes = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          caption,
-          media_url: mediaUrl,
-          userEmail: userEmail,
-        }),
+        body: JSON.stringify(postBody),
       });
 
       if (!postRes.ok) {
-        alert("Post creation failed");
-        setLoading(false);
-        return;
+        const err = await postRes.json().catch(() => ({}));
+        throw new Error(err.error ?? "Post creation failed");
       }
 
       router.push("/public-feed");
     } catch (err) {
       console.error(err);
-      alert("Something failed");
+      const msg = err instanceof Error ? err.message : "Something failed";
+      alert(msg);
+      setStatusMsg("");
+      setUploadProgress(0);
     }
 
     setLoading(false);
+  };
+
+  const loadingLabel = () => {
+    if (!loading) return "Post";
+    if (isVideo && uploadProgress > 0 && uploadProgress < 100) return `Uploading ${uploadProgress}%`;
+    return statusMsg || "Posting...";
   };
 
   return (
@@ -134,13 +194,24 @@ export default function CreatePage() {
           </label>
         ) : (
           <>
-            <img
-              src={preview}
-              alt="preview"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
+            {isVideo ? (
+              <video
+                src={preview}
+                autoPlay
+                muted
+                loop
+                playsInline
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <img
+                src={preview}
+                alt="preview"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            )}
             <button
-              onClick={() => { setFile(null); setPreview(null); }}
+              onClick={() => { setFile(null); setPreview(null); setIsVideo(false); setUploadProgress(0); setStatusMsg(""); }}
               style={{
                 position: "absolute",
                 top: 10, right: 10,
@@ -156,6 +227,18 @@ export default function CreatePage() {
           </>
         )}
       </div>
+
+      {/* PROGRESS BAR */}
+      {loading && isVideo && uploadProgress > 0 && (
+        <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.1)" }}>
+          <div style={{
+            height: "100%",
+            width: `${uploadProgress}%`,
+            background: "white",
+            transition: "width 0.3s ease",
+          }} />
+        </div>
+      )}
 
       {/* CAPTION + POST */}
       <div style={{
@@ -210,7 +293,7 @@ export default function CreatePage() {
             transition: "all 0.2s ease",
           }}
         >
-          {loading ? "Posting..." : "Post"}
+          {loadingLabel()}
         </button>
       </div>
     </div>

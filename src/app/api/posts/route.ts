@@ -35,9 +35,9 @@ export async function POST(req: Request) {
 
     console.log("POST BODY:", body); // 👈 debug (important)
 
-    if (!body.media_url) {
+    if (!body.media_url && !body.cloudflareVideoId) {
       return NextResponse.json(
-        { error: "media_url missing" },
+        { error: "media_url or cloudflareVideoId required" },
         { status: 400 }
       );
     }
@@ -50,12 +50,13 @@ export async function POST(req: Request) {
     }
 
     const post = await prisma.post.create({
-  data: {
-    caption: body.caption || "",
-    imageUrl: body.media_url, // ✅ FIX
-    userEmail: body.userEmail,
-  },
-});
+      data: {
+        caption: body.caption || "",
+        imageUrl: body.media_url || "",
+        userEmail: body.userEmail,
+        cloudflareVideoId: body.cloudflareVideoId ?? null,
+      },
+    });
 const email = body.userEmail;
 
 await awardVoltage({
