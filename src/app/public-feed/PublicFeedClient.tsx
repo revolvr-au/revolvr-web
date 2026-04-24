@@ -651,7 +651,24 @@ const Post = memo(function Post({
         justifyContent: "flex-end",
       }}
     >
-      {post.imageUrl && (
+      {post.cloudflareVideoId ? (
+        <stream
+          src={post.cloudflareVideoId}
+          autoplay
+          muted
+          loop
+          playsinline
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            zIndex: 0,
+          }}
+        />
+      ) : post.imageUrl ? (
         <img
           src={post.imageUrl}
           loading="lazy"
@@ -663,12 +680,12 @@ const Post = memo(function Post({
             width: "100%",
             height: "100%",
             objectFit: "cover",
-             objectPosition: "center center",
+            objectPosition: "center center",
             zIndex: 0,
             cursor: "pointer",
           }}
         />
-      )}
+      ) : null}
 
       {showBurst && (
         <div
