@@ -32,6 +32,7 @@ const TIER_RANK: Record<RingTier, number> = {
 const PAID_TIERS = new Set<RingTier>(["BLUE", "GOLD", "BUSINESS", "CORPORATE", "RED"]);
 
 export async function POST(req: NextRequest) {
+  try {
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeKey) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 500 });
@@ -192,4 +193,11 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json({ url: session.url }, { status: 200 });
+  } catch (err: any) {
+    console.error("[Checkout] Fatal error:", err?.message ?? err);
+    return NextResponse.json({
+      error: err?.message ?? "Internal server error",
+      stack: process.env.NODE_ENV === "development" ? err?.stack : undefined,
+    }, { status: 500 });
+  }
 }
