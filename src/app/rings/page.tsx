@@ -145,16 +145,27 @@ function RingsPageInner() {
     setError(null);
     setLoadingTier(tier);
     try {
-      const { data: { session } } = await createSupabaseBrowserClient().auth.getSession();
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session }, error: sessionError } =
+        await supabase.auth.getSession();
+
+      console.log("Session:", session ? "EXISTS" : "NULL");
+      console.log("Session error:", sessionError);
+      console.log("Access token:", session?.access_token ? "EXISTS" : "NULL");
+      console.log("User email:", session?.user?.email);
+
       const res = await fetch("/api/ring/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
+          ...(session?.access_token ? {
+            "Authorization": `Bearer ${session.access_token}`
+          } : {}),
         },
         body: JSON.stringify({ tier }),
       });
       const data = await res.json();
+      console.log("Checkout response:", data);
       if (!res.ok) {
         setError(data.error ?? "Checkout failed. Please try again.");
         return;
@@ -162,7 +173,8 @@ function RingsPageInner() {
       if (data.url) {
         window.location.href = data.url;
       }
-    } catch {
+    } catch (err) {
+      console.error("Checkout error:", err);
       setError("Network error. Please try again.");
     } finally {
       setLoadingTier(null);
