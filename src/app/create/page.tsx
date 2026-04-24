@@ -29,27 +29,25 @@ export default function CreatePage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      const supabase = createSupabaseBrowserClient();
+      const ext = file.name.split(".").pop() ?? "bin";
+      const path = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const uploadData = await uploadRes.json();
+      const { error: uploadError } = await supabase.storage
+        .from("posts")
+        .upload(path, file, { contentType: file.type, upsert: false });
 
-      if (!uploadRes.ok || !uploadData?.url) {
-        alert("Upload failed");
-        setLoading(false);
-        return;
-      }
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data: urlData } = supabase.storage.from("posts").getPublicUrl(path);
+      const mediaUrl = urlData.publicUrl;
 
       const postRes = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           caption,
-          media_url: uploadData.url,
+          media_url: mediaUrl,
           userEmail: userEmail,
         }),
       });
