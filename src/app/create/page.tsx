@@ -49,18 +49,17 @@ export default function CreatePage() {
     const { uploadURL, videoId } = await initRes.json();
 
     setStatusMsg("Uploading video...");
-    await new Promise<void>((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          setUploadProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      });
-      xhr.open("PUT", uploadURL);
-      xhr.onload = () => (xhr.status < 400 ? resolve() : reject(new Error("Upload to Cloudflare failed")));
-      xhr.onerror = () => reject(new Error("Network error during upload"));
-      xhr.send(f);
+    const uploadResponse = await fetch(uploadURL, {
+      method: "PUT",
+      body: f,
+      headers: {
+        "Content-Type": f.type,
+      },
     });
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Upload failed: ${uploadResponse.status}`);
+    }
 
     setStatusMsg("Processing video...");
     setUploadProgress(100);
