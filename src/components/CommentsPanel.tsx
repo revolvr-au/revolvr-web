@@ -142,11 +142,12 @@ export default function CommentsPanel({
           display: "flex",
           flexDirection: "column",
           background: "rgba(5, 8, 20, 0.75)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.08)",
           borderRadius: 24,
           overflow: "hidden",
+          boxShadow: "0 0 60px rgba(0,229,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
           transition: isDragging ? "none" : "transform 0.22s ease, opacity 0.22s ease",
           transform: panelTransform,
           opacity: panelOpacity,
@@ -154,6 +155,17 @@ export default function CommentsPanel({
           willChange: "transform, opacity",
         }}
       >
+        {/* Scanlines overlay */}
+        <div style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 24,
+          pointerEvents: "none",
+          zIndex: 0,
+          backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)",
+          opacity: 0.4,
+        }} />
+
         {/* Drag handle */}
         <div
           ref={handleRef}
@@ -193,7 +205,7 @@ export default function CommentsPanel({
             borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
-          <span style={{ fontSize: 15, fontWeight: 600, color: "white" }}>Comments</span>
+          <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.9)" }}>Comments</span>
           <button
             onClick={dismiss}
             type="button"
@@ -241,34 +253,43 @@ export default function CommentsPanel({
           style={{
             flexShrink: 0,
             padding: "8px 16px",
-            display: "flex",
-            gap: 8,
             borderTop: "1px solid rgba(255,255,255,0.06)",
-            overflowX: "auto",
-            scrollbarWidth: "none",
           }}
-          className="no-scrollbar"
         >
-          {REACTIONS.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => handleReaction(emoji)}
-              type="button"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "none",
-                borderRadius: 20,
-                padding: "6px 12px",
-                fontSize: 16,
-                cursor: "pointer",
-                flexShrink: 0,
-                transition: "transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                transform: tappedReaction === emoji ? "scale(1.3)" : "scale(1)",
-              }}
-            >
-              {emoji}
-            </button>
-          ))}
+          <div
+            style={{
+              background: "rgba(0,0,0,0.3)",
+              borderRadius: 16,
+              padding: "8px 12px",
+              border: "1px solid rgba(255,255,255,0.05)",
+              display: "flex",
+              gap: 8,
+              overflowX: "auto",
+              scrollbarWidth: "none",
+            }}
+            className="no-scrollbar"
+          >
+            {REACTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => handleReaction(emoji)}
+                type="button"
+                style={{
+                  background: "rgba(255,255,255,0.08)",
+                  border: "none",
+                  borderRadius: 20,
+                  padding: "6px 12px",
+                  fontSize: 16,
+                  cursor: "pointer",
+                  flexShrink: 0,
+                  transition: "transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  transform: tappedReaction === emoji ? "scale(1.3)" : "scale(1)",
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Input bar */}
@@ -315,6 +336,8 @@ export default function CommentsPanel({
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendComment(commentText)}
+              onFocus={(e) => { e.currentTarget.style.boxShadow = "0 0 0 1px rgba(0,229,255,0.3)"; }}
+              onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}
               placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add to the conversation..."}
               style={{
                 flex: 1,

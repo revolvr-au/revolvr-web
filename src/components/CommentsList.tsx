@@ -10,14 +10,17 @@ function voltageColor(v: number): string {
 }
 
 function formatAge(createdAt: string | undefined): string {
-  if (!createdAt) return "";
-  const diff = Date.now() - new Date(createdAt).getTime();
+  if (!createdAt) return "[ --:--:-- ]";
+  const date = new Date(createdAt);
+  const diff = Date.now() - date.getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) {
+    const secs = Math.floor((diff % 60_000) / 1000);
+    return `[ 00:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")} ]`;
+  }
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return `[ ${String(hours).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}:00 ]`;
+  return `[ ${Math.floor(hours / 24)}d ago ]`;
 }
 
 function CommentCard({
@@ -59,7 +62,13 @@ function CommentCard({
         style={{
           width: 3,
           flexShrink: 0,
-          background: isHot ? "linear-gradient(180deg, #FF6B00, #FFB800)" : stripColor,
+          background: isHot
+            ? "linear-gradient(180deg, #FF6B00, transparent)"
+            : voltage >= 50
+            ? "linear-gradient(180deg, #FFB800, transparent)"
+            : voltage >= 10
+            ? "linear-gradient(180deg, #00e5ff, transparent)"
+            : "linear-gradient(180deg, rgba(255,255,255,0.15), transparent)",
           animation: isHot ? "voltageHot 1.8s ease-in-out infinite" : undefined,
         }}
       />
@@ -110,7 +119,7 @@ function CommentCard({
               style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: "rgba(255,255,255,0.95)",
+                color: "#e0f7fa",
                 lineHeight: 1,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -119,19 +128,6 @@ function CommentCard({
             >
               {displayName}
             </span>
-            {voltage > 0 && (
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: stripColor,
-                  letterSpacing: "0.02em",
-                  flexShrink: 0,
-                }}
-              >
-                {Math.round(voltage)}V
-              </span>
-            )}
           </div>
 
           {/* Row 2: comment text */}
@@ -176,7 +172,13 @@ function CommentCard({
               </button>
             )}
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>·</span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
+            <span style={{
+              fontSize: 10,
+              color: "#00e5ff",
+              fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+              letterSpacing: "0.05em",
+              opacity: 0.7,
+            }}>
               {formatAge(comment.createdAt)}
             </span>
           </div>
@@ -210,7 +212,7 @@ export default function CommentsList({
 
   const rootComments = comments
     .filter((c) => !c.parentId)
-    .sort((a, b) => (b.voltage || 0) - (a.voltage || 0));
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const repliesMap: Record<string, any[]> = {};
   comments.forEach((c) => {
@@ -222,17 +224,25 @@ export default function CommentsList({
 
   if (rootComments.length === 0) {
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "40px 0",
-          fontSize: 14,
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "48px 0",
+        gap: 12,
+      }}>
+        <span style={{ fontSize: 32 }}>💬</span>
+        <span style={{
+          fontSize: 13,
           color: "rgba(255,255,255,0.35)",
-        }}
-      >
-        No comments yet
+          textAlign: "center",
+          lineHeight: 1.6,
+          fontFamily: "'JetBrains Mono', monospace",
+          letterSpacing: "0.05em",
+        }}>
+          BE THE FIRST TO JOIN<br />THE CONVERSATION
+        </span>
       </div>
     );
   }
@@ -248,8 +258,8 @@ export default function CommentsList({
       `}</style>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 8 }}>
-        {rootComments.map((c) => (
-          <div key={`root-${c.id}`} className="animate-[fadeIn_0.25s_ease-out]">
+        {rootComments.map((c, index) => (
+          <div key={`root-${c.id}`} className="animate-[fadeIn_0.25s_ease-out]" style={{ animationDelay: `${index * 40}ms` }}>
             <CommentCard
               comment={c}
               onReply={() => setReplyTo({ id: c.id, userEmail: c.userEmail })}
