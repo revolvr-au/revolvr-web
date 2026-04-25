@@ -56,7 +56,6 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
         hls.loadSource(src);
         hls.attachMedia(video);
       } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        // Safari native HLS
         video.src = src;
       }
     }
@@ -69,7 +68,7 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
     };
   }, [playbackId]);
 
-  // Intersection Observer — play when active, pause when not
+  // Play/pause based on active state
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -97,7 +96,7 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
     return unsub;
   }, [isActive]);
 
-  // Progress tracking
+  // Progress tracking + loop counter
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -128,18 +127,16 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
   }, []);
 
   const handleTap = useCallback(() => {
-    // Unlock sound on first tap
     if (!globalUnlocked) {
       triggerUnlock();
       if (videoRef.current) videoRef.current.muted = false;
-      return; // first tap = sound unlock only, don't pause
+      return;
     }
 
     const video = videoRef.current;
     if (!video) return;
 
     if (finished) {
-      // Restart
       loopCountRef.current = 0;
       setFinished(false);
       setPaused(false);
@@ -154,7 +151,6 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
     } else {
       video.pause();
       setPaused(true);
-      // Flash pause bars briefly
       setShowPauseBars(true);
       if (pauseBarTimerRef.current) clearTimeout(pauseBarTimerRef.current);
       pauseBarTimerRef.current = setTimeout(() => setShowPauseBars(false), 400);
@@ -163,7 +159,7 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
     onTap?.();
   }, [finished, onTap]);
 
-  // Scrubber drag
+  // Scrubber
   const scrub = useCallback((clientX: number) => {
     const track = scrubRef.current;
     const video = videoRef.current;
@@ -174,32 +170,36 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
     setProgress(pct * duration);
   }, [duration]);
 
-  const onScrubStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const onScrubStart = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     isDraggingRef.current = true;
     videoRef.current?.pause();
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    scrub(clientX);
+    scrub(e.clientX);
   }, [scrub]);
 
   useEffect(() => {
-    const onMove = (e: MouseEvent | TouchEvent) => {
+    const onMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      scrub(clientX);
+      scrub(e.clientX);
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!isDraggingRef.current) return;
+      e.preventDefault();
+      scrub(e.touches[0].clientX);
     };
     const onUp = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
       if (!paused && !finished) videoRef.current?.play().catch(() => {});
     };
+
     window.addEventListener("mousemove", onMove);
-    window.addEventListener("touchmove", onMove, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
     window.addEventListener("mouseup", onUp);
     window.addEventListener("touchend", onUp);
     return () => {
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("touchmove", onMove);
+      window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("touchend", onUp);
     };
@@ -210,12 +210,7 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
   return (
     <div
       onClick={handleTap}
-      style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: 0,
-        cursor: "pointer",
-      }}
+      style={{ position: "absolute", inset: 0, zIndex: 0, cursor: "pointer" }}
     >
       <video
         ref={videoRef}
@@ -231,136 +226,95 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
         }}
       />
 
-      {/* Pause bars — brief flash on pause */}
+      {/* Pause bars */}
       {showPauseBars && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "none",
-            zIndex: 10,
-          }}
-        >
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          pointerEvents: "none", zIndex: 10,
+        }}>
           <div style={{ display: "flex", gap: 6 }}>
             {[0, 1].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: 4,
-                  height: 26,
-                  background: "rgba(255,255,255,0.85)",
-                  borderRadius: 2,
-                  animation: "revolvr-fade-out 0.4s ease forwards",
-                }}
-              />
+              <div key={i} style={{
+                width: 4, height: 26,
+                background: "rgba(255,255,255,0.85)",
+                borderRadius: 2,
+                animation: "revolvr-fade-out 0.4s ease forwards",
+              }} />
             ))}
           </div>
         </div>
       )}
 
-      {/* Tap for sound hint — shows briefly on first post */}
+      {/* Tap for sound hint */}
       {!unlocked && isActive && (
-        <div
-          style={{
-            position: "absolute",
-            top: 14,
-            right: 14,
-            background: "rgba(0,0,0,0.45)",
-            color: "rgba(255,255,255,0.75)",
-            fontSize: 11,
-            padding: "4px 10px",
-            borderRadius: 20,
-            pointerEvents: "none",
-            zIndex: 10,
-            animation: "revolvr-hint-fade 2.5s ease forwards",
-          }}
-        >
+        <div style={{
+          position: "absolute", top: 14, right: 14,
+          background: "rgba(0,0,0,0.45)",
+          color: "rgba(255,255,255,0.75)",
+          fontSize: 11, padding: "4px 10px", borderRadius: 20,
+          pointerEvents: "none", zIndex: 10,
+          animation: "revolvr-hint-fade 2.5s ease forwards",
+        }}>
           tap for sound
         </div>
       )}
 
       {/* Watch again overlay */}
       {finished && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0,0,0,0.55)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 8,
-            pointerEvents: "none",
-          }}
-        >
-          <span
-            style={{
-              color: "rgba(255,255,255,0.85)",
-              fontSize: 13,
-              letterSpacing: "0.04em",
-            }}
-          >
+        <div style={{
+          position: "absolute", inset: 0,
+          background: "rgba(0,0,0,0.55)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 8, pointerEvents: "none",
+        }}>
+          <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, letterSpacing: "0.04em" }}>
             tap to watch again
           </span>
         </div>
       )}
 
-      {/* Scrubber — sits at bottom of video, above gradient, below PostCaption */}
+      {/* Scrubber */}
       <div
         style={{
-          position: "absolute",
-          bottom: 108,
-          left: 16,
-          right: 80,
-          zIndex: 15,
-          pointerEvents: "auto",
+          position: "absolute", bottom: 108, left: 16, right: 80,
+          zIndex: 15, pointerEvents: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           ref={scrubRef}
           onMouseDown={onScrubStart}
-          onTouchStart={onScrubStart}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            isDraggingRef.current = true;
+            videoRef.current?.pause();
+            scrub(e.touches[0].clientX);
+          }}
           style={{
-            height: 20,
+            height: 44,
             display: "flex",
             alignItems: "center",
             cursor: "pointer",
-            padding: "8px 0",
+            touchAction: "none",
           }}
         >
-          <div
-            style={{
-              width: "100%",
-              height: 2,
-              background: "rgba(255,255,255,0.2)",
-              borderRadius: 1,
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${pct}%`,
-                background: "rgba(255,255,255,0.85)",
-                borderRadius: 1,
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#fff",
-                  position: "absolute",
-                  right: -4,
-                  top: -3,
-                }}
-              />
+          <div style={{
+            width: "100%", height: 2,
+            background: "rgba(255,255,255,0.2)",
+            borderRadius: 1, position: "relative",
+          }}>
+            <div style={{
+              height: "100%", width: `${pct}%`,
+              background: "rgba(255,255,255,0.85)",
+              borderRadius: 1, position: "relative",
+            }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: "50%",
+                background: "#fff", position: "absolute",
+                right: -4, top: -3,
+              }} />
             </div>
           </div>
         </div>
