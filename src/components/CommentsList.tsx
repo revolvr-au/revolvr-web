@@ -51,9 +51,16 @@ function CommentCard({
     <div
       style={{
         display: "flex",
-        borderRadius: 12,
+        borderRadius: isReply ? 10 : 12,
         overflow: "hidden",
-        background: isActiveReply ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.04)",
+        background: isReply
+          ? "rgba(0,229,255,0.04)"
+          : isActiveReply
+          ? "rgba(0,229,255,0.05)"
+          : "transparent",
+        ...(isReply
+          ? { border: "1px solid rgba(0,229,255,0.08)" }
+          : { borderBottom: "1px solid rgba(255,255,255,0.06)" }),
         transition: "background 0.15s ease",
       }}
     >
@@ -95,6 +102,7 @@ function CommentCard({
             background: "rgba(255,255,255,0.1)",
             flexShrink: 0,
             position: "relative",
+            boxShadow: "0 0 8px rgba(0,229,255,0.25)",
           }}
         >
           <img
@@ -119,7 +127,7 @@ function CommentCard({
               style={{
                 fontSize: 13,
                 fontWeight: 700,
-                color: "#e0f7fa",
+                color: "rgba(255,255,255,0.6)",
                 lineHeight: 1,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -164,7 +172,7 @@ function CommentCard({
                   cursor: "pointer",
                   fontSize: 11,
                   fontWeight: 500,
-                  color: "rgba(255,255,255,0.4)",
+                  color: "#00e5ff",
                   fontFamily: "inherit",
                 }}
               >

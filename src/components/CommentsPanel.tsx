@@ -201,8 +201,7 @@ export default function CommentsPanel({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "0 16px 12px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            padding: "0 16px 8px",
           }}
         >
           <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.9)" }}>Comments</span>
@@ -226,6 +225,12 @@ export default function CommentsPanel({
             <X size={14} />
           </button>
         </div>
+        <div style={{
+          height: 1,
+          background: "linear-gradient(90deg, #00e5ff, transparent)",
+          marginBottom: 4,
+          opacity: 0.3,
+        }} />
 
         {/* Scrollable comment list */}
         <div
@@ -248,14 +253,21 @@ export default function CommentsPanel({
           />
         </div>
 
-        {/* Reaction bar */}
+        {/* Unified control module */}
         <div
           style={{
             flexShrink: 0,
-            padding: "8px 16px",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(0,0,0,0.4)",
+            borderTop: "1px solid rgba(0,229,255,0.1)",
+            borderRadius: "0 0 24px 24px",
+            padding: "12px 16px",
+            paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
           }}
         >
+          {/* Reaction well */}
           <div
             style={{
               background: "rgba(0,0,0,0.3)",
@@ -290,23 +302,13 @@ export default function CommentsPanel({
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Input bar */}
-        <div
-          style={{
-            flexShrink: 0,
-            padding: "8px 16px",
-            paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
+          {/* Input row */}
           {replyTo && (
             <div
               style={{
                 fontSize: 11,
                 color: "rgba(255,255,255,0.45)",
-                marginBottom: 6,
                 paddingLeft: 4,
                 display: "flex",
                 alignItems: "center",
