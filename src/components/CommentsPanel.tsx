@@ -21,6 +21,7 @@ export default function CommentsPanel({
   const [replyTo, setReplyTo] = useState<{ id: string; userEmail: string } | null>(null);
   const [tappedReaction, setTappedReaction] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
+  const [panelHeight, setPanelHeight] = useState("75dvh");
 
   const panelRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
@@ -31,6 +32,16 @@ export default function CommentsPanel({
   useEffect(() => {
     const frame = requestAnimationFrame(() => setVisible(true));
     return () => cancelAnimationFrame(frame);
+  }, []);
+
+  // Shrink panel height when software keyboard opens
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setPanelHeight(`${Math.round(vv.height * 0.75)}px`);
+    update();
+    vv.addEventListener("resize", update);
+    return () => vv.removeEventListener("resize", update);
   }, []);
 
   const dismiss = useCallback(() => {
@@ -112,9 +123,8 @@ export default function CommentsPanel({
         onClick={(e) => e.stopPropagation()}
         style={{
           position: "relative",
-          width: "92%",
-          maxWidth: 480,
-          height: "75dvh",
+          width: "100%",
+          height: panelHeight,
           display: "flex",
           flexDirection: "column",
           background: "rgba(5, 8, 20, 0.75)",

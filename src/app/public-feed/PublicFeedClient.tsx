@@ -486,6 +486,7 @@ useEffect(() => {
         momentumStrength={momentum.strength}
         isActive={i === activeIndex}
         rewardCount={rewardMap[post.id] || 0}
+        commentsOpen={!!commentsPanelPostId}
       />
     </div>
 ))}
@@ -515,6 +516,7 @@ const Post = memo(function Post({
   momentumStrength,
   isActive,
   rewardCount,
+  commentsOpen,
 }: {
   post: any;
   liked: boolean;
@@ -529,6 +531,7 @@ const Post = memo(function Post({
   momentumStrength: number;
   isActive: boolean;
   rewardCount: number;
+  commentsOpen: boolean;
 }) {
   const [showBurst, setShowBurst] = useState(false);
   const [localBoost, setLocalBoost] = useState(0);
@@ -721,7 +724,8 @@ const Post = memo(function Post({
         </div>
       )}
 
-      <RightRail
+      {!commentsOpen && (
+        <RightRail
           liked={liked}
           onLike={handleInteract}
           onComment={handleOpenComments}
@@ -733,6 +737,7 @@ const Post = memo(function Post({
           username={post.handle ? `@${post.handle}` : undefined}
           ringTier={post.ringTier}
         />
+      )}
 
       {post.caption && (
         <div
