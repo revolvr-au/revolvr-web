@@ -2,13 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-function voltageColor(v: number): string {
-  if (v >= 100) return "#FF6B00";
-  if (v >= 50) return "#FFB800";
-  if (v >= 10) return "#00e5ff";
-  return "rgba(255,255,255,0.15)";
-}
-
 function formatAge(createdAt: string | undefined): string {
   if (!createdAt) return "[ --:--:-- ]";
   const date = new Date(createdAt);
@@ -34,7 +27,6 @@ function CommentCard({
   onReply?: () => void;
   isActiveReply?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
   const [showSubPanel, setShowSubPanel] = useState(false);
 
   const voltage = comment.voltage || 0;
@@ -51,7 +43,7 @@ function CommentCard({
 
   const words = message.split(" ");
   const isLong = words.length > 10;
-  const displayText = isReply && !expanded && isLong
+  const displayText = isReply && isLong
     ? words.slice(0, 10).join(" ") + "..."
     : message;
 
@@ -434,7 +426,7 @@ export default function CommentsList({
                     <span
                       style={{
                         fontSize: 13,
-                        color: "rgba(255,255,255,0.25)",
+                        color: "rgba(0,229,255,0.4)",
                         marginTop: 12,
                         flexShrink: 0,
                         lineHeight: 1,

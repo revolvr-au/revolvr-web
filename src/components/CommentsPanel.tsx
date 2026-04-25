@@ -307,15 +307,17 @@ export default function CommentsPanel({
           {replyTo && (
             <div
               style={{
-                fontSize: 11,
-                color: "rgba(255,255,255,0.45)",
+                fontSize: 10,
+                fontFamily: "'JetBrains Mono', monospace",
+                color: "rgba(0,229,255,0.6)",
+                letterSpacing: "0.08em",
                 paddingLeft: 4,
                 display: "flex",
                 alignItems: "center",
                 gap: 6,
               }}
             >
-              <span>Replying to @{replyTo.userEmail}</span>
+              <span>[ REPLY → @{replyTo.userEmail.split("@")[0]} ]</span>
               <button
                 onClick={() => setReplyTo(null)}
                 type="button"
@@ -340,7 +342,7 @@ export default function CommentsPanel({
               onKeyDown={(e) => e.key === "Enter" && sendComment(commentText)}
               onFocus={(e) => { e.currentTarget.style.boxShadow = "0 0 0 1px rgba(0,229,255,0.3)"; }}
               onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}
-              placeholder={replyTo ? `Reply to @${replyTo.userEmail}...` : "Add to the conversation..."}
+              placeholder={replyTo ? `Reply to @${replyTo.userEmail.split("@")[0]}...` : "Add to the conversation..."}
               style={{
                 flex: 1,
                 borderRadius: 20,
