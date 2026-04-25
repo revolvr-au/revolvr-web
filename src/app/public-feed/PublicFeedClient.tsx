@@ -7,6 +7,7 @@ import RightRail from "@/components/RightRail";
 import PostCaption from "@/components/PostCaption";
 import CommentsPanel from "@/components/CommentsPanel";
 import { useRouter } from "next/navigation";
+import VideoPlayer from "@/components/VideoPlayer";
 
 type AnalyticsPayload = {
   surface: string;
@@ -666,40 +667,29 @@ const Post = memo(function Post({
       }}
     >
       {post.muxPlaybackId ? (
-        <video
-          src={`https://stream.mux.com/${post.muxPlaybackId}/high.mp4`}
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            zIndex: 0,
-          }}
-        />
-      ) : post.imageUrl ? (
-        <img
-          src={post.imageUrl}
-          loading="lazy"
-          onClick={handleTap}
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            objectPosition: "center center",
-            zIndex: 0,
-            cursor: "pointer",
-          }}
-        />
-      ) : null}
+  <VideoPlayer
+    playbackId={post.muxPlaybackId}
+    isActive={isActive}
+    onTap={handleTap}
+  />
+) : post.imageUrl ? (
+  <img
+    src={post.imageUrl}
+    loading="lazy"
+    onClick={handleTap}
+    style={{
+      position: "absolute",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      objectPosition: "center center",
+      zIndex: 0,
+      cursor: "pointer",
+    }}
+  />
+) : null}
 
       {showBurst && (
         <div
