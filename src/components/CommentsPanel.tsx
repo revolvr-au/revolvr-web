@@ -21,7 +21,6 @@ export default function CommentsPanel({
   const [replyTo, setReplyTo] = useState<{ id: string; userEmail: string } | null>(null);
   const [tappedReaction, setTappedReaction] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState(0);
-  const [panelHeight, setPanelHeight] = useState("75dvh");
 
   const panelRef = useRef<HTMLDivElement>(null);
   const handleRef = useRef<HTMLDivElement>(null);
@@ -34,14 +33,27 @@ export default function CommentsPanel({
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Shrink panel height when software keyboard opens
+  // iOS keyboard: reposition + resize panel via direct DOM so React state
+  // doesn't cause a delayed re-render that lets the panel jump first.
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => setPanelHeight(`${Math.round(vv.height * 0.75)}px`);
-    update();
-    vv.addEventListener("resize", update);
-    return () => vv.removeEventListener("resize", update);
+    const panel = document.getElementById("comments-panel");
+    if (!panel) return;
+
+    const handler = () => {
+      if (!window.visualViewport) return;
+      const vh = window.visualViewport.height;
+      const offsetTop = window.visualViewport.offsetTop;
+      panel.style.height = `${vh * 0.75}px`;
+      panel.style.top = `${offsetTop + vh * 0.125}px`;
+    };
+
+    window.visualViewport?.addEventListener("resize", handler);
+    window.visualViewport?.addEventListener("scroll", handler);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", handler);
+      window.visualViewport?.removeEventListener("scroll", handler);
+    };
   }, []);
 
   const dismiss = useCallback(() => {
@@ -113,18 +125,19 @@ export default function CommentsPanel({
         position: "fixed",
         inset: 0,
         zIndex: 200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
       }}
     >
       <div
+        id="comments-panel"
         ref={panelRef}
         onClick={(e) => e.stopPropagation()}
         style={{
-          position: "relative",
+          position: "fixed",
+          left: 0,
+          right: 0,
+          top: "12.5dvh",
           width: "100%",
-          height: panelHeight,
+          height: "75dvh",
           display: "flex",
           flexDirection: "column",
           background: "rgba(5, 8, 20, 0.75)",
