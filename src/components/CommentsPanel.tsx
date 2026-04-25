@@ -41,10 +41,10 @@ export default function CommentsPanel({
 
     const handler = () => {
       if (!window.visualViewport) return;
-      const vh = window.visualViewport.height;
-      const offsetTop = window.visualViewport.offsetTop;
-      panel.style.height = `${vh * 0.75}px`;
-      panel.style.top = `${offsetTop + vh * 0.125}px`;
+      const vv = window.visualViewport;
+      // Lock height, only slide top so the bottom of the panel
+      // tracks the top of the keyboard instead of shrinking.
+      panel.style.top = `${vv.offsetTop + (vv.height - panel.offsetHeight)}px`;
     };
 
     window.visualViewport?.addEventListener("resize", handler);
@@ -138,6 +138,7 @@ export default function CommentsPanel({
           top: "12.5dvh",
           width: "100%",
           height: "75dvh",
+          maxHeight: "75vh",
           display: "flex",
           flexDirection: "column",
           background: "rgba(5, 8, 20, 0.75)",
@@ -322,7 +323,7 @@ export default function CommentsPanel({
                 border: "1px solid rgba(255,255,255,0.08)",
                 padding: "10px 14px",
                 height: 40,
-                fontSize: 14,
+                fontSize: 16,
                 color: "white",
                 outline: "none",
                 minWidth: 0,
