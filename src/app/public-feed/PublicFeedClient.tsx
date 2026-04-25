@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import RightRail from "@/components/RightRail";
 import PostCaption from "@/components/PostCaption";
+import CommentsPanel from "@/components/CommentsPanel";
 import { useRouter } from "next/navigation";
 
 type AnalyticsPayload = {
@@ -108,6 +109,7 @@ export default function PublicFeedClient() {
   });
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [commentsPanelPostId, setCommentsPanelPostId] = useState<string | null>(null);
   const userEmailRef = useRef<string | null>(null);
   const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
   const stableNoiseRef = useRef<Record<string, number>>({});
@@ -346,8 +348,8 @@ useEffect(() => {
   );
 
   const openComments = useCallback((postId: string) => {
-    router.push(`/comments/${postId}`);
-  }, [router]);
+    setCommentsPanelPostId(postId);
+  }, []);
 
   const handleShare = useCallback(async (postId: string) => {
     const post = posts.find((candidate) => String(candidate.id) === postId);
@@ -465,6 +467,7 @@ useEffect(() => {
       
         {loading && limitedPosts.length === 0 && <PostSkeleton />}
         {limitedPosts.map((post, i) => (
+
     <div
       key={post.id ?? i}
       className="h-full w-full flex-shrink-0 transition-transform transition-shadow duration-300 ease-out"
@@ -487,6 +490,14 @@ useEffect(() => {
     </div>
 ))}
       </div>
+
+      {commentsPanelPostId && (
+        <CommentsPanel
+          postId={commentsPanelPostId}
+          userEmail={userEmail}
+          onClose={() => setCommentsPanelPostId(null)}
+        />
+      )}
     </div>
   );
 }
