@@ -257,6 +257,7 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
         muted
         playsInline
         preload="auto"
+        poster={`https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=800`}
         style={{
           position: "absolute",
           inset: 0,
