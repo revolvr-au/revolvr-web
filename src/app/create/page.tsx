@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function CreatePage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [isVideo, setIsVideo] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
@@ -22,10 +22,11 @@ export default function CreatePage() {
     });
   }, []);
 
-  const handleFile = (f: File) => {
-    setFile(f);
-    setIsVideo(f.type.startsWith("video/"));
-    setPreview(URL.createObjectURL(f));
+  const handleFiles = (selected: FileList) => {
+    const arr = Array.from(selected).slice(0, 10);
+    setFiles(arr);
+    setPreviews(arr.map((f) => URL.createObjectURL(f)));
+    setActiveIndex(0);
     setUploadProgress(0);
     setStatusMsg("");
   };
@@ -74,45 +75,37 @@ export default function CreatePage() {
   };
 
   const handleSubmit = async () => {
-    if (!file || !userEmail) return;
+    if (!files.length || !userEmail) return;
     setLoading(true);
-    setStatusMsg(isVideo ? "Preparing upload..." : "Uploading...");
 
     try {
-      let postBody: Record<string, string | null>;
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        const isVid = f.type.startsWith("video/");
+        setStatusMsg(`Posting ${i + 1} of ${files.length}...`);
 
-      if (isVideo) {
-        const { playbackId } = await uploadVideoToMux(file);
-        postBody = {
-          caption,
-          userEmail,
-          muxPlaybackId: playbackId,
-          media_url: null,
-        };
-      } else {
-        const mediaUrl = await uploadImageToSupabase(file);
-        postBody = { caption, userEmail, media_url: mediaUrl };
-      }
+        let postBody: Record<string, string | null>;
 
-      setStatusMsg("Creating post...");
-      const postRes = await fetch("/api/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(postBody),
-      });
+        if (isVid) {
+          const { playbackId } = await uploadVideoToMux(f);
+          postBody = { caption, userEmail, muxPlaybackId: playbackId, media_url: null };
+        } else {
+          const mediaUrl = await uploadImageToSupabase(f);
+          postBody = { caption, userEmail, media_url: mediaUrl };
+        }
 
-      if (!postRes.ok) {
-        const err = await postRes.json().catch(() => ({}));
-        throw new Error(err.error ?? "Post creation failed");
+        await fetch("/api/posts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(postBody),
+        });
       }
 
       router.push("/public-feed");
     } catch (err) {
-      console.error(err);
       const msg = err instanceof Error ? err.message : "Something failed";
       alert(msg);
       setStatusMsg("");
-      setUploadProgress(0);
     }
 
     setLoading(false);
@@ -120,7 +113,6 @@ export default function CreatePage() {
 
   const loadingLabel = () => {
     if (!loading) return "Post";
-    if (isVideo && uploadProgress > 0 && uploadProgress < 100) return `Uploading ${uploadProgress}%`;
     return statusMsg || "Posting...";
   };
 
@@ -164,7 +156,7 @@ export default function CreatePage() {
         overflow: "hidden",
         flexShrink: 0,
       }}>
-        {!preview ? (
+        {previews.length === 0 ? (
           <label style={{
             position: "absolute",
             inset: 0,
@@ -182,43 +174,42 @@ export default function CreatePage() {
             <input
               type="file"
               accept="image/*,video/*"
+              multiple
               hidden
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
+                if (e.target.files?.length) handleFiles(e.target.files);
               }}
             />
           </label>
         ) : (
           <>
-            {isVideo ? (
-              <video
-                src={preview}
-                autoPlay
-                muted
-                loop
-                playsInline
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
+            {files[activeIndex]?.type.startsWith("video/") ? (
+              <video src={previews[activeIndex]} autoPlay muted loop playsInline
+                style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             ) : (
-              <img
-                src={preview}
-                alt="preview"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-              />
+              <img src={previews[activeIndex]} alt="preview"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            )}
+            {previews.length > 1 && (
+              <div style={{
+                position: "absolute", bottom: 10, left: 0, right: 0,
+                display: "flex", justifyContent: "center", gap: 5,
+              }}>
+                {previews.map((_, i) => (
+                  <div key={i} onClick={() => setActiveIndex(i)} style={{
+                    width: 6, height: 6, borderRadius: "50%", cursor: "pointer",
+                    background: i === activeIndex ? "#fff" : "rgba(255,255,255,0.4)",
+                  }} />
+                ))}
+              </div>
             )}
             <button
-              onClick={() => { setFile(null); setPreview(null); setIsVideo(false); setUploadProgress(0); setStatusMsg(""); }}
+              onClick={() => { setFiles([]); setPreviews([]); setActiveIndex(0); }}
               style={{
-                position: "absolute",
-                top: 10, right: 10,
-                background: "rgba(0,0,0,0.6)",
-                border: "none",
-                borderRadius: "50%",
-                width: 30, height: 30,
-                color: "white",
-                fontSize: 14,
-                cursor: "pointer",
+                position: "absolute", top: 10, right: 10,
+                background: "rgba(0,0,0,0.6)", border: "none",
+                borderRadius: "50%", width: 30, height: 30,
+                color: "white", fontSize: 14, cursor: "pointer",
               }}
             >✕</button>
           </>
@@ -226,7 +217,7 @@ export default function CreatePage() {
       </div>
 
       {/* PROGRESS BAR */}
-      {loading && isVideo && uploadProgress > 0 && (
+      {loading && uploadProgress > 0 && (
         <div style={{ width: "100%", height: 3, background: "rgba(255,255,255,0.1)" }}>
           <div style={{
             height: "100%",
@@ -276,17 +267,17 @@ export default function CreatePage() {
 
         <button
           onClick={handleSubmit}
-          disabled={!file || loading}
+          disabled={!files.length || loading}
           style={{
             width: "100%",
             padding: 14,
             borderRadius: 999,
             border: "none",
-            background: !file ? "rgba(255,255,255,0.1)" : "white",
-            color: !file ? "rgba(255,255,255,0.4)" : "black",
+            background: !files.length ? "rgba(255,255,255,0.1)" : "white",
+            color: !files.length ? "rgba(255,255,255,0.4)" : "black",
             fontWeight: 600,
             fontSize: 16,
-            cursor: !file ? "not-allowed" : "pointer",
+            cursor: !files.length ? "not-allowed" : "pointer",
             transition: "all 0.2s ease",
           }}
         >
