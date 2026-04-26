@@ -19,7 +19,7 @@ export default function PostCaption({ username, caption, avatarUrl, postId, late
   return (
     <div style={{
       position: "absolute",
-      bottom: 100,
+      bottom: 96,
       left: 16,
       right: 80,
       zIndex: 20,
