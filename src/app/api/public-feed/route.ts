@@ -29,6 +29,10 @@ export async function GET() {
           take: 1,
           select: { id: true, body: true, userEmail: true },
         },
+        media: {
+          orderBy: { order: "asc" },
+          select: { type: true, url: true, order: true },
+        },
       },
     });
 
@@ -75,6 +79,11 @@ export async function GET() {
         imageUrl: sanitizeImageUrl(p.imageUrl),
         cloudflareVideoId: p.cloudflareVideoId ?? null,
         muxPlaybackId: p.muxPlaybackId ?? null,
+        media: p.media?.map((m) => ({
+          type: m.type,
+          url: m.type === "IMAGE" ? sanitizeImageUrl(m.url) : m.url,
+          order: m.order,
+        })) ?? [],
         userEmail: p.userEmail,
         handle,
         avatarUrl: avatarUrl ? sanitizeImageUrl(avatarUrl) : null,

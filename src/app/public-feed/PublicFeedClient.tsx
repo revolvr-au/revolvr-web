@@ -8,6 +8,7 @@ import PostCaption from "@/components/PostCaption";
 import CommentsPanel from "@/components/CommentsPanel";
 import { useRouter } from "next/navigation";
 import VideoPlayer from "@/components/VideoPlayer";
+import MediaCarousel from "@/components/MediaCarousel";
 
 type AnalyticsPayload = {
   surface: string;
@@ -682,6 +683,8 @@ const Post = memo(function Post({
     onTap={handleTap}
     scrollContainerRef={scrollContainerRef}
   />
+) : post.media?.length > 1 ? (
+  <MediaCarousel media={post.media} onTap={handleTap} />
 ) : post.imageUrl ? (
   <img
     src={post.imageUrl}
