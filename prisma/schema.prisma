@@ -23,10 +23,15 @@ model Post {
   sparkEligible     Boolean        @default(false)
   voltage           Int            @default(0)
   expiresAt         DateTime?
-  comments          Comment[]      @relation("PostComments")
-  likes             Like[]         @relation("PostLikes")
-  media             PostMedia[]    @relation("PostMedia")
-  reactions         PostReaction[] @relation("PostReactions")
+  liveStreamId  String?   @map("live_stream_id")
+  liveStartedAt DateTime? @map("live_started_at") @db.Timestamptz(6)
+  liveEndedAt   DateTime? @map("live_ended_at") @db.Timestamptz(6)
+
+  comments   Comment[]      @relation("PostComments")
+  likes      Like[]         @relation("PostLikes")
+  media      PostMedia[]    @relation("PostMedia")
+  reactions  PostReaction[] @relation("PostReactions")
+  liveStream MuxLiveStream? @relation("LiveStreamPosts", fields: [liveStreamId], references: [id])
 
   @@index([createdAt])
   @@index([userEmail], map: "Post_userEmail_idx")
@@ -471,6 +476,7 @@ enum PostType {
   SPARK
   RAW
   PODCAST
+  LIVE
 
   @@schema("public")
 }
@@ -642,6 +648,33 @@ enum RingTier {
   CORPORATE
   RED
   GOVERNMENT
+
+  @@schema("public")
+}
+
+model MuxLiveStream {
+  id              String           @id @default(uuid())
+  muxLiveStreamId String           @unique
+  muxStreamKey    String
+  muxPlaybackId   String           @unique
+  status          LiveStreamStatus @default(IDLE)
+  creatorEmail    String
+  liveStartedAt   DateTime?
+  liveEndedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  posts Post[] @relation("LiveStreamPosts")
+
+  @@index([creatorEmail])
+  @@index([status])
+  @@schema("public")
+}
+
+enum LiveStreamStatus {
+  IDLE
+  ACTIVE
+  ENDED
 
   @@schema("public")
 }
