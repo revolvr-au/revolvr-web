@@ -282,7 +282,7 @@ export default function VideoPlayer({ playbackId, isActive, onTap, scrollContain
       {/* Scrubber */}
       <div
         style={{
-          position: "absolute", bottom: 160, left: 16, right: 80,
+          position: "absolute", bottom: 96, left: 16, right: 80,
           zIndex: 25, pointerEvents: "auto",
         }}
         onClick={(e) => e.stopPropagation()}
