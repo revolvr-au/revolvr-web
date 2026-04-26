@@ -12,7 +12,8 @@ type MediaItem = {
 // POST /api/posts/[id]/media — attach media items to an existing post
 export async function POST(req: Request, { params }: { params: any }) {
   try {
-    const postId = String(params?.id ?? "").trim();
+    const { id } = await Promise.resolve(params);
+    const postId = String(id ?? "").trim();
     if (!postId) {
       return NextResponse.json({ error: "missing_id" }, { status: 400 });
     }
