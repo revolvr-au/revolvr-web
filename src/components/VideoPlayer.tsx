@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, type RefObject } from "react";
 
 // Global sound unlock — one tap anywhere unlocks audio for the session
 let globalUnlocked = false;
@@ -24,9 +24,10 @@ type Props = {
   playbackId: string;
   isActive: boolean;
   onTap?: () => void;
+  scrollContainerRef?: RefObject<HTMLDivElement>;
 };
 
-export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
+export default function VideoPlayer({ playbackId, isActive, onTap, scrollContainerRef }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
   const loopCountRef = useRef(0);
@@ -190,6 +191,10 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
     const onUp = () => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
+      if (scrollContainerRef?.current) {
+        scrollContainerRef.current.style.overflowY = "auto";
+        scrollContainerRef.current.style.scrollSnapType = "y mandatory";
+      }
       if (!paused && !finished) videoRef.current?.play().catch(() => {});
     };
 
@@ -203,7 +208,7 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("touchend", onUp);
     };
-  }, [scrub, paused, finished]);
+  }, [scrub, paused, finished, scrollContainerRef]);
 
   const pct = duration > 0 ? (progress / duration) * 100 : 0;
 
@@ -288,6 +293,10 @@ export default function VideoPlayer({ playbackId, isActive, onTap }: Props) {
           onTouchStart={(e) => {
             e.stopPropagation();
             e.preventDefault();
+            if (scrollContainerRef?.current) {
+              scrollContainerRef.current.style.overflowY = "hidden";
+              scrollContainerRef.current.style.scrollSnapType = "none";
+            }
             isDraggingRef.current = true;
             videoRef.current?.pause();
             scrub(e.touches[0].clientX);

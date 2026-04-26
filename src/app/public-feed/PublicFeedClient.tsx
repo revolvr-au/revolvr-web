@@ -114,6 +114,7 @@ export default function PublicFeedClient() {
   const userEmailRef = useRef<string | null>(null);
   const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
   const stableNoiseRef = useRef<Record<string, number>>({});
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -454,6 +455,7 @@ useEffect(() => {
   }}
 >
         <div
+  ref={scrollContainerRef}
   onScroll={handleFeedScroll}
   style={{
     height: "100dvh",
@@ -488,6 +490,7 @@ useEffect(() => {
         isActive={i === activeIndex}
         rewardCount={rewardMap[post.id] || 0}
         commentsOpen={!!commentsPanelPostId}
+        scrollContainerRef={scrollContainerRef}
       />
     </div>
 ))}
@@ -518,6 +521,7 @@ const Post = memo(function Post({
   isActive,
   rewardCount,
   commentsOpen,
+  scrollContainerRef,
 }: {
   post: any;
   liked: boolean;
@@ -533,6 +537,7 @@ const Post = memo(function Post({
   isActive: boolean;
   rewardCount: number;
   commentsOpen: boolean;
+  scrollContainerRef: React.RefObject<HTMLDivElement>;
 }) {
   const [showBurst, setShowBurst] = useState(false);
   const [localBoost, setLocalBoost] = useState(0);
@@ -671,6 +676,7 @@ const Post = memo(function Post({
     playbackId={post.muxPlaybackId}
     isActive={isActive}
     onTap={handleTap}
+    scrollContainerRef={scrollContainerRef}
   />
 ) : post.imageUrl ? (
   <img
