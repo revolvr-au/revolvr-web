@@ -488,6 +488,7 @@ useEffect(() => {
         interactionCount={interactionMap[String(post.id)] || 0}
         momentumStrength={momentum.strength}
         isActive={i === activeIndex}
+        isNext={i === activeIndex + 1}
         rewardCount={rewardMap[post.id] || 0}
         commentsOpen={!!commentsPanelPostId}
         scrollContainerRef={scrollContainerRef}
@@ -519,6 +520,7 @@ const Post = memo(function Post({
   interactionCount,
   momentumStrength,
   isActive,
+  isNext,
   rewardCount,
   commentsOpen,
   scrollContainerRef,
@@ -535,6 +537,7 @@ const Post = memo(function Post({
   interactionCount: number;
   momentumStrength: number;
   isActive: boolean;
+  isNext: boolean;
   rewardCount: number;
   commentsOpen: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
@@ -675,6 +678,7 @@ const Post = memo(function Post({
   <VideoPlayer
     playbackId={post.muxPlaybackId}
     isActive={isActive}
+    isNext={isNext}
     onTap={handleTap}
     scrollContainerRef={scrollContainerRef}
   />

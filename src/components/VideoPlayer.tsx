@@ -23,11 +23,12 @@ const MAX_LOOPS = 4;
 type Props = {
   playbackId: string;
   isActive: boolean;
+  isNext?: boolean;
   onTap?: () => void;
   scrollContainerRef?: RefObject<HTMLDivElement>;
 };
 
-export default function VideoPlayer({ playbackId, isActive, onTap, scrollContainerRef }: Props) {
+export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrollContainerRef }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
   const loopCountRef = useRef(0);
@@ -68,6 +69,34 @@ export default function VideoPlayer({ playbackId, isActive, onTap, scrollContain
       hlsRef.current = null;
     };
   }, [playbackId]);
+
+  // Preload next video
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isNext) return;
+
+    const src = `https://stream.mux.com/${playbackId}.m3u8`;
+
+    async function preload() {
+      const Hls = (await import("hls.js")).default;
+      if (Hls.isSupported()) {
+        const hls = new Hls({ enableWorker: false, maxBufferLength: 10 });
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video!);
+        video!.preload = "auto";
+      }
+    }
+
+    preload();
+
+    return () => {
+      if (!isNext) {
+        hlsRef.current?.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [isNext, playbackId]);
 
   // Play/pause based on active state
   useEffect(() => {
