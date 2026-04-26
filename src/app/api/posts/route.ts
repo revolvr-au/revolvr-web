@@ -35,13 +35,6 @@ export async function POST(req: Request) {
 
     console.log("POST BODY:", body); // 👈 debug (important)
 
-    if (!body.media_url && !body.cloudflareVideoId && !body.muxPlaybackId) {
-      return NextResponse.json(
-        { error: "media_url, cloudflareVideoId, or muxPlaybackId required" },
-        { status: 400 }
-      );
-    }
-
     if (!body.userEmail) {
       return NextResponse.json(
         { error: "userEmail missing" },

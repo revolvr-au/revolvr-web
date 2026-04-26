@@ -79,26 +79,44 @@ export default function CreatePage() {
     setLoading(true);
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        const f = files[i];
-        const isVid = f.type.startsWith("video/");
-        setStatusMsg(`Posting ${i + 1} of ${files.length}...`);
+      // 1. Create the post shell
+      setStatusMsg("Creating post...");
+      const postRes = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ caption, userEmail }),
+      });
+      if (!postRes.ok) {
+        const e = await postRes.json().catch(() => ({}));
+        throw new Error(e.error ?? "Post creation failed");
+      }
+      const { post } = await postRes.json();
 
-        let postBody: Record<string, string | null>;
+      // 2. Upload all files in parallel
+      setStatusMsg(`Uploading ${files.length} file${files.length > 1 ? "s" : ""}...`);
+      const media = await Promise.all(
+        files.map(async (f, i) => {
+          const isVid = f.type.startsWith("video/");
+          if (isVid) {
+            const { playbackId } = await uploadVideoToMux(f);
+            return { type: "VIDEO" as const, url: playbackId, order: i };
+          } else {
+            const url = await uploadImageToSupabase(f);
+            return { type: "IMAGE" as const, url, order: i };
+          }
+        })
+      );
 
-        if (isVid) {
-          const { playbackId } = await uploadVideoToMux(f);
-          postBody = { caption, userEmail, muxPlaybackId: playbackId, media_url: null };
-        } else {
-          const mediaUrl = await uploadImageToSupabase(f);
-          postBody = { caption, userEmail, media_url: mediaUrl };
-        }
-
-        await fetch("/api/posts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(postBody),
-        });
+      // 3. Attach media to the post
+      setStatusMsg("Saving...");
+      const mediaRes = await fetch(`/api/posts/${post.id}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ media }),
+      });
+      if (!mediaRes.ok) {
+        const e = await mediaRes.json().catch(() => ({}));
+        throw new Error(e.error ?? "Failed to save media");
       }
 
       router.push("/public-feed");
