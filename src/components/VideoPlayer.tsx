@@ -107,11 +107,17 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
       loopCountRef.current = 0;
       setFinished(false);
       setPaused(false);
-      video.currentTime = 0;
       video.muted = !globalUnlocked;
-      video.play().catch(() => {});
+      if (video.currentTime > 0.5) video.currentTime = 0;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          setTimeout(() => video.play().catch(() => {}), 100);
+        });
+      }
     } else {
       video.pause();
+      video.currentTime = 0;
     }
   }, [isActive]);
 
