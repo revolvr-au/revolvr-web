@@ -71,10 +71,10 @@ const supabase = createServerClient(
     playback_policy: ['public'],
     latency_mode: 'low',
     reconnect_window: 60,
+    passthrough: dbStream.id,
     new_asset_settings: {
       playback_policy: ['public'],
       mp4_support: 'capped-1080p',
-      passthrough: dbStream.id,
     },
   })
 
