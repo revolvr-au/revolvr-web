@@ -56,11 +56,12 @@ const supabase = createServerClient(
   }
 
   // Store DB record first so we have the ID for passthrough
+  const tempId = `pending_${Date.now()}_${Math.random().toString(36).slice(2)}`
   const dbStream = await prisma.muxLiveStream.create({
     data: {
-      muxLiveStreamId: 'pending',
-      muxStreamKey: 'pending',
-      muxPlaybackId: 'pending',
+      muxLiveStreamId: tempId,
+      muxStreamKey: tempId,
+      muxPlaybackId: tempId,
       status: 'IDLE',
       creatorEmail: user.email!,
     }
