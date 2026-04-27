@@ -12,8 +12,8 @@ const mux = new Mux({
 export async function POST(req: NextRequest) {
   const cookieStore = cookies()
   const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     { cookies: { getAll: () => cookieStore.getAll() } }
   )
 
@@ -22,63 +22,63 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const profile = await prisma.creatorProfile.findUnique({
+  // Get display name from profiles table — works for any user
+  const profile = await prisma.profiles.findUnique({
     where: { email: user.email! },
-    select: { email: true, displayName: true, ringTier: true }
+    select: { display_name: true }
   })
 
-  if (!profile) {
-    return NextResponse.json({ error: 'Creator profile not found' }, { status: 404 })
-  }
+  const displayName = profile?.display_name ?? user.email!.split('@')[0]
 
-  // Check for existing active stream — one live at a time
+  // One live stream at a time
   const existing = await prisma.muxLiveStream.findFirst({
     where: { creatorEmail: user.email!, status: 'ACTIVE' }
   })
   if (existing) {
     return NextResponse.json({
       error: 'You already have an active stream',
+      streamId: existing.id,
       playbackId: existing.muxPlaybackId,
     }, { status: 409 })
   }
 
   // Create Mux live stream
-const liveStream = await mux.video.liveStreams.create({
-  playback_policy: ['public'],
-  latency_mode: 'low',
-  reconnect_window: 60,
-  new_asset_settings: {
+  const liveStream = await mux.video.liveStreams.create({
     playback_policy: ['public'],
-    mp4_support: 'capped-1080p',
-  },
-})
+    latency_mode: 'low',
+    reconnect_window: 60,
+    new_asset_settings: {
+      playback_policy: ['public'],
+      mp4_support: 'capped-1080p',
+    },
+  })
 
-const streamKey = liveStream.stream_key!
-const playbackId = liveStream.playback_ids?.[0]?.id!
-const muxLiveStreamId = liveStream.id!
+  const streamKey = liveStream.stream_key!
+  const playbackId = liveStream.playback_ids?.[0]?.id!
+  const muxLiveStreamId = liveStream.id!
 
-// Store in DB
-const dbStream = await prisma.muxLiveStream.create({
-  data: {
-    muxLiveStreamId,
-    muxStreamKey: streamKey,
-    muxPlaybackId: playbackId,
-    status: 'IDLE',
-    creatorEmail: user.email!,
-  }
-})
+  // Store in DB
+  const dbStream = await prisma.muxLiveStream.create({
+    data: {
+      muxLiveStreamId,
+      muxStreamKey: streamKey,
+      muxPlaybackId: playbackId,
+      status: 'IDLE',
+      creatorEmail: user.email!,
+    }
+  })
 
-// Update Mux stream with passthrough so VOD links back on recording.ready
-await mux.video.liveStreams.update(muxLiveStreamId, {
-  new_asset_settings: { passthrough: dbStream.id }
-} as any)
+  // Update Mux stream with passthrough so VOD links back on recording.ready
+  await mux.video.liveStreams.update(muxLiveStreamId, {
+    new_asset_settings: { passthrough: dbStream.id }
+  } as any)
 
-  // Create the feed Post immediately so it's ready when stream goes active
+  // Create feed post immediately
   await prisma.post.create({
     data: {
       userEmail: user.email!,
       imageUrl: '',
-      caption: `${profile.displayName} is live`,
+      caption: `${displayName} is live`,
       postType: 'LIVE',
       muxPlaybackId: playbackId,
       liveStreamId: dbStream.id,
