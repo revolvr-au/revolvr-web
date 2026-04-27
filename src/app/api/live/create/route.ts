@@ -55,7 +55,18 @@ const supabase = createServerClient(
     }, { status: 409 })
   }
 
-  // Create Mux live stream
+  // Store DB record first so we have the ID for passthrough
+  const dbStream = await prisma.muxLiveStream.create({
+    data: {
+      muxLiveStreamId: 'pending',
+      muxStreamKey: 'pending',
+      muxPlaybackId: 'pending',
+      status: 'IDLE',
+      creatorEmail: user.email!,
+    }
+  })
+
+  // Create Mux live stream with passthrough set from the start
   const liveStream = await mux.video.liveStreams.create({
     playback_policy: ['public'],
     latency_mode: 'low',
@@ -63,6 +74,7 @@ const supabase = createServerClient(
     new_asset_settings: {
       playback_policy: ['public'],
       mp4_support: 'capped-1080p',
+      passthrough: dbStream.id,
     },
   })
 
@@ -70,21 +82,15 @@ const supabase = createServerClient(
   const playbackId = liveStream.playback_ids?.[0]?.id!
   const muxLiveStreamId = liveStream.id!
 
-  // Store in DB
-  const dbStream = await prisma.muxLiveStream.create({
+  // Update DB record with real Mux IDs
+  await prisma.muxLiveStream.update({
+    where: { id: dbStream.id },
     data: {
       muxLiveStreamId,
       muxStreamKey: streamKey,
       muxPlaybackId: playbackId,
-      status: 'IDLE',
-      creatorEmail: user.email!,
     }
   })
-
-  // Update Mux stream with passthrough so VOD links back on recording.ready
-  await mux.video.liveStreams.update(muxLiveStreamId, {
-    new_asset_settings: { passthrough: dbStream.id }
-  } as any)
 
   // Create feed post immediately
   await prisma.post.create({
