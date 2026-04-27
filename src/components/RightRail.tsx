@@ -14,6 +14,8 @@ type Props = {
   onReward: () => void;
   onCreate: () => void;
   onHome?: () => void;
+  onGoLive?: () => void;
+  isCreator?: boolean;
   rewardCount: number;
   avatarUrl?: string;
   username?: string;
@@ -29,6 +31,8 @@ export default function RightRail({
   onShare,
   onReward,
   onCreate,
+  onGoLive,
+  isCreator = false,
   rewardCount,
   avatarUrl,
   username,
@@ -188,6 +192,44 @@ export default function RightRail({
 
       {/* ── CREATE ── */}
       <Plus size={32} strokeWidth={1.5} onClick={onCreate} style={{ cursor: "pointer" }} />
+
+      {/* ── GO LIVE ── */}
+      {isCreator && (
+        <div
+          onClick={onGoLive}
+          style={{
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
+          }}
+        >
+          <div style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: "#E5004C",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}>
+            <div style={{
+              width: 10,
+              height: 10,
+              borderRadius: "50%",
+              background: "#fff",
+            }} />
+          </div>
+          <span style={{
+            fontSize: 7,
+            letterSpacing: "1.5px",
+            fontFamily: "monospace",
+            textTransform: "uppercase",
+            color: "#E5004C",
+          }}>live</span>
+        </div>
+      )}
 
       {/* ── PROFILE ── */}
       <User size={30} strokeWidth={1.5} onClick={() => router.push("/me")} style={{ marginTop: 4, cursor: "pointer" }} />

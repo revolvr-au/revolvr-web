@@ -111,6 +111,7 @@ export default function PublicFeedClient() {
   });
   const router = useRouter();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isCreator, setIsCreator] = useState(false);
   const [commentsPanelPostId, setCommentsPanelPostId] = useState<string | null>(null);
   const userEmailRef = useRef<string | null>(null);
   const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
@@ -124,6 +125,11 @@ export default function PublicFeedClient() {
       userEmailRef.current = email;
       setUserEmail(email);
     });
+    // Check creator status
+    fetch("/api/creator/me")
+      .then(r => r.json())
+      .then(d => { if (d?.email) setIsCreator(true) })
+      .catch(() => {})
   }, []);
 
   useEffect(() => {
@@ -404,6 +410,14 @@ useEffect(() => {
     router.push("/create");
   }, [router]);
 
+  const handleGoLive = useCallback(async () => {
+    const res = await fetch("/api/live/create", { method: "POST" })
+    const data = await res.json()
+    if (data.streamId) {
+      router.push(`/live/${data.streamId}`)
+    }
+  }, [router]);
+
   const handleDoubleTapLike = useCallback((postId: string) => {
     setLikedMap((prev) => {
       if (prev[postId]) return prev;
@@ -484,6 +498,8 @@ useEffect(() => {
         onShare={handleShare}
         onReward={handleReward}
         onCreate={handleCreate}
+        onGoLive={handleGoLive}
+        isCreator={isCreator}
         onInteract={handleInteract}
         currentUserId={userEmail}
         interactionCount={interactionMap[String(post.id)] || 0}
@@ -516,6 +532,8 @@ const Post = memo(function Post({
   onShare,
   onReward,
   onCreate,
+  onGoLive,
+  isCreator,
   onInteract,
   currentUserId,
   interactionCount,
@@ -533,6 +551,8 @@ const Post = memo(function Post({
   onShare: (postId: string) => void;
   onReward: (postId: string) => void;
   onCreate: () => void;
+  onGoLive: () => void;
+  isCreator: boolean;
   onInteract: (postId: string) => void;
   currentUserId: string | null;
   interactionCount: number;
@@ -777,6 +797,8 @@ const Post = memo(function Post({
           onShare={handleShare}
           onReward={handleReward}
           onCreate={handleCreate}
+          onGoLive={onGoLive}
+          isCreator={isCreator}
           rewardCount={rewardCount}
           avatarUrl={post.avatarUrl}
           username={post.handle ? `@${post.handle}` : undefined}
