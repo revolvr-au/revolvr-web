@@ -19,26 +19,33 @@ function sanitizeImageUrl(url: string | null | undefined): string | null {
 
 export async function GET() {
   try {
-    const posts = await prisma.post.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      include: {
-        comments: {
-          where: { parentId: null },
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { id: true, body: true, userEmail: true },
+    const [livePosts, feedPosts] = await Promise.all([
+      // Active LIVE posts — always float to top
+      prisma.post.findMany({
+        where: { postType: "LIVE", liveStream: { status: "ACTIVE" } },
+        orderBy: { voltage: "desc" },
+        take: 5,
+        include: {
+          liveStream: { select: { id: true, status: true, muxPlaybackId: true, liveStartedAt: true } },
+          comments: { where: { parentId: null }, orderBy: { createdAt: "desc" }, take: 1, select: { id: true, body: true, userEmail: true } },
+          media: { orderBy: { order: "asc" }, select: { type: true, url: true, order: true } },
         },
-        media: {
-          orderBy: { order: "asc" },
-          select: { type: true, url: true, order: true },
+      }),
+      // Regular feed
+      prisma.post.findMany({
+        where: { postType: { not: "LIVE" } },
+        orderBy: { createdAt: "desc" },
+        take: 20,
+        include: {
+          comments: { where: { parentId: null }, orderBy: { createdAt: "desc" }, take: 1, select: { id: true, body: true, userEmail: true } },
+          media: { orderBy: { order: "asc" }, select: { type: true, url: true, order: true } },
         },
-      },
-    });
+      }),
+    ]);
 
-    const emails = [
-      ...new Set(posts.map((p) => p.userEmail).filter(Boolean)),
-    ] as string[];
+    const posts = [...livePosts, ...feedPosts];
+
+    const emails = [...new Set(posts.map((p) => p.userEmail).filter(Boolean))] as string[];
 
     const [profileRows, creatorRows] = await Promise.all([
       prisma.profiles.findMany({
@@ -51,12 +58,8 @@ export async function GET() {
       }),
     ]);
 
-    const profileByEmail = Object.fromEntries(
-      profileRows.map((p) => [p.email, p])
-    );
-    const creatorByEmail = Object.fromEntries(
-      creatorRows.map((c) => [c.email, c])
-    );
+    const profileByEmail = Object.fromEntries(profileRows.map((p) => [p.email, p]));
+    const creatorByEmail = Object.fromEntries(creatorRows.map((c) => [c.email, c]));
 
     const now = new Date();
     const formatted = posts.map((p) => {
@@ -67,14 +70,17 @@ export async function GET() {
       const handle = creator?.handle?.trim() || email.split("@")[0] || "user";
       const avatarUrl = profile?.avatar_url ?? creator?.avatarUrl ?? null;
       const displayName = profile?.display_name?.trim() || creator?.displayName?.trim() || handle;
-
       const latestComment = p.comments[0] ?? null;
       const ringTier = creator?.ringExpiresAt && creator.ringExpiresAt < now
         ? "NONE"
         : (creator?.ringTier as string | undefined) ?? "NONE";
 
+      // Live stream data if present
+      const live = (p as any).liveStream ?? null;
+
       return {
         id: p.id,
+        postType: p.postType,
         caption: p.caption,
         imageUrl: sanitizeImageUrl(p.imageUrl),
         cloudflareVideoId: p.cloudflareVideoId ?? null,
@@ -91,19 +97,19 @@ export async function GET() {
         createdAt: p.createdAt,
         latestComment,
         ringTier,
+        // Live fields
+        isLive: p.postType === "LIVE" && live?.status === "ACTIVE",
+        liveStreamId: live?.id ?? null,
+        livePlaybackId: live?.muxPlaybackId ?? null,
+        liveStartedAt: live?.liveStartedAt ?? null,
       };
     });
 
     return NextResponse.json({ posts: formatted }, {
-      headers: {
-        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
-      },
+      headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=20" },
     });
   } catch (err: any) {
     console.error(err);
-    return NextResponse.json(
-      { error: err?.message || "Failed to fetch posts" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err?.message || "Failed to fetch posts" }, { status: 500 });
   }
 }
