@@ -194,7 +194,7 @@ export default function RightRail({
       <Plus size={32} strokeWidth={1.5} onClick={onCreate} style={{ cursor: "pointer" }} />
 
       {/* ── GO LIVE ── */}
-      {isCreator && (
+      {onGoLive && (
         <div
           onClick={onGoLive}
           style={{
