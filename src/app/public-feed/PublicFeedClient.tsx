@@ -543,6 +543,7 @@ const Post = memo(function Post({
   commentsOpen: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
 }) {
+  const router = useRouter();
   const [showBurst, setShowBurst] = useState(false);
   const [localBoost, setLocalBoost] = useState(0);
   const lastTapRef = useRef(0);
@@ -675,7 +676,53 @@ const Post = memo(function Post({
         justifyContent: "flex-end",
       }}
     >
-      {post.muxPlaybackId ? (
+      {post.isLive && post.livePlaybackId ? (
+  <div
+    onClick={() => router.push(`/live/${post.liveStreamId}`)}
+    style={{
+      position: "absolute", top: 0, left: 0,
+      width: "100%", height: "100%",
+      background: "#000", zIndex: 0, cursor: "pointer",
+    }}
+  >
+    <video
+      src={`https://stream.mux.com/${post.livePlaybackId}.m3u8`}
+      autoPlay muted playsInline
+      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+    />
+    {/* LIVE badge */}
+    <div style={{
+      position: "absolute", top: 16, left: 16, zIndex: 10,
+      background: "#E5004C", color: "#fff",
+      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
+      padding: "4px 10px", borderRadius: 4,
+    }}>
+      LIVE
+    </div>
+    {/* Voltage badge */}
+    <div style={{
+      position: "absolute", top: 16, left: 72, zIndex: 10,
+      background: "rgba(0,0,0,0.6)", color: "#fff",
+      fontSize: 11, fontWeight: 600,
+      padding: "4px 10px", borderRadius: 4,
+      display: "flex", alignItems: "center", gap: 4,
+    }}>
+      ⚡ {post.voltage || 0}
+    </div>
+    {/* Tap to join */}
+    <div style={{
+      position: "absolute", bottom: 120, left: "50%",
+      transform: "translateX(-50%)", zIndex: 10,
+      background: "rgba(0,0,0,0.55)", color: "#fff",
+      fontSize: 13, fontWeight: 500,
+      padding: "8px 20px", borderRadius: 24,
+      backdropFilter: "blur(6px)",
+      whiteSpace: "nowrap",
+    }}>
+      Tap to join
+    </div>
+  </div>
+) : post.muxPlaybackId ? (
   <VideoPlayer
     playbackId={post.muxPlaybackId}
     isActive={isActive}
@@ -691,15 +738,10 @@ const Post = memo(function Post({
     loading="lazy"
     onClick={handleTap}
     style={{
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-      objectPosition: "center center",
-      zIndex: 0,
-      cursor: "pointer",
+      position: "absolute", top: 0, left: 0,
+      width: "100%", height: "100%",
+      objectFit: "cover", objectPosition: "center center",
+      zIndex: 0, cursor: "pointer",
     }}
   />
 ) : null}
