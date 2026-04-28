@@ -5,8 +5,10 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { streamId: string } }
 ) {
+  const { streamId } = await params
+  
   const stream = await prisma.muxLiveStream.findUnique({
-    where: { id: params.streamId },
+    where: { id: streamId },
     select: {
       id: true,
       muxPlaybackId: true,
@@ -14,11 +16,11 @@ export async function GET(
       creatorEmail: true,
       liveStartedAt: true,
     },
-  });
+  })
 
   if (!stream) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  return NextResponse.json({ stream });
+  return NextResponse.json({ stream })
 }
