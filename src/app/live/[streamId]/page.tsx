@@ -40,29 +40,28 @@ export default function LivePage() {
   }, [streamId]);
 
   // HLS playback
-  useEffect(() => {
-    if (!stream?.muxPlaybackId || !videoRef.current) return;
-    const video = videoRef.current;
-    const src = `https://stream.mux.com/${stream.muxPlaybackId}.m3u8`;
+ useEffect(() => {
+  if (!stream?.muxPlaybackId || !videoRef.current) return
+  const video = videoRef.current
+  const src = `https://stream.mux.com/${stream.muxPlaybackId}.m3u8`
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Native HLS (Safari/iOS)
-      video.src = src;
-      video.play().catch(() => {});
-    } else {
-      // hls.js for Chrome/Firefox
-      import("hls.js").then(({ default: Hls }) => {
-        if (Hls.isSupported()) {
-          const hls = new Hls({ lowLatencyMode: true });
-          hls.loadSource(src);
-          hls.attachMedia(video);
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            video.play().catch(() => {});
-          });
-        }
-      });
-    }
-  }, [stream?.muxPlaybackId]);
+  if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = src
+    video.play().catch(() => {})
+  } else {
+    import('hls.js').then(({ default: Hls }) => {
+      if (Hls.isSupported()) {
+        const hls = new Hls({ lowLatencyMode: true })
+        hls.loadSource(src)
+        hls.attachMedia(video)
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch(() => {})
+        })
+        return () => hls.destroy()
+      }
+    })
+  }
+}, [stream?.muxPlaybackId])
 
   // Supabase realtime chat
   useEffect(() => {

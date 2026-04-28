@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
           points: 500,
           targetType: 'LIVE_SESSION',
           targetId: dbStream.id,
-          dedupeKey: `live_started_${dbStream.id}`,
+          dedupeKey: `live_started_${dbStream.id}_${Date.now()}`,
         }
       })
       break
