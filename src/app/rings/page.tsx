@@ -20,7 +20,7 @@ type TierConfig = {
 };
 
 const TIERS: TierConfig[] = [
-  {
+ {
     tier: "NONE",
     label: "No Ring",
     price: "Free",
@@ -29,6 +29,7 @@ const TIERS: TierConfig[] = [
       "Post content",
       "Basic profile",
       "Follow creators",
+      "25% revenue share on gifts",
     ],
     buttonLabel: "Current plan",
     buttonAction: "none",
@@ -40,10 +41,10 @@ const TIERS: TierConfig[] = [
     priceNote: "/month",
     features: [
       "Everything in No Ring",
-      "Voice intro on profile",
-      "PEOPLE tab access",
+      "35% revenue share on gifts",
       "Blue ring badge",
       "Verified creator status",
+      "PEOPLE tab access",
     ],
     buttonLabel: "Get Blue Ring",
     buttonAction: "checkout",
@@ -56,73 +57,17 @@ const TIERS: TierConfig[] = [
     priceNote: "/month",
     features: [
       "Everything in Blue",
-      "TRANCHE early access",
+      "45% revenue share on gifts",
       "Gold ring badge",
+      "TRANCHE early access",
       "Priority in feed",
     ],
     buttonLabel: "Get Gold Ring",
     buttonAction: "checkout",
   },
-  {
-    tier: "BUSINESS",
-    label: "Business Ring",
-    price: "$79.99",
-    priceNote: "/month",
-    features: [
-      "Everything in Gold",
-      "Business verification",
-      "Team account support",
-      "Purple ring badge",
-    ],
-    buttonLabel: "Get Business Ring",
-    buttonAction: "checkout",
-  },
-  {
-    tier: "CORPORATE",
-    label: "Corporate Ring",
-    price: "$499",
-    priceNote: "/month",
-    features: [
-      "Everything in Business",
-      "Dedicated support",
-      "Custom integrations",
-      "Indigo ring badge",
-    ],
-    buttonLabel: "Get Corporate Ring",
-    buttonAction: "checkout",
-  },
-  {
-    tier: "RED",
-    label: "Red Ring",
-    price: "$149",
-    priceNote: "/month",
-    features: [
-      "Everything in Gold",
-      "Creator fund eligibility",
-      "Red ring badge",
-      "Invite only",
-    ],
-    buttonLabel: "By Invitation",
-    buttonAction: "invite",
-  },
-  {
-    tier: "GOVERNMENT",
-    label: "Government Ring",
-    price: "Contact us",
-    features: [
-      "Custom enterprise plan",
-      "Government-grade verification",
-      "Green ring badge",
-      "Managed onboarding",
-    ],
-    buttonLabel: "Contact Us",
-    buttonAction: "contact",
-    contactHref: "mailto:revolvrassist@gmail.com",
-  },
-];
-
+  ];
 const TIER_RANK: Record<string, number> = {
-  NONE: 0, BLUE: 1, GOLD: 2, BUSINESS: 3, CORPORATE: 4, RED: 5, GOVERNMENT: 6,
+  NONE: 0, BLUE: 1, GOLD: 2,
 };
 
 function RingsPageInner() {
