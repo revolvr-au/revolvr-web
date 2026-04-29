@@ -92,10 +92,17 @@ export default function GoLivePage() {
 
     ws.onopen = () => {
       // Start MediaRecorder and stream to WebSocket
-      const mediaRecorder = new MediaRecorder(streamRef.current!, {
-        mimeType: 'video/webm;codecs=vp8,opus',
-        videoBitsPerSecond: 2500000,
-      });
+      // Pick best supported codec
+const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+  ? 'video/webm;codecs=vp8,opus'
+  : MediaRecorder.isTypeSupported('video/webm')
+  ? 'video/webm'
+  : 'video/mp4';
+
+const mediaRecorder = new MediaRecorder(streamRef.current!, {
+  mimeType,
+  videoBitsPerSecond: 1500000,
+});
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
