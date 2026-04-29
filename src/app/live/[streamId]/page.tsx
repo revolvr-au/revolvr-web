@@ -52,7 +52,7 @@ export default function LivePage() {
         try {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           wakeLock = await (navigator as any).wakeLock?.request('screen')
-        } catch {}
+        } catch { /* wake lock unsupported */ }
 
         const broadcastUrl = process.env.NEXT_PUBLIC_BROADCAST_URL
         if (!broadcastUrl) {
