@@ -65,62 +65,25 @@ export default function GoLivePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
-    // Countdown
     for (let i = 3; i >= 1; i--) {
       setCountdown(i);
       await new Promise(r => setTimeout(r, 1000));
     }
     setCountdown(null);
 
-    // Create stream
     const res = await fetch("/api/live/create", { method: "POST" });
     const data = await res.json();
+
     if (!res.ok) {
-      if (res.status === 409) { router.push(`/live/${data.streamId}`); return; }
+      if (res.status === 409) {
+        router.push(`/live/${data.streamId}?creator=1&key=${data.streamKey}`);
+        return;
+      }
       throw new Error(data.error ?? "Failed to create stream");
     }
 
-    const { streamKey, streamId } = data;
-
-    // Connect WebSocket and start streaming BEFORE navigating
-    const wsUrl = `${process.env.NEXT_PUBLIC_BROADCAST_URL}?key=${streamKey}`;
-    const ws = new WebSocket(wsUrl);
-
-    await new Promise<void>((resolve, reject) => {
-      ws.onopen = () => resolve();
-      ws.onerror = () => reject(new Error('WebSocket connection failed'));
-      setTimeout(() => reject(new Error('Connection timeout')), 5000);
-    });
-
-    // Start MediaRecorder
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-      ? 'video/webm;codecs=vp8,opus'
-      : 'video/webm';
-
-    const mediaRecorder = new MediaRecorder(streamRef.current!, {
-      mimeType,
-      videoBitsPerSecond: 1500000,
-    });
-
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-        ws.send(e.data);
-      }
-    };
-
-    mediaRecorder.start(500);
-
-    // Store globally so live page can access
-    (window as any)._mr = mediaRecorder;
-    (window as any)._ws = ws;
-    (window as any)._streamId = streamId;
-
-    // Wait 3 seconds of streaming before navigating
-    // so ffmpeg gets enough data to parse the WebM header
-    await new Promise(r => setTimeout(r, 3000));
-
-    // Navigate to live page — streaming continues in background
-    router.push(`/live/${streamId}`);
+    // Pass stream key to live page — it handles streaming
+    router.push(`/live/${data.streamId}?creator=1&key=${data.streamKey}`);
 
   } catch (err: any) {
     setError(err.message ?? "Something went wrong");

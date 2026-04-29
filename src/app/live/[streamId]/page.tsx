@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
+
 export default function LivePage() {
-  const { streamId } = useParams<{ streamId: string }>();
+  const params = useParams<{ streamId: string }>();
+  const streamId = params?.streamId;
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isCreator = searchParams.get('creator') === '1';
+  const creatorStreamKey = searchParams.get('key');
   const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -24,6 +32,56 @@ export default function LivePage() {
       // not when navigating to it
     };
   }, []);
+
+  useEffect(() => {
+    if (!isCreator || !creatorStreamKey) return
+
+    const startStreaming = async () => {
+      try {
+        const cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+          audio: true,
+        })
+        cameraStreamRef.current = cameraStream
+
+        const wsUrl = `${process.env.NEXT_PUBLIC_BROADCAST_URL}?key=${creatorStreamKey}`
+        const ws = new WebSocket(wsUrl)
+        wsRef.current = ws
+
+        ws.onopen = () => {
+          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+            ? 'video/webm;codecs=vp8,opus'
+            : 'video/webm'
+
+          const mr = new MediaRecorder(cameraStream, {
+            mimeType,
+            videoBitsPerSecond: 1000000,
+          })
+          mediaRecorderRef.current = mr
+
+          mr.ondataavailable = (e) => {
+            if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+              ws.send(e.data)
+            }
+          }
+
+          mr.start(500)
+        }
+
+        ws.onerror = (err) => console.error('WS error:', err)
+      } catch (err) {
+        console.error('Failed to start streaming:', err)
+      }
+    }
+
+    startStreaming()
+
+    return () => {
+      mediaRecorderRef.current?.stop()
+      wsRef.current?.close()
+      cameraStreamRef.current?.getTracks().forEach(t => t.stop())
+    }
+  }, [isCreator, creatorStreamKey])
 
   // Get current user
   useEffect(() => {
@@ -166,8 +224,6 @@ useEffect(() => {
     });
     setChatInput("");
   };
-
-  const isCreator = stream && userEmail === stream.creatorEmail;
 
   const endStream = async () => {
     await fetch("/api/live/end", {
