@@ -57,55 +57,73 @@ export default function GoLivePage() {
   };
 
   const handleGoLive = async () => {
-    setLoading(true);
-    setError(null);
+  setLoading(true);
+  setError(null);
 
-    try {
-      // Check auth
-      const supabase = createSupabaseBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        router.push("/login");
+  try {
+    const supabase = createSupabaseBrowserClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+
+    // Countdown
+    for (let i = 3; i >= 1; i--) {
+      setCountdown(i);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+    setCountdown(null);
+
+    // Create stream
+    const res = await fetch("/api/live/create", { method: "POST" });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 409) {
+        router.push(`/live/${data.streamId}`);
         return;
       }
-
-      // Countdown 3..2..1
-      for (let i = 3; i >= 1; i--) {
-        setCountdown(i);
-        await new Promise(r => setTimeout(r, 1000));
-      }
-      setCountdown(null);
-
-      // Create the stream
-      const res = await fetch("/api/live/create", { method: "POST" });
-      const data = await res.json();
-
-      if (!res.ok) {
-        if (res.status === 409) {
-          // Already have an active stream — go to it
-          router.push(`/live/${data.streamId}`);
-          return;
-        }
-        throw new Error(data.error ?? "Failed to create stream");
-      }
-
-      // Copy stream settings silently
-      const rtmpUrl = `${data.rtmpUrl}/${data.streamKey}`;
-      try {
-        await navigator.clipboard.writeText(rtmpUrl);
-      } catch {
-        // Clipboard not available — skip silently
-      }
-
-      // Navigate to live page
-      router.push(`/live/${data.streamId}`);
-    } catch (err: any) {
-      setError(err.message ?? "Something went wrong");
-      setCountdown(null);
-    } finally {
-      setLoading(false);
+      throw new Error(data.error ?? "Failed to create stream");
     }
-  };
+
+    const { streamKey, streamId } = data;
+
+    // Connect to broadcast server via WebSocket
+    const wsUrl = `${process.env.NEXT_PUBLIC_BROADCAST_URL}?key=${streamKey}`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      // Start MediaRecorder and stream to WebSocket
+      const mediaRecorder = new MediaRecorder(streamRef.current!, {
+        mimeType: 'video/webm;codecs=vp8,opus',
+        videoBitsPerSecond: 2500000,
+      });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+          ws.send(e.data);
+        }
+      };
+
+      mediaRecorder.start(250); // Send chunks every 250ms
+
+      // Store refs for cleanup
+      (window as any)._mediaRecorder = mediaRecorder;
+      (window as any)._broadcastWs = ws;
+    };
+
+    ws.onerror = (err) => {
+      console.error('WebSocket error:', err);
+      setError('Broadcast connection failed');
+    };
+
+    // Navigate to live page
+    router.push(`/live/${streamId}`);
+
+  } catch (err: any) {
+    setError(err.message ?? "Something went wrong");
+    setCountdown(null);
+    setLoading(false);
+  }
+};
 
   return (
     <div style={{
