@@ -6,7 +6,6 @@ import FeedLayout from "@/components/FeedLayout";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 import RingRim from "@/components/RingRim";
 import { useRingStatus } from "@/hooks/useRingStatus";
-import { hasRing } from "@/lib/ringGates";
 
 type LivePerson = {
   handle: string;
@@ -433,9 +432,8 @@ export function PeoplePageContent() {
   const router = useRouter();
   const [data, setData] = useState<PeopleData | null>(() => peopleCache?.data ?? null);
   const [loading, setLoading] = useState(peopleCache === null);
-  const { ringTier, loading: ringLoading } = useRingStatus();
-  const isBlue = hasRing(ringTier, "BLUE");
-  const showGate = !ringLoading && !isBlue;
+  const { } = useRingStatus();
+  const showGate = false;
 
   const fetchData = useCallback(() => {
     fetch("/api/people-rail")
