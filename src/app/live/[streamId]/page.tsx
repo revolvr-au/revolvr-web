@@ -191,7 +191,7 @@ useEffect(() => {
         clearInterval(interval)
       }
     }
-  }, 3000)
+  }, 10000)
 
   return () => clearInterval(interval)
 }, [streamId, stream?.status])
