@@ -36,6 +36,10 @@ export default function LivePage() {
   useEffect(() => {
     if (!isCreator || !creatorStreamKey) return
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let wakeLock: any = null
+    let heartbeat: ReturnType<typeof setInterval> | null = null
+
     const startStreaming = async () => {
       try {
         const cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -44,7 +48,18 @@ export default function LivePage() {
         })
         cameraStreamRef.current = cameraStream
 
-        const wsUrl = `${process.env.NEXT_PUBLIC_BROADCAST_URL}?key=${creatorStreamKey}`
+        // Keep screen awake and MediaRecorder alive
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          wakeLock = await (navigator as any).wakeLock?.request('screen')
+        } catch {}
+
+        const broadcastUrl = process.env.NEXT_PUBLIC_BROADCAST_URL
+        if (!broadcastUrl) {
+          console.error('NEXT_PUBLIC_BROADCAST_URL not set')
+          return
+        }
+        const wsUrl = `${broadcastUrl}?key=${creatorStreamKey}`
         const ws = new WebSocket(wsUrl)
         wsRef.current = ws
 
@@ -65,7 +80,14 @@ export default function LivePage() {
             }
           }
 
-          mr.start(500)
+          mr.start(250)
+
+          // Force MediaRecorder to keep going with a heartbeat
+          heartbeat = setInterval(() => {
+            if (mediaRecorderRef.current?.state === 'inactive') {
+              mediaRecorderRef.current.start(250)
+            }
+          }, 2000)
         }
 
         ws.onerror = (err) => console.error('WS error:', err)
@@ -77,6 +99,8 @@ export default function LivePage() {
     startStreaming()
 
     return () => {
+      if (heartbeat) clearInterval(heartbeat)
+      wakeLock?.release()
       mediaRecorderRef.current?.stop()
       wsRef.current?.close()
       cameraStreamRef.current?.getTracks().forEach(t => t.stop())
