@@ -153,14 +153,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Gold requires voltage >= 50 (unless manually qualified)
-  if (tier === "GOLD" && !creator.voltageQualified && (creator.voltage ?? 0) < 50) {
-    return NextResponse.json(
-      { error: "Gold Ring requires a Voltage score of 50 or more. Keep creating to unlock it." },
-      { status: 403 }
-    );
-  }
-
   const stripe = new Stripe(stripeKey, { apiVersion: "2025-01-27.acacia" as any });
 
   // Upsert Stripe customer
