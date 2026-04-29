@@ -17,6 +17,14 @@ export default function LivePage() {
   const [ended, setEnded] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Keep broadcast alive if coming from go-live page
+  useEffect(() => {
+    return () => {
+      // Only clean up when leaving the live page entirely
+      // not when navigating to it
+    };
+  }, []);
+
   // Get current user
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -40,28 +48,71 @@ export default function LivePage() {
   }, [streamId]);
 
   // HLS playback
- useEffect(() => {
+useEffect(() => {
   if (!stream?.muxPlaybackId || !videoRef.current) return
+  if (stream.status === 'IDLE') return
+
   const video = videoRef.current
   const src = `https://stream.mux.com/${stream.muxPlaybackId}.m3u8`
+  let hls: any = null
+  let retryTimeout: any = null
 
-  if (video.canPlayType('application/vnd.apple.mpegurl')) {
-    video.src = src
-    video.play().catch(() => {})
-  } else {
-    import('hls.js').then(({ default: Hls }) => {
-      if (Hls.isSupported()) {
-        const hls = new Hls({ lowLatencyMode: true })
+  const tryPlay = () => {
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+      video.play().catch(() => {
+        retryTimeout = setTimeout(tryPlay, 3000)
+      })
+    } else {
+      import('hls.js').then(({ default: Hls }) => {
+        if (!Hls.isSupported()) return
+        if (hls) hls.destroy()
+        hls = new Hls({
+          lowLatencyMode: true,
+          manifestLoadingMaxRetry: 10,
+          manifestLoadingRetryDelay: 2000,
+        })
         hls.loadSource(src)
         hls.attachMedia(video)
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.play().catch(() => {})
         })
-        return () => hls.destroy()
-      }
-    })
+        hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+          if (data.fatal) {
+            hls.destroy()
+            retryTimeout = setTimeout(tryPlay, 3000)
+          }
+        })
+      })
+    }
   }
-}, [stream?.muxPlaybackId])
+
+  tryPlay()
+
+  return () => {
+    if (retryTimeout) clearTimeout(retryTimeout)
+    if (hls) hls.destroy()
+  }
+}, [stream?.muxPlaybackId, stream?.status])
+
+// Poll stream status until active
+useEffect(() => {
+  if (!streamId) return
+  if (stream?.status === 'ACTIVE') return
+
+  const interval = setInterval(async () => {
+    const res = await fetch(`/api/live/stream/${streamId}`)
+    const data = await res.json()
+    if (data.stream) {
+      setStream(data.stream)
+      if (data.stream.status === 'ACTIVE') {
+        clearInterval(interval)
+      }
+    }
+  }, 3000)
+
+  return () => clearInterval(interval)
+}, [streamId, stream?.status])
 
   // Supabase realtime chat
   useEffect(() => {
