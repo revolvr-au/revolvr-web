@@ -410,13 +410,9 @@ useEffect(() => {
     router.push("/create");
   }, [router]);
 
-  const handleGoLive = useCallback(async () => {
-    const res = await fetch("/api/live/create", { method: "POST" })
-    const data = await res.json()
-    if (data.streamId) {
-      router.push(`/live/${data.streamId}`)
-    }
-  }, [router]);
+  const handleGoLive = useCallback(() => {
+  router.push("/go-live");
+}, [router]);
 
   const handleDoubleTapLike = useCallback((postId: string) => {
     setLikedMap((prev) => {
