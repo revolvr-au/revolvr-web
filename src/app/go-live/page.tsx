@@ -75,54 +75,51 @@ export default function GoLivePage() {
     // Create stream
     const res = await fetch("/api/live/create", { method: "POST" });
     const data = await res.json();
-
     if (!res.ok) {
-      if (res.status === 409) {
-        router.push(`/live/${data.streamId}`);
-        return;
-      }
+      if (res.status === 409) { router.push(`/live/${data.streamId}`); return; }
       throw new Error(data.error ?? "Failed to create stream");
     }
 
     const { streamKey, streamId } = data;
 
-    // Connect to broadcast server via WebSocket
+    // Connect WebSocket and start streaming BEFORE navigating
     const wsUrl = `${process.env.NEXT_PUBLIC_BROADCAST_URL}?key=${streamKey}`;
     const ws = new WebSocket(wsUrl);
 
-    ws.onopen = () => {
-      // Start MediaRecorder and stream to WebSocket
-      // Pick best supported codec
-const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-  ? 'video/webm;codecs=vp8,opus'
-  : MediaRecorder.isTypeSupported('video/webm')
-  ? 'video/webm'
-  : 'video/mp4';
+    await new Promise<void>((resolve, reject) => {
+      ws.onopen = () => resolve();
+      ws.onerror = () => reject(new Error('WebSocket connection failed'));
+      setTimeout(() => reject(new Error('Connection timeout')), 5000);
+    });
 
-const mediaRecorder = new MediaRecorder(streamRef.current!, {
-  mimeType,
-  videoBitsPerSecond: 1500000,
-});
+    // Start MediaRecorder
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+      ? 'video/webm;codecs=vp8,opus'
+      : 'video/webm';
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-          ws.send(e.data);
-        }
-      };
+    const mediaRecorder = new MediaRecorder(streamRef.current!, {
+      mimeType,
+      videoBitsPerSecond: 1500000,
+    });
 
-      mediaRecorder.start(250); // Send chunks every 250ms
-
-      // Store refs for cleanup
-      (window as any)._mediaRecorder = mediaRecorder;
-      (window as any)._broadcastWs = ws;
+    mediaRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+        ws.send(e.data);
+      }
     };
 
-    ws.onerror = (err) => {
-      console.error('WebSocket error:', err);
-      setError('Broadcast connection failed');
-    };
+    mediaRecorder.start(500);
 
-    // Navigate to live page
+    // Store globally so live page can access
+    (window as any)._mr = mediaRecorder;
+    (window as any)._ws = ws;
+    (window as any)._streamId = streamId;
+
+    // Wait 3 seconds of streaming before navigating
+    // so ffmpeg gets enough data to parse the WebM header
+    await new Promise(r => setTimeout(r, 3000));
+
+    // Navigate to live page — streaming continues in background
     router.push(`/live/${streamId}`);
 
   } catch (err: any) {
