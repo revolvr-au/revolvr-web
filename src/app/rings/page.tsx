@@ -3,7 +3,6 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRingStatus } from "@/hooks/useRingStatus";
-import { hasRing } from "@/lib/ringGates";
 import { RING_COLORS } from "@/components/RingRim";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
@@ -73,7 +72,7 @@ const TIER_RANK: Record<string, number> = {
 function RingsPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { ringTier, voltage, goldEligible, loading: statusLoading } = useRingStatus();
+  const { ringTier, loading: statusLoading } = useRingStatus();
   const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: "success" | "cancelled"; tier?: string } | null>(null);
@@ -256,7 +255,6 @@ function RingsPageInner() {
             const color = RING_COLORS[t.tier] ?? "rgba(255,255,255,0.2)";
             const isCurrent = t.tier === ringTier;
             const isDowngrade = TIER_RANK[t.tier] < userRank && t.tier !== "NONE";
-            const isGoldAndLocked = t.tier === "GOLD" && !goldEligible && !hasRing(ringTier, "GOLD");
             const isLoading = loadingTier === t.tier;
 
             return (
@@ -357,22 +355,6 @@ function RingsPageInner() {
                     ))}
                   </ul>
 
-                  {/* Gold voltage warning */}
-                  {isGoldAndLocked && (
-                    <div style={{
-                      marginBottom: 10,
-                      padding: "8px 10px",
-                      background: "rgba(245,158,11,0.08)",
-                      border: "1px solid rgba(245,158,11,0.2)",
-                      borderRadius: 8,
-                      fontSize: 11,
-                      color: "#F59E0B",
-                      lineHeight: 1.5,
-                    }}>
-                      ⚡ Gold requires Voltage ≥ 50. Your voltage: {voltage}. Keep creating to unlock.
-                    </div>
-                  )}
-
                   {/* Button */}
                   {t.buttonAction === "none" || isCurrent ? (
                     <div style={{
@@ -421,24 +403,20 @@ function RingsPageInner() {
                     </a>
                   ) : (
                     <button
-                      disabled={isLoading || isDowngrade || (isGoldAndLocked)}
+                      disabled={isLoading || isDowngrade}
                       onClick={() => handleCheckout(t.tier)}
                       style={{
                         width: "100%",
                         padding: "10px 0",
                         borderRadius: 999,
                         border: "none",
-                        background: isDowngrade
-                          ? "rgba(255,255,255,0.04)"
-                          : isGoldAndLocked
-                          ? "rgba(245,158,11,0.08)"
-                          : color,
-                        color: isDowngrade || isGoldAndLocked ? "rgba(255,255,255,0.25)" : (t.tier === "BLUE" || t.tier === "GOLD" ? "#050814" : "white"),
+                        background: isDowngrade ? "rgba(255,255,255,0.04)" : color,
+                        color: isDowngrade ? "rgba(255,255,255,0.25)" : (t.tier === "BLUE" || t.tier === "GOLD" ? "#050814" : "white"),
                         fontSize: 12,
                         fontFamily: "monospace",
                         letterSpacing: "1px",
                         fontWeight: 700,
-                        cursor: isDowngrade || isGoldAndLocked ? "default" : "pointer",
+                        cursor: isDowngrade ? "default" : "pointer",
                         textTransform: "uppercase",
                         opacity: isLoading ? 0.6 : 1,
                         transition: "opacity 0.2s",
