@@ -40,6 +40,14 @@ export default function LivePage() {
     let wakeLock: any = null
     let heartbeat: ReturnType<typeof setInterval> | null = null
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        if (mediaRecorderRef.current?.state === 'inactive') {
+          mediaRecorderRef.current.start(100)
+        }
+      }
+    }
+
     const startStreaming = async () => {
       try {
         const cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -80,12 +88,14 @@ export default function LivePage() {
             }
           }
 
-          mr.start(250)
+          mr.start(100)
+
+          document.addEventListener('visibilitychange', handleVisibilityChange)
 
           // Force MediaRecorder to keep going with a heartbeat
           heartbeat = setInterval(() => {
             if (mediaRecorderRef.current?.state === 'inactive') {
-              mediaRecorderRef.current.start(250)
+              mediaRecorderRef.current.start(100)
             }
           }, 2000)
         }
@@ -99,6 +109,7 @@ export default function LivePage() {
     startStreaming()
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (heartbeat) clearInterval(heartbeat)
       wakeLock?.release()
       mediaRecorderRef.current?.stop()
