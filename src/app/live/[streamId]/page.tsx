@@ -20,6 +20,8 @@ export default function LivePage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const ivsMode = searchParams.get('ivs') === '1';
+  const ivsPlaybackUrl = searchParams.get('playback');
   const [displayName, setDisplayName] = useState<string>("viewer");
   const [viewerCount, setViewerCount] = useState(0);
   const [ended, setEnded] = useState(false);
@@ -140,6 +142,11 @@ export default function LivePage() {
   // Load stream data
   useEffect(() => {
     if (!streamId) return;
+    if (ivsMode) {
+      // IVS mode - no stream lookup needed, playback URL is in query param
+      setStream({ status: 'ACTIVE', ivsPlaybackUrl });
+      return;
+    }
     fetch(`/api/live/stream/${streamId}`)
       .then((r) => r.json())
       .then((data) => {
