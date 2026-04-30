@@ -160,7 +160,7 @@ export default function LivePage() {
   // HLS playback
 useEffect(() => {
   if (!videoRef.current) return
-  if (stream.status === 'IDLE') return
+  if (!stream || stream.status === 'IDLE') return
 
   const video = videoRef.current
   const src = stream?.ivsPlaybackUrl ? decodeURIComponent(stream.ivsPlaybackUrl) : `https://stream.mux.com/${stream.muxPlaybackId}.m3u8`
