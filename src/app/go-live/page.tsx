@@ -7,7 +7,6 @@ import { createSupabaseBrowserClient } from "@/supabase-browser";
 export default function GoLivePage() {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const clientRef = useRef<any>(null);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [muted, setMuted] = useState(false);
@@ -16,35 +15,66 @@ export default function GoLivePage() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const ivsClientRef = useRef<any>(null);
 
-  // Start camera preview on video element
+  // Init IVS client and camera on mount
   useEffect(() => {
     let active = true;
-    const startCamera = async () => {
+
+    const init = async () => {
       try {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(t => t.stop());
-        }
+        const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
+        ivsClientRef.current = IVSBroadcastClient;
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: true,
         });
+
         if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+
+        const ingestEndpoint = (process.env.NEXT_PUBLIC_IVS_INGEST_ENDPOINT ?? '')
+          .replace('rtmps://', '')
+          .replace(':443/app/', '');
+
+        const client = IVSBroadcastClient.create({
+          streamConfig: IVSBroadcastClient.BASIC_LANDSCAPE,
+          ingestEndpoint,
+        });
+        clientRef.current = client;
+
+        // Attach canvas for preview
+        if (canvasRef.current) {
+          client.attachPreview(canvasRef.current);
         }
+
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+
+        if (videoTrack) {
+          await client.addVideoInputDevice(
+            new MediaStream([videoTrack]), 'camera1', { index: 0, width: 1280, height: 720 }
+          );
+        }
+        if (audioTrack) {
+          await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
+        }
+
         setCameraReady(true);
         setError(null);
-      } catch {
+      } catch (err: any) {
         setError("Camera access denied.");
         setCameraReady(false);
       }
     };
-    startCamera();
+
+    init();
+
     return () => {
       active = false;
       streamRef.current?.getTracks().forEach(t => t.stop());
+      try { clientRef.current?.delete(); } catch {}
     };
   }, [facingMode]);
 
@@ -54,7 +84,7 @@ export default function GoLivePage() {
   };
 
   const handleGoLive = async () => {
-    if (!cameraReady) return;
+    if (!cameraReady || !clientRef.current) return;
     setLoading(true);
     setError(null);
 
@@ -63,62 +93,20 @@ export default function GoLivePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
 
-      // Countdown
       for (let i = 3; i >= 1; i--) {
         setCountdown(i);
         await new Promise(r => setTimeout(r, 1000));
       }
       setCountdown(null);
 
-      // Create stream record
       const res = await fetch("/api/live/create-ivs", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
       const { streamId } = data;
 
-      // Load IVS SDK dynamically
-      const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
+      await clientRef.current.startBroadcast(process.env.NEXT_PUBLIC_IVS_STREAM_KEY!);
 
-      // Ingest endpoint — strip the rtmps:// prefix and trailing /app/
-      const ingestEndpoint = process.env.NEXT_PUBLIC_IVS_INGEST_ENDPOINT!
-        .replace('rtmps://', '')
-        .replace(':443/app/', '');
-
-      const client = IVSBroadcastClient.create({
-        streamConfig: IVSBroadcastClient.BASIC_LANDSCAPE,
-        ingestEndpoint,
-      });
-      clientRef.current = client;
-
-      // Attach canvas preview
-      if (canvasRef.current) {
-        client.attachPreview(canvasRef.current);
-      }
-
-      // Add camera and mic from existing stream
-      const videoTrack = streamRef.current?.getVideoTracks()[0];
-      const audioTrack = streamRef.current?.getAudioTracks()[0];
-
-      if (videoTrack) {
-        await client.addVideoInputDevice(
-          new MediaStream([videoTrack]),
-          'camera1',
-          { index: 0, width: 1280, height: 720 }
-        );
-      }
-      if (audioTrack) {
-        await client.addAudioInputDevice(
-          new MediaStream([audioTrack]),
-          'mic1'
-        );
-      }
-
-      // Start broadcast
-      const streamKey = process.env.NEXT_PUBLIC_IVS_STREAM_KEY!;
-      await client.startBroadcast(streamKey);
-
-      // Navigate to live page
-      router.push(`/live/${streamId}?ivs=1&playback=${encodeURIComponent(process.env.NEXT_PUBLIC_IVS_PLAYBACK_URL!)}`);
+      router.push(`/live/${streamId}?ivs=1&playback=${encodeURIComponent(process.env.NEXT_PUBLIC_IVS_PLAYBACK_URL ?? '')}`);
 
     } catch (err: any) {
       console.error('Go live error:', err);
@@ -133,18 +121,15 @@ export default function GoLivePage() {
       position: "fixed", inset: 0, background: "#000",
       display: "flex", flexDirection: "column", overflow: "hidden",
     }}>
-      {/* Camera preview */}
-      <video
-        ref={videoRef}
-        autoPlay playsInline muted
+      {/* Canvas is the preview — IVS SDK renders into it */}
+      <canvas
+        ref={canvasRef}
         style={{
-          position: "absolute", inset: 0, width: "100%", height: "100%",
+          position: "absolute", inset: 0,
+          width: "100%", height: "100%",
           objectFit: "cover",
-          transform: facingMode === "user" ? "scaleX(-1)" : "none",
         }}
       />
-      {/* Hidden canvas for IVS SDK */}
-      <canvas ref={canvasRef} style={{ display: "none" }} />
 
       {/* Top gradient */}
       <div style={{
@@ -209,6 +194,18 @@ export default function GoLivePage() {
           borderRadius: 12, padding: "16px 24px", color: "#fff",
           fontSize: 13, textAlign: "center", maxWidth: 300, zIndex: 10,
         }}>{error}</div>
+      )}
+
+      {/* Loading state */}
+      {!cameraReady && !error && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 5,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <div style={{ color: "rgba(255,255,255,0.5)", fontFamily: "monospace", fontSize: 13, letterSpacing: "2px" }}>
+            LOADING CAMERA…
+          </div>
+        </div>
       )}
 
       {/* Bottom */}
