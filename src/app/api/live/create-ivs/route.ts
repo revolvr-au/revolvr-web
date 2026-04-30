@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { authedEmail } from "@/lib/authedEmail";
+import { getAuthedEmailFromCreatorMe } from "@/lib/authedEmail";
 
 export async function POST(req: Request) {
   try {
-    const email = await authedEmail(req);
+    const email = await getAuthedEmailFromCreatorMe(req);
     if (!email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const creator = await prisma.creatorProfile.findUnique({ where: { email } });
