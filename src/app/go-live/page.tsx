@@ -44,7 +44,8 @@ export default function GoLivePage() {
         });
         clientRef.current = client;
 
-        // Attach canvas for preview
+        // Wait for canvas to be in DOM then attach preview
+        await new Promise(r => setTimeout(r, 500));
         if (canvasRef.current) {
           client.attachPreview(canvasRef.current);
         }
