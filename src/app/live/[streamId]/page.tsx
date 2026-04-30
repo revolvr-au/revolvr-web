@@ -51,9 +51,18 @@ export default function LivePage() {
     const startStreaming = async () => {
       try {
         const cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
-          audio: true,
-        })
+  video: { 
+    width: { ideal: 1280 }, 
+    height: { ideal: 720 }, 
+    facingMode: 'user',
+    frameRate: { ideal: 30 }
+  },
+  audio: {
+    echoCancellation: true,
+    noiseSuppression: true,
+    sampleRate: 44100
+  },
+})
         cameraStreamRef.current = cameraStream
 
         // Keep screen awake and MediaRecorder alive
@@ -77,9 +86,10 @@ export default function LivePage() {
             : 'video/webm'
 
           const mr = new MediaRecorder(cameraStream, {
-            mimeType,
-            videoBitsPerSecond: 1000000,
-          })
+  mimeType,
+  videoBitsPerSecond: 2500000,
+  audioBitsPerSecond: 128000,
+})
           mediaRecorderRef.current = mr
 
           mr.ondataavailable = (e) => {
