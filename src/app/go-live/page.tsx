@@ -14,6 +14,7 @@ export default function GoLivePage() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const broadcastingRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -69,8 +70,10 @@ export default function GoLivePage() {
 
     return () => {
       active = false;
-      streamRef.current?.getTracks().forEach(t => t.stop());
-      try { clientRef.current?.delete(); } catch {}
+      if (!broadcastingRef.current) {
+        streamRef.current?.getTracks().forEach(t => t.stop());
+        try { clientRef.current?.delete(); } catch {}
+      }
     };
   }, [facingMode]);
 
@@ -100,6 +103,7 @@ export default function GoLivePage() {
       if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
       const { streamId } = data;
 
+      broadcastingRef.current = true;
       await clientRef.current.startBroadcast(process.env.NEXT_PUBLIC_IVS_STREAM_KEY!);
 
       router.push(`/live/${streamId}?ivs=1&playback=${encodeURIComponent(process.env.NEXT_PUBLIC_IVS_PLAYBACK_URL ?? '')}`);
