@@ -180,7 +180,7 @@ useEffect(() => {
       const { create, isPlayerSupported } = module
       if (isPlayerSupported()) {
         player = create({
-          wasmWorker: '/amazon-ivs-worker.min.js',
+          wasmWorker: '/amazon-ivs-wasmworker.min.js',
           wasmBinary: '/amazon-ivs-wasmworker.min.wasm',
         })
         player.attachHTMLVideoElement(video)
