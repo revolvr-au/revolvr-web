@@ -125,10 +125,13 @@ export default function GoLivePage() {
       <canvas
         ref={canvasRef}
         style={{
-          position: "absolute", inset: 0,
-          width: "100%", height: "100%",
+          position: "absolute",
+          top: "50%",
+          left: "50%",
+          width: "100vh",
+          height: "100vw",
+          transform: "translate(-50%, -50%) rotate(90deg)",
           objectFit: "cover",
-          transform: "none",
         }}
       />
 
