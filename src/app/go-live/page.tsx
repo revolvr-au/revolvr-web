@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
@@ -15,16 +14,12 @@ export default function GoLivePage() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const ivsClientRef = useRef<any>(null);
 
-  // Init IVS client and camera on mount
   useEffect(() => {
     let active = true;
-
     const init = async () => {
       try {
         const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
-        ivsClientRef.current = IVSBroadcastClient;
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode, width: { ideal: 720 }, height: { ideal: 1280 } },
@@ -44,15 +39,9 @@ export default function GoLivePage() {
         });
         clientRef.current = client;
 
-        // Wait for canvas to be in DOM then attach preview
-        await new Promise(r => setTimeout(r, 500));
-        if (canvasRef.current) {
-          client.attachPreview(canvasRef.current);
-        }
-
+        // Add devices FIRST
         const videoTrack = stream.getVideoTracks()[0];
         const audioTrack = stream.getAudioTracks()[0];
-
         if (videoTrack) {
           await client.addVideoInputDevice(
             new MediaStream([videoTrack]), 'camera1', { index: 0, width: 720, height: 1280 }
@@ -62,9 +51,15 @@ export default function GoLivePage() {
           await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
         }
 
+        // Attach preview AFTER devices are added
+        if (canvasRef.current) {
+          client.attachPreview(canvasRef.current);
+        }
+
         setCameraReady(true);
         setError(null);
       } catch (err: any) {
+        console.error('IVS init error:', err);
         setError("Camera access denied.");
         setCameraReady(false);
       }
@@ -122,32 +117,25 @@ export default function GoLivePage() {
       position: "fixed", inset: 0, background: "#000",
       display: "flex", flexDirection: "column", overflow: "hidden",
     }}>
-      {/* Canvas is the preview — IVS SDK renders into it */}
       <canvas
         ref={canvasRef}
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          position: "absolute", top: 0, left: 0,
+          width: "100%", height: "100%",
         }}
       />
 
-      {/* Top gradient */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, height: "20%",
         background: "linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 100%)",
         pointerEvents: "none",
       }} />
-      {/* Bottom gradient */}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0, height: "40%",
         background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)",
         pointerEvents: "none",
       }} />
 
-      {/* Top controls */}
       <div style={{
         position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -169,7 +157,6 @@ export default function GoLivePage() {
         }}>{muted ? "🔇" : "🎙️"}</button>
       </div>
 
-      {/* Flip camera */}
       <button onClick={() => setFacingMode(p => p === "user" ? "environment" : "user")} style={{
         position: "absolute", right: 20, top: "50%", transform: "translateY(-50%)",
         width: 44, height: 44, borderRadius: "50%",
@@ -178,7 +165,6 @@ export default function GoLivePage() {
         display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10,
       }}>↺</button>
 
-      {/* Countdown */}
       {countdown !== null && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 20,
@@ -189,7 +175,6 @@ export default function GoLivePage() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div style={{
           position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)",
@@ -199,7 +184,6 @@ export default function GoLivePage() {
         }}>{error}</div>
       )}
 
-      {/* Loading state */}
       {!cameraReady && !error && (
         <div style={{
           position: "absolute", inset: 0, zIndex: 5,
@@ -211,7 +195,6 @@ export default function GoLivePage() {
         </div>
       )}
 
-      {/* Bottom */}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0,
         padding: "0 24px 56px", zIndex: 10,
