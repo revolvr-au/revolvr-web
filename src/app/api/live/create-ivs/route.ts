@@ -10,10 +10,10 @@ export async function POST(req: Request) {
     const creator = await prisma.creatorProfile.findUnique({ where: { email } });
     if (!creator) return NextResponse.json({ error: "Creator not found" }, { status: 404 });
 
-    // Create a post record for the live stream
     const post = await prisma.post.create({
       data: {
         creatorEmail: email,
+        userEmail: email,
         type: "LIVE",
         caption: `${email.split("@")[0]} is live`,
         voltage: 500,
