@@ -157,53 +157,71 @@ export default function LivePage() {
       });
   }, [streamId]);
 
-  // HLS playback
+  // HLS/IVS playback
 useEffect(() => {
   if (!videoRef.current) return
   if (!stream || stream.status === 'IDLE') return
 
   const video = videoRef.current
-  const src = stream?.ivsPlaybackUrl ? decodeURIComponent(stream.ivsPlaybackUrl) : `https://stream.mux.com/${stream.muxPlaybackId}.m3u8`
+  const isIVS = !!stream?.ivsPlaybackUrl
+  const src = isIVS
+    ? decodeURIComponent(stream.ivsPlaybackUrl)
+    : stream?.muxPlaybackId
+      ? `https://stream.mux.com/${stream.muxPlaybackId}.m3u8`
+      : null
+  if (!src) return
+
+  let player: any = null
   let hls: any = null
   let retryTimeout: any = null
 
-  const tryPlay = () => {
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src
-      video.play().catch(() => {
-        retryTimeout = setTimeout(tryPlay, 3000)
-      })
-    } else {
-      import('hls.js').then(({ default: Hls }) => {
-        if (!Hls.isSupported()) return
-        if (hls) hls.destroy()
-        hls = new Hls({
-          lowLatencyMode: true,
-          manifestLoadingMaxRetry: 10,
-          manifestLoadingRetryDelay: 2000,
+  if (isIVS) {
+    import('amazon-ivs-player').then((module) => {
+      const { create, isPlayerSupported } = module
+      if (isPlayerSupported()) {
+        player = create({
+          wasmWorker: '/amazon-ivs-worker.min.js',
+          wasmBinary: '/amazon-ivs-wasmworker.min.wasm',
         })
-        hls.loadSource(src)
-        hls.attachMedia(video)
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(() => {})
+        player.attachHTMLVideoElement(video)
+        player.load(src)
+        player.play()
+      } else {
+        // Fallback native HLS
+        video.src = src
+        video.play().catch(() => {})
+      }
+    })
+  } else {
+    const tryPlay = () => {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = src
+        video.play().catch(() => {
+          retryTimeout = setTimeout(tryPlay, 3000)
         })
-        hls.on(Hls.Events.ERROR, (_: any, data: any) => {
-          if (data.fatal) {
-            hls.destroy()
-            retryTimeout = setTimeout(tryPlay, 3000)
-          }
+      } else {
+        import('hls.js').then(({ default: Hls }) => {
+          if (!Hls.isSupported()) return
+          if (hls) hls.destroy()
+          hls = new Hls({ lowLatencyMode: true, manifestLoadingMaxRetry: 10, manifestLoadingRetryDelay: 2000 })
+          hls.loadSource(src)
+          hls.attachMedia(video)
+          hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}) })
+          hls.on(Hls.Events.ERROR, (_: any, data: any) => {
+            if (data.fatal) { hls.destroy(); retryTimeout = setTimeout(tryPlay, 3000) }
+          })
         })
-      })
+      }
     }
+    tryPlay()
   }
-
-  tryPlay()
 
   return () => {
     if (retryTimeout) clearTimeout(retryTimeout)
     if (hls) hls.destroy()
+    if (player) player.delete()
   }
-}, [stream?.muxPlaybackId, stream?.status])
+}, [stream?.muxPlaybackId, stream?.ivsPlaybackUrl, stream?.status])
 
 // Poll stream status until active
 useEffect(() => {
