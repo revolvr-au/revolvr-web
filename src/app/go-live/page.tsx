@@ -39,7 +39,7 @@ export default function GoLivePage() {
           .replace(':443/app/', '');
 
         const client = IVSBroadcastClient.create({
-          streamConfig: IVSBroadcastClient.BASIC_LANDSCAPE,
+          streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
           ingestEndpoint,
         });
         clientRef.current = client;
@@ -128,6 +128,7 @@ export default function GoLivePage() {
           position: "absolute", inset: 0,
           width: "100%", height: "100%",
           objectFit: "cover",
+          transform: "none",
         }}
       />
 
