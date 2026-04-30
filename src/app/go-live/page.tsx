@@ -27,7 +27,7 @@ export default function GoLivePage() {
         ivsClientRef.current = IVSBroadcastClient;
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode, width: { ideal: 720 }, height: { ideal: 1280 } },
           audio: true,
         });
 
@@ -54,7 +54,7 @@ export default function GoLivePage() {
 
         if (videoTrack) {
           await client.addVideoInputDevice(
-            new MediaStream([videoTrack]), 'camera1', { index: 0, width: 1280, height: 720 }
+            new MediaStream([videoTrack]), 'camera1', { index: 0, width: 720, height: 1280 }
           );
         }
         if (audioTrack) {
@@ -126,12 +126,10 @@ export default function GoLivePage() {
         ref={canvasRef}
         style={{
           position: "absolute",
-          top: "50%",
-          left: "50%",
-          width: "100vh",
-          height: "100vw",
-          transform: "translate(-50%, -50%) rotate(90deg)",
-          objectFit: "cover",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
         }}
       />
 
