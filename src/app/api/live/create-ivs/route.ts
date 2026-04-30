@@ -18,6 +18,7 @@ export async function POST(req: Request) {
         caption: `${email.split("@")[0]} is live`,
         voltage: 500,
         liveStartedAt: new Date(),
+        imageUrl: "",
       },
     });
 
