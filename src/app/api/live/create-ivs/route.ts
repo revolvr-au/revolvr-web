@@ -1,24 +1,45 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getAuthedEmailFromCreatorMe } from "@/lib/authedEmail";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    const email = await getAuthedEmailFromCreatorMe(req);
-    if (!email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() { return cookieStore.getAll(); },
+          setAll(cookiesToSet) {
+            try {
+              cookiesToSet.forEach(({ name, value, options }) =>
+                cookieStore.set(name, value, options)
+              );
+            } catch {}
+          },
+        },
+      }
+    );
 
-    const creator = await prisma.creatorProfile.findUnique({ where: { email } });
-    if (!creator) return NextResponse.json({ error: "Creator not found" }, { status: 404 });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const profile = await prisma.profiles.findUnique({
+      where: { email: user.email! },
+      select: { display_name: true }
+    });
+    const displayName = profile?.display_name ?? user.email!.split("@")[0];
 
     const post = await prisma.post.create({
       data: {
-        creatorEmail: email,
-        userEmail: email,
-        type: "LIVE",
-        caption: `${email.split("@")[0]} is live`,
-        voltage: 500,
-        liveStartedAt: new Date(),
+        userEmail: user.email!,
         imageUrl: "",
+        caption: `${displayName} is live`,
+        postType: "LIVE",
+        liveStartedAt: new Date(),
+        voltage: 100,
       },
     });
 
