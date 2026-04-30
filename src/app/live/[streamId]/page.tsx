@@ -25,6 +25,7 @@ export default function LivePage() {
   const [displayName, setDisplayName] = useState<string>("viewer");
   const [viewerCount, setViewerCount] = useState(0);
   const [ended, setEnded] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Keep broadcast alive if coming from go-live page
@@ -174,17 +175,25 @@ useEffect(() => {
 
   const tryPlay = async () => {
     try {
-      // iOS Safari - native HLS
+      // iOS Safari - native HLS (requires muted for autoplay)
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = src
-        await video.play()
+        video.muted = true
+        await video.play().catch((err: Error) => {
+          console.error('[IVS] video.play() failed on iOS:', err.name, err.message)
+          throw err
+        })
         return
       }
       // Other browsers - HLS.js
       const { default: Hls } = await import('hls.js')
       if (!Hls.isSupported()) {
         video.src = src
-        await video.play()
+        video.muted = true
+        await video.play().catch((err: Error) => {
+          console.error('[IVS] video.play() failed (no HLS.js):', err.name, err.message)
+          throw err
+        })
         return
       }
       if (hls) hls.destroy()
@@ -196,14 +205,20 @@ useEffect(() => {
       })
       hls.loadSource(src)
       hls.attachMedia(video)
-      hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}) })
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch((err: Error) => {
+          console.error('[IVS] video.play() failed (HLS.js):', err.name, err.message)
+        })
+      })
       hls.on(Hls.Events.ERROR, (_: any, data: any) => {
         if (data.fatal && retryCount < maxRetries) {
+          console.error('[IVS] HLS fatal error, retrying', retryCount + 1, '/', maxRetries, data)
           retryCount++
           setTimeout(() => { hls.destroy(); tryPlay() }, 2000)
         }
       })
-    } catch {
+    } catch (err) {
+      console.error('[IVS] tryPlay error, retry', retryCount + 1, '/', maxRetries, err)
       if (retryCount < maxRetries) {
         retryCount++
         setTimeout(tryPlay, 2000)
@@ -309,9 +324,29 @@ useEffect(() => {
       <div style={{ position: "relative", width: "100%", flex: "0 0 55%" }}>
         <video
           ref={videoRef}
-          autoPlay playsInline muted={false}
+          autoPlay playsInline muted
           style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
         />
+        {/* Unmute button — iOS requires autoplay to start muted */}
+        {isMuted && (
+          <button
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.muted = false
+                setIsMuted(false)
+              }
+            }}
+            style={{
+              position: "absolute", bottom: 48, right: 12,
+              background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)",
+              color: "#fff", fontSize: 11, fontWeight: 600,
+              padding: "5px 10px", borderRadius: 20, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 4,
+            }}
+          >
+            🔇 Tap to unmute
+          </button>
+        )}
         {ended && (
           <div style={{
             position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)",
