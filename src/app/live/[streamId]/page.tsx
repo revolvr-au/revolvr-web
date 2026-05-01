@@ -162,6 +162,8 @@ export default function LivePage() {
   // Playback
 useEffect(() => {
   if (!videoRef.current || !stream || stream.status === 'IDLE') return
+  // IVS: src is set directly on video element, skip HLS.js
+  if (stream?.ivsPlaybackUrl) return
   const video = videoRef.current
   const src = stream?.ivsPlaybackUrl
     ? decodeURIComponent(stream.ivsPlaybackUrl)
