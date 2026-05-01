@@ -159,10 +159,10 @@ export default function LivePage() {
       });
   }, [streamId]);
 
-  // Playback
+ // Playback — IVS Player SDK
 useEffect(() => {
   if (!videoRef.current || !stream || stream.status === 'IDLE') return
-  const video = videoRef.current
+  
   const src = stream?.ivsPlaybackUrl
     ? decodeURIComponent(stream.ivsPlaybackUrl)
     : stream?.muxPlaybackId
@@ -170,69 +170,51 @@ useEffect(() => {
       : null
   if (!src) return
 
-  // Fully detach any existing MediaSource/SourceBuffer before setting new src
-  video.removeAttribute('src')
-  video.load()
+  const video = videoRef.current
+  let player: any = null
 
-  let hls: any = null
-  let retryCount = 0
-  const maxRetries = 20
-
-  const tryPlay = async () => {
-    try {
-      // iOS Safari / native HLS — set src as property (not attribute) after reset
-      if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = src
-        video.load()
-        video.muted = true
-        await video.play().catch((err: Error) => {
-          console.warn('[IVS] autoplay blocked on iOS:', err.name)
-        })
-        return
-      }
-      // Other browsers — HLS.js
-      const { default: Hls } = await import('hls.js')
-      if (!Hls.isSupported()) {
-        video.src = src
-        video.load()
-        video.muted = true
-        await video.play().catch((err: Error) => {
-          console.warn('[IVS] autoplay blocked (no HLS.js):', err.name)
-        })
-        return
-      }
-      if (hls) hls.destroy()
-      hls = new Hls({
-        lowLatencyMode: true,
-        manifestLoadingMaxRetry: 20,
-        manifestLoadingRetryDelay: 1000,
-        levelLoadingMaxRetry: 20,
+  const initPlayer = async () => {
+    // IVS path
+    if (stream?.ivsPlaybackUrl) {
+      const { create, PlayerState, PlayerEventType } = await import('amazon-ivs-player')
+      player = create({
+        wasmWorker: 'https://player.live-video.net/1.29.0/amazon-ivs-wasmworker.min.wasm',
+        wasmBinary: 'https://player.live-video.net/1.29.0/amazon-ivs-wasmworker.min.js',
       })
+      player.attachHTMLVideoElement(video)
+      player.load(src)
+      player.play()
+      player.addEventListener(PlayerEventType.ERROR, (err: any) => {
+        console.warn('[IVS SDK] error:', err)
+      })
+      return
+    }
+
+    // Mux / HLS.js fallback
+    const { default: Hls } = await import('hls.js')
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src
+      video.load()
+      video.muted = true
+      video.play().catch(() => {})
+      return
+    }
+    if (Hls.isSupported()) {
+      const hls = new Hls({ lowLatencyMode: true })
       hls.loadSource(src)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch((err: Error) => {
-          console.warn('[IVS] autoplay blocked (HLS.js):', err.name)
-        })
+        video.play().catch(() => {})
       })
-      hls.on(Hls.Events.ERROR, (_: any, data: any) => {
-        if (data.fatal && retryCount < maxRetries) {
-          retryCount++
-          setTimeout(() => { hls.destroy(); tryPlay() }, 2000)
-        }
-      })
-    } catch (err) {
-      if (retryCount < maxRetries) {
-        retryCount++
-        setTimeout(tryPlay, 2000)
-      }
+      player = hls
     }
   }
 
-  tryPlay()
+  initPlayer()
 
   return () => {
-    if (hls) hls.destroy()
+    if (player?.delete) player.delete()      // IVS SDK cleanup
+    else if (player?.destroy) player.destroy() // HLS.js cleanup
     video.pause()
     video.removeAttribute('src')
     video.load()
