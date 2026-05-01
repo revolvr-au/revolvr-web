@@ -45,7 +45,9 @@ export default function GoLivePage() {
         const audioTrack = stream.getAudioTracks()[0];
         if (videoTrack) {
           await client.addVideoInputDevice(
-            new MediaStream([videoTrack]), 'camera1', { index: 0, width: 720, height: 1280, x: 0, y: 0 }
+            new MediaStream([videoTrack]),
+            'camera1',
+            { index: 0, width: 720, height: 1280, x: 0, y: 0, fit: 'cover' }
           );
         }
         if (audioTrack) {
