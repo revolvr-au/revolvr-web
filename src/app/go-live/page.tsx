@@ -101,12 +101,12 @@ export default function GoLivePage() {
       const res = await fetch("/api/live/create-ivs", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
-      const { streamId } = data;
+      const { streamId, playbackUrl } = data;
 
       broadcastingRef.current = true;
       await clientRef.current.startBroadcast(process.env.NEXT_PUBLIC_IVS_STREAM_KEY!);
 
-      router.push(`/live/${streamId}?ivs=1&playback=${encodeURIComponent(process.env.NEXT_PUBLIC_IVS_PLAYBACK_URL ?? '')}`);
+      router.push(`/live/${streamId}?ivs=1&playback=${encodeURIComponent(playbackUrl ?? '')}`);
 
     } catch (err: any) {
       console.error('Go live error:', err);
