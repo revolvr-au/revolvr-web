@@ -322,38 +322,20 @@ useEffect(() => {
     }}>
 
       {/* Video */}
-      <div style={{ position: "relative", width: "100%", flex: "0 0 55%" }}
-        onClick={() => {
-          if (!tapped && videoRef.current) {
-            setTapped(true);
-            videoRef.current.play().catch(() => {});
-          }
-        }}>
-        <video
-          ref={videoRef}
-          autoPlay playsInline muted
-          style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
-        />
-        {/* Tap to play overlay for iOS */}
-        {!tapped && (
-          <div style={{
-            position: "absolute", inset: 0, zIndex: 5,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            background: "rgba(0,0,0,0.3)", cursor: "pointer",
-          }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: "50%",
-              background: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.6)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              <div style={{
-                width: 0, height: 0, marginLeft: 6,
-                borderTop: "14px solid transparent",
-                borderBottom: "14px solid transparent",
-                borderLeft: "22px solid white",
-              }} />
-            </div>
-          </div>
+      <div style={{ position: "relative", width: "100%", flex: "0 0 55%" }}>
+        {stream?.ivsPlaybackUrl ? (
+          <video
+            ref={videoRef}
+            src={decodeURIComponent(stream.ivsPlaybackUrl)}
+            autoPlay playsInline muted controls
+            style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay playsInline muted
+            style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
+          />
         )}
         {/* Unmute button — iOS requires autoplay to start muted */}
         {isMuted && (
