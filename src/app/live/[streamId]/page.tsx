@@ -162,8 +162,6 @@ export default function LivePage() {
   // Playback
 useEffect(() => {
   if (!videoRef.current || !stream || stream.status === 'IDLE') return
-  // IVS: src is set directly on video element, skip HLS.js
-  if (stream?.ivsPlaybackUrl) return
   const video = videoRef.current
   const src = stream?.ivsPlaybackUrl
     ? decodeURIComponent(stream.ivsPlaybackUrl)
@@ -172,30 +170,34 @@ useEffect(() => {
       : null
   if (!src) return
 
+  // Fully detach any existing MediaSource/SourceBuffer before setting new src
+  video.removeAttribute('src')
+  video.load()
+
   let hls: any = null
   let retryCount = 0
   const maxRetries = 20
 
   const tryPlay = async () => {
     try {
-      // iOS Safari - native HLS (requires muted for autoplay)
+      // iOS Safari / native HLS — set src as property (not attribute) after reset
       if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = src
+        video.load()
         video.muted = true
         await video.play().catch((err: Error) => {
-          console.error('[IVS] video.play() failed on iOS:', err.name, err.message)
-          throw err
+          console.warn('[IVS] autoplay blocked on iOS:', err.name)
         })
         return
       }
-      // Other browsers - HLS.js
+      // Other browsers — HLS.js
       const { default: Hls } = await import('hls.js')
       if (!Hls.isSupported()) {
         video.src = src
+        video.load()
         video.muted = true
         await video.play().catch((err: Error) => {
-          console.error('[IVS] video.play() failed (no HLS.js):', err.name, err.message)
-          throw err
+          console.warn('[IVS] autoplay blocked (no HLS.js):', err.name)
         })
         return
       }
@@ -210,18 +212,16 @@ useEffect(() => {
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch((err: Error) => {
-          console.error('[IVS] video.play() failed (HLS.js):', err.name, err.message)
+          console.warn('[IVS] autoplay blocked (HLS.js):', err.name)
         })
       })
       hls.on(Hls.Events.ERROR, (_: any, data: any) => {
         if (data.fatal && retryCount < maxRetries) {
-          console.error('[IVS] HLS fatal error, retrying', retryCount + 1, '/', maxRetries, data)
           retryCount++
           setTimeout(() => { hls.destroy(); tryPlay() }, 2000)
         }
       })
     } catch (err) {
-      console.error('[IVS] tryPlay error, retry', retryCount + 1, '/', maxRetries, err)
       if (retryCount < maxRetries) {
         retryCount++
         setTimeout(tryPlay, 2000)
@@ -231,7 +231,12 @@ useEffect(() => {
 
   tryPlay()
 
-  return () => { if (hls) hls.destroy() }
+  return () => {
+    if (hls) hls.destroy()
+    video.pause()
+    video.removeAttribute('src')
+    video.load()
+  }
 }, [stream?.muxPlaybackId, stream?.ivsPlaybackUrl, stream?.status])
 
 // Poll stream status until active
@@ -325,20 +330,12 @@ useEffect(() => {
 
       {/* Video */}
       <div style={{ position: "relative", width: "100%", flex: "0 0 55%" }}>
-        {stream?.ivsPlaybackUrl ? (
-          <video
-            ref={videoRef}
-            src={decodeURIComponent(stream.ivsPlaybackUrl)}
-            autoPlay playsInline muted controls
-            style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
-          />
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay playsInline muted
-            style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
-          />
-        )}
+        {/* src is set via useEffect — never set it as a JSX prop */}
+        <video
+          ref={videoRef}
+          autoPlay playsInline muted controls
+          style={{ width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
+        />
         {/* Unmute button — iOS requires autoplay to start muted */}
         {isMuted && (
           <button

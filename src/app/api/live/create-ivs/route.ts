@@ -33,15 +33,16 @@ export async function POST(req: Request) {
     const displayName = profile?.display_name ?? user.email!.split("@")[0];
 
     const post = await prisma.post.create({
-      data: {
-        userEmail: user.email!,
-        imageUrl: "",
-        caption: `${displayName} is live`,
-        postType: "LIVE",
-        liveStartedAt: new Date(),
-        voltage: 100,
-      },
-    });
+  data: {
+    userEmail: user.email!,
+    imageUrl: "",
+    caption: `${displayName} is live`,
+    postType: "LIVE",
+    liveStartedAt: new Date(),
+    voltage: 100,
+    ivsPlaybackUrl: process.env.IVS_PLAYBACK_URL ?? null,  // ← this line
+  },
+});
 
     return NextResponse.json({
       streamId: post.id,
