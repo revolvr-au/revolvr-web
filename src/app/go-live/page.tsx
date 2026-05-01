@@ -125,11 +125,11 @@ export default function GoLivePage() {
     }}>
       <canvas
         ref={canvasRef}
+        width={720}
+        height={1280}
         style={{
           position: "absolute", top: 0, left: 0,
           width: "100%", height: "100%",
-          objectFit: "cover",
-          objectPosition: "center",
         }}
       />
 
