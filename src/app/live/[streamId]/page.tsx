@@ -159,10 +159,10 @@ export default function LivePage() {
       });
   }, [streamId]);
 
- // Playback — IVS Player SDK
+// Playback — IVS Player SDK
 useEffect(() => {
   if (!videoRef.current || !stream || stream.status === 'IDLE') return
-  
+
   const src = stream?.ivsPlaybackUrl
     ? decodeURIComponent(stream.ivsPlaybackUrl)
     : stream?.muxPlaybackId
@@ -174,9 +174,8 @@ useEffect(() => {
   let player: any = null
 
   const initPlayer = async () => {
-    // IVS path
     if (stream?.ivsPlaybackUrl) {
-      const { create, PlayerState, PlayerEventType } = await import('amazon-ivs-player')
+      const { create, PlayerEventType } = await import('amazon-ivs-player')
       player = create({
         wasmWorker: 'https://player.live-video.net/1.29.0/amazon-ivs-wasmworker.min.wasm',
         wasmBinary: 'https://player.live-video.net/1.29.0/amazon-ivs-wasmworker.min.js',
@@ -190,7 +189,6 @@ useEffect(() => {
       return
     }
 
-    // Mux / HLS.js fallback
     const { default: Hls } = await import('hls.js')
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src
@@ -213,8 +211,8 @@ useEffect(() => {
   initPlayer()
 
   return () => {
-    if (player?.delete) player.delete()      // IVS SDK cleanup
-    else if (player?.destroy) player.destroy() // HLS.js cleanup
+    if (player?.delete) player.delete()
+    else if (player?.destroy) player.destroy()
     video.pause()
     video.removeAttribute('src')
     video.load()
