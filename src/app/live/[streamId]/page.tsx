@@ -159,9 +159,19 @@ export default function LivePage() {
       });
   }, [streamId]);
 
-// Playback — IVS Player SDK
+// Load IVS player script once
+useEffect(() => {
+  if (document.getElementById('ivs-player-script')) return
+  const script = document.createElement('script')
+  script.id = 'ivs-player-script'
+  script.src = 'https://player.live-video.net/1.29.0/amazon-ivs-player.min.js'
+  document.head.appendChild(script)
+}, [])
+
+// Playback
 useEffect(() => {
   if (!videoRef.current || !stream || stream.status === 'IDLE') return
+  const video = videoRef.current
 
   const src = stream?.ivsPlaybackUrl
     ? decodeURIComponent(stream.ivsPlaybackUrl)
@@ -170,26 +180,28 @@ useEffect(() => {
       : null
   if (!src) return
 
-  const video = videoRef.current
-  let player: any = null
+  let ivsPlayer: any = null
+  let hls: any = null
 
   const initPlayer = async () => {
     if (stream?.ivsPlaybackUrl) {
-      const { create, PlayerEventType } = await import('amazon-ivs-player')
-      player = create({
-        wasmWorker: 'https://player.live-video.net/1.29.0/amazon-ivs-wasmworker.min.wasm',
-        wasmBinary: 'https://player.live-video.net/1.29.0/amazon-ivs-wasmworker.min.js',
+      // Wait for IVS CDN script to be ready
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if ((window as any).IVSPlayer) resolve()
+          else setTimeout(check, 100)
+        }
+        check()
       })
-      player.attachHTMLVideoElement(video)
-      player.load(src)
-      player.play()
-      player.addEventListener(PlayerEventType.ERROR, (err: any) => {
-        console.warn('[IVS SDK] error:', err)
-      })
+      const IVSPlayer = (window as any).IVSPlayer
+      ivsPlayer = IVSPlayer.create()
+      ivsPlayer.attachHTMLVideoElement(video)
+      ivsPlayer.load(src)
+      ivsPlayer.play()
       return
     }
 
-    const { default: Hls } = await import('hls.js')
+    // Mux / HLS.js fallback
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src
       video.load()
@@ -197,22 +209,22 @@ useEffect(() => {
       video.play().catch(() => {})
       return
     }
+    const { default: Hls } = await import('hls.js')
     if (Hls.isSupported()) {
-      const hls = new Hls({ lowLatencyMode: true })
+      hls = new Hls({ lowLatencyMode: true })
       hls.loadSource(src)
       hls.attachMedia(video)
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch(() => {})
       })
-      player = hls
     }
   }
 
   initPlayer()
 
   return () => {
-    if (player?.delete) player.delete()
-    else if (player?.destroy) player.destroy()
+    if (ivsPlayer) ivsPlayer.delete()
+    if (hls) hls.destroy()
     video.pause()
     video.removeAttribute('src')
     video.load()
