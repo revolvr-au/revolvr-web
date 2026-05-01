@@ -196,6 +196,18 @@ useEffect(() => {
       const IVSPlayer = (window as any).IVSPlayer
       ivsPlayer = IVSPlayer.create()
       ivsPlayer.attachHTMLVideoElement(video)
+
+      const { PlayerEventType, ErrorType } = IVSPlayer
+      ivsPlayer.addEventListener(PlayerEventType.ERROR, (err: any) => {
+        console.warn('[IVS] error:', err)
+        if (err.type === ErrorType.NOT_AVAILABLE) {
+          setTimeout(() => {
+            ivsPlayer.load(src)
+            ivsPlayer.play()
+          }, 3000)
+        }
+      })
+
       ivsPlayer.load(src)
       ivsPlayer.play()
       return
