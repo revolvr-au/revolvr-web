@@ -234,7 +234,18 @@ useEffect(() => {
 
   initPlayer()
 
+  // Force video to fill container — IVS SDK overrides dimensions
+  const observer = new MutationObserver(() => {
+    video.style.width = '100%'
+    video.style.height = '100%'
+    video.style.position = 'absolute'
+    video.style.inset = '0'
+    video.style.objectFit = 'cover'
+  })
+  observer.observe(video, { attributes: true, attributeFilter: ['width', 'height', 'style'] })
+
   return () => {
+    observer.disconnect()
     if (ivsPlayer) ivsPlayer.delete()
     if (hls) hls.destroy()
     video.pause()
