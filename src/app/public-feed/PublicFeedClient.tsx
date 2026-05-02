@@ -689,9 +689,15 @@ const Post = memo(function Post({
         justifyContent: "flex-end",
       }}
     >
-      {post.isLive && post.livePlaybackId ? (
+      {post.isLive && (post.livePlaybackId || post.ivsPlaybackUrl) ? (
   <div
-    onClick={() => router.push(`/live/${post.liveStreamId}`)}
+    onClick={() => {
+      if (post.ivsPlaybackUrl) {
+        router.push(`/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`)
+      } else {
+        router.push(`/live/${post.liveStreamId}`)
+      }
+    }}
     style={{
       position: "absolute", top: 0, left: 0,
       width: "100%", height: "100%",
@@ -699,7 +705,7 @@ const Post = memo(function Post({
     }}
   >
     <video
-      src={`https://stream.mux.com/${post.livePlaybackId}.m3u8`}
+      src={post.ivsPlaybackUrl ? decodeURIComponent(post.ivsPlaybackUrl) : `https://stream.mux.com/${post.livePlaybackId}.m3u8`}
       autoPlay muted playsInline
       style={{ width: "100%", height: "100%", objectFit: "cover" }}
     />

@@ -20,9 +20,15 @@ function sanitizeImageUrl(url: string | null | undefined): string | null {
 export async function GET() {
   try {
     const [livePosts, feedPosts] = await Promise.all([
-      // Active LIVE posts — always float to top
+      // Active LIVE posts — always float to top (IVS or Mux)
       prisma.post.findMany({
-        where: { postType: "LIVE", liveStream: { status: "ACTIVE" } },
+        where: {
+          postType: "LIVE",
+          OR: [
+            { ivsPlaybackUrl: { not: null }, liveEndedAt: null },
+            { liveStream: { status: "ACTIVE" } },
+          ]
+        },
         orderBy: { voltage: "desc" },
         take: 5,
         include: {
@@ -98,9 +104,10 @@ export async function GET() {
         latestComment,
         ringTier,
         // Live fields
-        isLive: p.postType === "LIVE" && live?.status === "ACTIVE",
+        isLive: p.postType === "LIVE" && (live?.status === "ACTIVE" || (!!(p as any).ivsPlaybackUrl && !(p as any).liveEndedAt)),
         liveStreamId: live?.id ?? null,
         livePlaybackId: live?.muxPlaybackId ?? null,
+        ivsPlaybackUrl: (p as any).ivsPlaybackUrl ?? null,
         liveStartedAt: live?.liveStartedAt ?? null,
       };
     });
