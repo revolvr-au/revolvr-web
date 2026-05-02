@@ -61,9 +61,24 @@ export default function GoLivePage() {
           await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
         }
 
-        // Attach preview AFTER devices are added
-        if (canvasRef.current) {
-          client.attachPreview(canvasRef.current);
+        // Draw camera directly to canvas instead of using attachPreview
+        if (canvasRef.current && streamRef.current) {
+          const canvas = canvasRef.current;
+          const ctx = canvas.getContext('2d');
+          const videoEl = document.createElement('video');
+          videoEl.srcObject = streamRef.current;
+          videoEl.autoplay = true;
+          videoEl.playsInline = true;
+          videoEl.muted = true;
+          await videoEl.play();
+          const draw = () => {
+            if (!active) return;
+            if (ctx && videoEl.readyState >= 2) {
+              ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            }
+            requestAnimationFrame(draw);
+          };
+          draw();
         }
 
         setCameraReady(true);
