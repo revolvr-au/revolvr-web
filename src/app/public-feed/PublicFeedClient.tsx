@@ -701,13 +701,13 @@ const Post = memo(function Post({
     style={{
       position: "absolute", top: 0, left: 0,
       width: "100%", height: "100%",
-      background: "#000", zIndex: 0, cursor: "pointer",
+      background: "#000", zIndex: 1, cursor: "pointer",
     }}
   >
     <video
       src={post.ivsPlaybackUrl ? decodeURIComponent(post.ivsPlaybackUrl) : `https://stream.mux.com/${post.livePlaybackId}.m3u8`}
       autoPlay muted playsInline
-      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+      style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
     />
     {/* LIVE badge */}
     <div style={{
