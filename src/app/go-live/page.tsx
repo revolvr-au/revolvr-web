@@ -35,7 +35,12 @@ export default function GoLivePage() {
           .replace(':443/app/', '');
 
         const client = IVSBroadcastClient.create({
-          streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
+          streamConfig: {
+            maxResolution: { width: 720, height: 1280 },
+            maxBitrate: 3500000,
+            maxFramerate: 30,
+            maxAudioBitrate: 128000,
+          },
           ingestEndpoint,
         });
         clientRef.current = client;
