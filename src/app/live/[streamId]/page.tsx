@@ -337,8 +337,8 @@ useEffect(() => {
         {/* src is set via useEffect — never set it as a JSX prop */}
         <video
           ref={videoRef}
-          autoPlay playsInline muted controls
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
+          autoPlay playsInline muted
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000", objectPosition: "center center" }}
         />
         {/* Unmute button — iOS requires autoplay to start muted */}
         {isMuted && (
