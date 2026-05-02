@@ -732,6 +732,16 @@ const Post = memo(function Post({
     <button
       onClick={(e) => {
         e.stopPropagation()
+        e.preventDefault()
+        if (post.ivsPlaybackUrl) {
+          router.push(`/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`)
+        } else {
+          router.push(`/live/${post.liveStreamId}`)
+        }
+      }}
+      onTouchEnd={(e) => {
+        e.stopPropagation()
+        e.preventDefault()
         if (post.ivsPlaybackUrl) {
           router.push(`/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`)
         } else {
