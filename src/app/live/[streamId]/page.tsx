@@ -349,7 +349,7 @@ useEffect(() => {
         <video
           ref={videoRef}
           autoPlay playsInline muted
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000", objectPosition: "center center" }}
+          style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) scale(2)", width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
         />
         {/* Unmute button — iOS requires autoplay to start muted */}
         {isMuted && (
