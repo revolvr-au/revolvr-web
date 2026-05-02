@@ -736,7 +736,7 @@ const Post = memo(function Post({
       fontSize: 13, fontWeight: 500,
       padding: "8px 20px", borderRadius: 24,
       backdropFilter: "blur(6px)",
-      whiteSpace: "nowrap",
+      whiteSpace: "nowrap", cursor: "pointer",
     }}>
       Tap to join
     </div>
