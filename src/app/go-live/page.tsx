@@ -74,7 +74,12 @@ export default function GoLivePage() {
           const draw = () => {
             if (!active) return;
             if (ctx && videoEl.readyState >= 2) {
-              ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+              const vw = videoEl.videoWidth;
+              const vh = videoEl.videoHeight;
+              const scale = Math.max(canvas.width / vw, canvas.height / vh);
+              const x = (canvas.width - vw * scale) / 2;
+              const y = (canvas.height - vh * scale) / 2;
+              ctx.drawImage(videoEl, x, y, vw * scale, vh * scale);
             }
             requestAnimationFrame(draw);
           };
