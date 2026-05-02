@@ -333,7 +333,7 @@ useEffect(() => {
     }}>
 
       {/* Video */}
-      <div style={{ position: "relative", width: "100%", flex: "1" }}>
+      <div style={{ position: "absolute", inset: 0 }}>
         {/* src is set via useEffect — never set it as a JSX prop */}
         <video
           ref={videoRef}
