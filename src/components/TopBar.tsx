@@ -32,8 +32,6 @@ export default function TopBar() {
       {/* LEFT */}
       <div style={textStyle}>REVOLVR</div>
 
-      {/* RIGHT */}
-      <div style={textStyleMuted}>LIVE</div>
     </div>
   );
 }
