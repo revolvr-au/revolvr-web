@@ -432,10 +432,12 @@ useEffect(() => {
         )}
       </div>
 
-      {/* Chat */}
+      {/* Chat — overlaid bottom left */}
       <div style={{
-        flex: 1, overflowY: "auto", padding: "12px 12px 0",
+        position: "absolute", bottom: 70, left: 0, right: 0,
+        height: "35%", overflowY: "auto", padding: "12px 12px 0",
         display: "flex", flexDirection: "column", gap: 8,
+        background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)",
       }}>
         {messages.map((msg, i) => (
           <div key={msg.id ?? i} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
@@ -450,11 +452,12 @@ useEffect(() => {
         <div ref={chatEndRef} />
       </div>
 
-      {/* Chat input */}
+      {/* Chat input — overlaid at very bottom */}
       <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0,
         padding: "10px 12px",
         display: "flex", gap: 8, alignItems: "center",
-        borderTop: "0.5px solid rgba(255,255,255,0.1)",
+        background: "rgba(0,0,0,0.4)",
       }}>
         <input
           value={chatInput}
