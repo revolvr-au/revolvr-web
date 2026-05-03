@@ -738,37 +738,19 @@ const Post = memo(function Post({
       ⚡ {post.voltage || 0}
     </div>
     {/* Tap to join */}
-    <button
-      onClick={(e) => {
-        e.stopPropagation()
-        e.preventDefault()
-        if (post.ivsPlaybackUrl) {
-          window.location.href = `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
-        } else {
-          router.push(`/live/${post.liveStreamId}`)
-        }
-      }}
-      onTouchEnd={(e) => {
-        e.stopPropagation()
-        e.preventDefault()
-        if (post.ivsPlaybackUrl) {
-          window.location.href = `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
-        } else {
-          router.push(`/live/${post.liveStreamId}`)
-        }
-      }}
+    <div
       style={{
         position: "absolute", bottom: 120, left: "50%",
         transform: "translateX(-50%)", zIndex: 20,
         background: "#E5004C", color: "#fff",
         fontSize: 14, fontWeight: 700,
         padding: "10px 28px", borderRadius: 24,
-        border: "none", cursor: "pointer",
         whiteSpace: "nowrap",
         boxShadow: "0 0 20px rgba(229,0,76,0.5)",
+        pointerEvents: "none",
       }}>
       🔴 Tap to join LIVE
-    </button>
+    </div>
   </div>
 ) : post.muxPlaybackId ? (
   <VideoPlayer
