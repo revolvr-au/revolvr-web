@@ -146,7 +146,7 @@ export default function LivePage() {
     if (!streamId) return;
     if (ivsMode) {
       // IVS mode - no stream lookup needed, playback URL is in query param
-      setStream({ status: 'ACTIVE', ivsPlaybackUrl });
+      fetch(`/api/live/stream/${streamId}`).then(r=>r.json()).then(d=>{ if(d.stream) setStream(d.stream) });
       return;
     }
     fetch(`/api/live/stream/${streamId}`)
@@ -194,6 +194,7 @@ useEffect(() => {
         check()
       })
       const IVSPlayer = (window as any).IVSPlayer
+      
       ivsPlayer = IVSPlayer.create()
       ivsPlayer.attachHTMLVideoElement(video)
 
