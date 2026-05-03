@@ -852,7 +852,7 @@ const Post = memo(function Post({
         </div>
       )}
 
-      {!commentsOpen && (
+      {!commentsOpen && !post.isLive && (
         <RightRail
           liked={liked}
           onLike={handleInteract}
@@ -868,7 +868,7 @@ const Post = memo(function Post({
         />
       )}
 
-      {post.caption && (
+      {post.caption && !post.isLive && (
         <div
           style={{
             position: "relative",
