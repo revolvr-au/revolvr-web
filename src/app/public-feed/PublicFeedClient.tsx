@@ -710,7 +710,7 @@ const Post = memo(function Post({
       position: "absolute", top: 0, left: 0,
       width: "100%", height: "100%",
       background: "#000", zIndex: 1, cursor: "pointer",
-      touchAction: "none",
+      touchAction: "manipulation",
     }}
   >
     <video
