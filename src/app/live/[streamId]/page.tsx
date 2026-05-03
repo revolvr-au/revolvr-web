@@ -339,123 +339,195 @@ useEffect(() => {
     <div style={{
       height: "100dvh", width: "100%", maxWidth: 420,
       margin: "0 auto", background: "#000",
-      display: "flex", flexDirection: "column",
       position: "relative", overflow: "hidden",
     }}>
 
-      {/* Video */}
-      <div style={{ position: "absolute", inset: 0 }}>
-        {/* src is set via useEffect — never set it as a JSX prop */}
-        <video
-          ref={videoRef}
-          autoPlay playsInline muted
-          style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%) scale(2)", width: "100%", height: "100%", objectFit: "cover", background: "#000" }}
-        />
-        {/* Unmute button — iOS requires autoplay to start muted */}
-        {isMuted && (
-          <button
-            onClick={() => {
-              if (videoRef.current) {
-                videoRef.current.muted = false
-                setIsMuted(false)
-              }
-            }}
-            style={{
-              position: "absolute", bottom: 48, right: 12,
-              background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)",
-              color: "#fff", fontSize: 11, fontWeight: 600,
-              padding: "5px 10px", borderRadius: 20, cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 4,
-            }}
-          >
-            🔇 Tap to unmute
-          </button>
-        )}
-        {ended && (
-          <div style={{
-            position: "absolute", inset: 0, background: "rgba(0,0,0,0.8)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            color: "#fff", fontSize: 16, fontWeight: 500,
-          }}>
-            Stream ended
-          </div>
-        )}
+      {/* Pulse animation */}
+      <style>{`
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.75); }
+        }
+      `}</style>
 
-        {/* Back button */}
+      {/* Video fullscreen */}
+      <video
+        ref={videoRef}
+        autoPlay playsInline muted
+        style={{
+          position: "absolute", inset: 0,
+          width: "100%", height: "100%", objectFit: "cover",
+          background: "#000",
+        }}
+      />
+
+      {/* Stream ended overlay */}
+      {ended && (
+        <div style={{
+          position: "absolute", inset: 0, background: "rgba(0,0,0,0.82)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 50,
+        }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>📴</div>
+            <div style={{ color: "#fff", fontSize: 16, fontWeight: 600 }}>Stream ended</div>
+          </div>
+        </div>
+      )}
+
+      {/* Top bar */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0,
+        padding: "48px 16px 20px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)",
+        zIndex: 20,
+      }}>
+        {/* Back */}
         <button
           onClick={() => router.back()}
           style={{
-            position: "absolute", top: 16, left: 16,
-            background: "rgba(0,0,0,0.5)", border: "none",
-            color: "#fff", fontSize: 20, width: 36, height: 36,
+            background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.12)",
+            color: "#fff", fontSize: 22, width: 38, height: 38,
             borderRadius: "50%", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
+            backdropFilter: "blur(6px)",
           }}
         >
           ‹
         </button>
 
-        {/* LIVE badge */}
+        {/* LIVE badge + viewer count */}
         {!ended && (
           <div style={{
-            position: "absolute", top: 16, left: 60,
-            background: "#E5004C", color: "#fff",
-            fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-            padding: "4px 10px", borderRadius: 4,
-          }}>
-            LIVE
-          </div>
-        )}
-
-        {/* Creator info */}
-        {stream && (
-          <div style={{
-            position: "absolute", bottom: 12, left: 12,
-            display: "flex", alignItems: "center", gap: 8,
+            display: "flex", alignItems: "center", gap: 6,
+            background: "rgba(0,0,0,0.5)", borderRadius: 20,
+            padding: "5px 12px 5px 10px",
+            border: "1px solid rgba(212,175,55,0.35)",
+            backdropFilter: "blur(6px)",
           }}>
             <div style={{
-              width: 32, height: 32, borderRadius: "50%",
-              background: "#333", display: "flex",
-              alignItems: "center", justifyContent: "center",
-              fontSize: 13, color: "#fff", fontWeight: 600,
-            }}>
-              {stream.creatorEmail?.[0]?.toUpperCase()}
-            </div>
-            <span style={{ color: "#fff", fontSize: 13, fontWeight: 500 }}>
-              {stream.creatorEmail?.split("@")[0]}
+              width: 8, height: 8, borderRadius: "50%",
+              background: "#D4AF37",
+              animation: "livePulse 1.6s ease-in-out infinite",
+              flexShrink: 0,
+            }} />
+            <span style={{ color: "#D4AF37", fontSize: 12, fontWeight: 800, letterSpacing: "0.1em" }}>
+              LIVE
+            </span>
+            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 500 }}>
+              {viewerCount}
             </span>
           </div>
         )}
 
-        {/* End stream (creator only) */}
-        {isCreator && !ended && (
+        {/* End button (creator) or spacer */}
+        {isCreator && !ended ? (
           <button
             onClick={endStream}
             style={{
-              position: "absolute", top: 16, right: 16,
-              background: "#E5004C", border: "none",
-              color: "#fff", fontSize: 12, fontWeight: 600,
-              padding: "6px 14px", borderRadius: 20, cursor: "pointer",
+              background: "rgba(229,0,76,0.85)", border: "none",
+              color: "#fff", fontSize: 12, fontWeight: 700,
+              padding: "7px 16px", borderRadius: 20, cursor: "pointer",
+              backdropFilter: "blur(6px)",
             }}
           >
             End
           </button>
+        ) : (
+          <div style={{ width: 38 }} />
         )}
       </div>
 
-      {/* Chat — overlaid bottom left */}
+      {/* Unmute button */}
+      {isMuted && (
+        <button
+          onClick={() => {
+            if (videoRef.current) {
+              videoRef.current.muted = false;
+              setIsMuted(false);
+            }
+          }}
+          style={{
+            position: "absolute", top: 110, right: 14,
+            background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.18)",
+            color: "#fff", fontSize: 11, fontWeight: 600,
+            padding: "5px 11px", borderRadius: 20, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 4,
+            zIndex: 20, backdropFilter: "blur(6px)",
+          }}
+        >
+          🔇 Tap to unmute
+        </button>
+      )}
+
+      {/* Gift button — right side, above chat */}
+      <button
+        style={{
+          position: "absolute", right: 14, bottom: 148,
+          width: 46, height: 46, borderRadius: "50%",
+          background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.14)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 22, cursor: "pointer", zIndex: 20,
+          backdropFilter: "blur(6px)",
+        }}
+      >
+        🎁
+      </button>
+
+      {/* Creator overlay — bottom left above chat */}
+      {stream && (
+        <div style={{
+          position: "absolute", bottom: 148, left: 14,
+          display: "flex", alignItems: "center", gap: 10,
+          zIndex: 20,
+        }}>
+          {stream.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={stream.avatarUrl}
+              alt={stream.displayName ?? stream.creatorEmail?.split("@")[0]}
+              style={{
+                width: 42, height: 42, borderRadius: "50%",
+                border: "2px solid rgba(212,175,55,0.6)",
+                objectFit: "cover", flexShrink: 0,
+              }}
+            />
+          ) : (
+            <div style={{
+              width: 42, height: 42, borderRadius: "50%",
+              background: "linear-gradient(135deg, #1a1a2e, #16213e)",
+              border: "2px solid rgba(212,175,55,0.55)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 17, color: "#D4AF37", fontWeight: 700, flexShrink: 0,
+            }}>
+              {(stream.displayName ?? stream.creatorEmail)?.[0]?.toUpperCase()}
+            </div>
+          )}
+          <div>
+            <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, lineHeight: 1.25, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
+              {stream.displayName ?? stream.creatorEmail?.split("@")[0]}
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, lineHeight: 1.2 }}>
+              @{stream.handle ?? stream.creatorEmail?.split("@")[0]}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat messages — above input */}
       <div style={{
-        position: "absolute", bottom: 70, left: 0, right: 0,
-        height: "35%", overflowY: "auto", padding: "12px 12px 0",
-        display: "flex", flexDirection: "column", gap: 8,
-        background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)",
+        position: "absolute", bottom: 76, left: 0, right: 64,
+        height: "34%", overflowY: "auto", padding: "0 14px 8px",
+        display: "flex", flexDirection: "column", gap: 5,
+        zIndex: 20,
       }}>
         {messages.map((msg, i) => (
-          <div key={msg.id ?? i} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#aaa", flexShrink: 0 }}>
+          <div key={msg.id ?? i} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "#D4AF37", flexShrink: 0, lineHeight: 1.4 }}>
               {msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}
             </span>
-            <span style={{ fontSize: 13, color: "#fff", lineHeight: 1.4 }}>
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.88)", lineHeight: 1.4 }}>
               {msg.message}
             </span>
           </div>
@@ -463,12 +535,13 @@ useEffect(() => {
         <div ref={chatEndRef} />
       </div>
 
-      {/* Chat input — overlaid at very bottom */}
+      {/* Chat input — pill, dark, bottom */}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0,
-        padding: "10px 12px",
+        padding: "10px 14px 24px",
         display: "flex", gap: 8, alignItems: "center",
-        background: "rgba(0,0,0,0.4)",
+        background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)",
+        zIndex: 20,
       }}>
         <input
           value={chatInput}
@@ -476,18 +549,22 @@ useEffect(() => {
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Say something..."
           style={{
-            flex: 1, background: "rgba(255,255,255,0.08)",
-            border: "none", borderRadius: 20,
-            color: "#fff", fontSize: 13, padding: "8px 14px",
+            flex: 1,
+            background: "rgba(20,20,35,0.75)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 28,
+            color: "#fff", fontSize: 13, padding: "10px 18px",
             outline: "none",
+            backdropFilter: "blur(8px)",
           }}
         />
         <button
           onClick={sendMessage}
           style={{
-            background: "#E5004C", border: "none",
-            color: "#fff", fontSize: 13, fontWeight: 600,
-            padding: "8px 16px", borderRadius: 20, cursor: "pointer",
+            background: "linear-gradient(135deg, #D4AF37, #A8860A)", border: "none",
+            color: "#000", fontSize: 13, fontWeight: 700,
+            padding: "10px 18px", borderRadius: 28, cursor: "pointer",
+            whiteSpace: "nowrap", flexShrink: 0,
           }}
         >
           Send
