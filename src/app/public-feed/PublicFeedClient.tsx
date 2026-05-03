@@ -693,7 +693,7 @@ const Post = memo(function Post({
   <div
     onClick={() => {
       if (post.ivsPlaybackUrl) {
-        router.push(`/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`)
+        window.location.href = `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
       } else {
         router.push(`/live/${post.liveStreamId}`)
       }
@@ -701,16 +701,16 @@ const Post = memo(function Post({
     onTouchEnd={(e) => {
       e.stopPropagation()
       e.preventDefault()
-      if (post.ivsPlaybackUrl) {
-        router.push(`/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`)
-      } else {
-        router.push(`/live/${post.liveStreamId}`)
-      }
+      const url = post.ivsPlaybackUrl
+        ? `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
+        : `/live/${post.liveStreamId}`
+      window.location.href = url
     }}
     style={{
       position: "absolute", top: 0, left: 0,
       width: "100%", height: "100%",
       background: "#000", zIndex: 1, cursor: "pointer",
+      touchAction: "none",
     }}
   >
     <video
@@ -743,7 +743,7 @@ const Post = memo(function Post({
         e.stopPropagation()
         e.preventDefault()
         if (post.ivsPlaybackUrl) {
-          router.push(`/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`)
+          window.location.href = `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
         } else {
           router.push(`/live/${post.liveStreamId}`)
         }
@@ -752,7 +752,7 @@ const Post = memo(function Post({
         e.stopPropagation()
         e.preventDefault()
         if (post.ivsPlaybackUrl) {
-          router.push(`/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`)
+          window.location.href = `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
         } else {
           router.push(`/live/${post.liveStreamId}`)
         }
