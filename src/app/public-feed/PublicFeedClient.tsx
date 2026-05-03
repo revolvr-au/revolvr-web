@@ -716,7 +716,8 @@ const Post = memo(function Post({
     {/* Gradient background */}
     <div style={{
       position: "absolute", inset: 0,
-      background: "linear-gradient(135deg, #1a0a0a 0%, #0d0d0d 50%, #1a0010 100%)",
+      background: "linear-gradient(135deg, #080808 0%, #0d0d0d 60%, #0a0a14 100%)",
+      boxShadow: "inset 0 0 80px rgba(255,215,0,0.03)",
     }} />
 
     {/* Pulsing ring + avatar */}
@@ -730,13 +731,13 @@ const Post = memo(function Post({
         <div style={{
           position: "absolute", inset: -6,
           borderRadius: "50%",
-          border: "3px solid #E5004C",
+          border: "3px solid #FFD700",
           animation: "livePulseRing 1.5s ease-in-out infinite",
         }} />
         <div style={{
           position: "absolute", inset: -12,
           borderRadius: "50%",
-          border: "2px solid rgba(229,0,76,0.3)",
+          border: "2px solid rgba(255,215,0,0.2)",
           animation: "livePulseRing 1.5s ease-in-out infinite 0.3s",
         }} />
         {post.avatarUrl ? (
@@ -766,17 +767,22 @@ const Post = memo(function Post({
       </div>
 
       <div style={{
-        background: "#E5004C", color: "#fff",
-        fontSize: 13, fontWeight: 700, letterSpacing: "0.1em",
-        padding: "8px 24px", borderRadius: 20,
-        display: "flex", alignItems: "center", gap: 8,
-        boxShadow: "0 0 24px rgba(229,0,76,0.5)",
+        display: "flex", alignItems: "center", gap: 12,
+        marginTop: 8,
       }}>
         <div style={{
           width: 8, height: 8, borderRadius: "50%",
-          background: "#fff", animation: "livePulse 1s ease-in-out infinite",
+          background: "#FFD700",
+          boxShadow: "0 0 8px #FFD700",
+          animation: "livePulse 1s ease-in-out infinite",
         }} />
-        WATCH LIVE
+        <span style={{
+          color: "rgba(255,255,255,0.5)",
+          fontSize: 11, letterSpacing: "0.2em",
+          fontFamily: "monospace", textTransform: "uppercase",
+        }}>
+          ⚡ {post.voltage || 0} voltage
+        </span>
       </div>
     </div>
 
@@ -794,8 +800,8 @@ const Post = memo(function Post({
 
     <style>{`
       @keyframes livePulseRing {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.05); }
+        0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
+        50% { opacity: 0.7; transform: scale(1.04); box-shadow: 0 0 20px 4px rgba(255,215,0,0.15); }
       }
     `}</style>
   </div>
