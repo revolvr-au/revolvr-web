@@ -713,30 +713,91 @@ const Post = memo(function Post({
       touchAction: "manipulation",
     }}
   >
-    <video
-      src={post.ivsPlaybackUrl ? decodeURIComponent(post.ivsPlaybackUrl) : `https://stream.mux.com/${post.livePlaybackId}.m3u8`}
-      autoPlay muted playsInline
-      style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }}
-    />
-    {/* LIVE badge */}
+    {/* Gradient background */}
     <div style={{
-      position: "absolute", top: 16, left: 16, zIndex: 10,
-      background: "#E5004C", color: "#fff",
-      fontSize: 11, fontWeight: 700, letterSpacing: "0.08em",
-      padding: "4px 10px", borderRadius: 4,
-    }}>
-      LIVE
-    </div>
-    {/* Voltage badge */}
+      position: "absolute", inset: 0,
+      background: "linear-gradient(135deg, #1a0a0a 0%, #0d0d0d 50%, #1a0010 100%)",
+    }} />
+
+    {/* Pulsing ring + avatar */}
     <div style={{
-      position: "absolute", top: 16, left: 72, zIndex: 10,
-      background: "rgba(0,0,0,0.6)", color: "#fff",
-      fontSize: 11, fontWeight: 600,
-      padding: "4px 10px", borderRadius: 4,
-      display: "flex", alignItems: "center", gap: 4,
+      position: "absolute", top: "30%", left: "50%",
+      transform: "translate(-50%, -50%)",
+      display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
+      zIndex: 10,
     }}>
-      ⚡ {post.voltage || 0}
+      <div style={{ position: "relative" }}>
+        <div style={{
+          position: "absolute", inset: -6,
+          borderRadius: "50%",
+          border: "3px solid #E5004C",
+          animation: "livePulseRing 1.5s ease-in-out infinite",
+        }} />
+        <div style={{
+          position: "absolute", inset: -12,
+          borderRadius: "50%",
+          border: "2px solid rgba(229,0,76,0.3)",
+          animation: "livePulseRing 1.5s ease-in-out infinite 0.3s",
+        }} />
+        {post.avatarUrl ? (
+          <img src={post.avatarUrl} style={{
+            width: 80, height: 80, borderRadius: "50%",
+            objectFit: "cover", border: "3px solid #fff",
+          }} />
+        ) : (
+          <div style={{
+            width: 80, height: 80, borderRadius: "50%",
+            background: "#333", border: "3px solid #fff",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 32, color: "#fff", fontWeight: 700,
+          }}>
+            {post.displayName?.[0]?.toUpperCase() || "?"}
+          </div>
+        )}
+      </div>
+
+      <div style={{ textAlign: "center" }}>
+        <div style={{ color: "#fff", fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+          {post.displayName}
+        </div>
+        <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 13 }}>
+          is live now
+        </div>
+      </div>
+
+      <div style={{
+        background: "#E5004C", color: "#fff",
+        fontSize: 13, fontWeight: 700, letterSpacing: "0.1em",
+        padding: "8px 24px", borderRadius: 20,
+        display: "flex", alignItems: "center", gap: 8,
+        boxShadow: "0 0 24px rgba(229,0,76,0.5)",
+      }}>
+        <div style={{
+          width: 8, height: 8, borderRadius: "50%",
+          background: "#fff", animation: "livePulse 1s ease-in-out infinite",
+        }} />
+        WATCH LIVE
+      </div>
     </div>
+
+    {/* Bottom info */}
+    <div style={{
+      position: "absolute", bottom: 0, left: 0, right: 0,
+      padding: "40px 20px 20px",
+      background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)",
+      zIndex: 10,
+    }}>
+      <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12 }}>
+        {post.caption}
+      </div>
+    </div>
+
+    <style>{`
+      @keyframes livePulseRing {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.05); }
+      }
+    `}</style>
   </div>
 ) : post.muxPlaybackId ? (
   <VideoPlayer
