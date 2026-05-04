@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
@@ -343,15 +343,18 @@ useEffect(() => {
       position: "relative", overflow: "hidden",
     }}>
 
-      {/* Pulse animation */}
       <style>{`
         @keyframes livePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(0.75); }
         }
+        @keyframes commentSlideIn {
+          from { transform: translateX(-60px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
       `}</style>
 
-      {/* Video fullscreen */}
+      {/* 1. Video fullscreen */}
       <video
         ref={videoRef}
         autoPlay playsInline muted
@@ -376,68 +379,108 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Top bar */}
-      <div style={{
-        position: "absolute", top: 0, left: 0, right: 0,
-        padding: "48px 16px 20px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        background: "linear-gradient(to bottom, rgba(0,0,0,0.65) 0%, transparent 100%)",
-        zIndex: 20,
-      }}>
-        {/* Back */}
+      {/* 2. Creator character image — top left, 45% screen height */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/character_2.png"
+        alt=""
+        style={{
+          position: "absolute", top: 0, left: 0,
+          height: "45%", width: "auto",
+          objectFit: "contain",
+          zIndex: 10,
+          pointerEvents: "none",
+        }}
+      />
+
+      {/* 7. Back button — top left, above character */}
+      <button
+        onClick={() => router.back()}
+        style={{
+          position: "absolute", top: 12, left: 12,
+          background: "rgba(0,0,0,0.3)", border: "none",
+          color: "#fff", fontSize: 20, width: 30, height: 30,
+          borderRadius: "50%", cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 30,
+        }}
+      >
+        ‹
+      </button>
+
+      {/* 8. End stream button — top right, creator only */}
+      {isCreator && !ended && (
         <button
-          onClick={() => router.back()}
+          onClick={endStream}
           style={{
-            background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.12)",
-            color: "#fff", fontSize: 22, width: 38, height: 38,
-            borderRadius: "50%", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(6px)",
+            position: "absolute", top: 12, right: 14,
+            background: "rgba(220,30,60,0.85)", border: "none",
+            color: "#fff", fontSize: 11, fontWeight: 700,
+            padding: "5px 13px", borderRadius: 20, cursor: "pointer",
+            zIndex: 30,
           }}
         >
-          ‹
+          End
         </button>
+      )}
 
-        {/* LIVE badge + viewer count */}
+      {/* 3. Creator name + LIVE badge — just below character */}
+      <div style={{
+        position: "absolute", top: "44%", left: 12,
+        display: "flex", flexDirection: "column", gap: 5,
+        zIndex: 20,
+      }}>
+        {stream && (
+          <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}>
+            {stream.displayName ?? stream.creatorEmail?.split("@")[0]}
+          </div>
+        )}
         {!ended && (
           <div style={{
-            display: "flex", alignItems: "center", gap: 6,
-            background: "rgba(0,0,0,0.5)", borderRadius: 20,
-            padding: "5px 12px 5px 10px",
-            border: "1px solid rgba(212,175,55,0.35)",
-            backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", gap: 5,
+            background: "rgba(0,0,0,0.35)", borderRadius: 20,
+            padding: "3px 9px 3px 7px",
+            width: "fit-content",
           }}>
             <div style={{
-              width: 8, height: 8, borderRadius: "50%",
+              width: 7, height: 7, borderRadius: "50%",
               background: "#D4AF37",
               animation: "livePulse 1.6s ease-in-out infinite",
               flexShrink: 0,
             }} />
-            <span style={{ color: "#D4AF37", fontSize: 12, fontWeight: 800, letterSpacing: "0.1em" }}>
-              LIVE
-            </span>
-            <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 500 }}>
-              {viewerCount}
-            </span>
+            <span style={{ color: "#D4AF37", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em" }}>LIVE</span>
+            <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 11 }}>{viewerCount}</span>
           </div>
         )}
+      </div>
 
-        {/* End button (creator) or spacer */}
-        {isCreator && !ended ? (
-          <button
-            onClick={endStream}
-            style={{
-              background: "rgba(229,0,76,0.85)", border: "none",
-              color: "#fff", fontSize: 12, fontWeight: 700,
-              padding: "7px 16px", borderRadius: 20, cursor: "pointer",
-              backdropFilter: "blur(6px)",
-            }}
-          >
-            End
-          </button>
-        ) : (
-          <div style={{ width: 38 }} />
-        )}
+      {/* 4. Floating comments — left, 50%–85% of screen */}
+      <div style={{
+        position: "absolute", left: 12, top: "50%", height: "35%",
+        width: "72%", overflow: "hidden",
+        zIndex: 20,
+        maskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, black 55%, transparent 100%)",
+      } as React.CSSProperties}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, paddingTop: 4 }}>
+          {messages.slice(-10).map((msg, i) => (
+            <div
+              key={msg.id ?? i}
+              style={{
+                display: "flex", gap: 5, alignItems: "baseline",
+                animation: "commentSlideIn 0.3s ease-out both",
+              }}
+            >
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#D4AF37", flexShrink: 0, lineHeight: 1.4 }}>
+                {msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}
+              </span>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.88)", lineHeight: 1.4 }}>
+                {msg.message}
+              </span>
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
       </div>
 
       {/* Unmute button */}
@@ -450,7 +493,7 @@ useEffect(() => {
             }
           }}
           style={{
-            position: "absolute", top: 110, right: 14,
+            position: "absolute", top: 56, right: 14,
             background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.18)",
             color: "#fff", fontSize: 11, fontWeight: 600,
             padding: "5px 11px", borderRadius: 20, cursor: "pointer",
@@ -462,10 +505,10 @@ useEffect(() => {
         </button>
       )}
 
-      {/* Gift button — right side, above chat */}
+      {/* 5. Gift button — bottom right, above input */}
       <button
         style={{
-          position: "absolute", right: 14, bottom: 148,
+          position: "absolute", right: 14, bottom: 70,
           width: 46, height: 46, borderRadius: "50%",
           background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.14)",
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -476,72 +519,11 @@ useEffect(() => {
         🎁
       </button>
 
-      {/* Creator overlay — bottom left above chat */}
-      {stream && (
-        <div style={{
-          position: "absolute", bottom: 148, left: 14,
-          display: "flex", alignItems: "center", gap: 10,
-          zIndex: 20,
-        }}>
-          {stream.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={stream.avatarUrl}
-              alt={stream.displayName ?? stream.creatorEmail?.split("@")[0]}
-              style={{
-                width: 42, height: 42, borderRadius: "50%",
-                border: "2px solid rgba(212,175,55,0.6)",
-                objectFit: "cover", flexShrink: 0,
-              }}
-            />
-          ) : (
-            <div style={{
-              width: 42, height: 42, borderRadius: "50%",
-              background: "linear-gradient(135deg, #1a1a2e, #16213e)",
-              border: "2px solid rgba(212,175,55,0.55)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 17, color: "#D4AF37", fontWeight: 700, flexShrink: 0,
-            }}>
-              {(stream.displayName ?? stream.creatorEmail)?.[0]?.toUpperCase()}
-            </div>
-          )}
-          <div>
-            <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, lineHeight: 1.25, textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
-              {stream.displayName ?? stream.creatorEmail?.split("@")[0]}
-            </div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, lineHeight: 1.2 }}>
-              @{stream.handle ?? stream.creatorEmail?.split("@")[0]}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Chat messages — above input */}
-      <div style={{
-        position: "absolute", bottom: 76, left: 0, right: 64,
-        height: "34%", overflowY: "auto", padding: "0 14px 8px",
-        display: "flex", flexDirection: "column", gap: 5,
-        zIndex: 20,
-      }}>
-        {messages.map((msg, i) => (
-          <div key={msg.id ?? i} style={{ display: "flex", gap: 6, alignItems: "baseline" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: "#D4AF37", flexShrink: 0, lineHeight: 1.4 }}>
-              {msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}
-            </span>
-            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.88)", lineHeight: 1.4 }}>
-              {msg.message}
-            </span>
-          </div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* Chat input — pill, dark, bottom */}
+      {/* 6. Chat input — bottom, full width, ultra minimal */}
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0,
-        padding: "10px 14px 24px",
-        display: "flex", gap: 8, alignItems: "center",
-        background: "linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)",
+        padding: "8px 12px 20px",
+        display: "flex", alignItems: "center", gap: 8,
         zIndex: 20,
       }}>
         <input
@@ -551,24 +533,23 @@ useEffect(() => {
           placeholder="Say something..."
           style={{
             flex: 1,
-            background: "rgba(20,20,35,0.75)",
-            border: "1px solid rgba(255,255,255,0.1)",
+            background: "rgba(255,255,255,0.1)",
+            border: "none",
             borderRadius: 28,
-            color: "#fff", fontSize: 13, padding: "10px 18px",
+            color: "#fff", fontSize: 13, padding: "10px 16px",
             outline: "none",
-            backdropFilter: "blur(8px)",
           }}
         />
         <button
           onClick={sendMessage}
           style={{
-            background: "linear-gradient(135deg, #D4AF37, #A8860A)", border: "none",
-            color: "#000", fontSize: 13, fontWeight: 700,
-            padding: "10px 18px", borderRadius: 28, cursor: "pointer",
-            whiteSpace: "nowrap", flexShrink: 0,
+            background: "transparent", border: "none",
+            color: "#D4AF37", fontSize: 20, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "2px 4px", flexShrink: 0,
           }}
         >
-          Send
+          ➤
         </button>
       </div>
     </div>
