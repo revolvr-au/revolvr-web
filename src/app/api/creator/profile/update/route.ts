@@ -37,6 +37,7 @@ export async function POST(req: Request) {
     const handle = String(body?.handle ?? "").trim();
     const avatarUrl = String(body?.avatarUrl ?? "").trim();
     const bio = String(body?.bio ?? "").trim();
+    const characterId = typeof body?.characterId === "number" ? body.characterId : undefined;
 
     const normalizedHandle = handle ? handle.toLowerCase() : null;
 
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
         handle: normalizedHandle,
         avatarUrl: avatarUrl || null,
         bio: bio || null,
+        characterId: characterId ?? undefined,
       },
     });
 

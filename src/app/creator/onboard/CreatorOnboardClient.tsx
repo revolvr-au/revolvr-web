@@ -5,13 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 const supabase = createSupabaseBrowserClient();
+const CHARACTERS = [1, 2, 3, 4, 5];
 
 export default function CreatorOnboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [step, setStep] = useState<1 | 2>(1);
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [characterId, setCharacterId] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [redirectingStripe, setRedirectingStripe] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -35,7 +38,6 @@ export default function CreatorOnboardClient() {
           }
 
           const stripeRes = await fetch("/api/stripe/connect/link", {
-
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
             cache: "no-store",
@@ -82,9 +84,7 @@ export default function CreatorOnboardClient() {
     }
 
     run();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [router, searchParams]);
 
   const onActivate = async () => {
@@ -115,6 +115,16 @@ export default function CreatorOnboardClient() {
         setErr(json?.error || "Server error");
         return;
       }
+
+      // Save character choice
+      await fetch("/api/creator/profile/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ characterId }),
+      });
 
       setRedirectingStripe(true);
 
@@ -147,168 +157,178 @@ export default function CreatorOnboardClient() {
     }
   };
 
-  const canSubmit = handle.trim().length > 0 && displayName.trim().length > 0 && !loading;
+  const canSubmitStep1 = handle.trim().length > 0 && displayName.trim().length > 0;
 
   if (redirectingStripe) {
     return (
       <div style={{
-        minHeight: "100dvh",
-        background: "#0a0806",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 16,
+        minHeight: "100dvh", background: "#0a0806",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", gap: 16,
       }}>
-        <div style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 28,
-          letterSpacing: 8,
-          color: "white",
-        }}>
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white" }}>
           REVOLVR
         </div>
-        <div style={{
-          fontFamily: "monospace",
-          fontSize: 13,
-          color: "#00e5ff",
-          letterSpacing: 2,
-        }}>
+        <div style={{ fontFamily: "monospace", fontSize: 13, color: "#00e5ff", letterSpacing: 2 }}>
           REDIRECTING TO STRIPE…
         </div>
-        <div style={{ fontFamily: "monospace", fontSize: 11, color: "#333" }}>
-          Please wait.
-        </div>
+        <div style={{ fontFamily: "monospace", fontSize: 11, color: "#333" }}>Please wait.</div>
       </div>
     );
   }
 
   return (
     <div style={{
-      minHeight: "100dvh",
-      background: "#0a0806",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
+      minHeight: "100dvh", background: "#0a0806",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
       padding: "32px 20px",
     }}>
-      {/* Wordmark */}
-      <div style={{
-        fontFamily: "'Bebas Neue', sans-serif",
-        fontSize: 28,
-        letterSpacing: 8,
-        color: "white",
-        marginBottom: 32,
-      }}>
+      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white", marginBottom: 32 }}>
         REVOLVR
       </div>
 
-      <div style={{
-        width: "100%",
-        maxWidth: 380,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 20,
-      }}>
-        {/* Title */}
-        <div style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 36,
-          color: "white",
-          textAlign: "center",
-          lineHeight: 1,
-        }}>
-          BECOME A CREATOR
-        </div>
+      <div style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
 
-        {/* Subline */}
-        <div style={{
-          fontFamily: "monospace",
-          fontSize: 13,
-          color: "#555",
-          textAlign: "center",
-        }}>
-          Choose your handle and display name to enable payouts.
-        </div>
+        {/* ── STEP 1: Handle + display name ── */}
+        {step === 1 && (
+          <>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
+              BECOME A CREATOR
+            </div>
+            <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+              Choose your handle and display name to enable payouts.
+            </div>
 
-        {/* Error */}
-        {err && (
-          <div style={{
-            fontFamily: "monospace",
-            fontSize: 12,
-            color: "#ff3b30",
-            textAlign: "center",
-            width: "100%",
-          }}>
-            {err}
-          </div>
+            {err && (
+              <div style={{ fontFamily: "monospace", fontSize: 12, color: "#ff3b30", textAlign: "center", width: "100%" }}>
+                {err}
+              </div>
+            )}
+
+            <input
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              placeholder="yourhandle"
+              style={{
+                width: "100%", boxSizing: "border-box",
+                background: "#110e0b", border: "1px solid #2a2520",
+                borderRadius: 50, padding: "13px 18px",
+                fontFamily: "monospace", fontSize: 14, color: "white", outline: "none",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
+            />
+
+            <input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Display name"
+              style={{
+                width: "100%", boxSizing: "border-box",
+                background: "#110e0b", border: "1px solid #2a2520",
+                borderRadius: 50, padding: "13px 18px",
+                fontFamily: "monospace", fontSize: 14, color: "white", outline: "none",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
+            />
+
+            <button
+              type="button"
+              disabled={!canSubmitStep1}
+              onClick={() => setStep(2)}
+              style={{
+                width: "100%", padding: "14px 0", borderRadius: 50,
+                background: "transparent",
+                border: `1px solid ${canSubmitStep1 ? "#00e5ff" : "#2a2520"}`,
+                color: canSubmitStep1 ? "#00e5ff" : "#333",
+                fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3,
+                cursor: canSubmitStep1 ? "pointer" : "not-allowed",
+                transition: "border-color 0.2s, color 0.2s",
+              }}
+            >
+              NEXT
+            </button>
+          </>
         )}
 
-        {/* Handle input */}
-        <input
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-          placeholder="yourhandle"
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            background: "#110e0b",
-            border: "1px solid #2a2520",
-            borderRadius: 50,
-            padding: "13px 18px",
-            fontFamily: "monospace",
-            fontSize: 14,
-            color: "white",
-            outline: "none",
-          }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
-          onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
-        />
+        {/* ── STEP 2: Character picker ── */}
+        {step === 2 && (
+          <>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
+              PICK YOUR CHARACTER
+            </div>
+            <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+              This character will appear on your live streams.
+            </div>
 
-        {/* Display name input */}
-        <input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Display name"
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            background: "#110e0b",
-            border: "1px solid #2a2520",
-            borderRadius: 50,
-            padding: "13px 18px",
-            fontFamily: "monospace",
-            fontSize: 14,
-            color: "white",
-            outline: "none",
-          }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
-          onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
-        />
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 10, width: "100%", marginTop: 8,
+            }}>
+              {CHARACTERS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCharacterId(id)}
+                  style={{
+                    background: characterId === id ? "rgba(0,229,255,0.08)" : "#110e0b",
+                    border: `2px solid ${characterId === id ? "#00e5ff" : "#2a2520"}`,
+                    borderRadius: 12, padding: "6px 4px 0",
+                    cursor: "pointer", display: "flex",
+                    flexDirection: "column", alignItems: "center",
+                    transition: "border-color 0.15s, background 0.15s",
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/character_${id}.png`}
+                    alt={`Character ${id}`}
+                    style={{ width: "100%", height: "auto", display: "block" }}
+                  />
+                </button>
+              ))}
+            </div>
 
-        {/* Continue button */}
-        <button
-          type="button"
-          disabled={!canSubmit}
-          onClick={onActivate}
-          style={{
-            width: "100%",
-            padding: "14px 0",
-            borderRadius: 50,
-            background: "transparent",
-            border: `1px solid ${canSubmit ? "#00e5ff" : "#2a2520"}`,
-            color: canSubmit ? "#00e5ff" : "#333",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 18,
-            letterSpacing: 3,
-            cursor: canSubmit ? "pointer" : "not-allowed",
-            transition: "border-color 0.2s, color 0.2s",
-          }}
-        >
-          {loading ? "SAVING…" : "CONTINUE"}
-        </button>
+            {err && (
+              <div style={{ fontFamily: "monospace", fontSize: 12, color: "#ff3b30", textAlign: "center", width: "100%" }}>
+                {err}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10, width: "100%" }}>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  flex: 1, padding: "14px 0", borderRadius: 50,
+                  background: "transparent", border: "1px solid #2a2520",
+                  color: "#555", fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 18, letterSpacing: 3, cursor: "pointer",
+                }}
+              >
+                BACK
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={onActivate}
+                style={{
+                  flex: 2, padding: "14px 0", borderRadius: 50,
+                  background: "transparent", border: "1px solid #00e5ff",
+                  color: "#00e5ff", fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 18, letterSpacing: 3,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  transition: "border-color 0.2s, color 0.2s",
+                }}
+              >
+                {loading ? "SAVING…" : "CONTINUE"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
