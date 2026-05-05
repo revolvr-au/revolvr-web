@@ -24,16 +24,16 @@ export async function POST(req: Request) {
 
     // Call HF Inference API — free, no package needed
     const hfRes = await fetch(
-      "https://api-inference.huggingface.co/models/briaai/RMBG-1.4",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/octet-stream",
-        },
-        body: imgBuffer,
-      }
-    );
+  "https://router.huggingface.co/hf-inference/models/briaai/RMBG-1.4",
+  {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.HF_TOKEN}`,
+      "Content-Type": "application/octet-stream",
+    },
+    body: imgBuffer,
+  }
+);
 
     if (!hfRes.ok) {
       const err = await hfRes.text();
