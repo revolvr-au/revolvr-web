@@ -143,6 +143,7 @@ model UserCredits {
   spins     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  sparks Int @default(0)
 
   @@schema("public")
 }
@@ -347,6 +348,8 @@ model spinner_spins {
   @@index([user_email])
   @@schema("public")
 }
+
+
 
 model CreatorProfile {
   id          String        @id @default(cuid())
