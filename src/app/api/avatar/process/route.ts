@@ -1,36 +1,46 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
-import { env } from "@huggingface/transformers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-env.cacheDir = "/tmp/transformers-cache";
-env.authToken = process.env.HF_TOKEN ?? "";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-let segmenter: any = null;
-
 export async function POST(req: Request) {
   try {
     const { avatarUrl, email } = await req.json();
     if (!avatarUrl || !email) {
-      return NextResponse.json({ error: "Missing avatarUrl or email" }, { status: 400 });
+      return NextResponse.json({ error: "Missing params" }, { status: 400 });
     }
 
-    if (!segmenter) {
-      const { pipeline } = await import("@huggingface/transformers");
-      segmenter = await pipeline("background-removal", "onnx-community/BEN2-ONNX");
+    // Fetch the image
+    const imgRes = await fetch(avatarUrl);
+    const imgBuffer = await imgRes.arrayBuffer();
+
+    // Call HF Inference API — free, no package needed
+    const hfRes = await fetch(
+      "https://api-inference.huggingface.co/models/briaai/RMBG-1.4",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/octet-stream",
+        },
+        body: imgBuffer,
+      }
+    );
+
+    if (!hfRes.ok) {
+      const err = await hfRes.text();
+      throw new Error(`HF API error: ${err}`);
     }
 
-    const result = await segmenter(avatarUrl);
-    const pngBuffer = Buffer.from(await result[0].arrayBuffer());
+    const pngBuffer = Buffer.from(await hfRes.arrayBuffer());
 
     const filename = `${email.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.png`;
     const { error: uploadErr } = await supabaseAdmin.storage

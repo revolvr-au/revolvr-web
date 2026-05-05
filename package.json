@@ -15,7 +15,6 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@huggingface/transformers": "^4.2.0",
     "@livekit/components-styles": "^1.2.0",
     "@mux/mux-node": "^14.0.1",
     "@prisma/client": "^6.19.0",
