@@ -386,7 +386,7 @@ useEffect(() => {
         alt=""
         style={{
           position: "absolute", top: 0, left: 0,
-          height: "45%", width: "auto",
+          height: "160px", width: "auto",
           objectFit: "contain",
           zIndex: 10,
           pointerEvents: "none",
