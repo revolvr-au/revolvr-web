@@ -11,6 +11,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 process.env.TRANSFORMERS_CACHE = "/tmp";
+process.env.HUGGINGFACE_TOKEN = process.env.HF_TOKEN ?? "";
 
 // Module-level cache — stays warm between invocations on same container
 let segmenter: any = null;
