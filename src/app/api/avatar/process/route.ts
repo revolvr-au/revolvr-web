@@ -19,31 +19,30 @@ export async function POST(req: Request) {
     }
 
     // Call fal-ai/bria-rmbg via HF router
-    const hfRes = await fetch(
-      "https://router.huggingface.co/fal-ai/bria-rmbg",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ image_url: avatarUrl }),
-      }
-    );
+   const hfRes = await fetch("https://fal.run/fal-ai/birefnet", {
+  method: "POST",
+  headers: {
+    Authorization: `Key ${process.env.FAL_API_KEY}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    image_url: avatarUrl,
+    model: "General Use (Light)",
+    operating_on_foreground: false,
+  }),
+});
 
-    if (!hfRes.ok) {
-      const err = await hfRes.text();
-      throw new Error(`HF API error: ${err}`);
-    }
+if (!hfRes.ok) {
+  const err = await hfRes.text();
+  throw new Error(`Fal API error: ${err}`);
+}
 
-    // fal returns JSON with image URL
-    const json = await hfRes.json();
-    const imageUrl = json?.image?.url;
-    if (!imageUrl) throw new Error(`No image returned from fal: ${JSON.stringify(json)}`);
+const json = await hfRes.json();
+const imageUrl = json?.image?.url;
+if (!imageUrl) throw new Error(`No image returned: ${JSON.stringify(json)}`);
 
-    // Fetch the processed PNG
-    const pngRes = await fetch(imageUrl);
-    const pngBuffer = Buffer.from(await pngRes.arrayBuffer());
+const pngRes = await fetch(imageUrl);
+const pngBuffer = Buffer.from(await pngRes.arrayBuffer());
 
     // Upload to avatars-live bucket
     const filename = `${email.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.png`;
