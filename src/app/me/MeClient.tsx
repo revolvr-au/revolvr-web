@@ -368,6 +368,12 @@ export default function MeClient() {
                     const url = await uploadAvatar(f);
                     setAvatarUrl(url);
                     setNotice("Photo uploaded — tap Save to publish.");
+                    // Fire and forget — user moves on immediately
+                    fetch("/api/avatar/process", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ avatarUrl: url, email }),
+                    }).catch(console.error);
                   } catch (err: unknown) {
                     setError(err instanceof Error ? err.message : "Upload failed.");
                   } finally {

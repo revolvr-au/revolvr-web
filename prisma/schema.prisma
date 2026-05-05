@@ -332,6 +332,7 @@ model profiles {
   bio          String?
   created_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  avatar_live_url String?
 
   @@schema("public")
 }
@@ -354,6 +355,8 @@ model CreatorProfile {
   handle      String?       @unique
   payoutShare Int           @default(45)
   status      CreatorStatus @default(ACTIVE)
+  characterId  Int  @default(1) @map("character_id")
+  avatarLiveUrl String? @map("avatar_live_url")
 
   // 🔥 VOLTAGE SYSTEM
   voltage       Int                   @default(0)

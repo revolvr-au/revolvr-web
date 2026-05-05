@@ -45,6 +45,12 @@ export default function OnboardClient() {
 
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       setAvatarUrl(publicUrl);
+      // Fire and forget — user moves on immediately
+      fetch("/api/avatar/process", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: publicUrl, email: user.email }),
+      }).catch(console.error);
     } catch (e: any) {
       setError(e?.message || "Upload failed.");
     } finally {

@@ -7,6 +7,30 @@ export async function GET(
 ) {
   const { streamId } = await params
 
+  const [profile, creator] = await Promise.all([
+  prisma.profiles.findUnique({
+    where: { email: post.userEmail ?? '' },
+    select: { display_name: true, avatar_url: true }
+  }),
+  prisma.creatorProfile.findUnique({
+    where: { email: post.userEmail ?? '' },
+    select: { handle: true, displayName: true, avatarUrl: true, characterId: true } // 👈 add this
+  })
+])
+
+return NextResponse.json({
+  stream: {
+    id: post.id,
+    status: post.liveEndedAt ? 'ENDED' : 'ACTIVE',
+    ivsPlaybackUrl: post.ivsPlaybackUrl,
+    creatorEmail: post.userEmail,
+    displayName: profile?.display_name || creator?.displayName || post.userEmail?.split('@')[0],
+    handle: creator?.handle || post.userEmail?.split('@')[0],
+    avatarUrl: profile?.avatar_url || creator?.avatarUrl || null,
+    caption: post.caption,
+    characterId: creator?.characterId ?? 1, // 👈 add this
+  }
+})
   // Try IVS post first
   const post = await prisma.post.findUnique({
     where: { id: streamId },
