@@ -382,7 +382,7 @@ useEffect(() => {
       {/* 2. Creator character image — top left, 45% screen height */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/character_${stream?.characterId ?? 1}.png`}
+        src={stream?.avatarLiveUrl ?? stream?.avatarUrl ?? `/character_${stream?.characterId ?? 1}.png`}
         alt=""
         style={{
           position: "absolute", top: 0, left: 0,
