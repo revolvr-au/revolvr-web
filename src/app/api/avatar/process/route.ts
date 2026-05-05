@@ -1,19 +1,21 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
+import { env } from "@xenova/transformers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+// Must set BEFORE any pipeline call
+env.cacheDir = "/tmp/transformers-cache";
+env.allowLocalModels = false;
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-process.env.TRANSFORMERS_CACHE = "/tmp";
-process.env.HUGGINGFACE_TOKEN = process.env.HF_TOKEN ?? "";
 
-// Module-level cache — stays warm between invocations on same container
 let segmenter: any = null;
 
 export async function POST(req: Request) {
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
     // 1. Load model once, cache it
     if (!segmenter) {
       const { pipeline } = await import("@xenova/transformers");
-      segmenter = await pipeline("image-segmentation", "briaai/RMBG-1.4");
+      segmenter = await pipeline("image-segmentation", "Xenova/selfie-segmentation");
     }
 
     // 2. Run background removal
