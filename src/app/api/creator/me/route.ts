@@ -122,6 +122,7 @@ export async function GET() {
   handle: profile?.handle ?? null,
   displayName: profile?.displayName ?? null,
   avatarUrl: profile?.avatarUrl ?? null,
+  avatarLiveUrl: profile?.avatarLiveUrl ?? null,
   bio: profile?.bio ?? null,
 
   isVerified,

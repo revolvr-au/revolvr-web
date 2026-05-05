@@ -296,61 +296,90 @@ export default function MeClient() {
             <div style={card}>
               <div style={sectionLabel}>Identity</div>
 
-              {/* Avatar */}
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-                <div style={{ position: "relative", display: "inline-block" }}>
-                  <RingRim tier={ringLoading ? null : ringTier} size={112}>
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      disabled={avatarBusy}
-                      aria-label="Change photo"
+              {/* Avatar row — circle + live cutout */}
+              <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 24 }}>
+
+                {/* Standard circle avatar */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <div style={{ position: "relative", display: "inline-block" }}>
+                    <RingRim tier={ringLoading ? null : ringTier} size={88}>
+                      <button
+                        type="button"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={avatarBusy}
+                        aria-label="Change photo"
+                        style={{
+                          width: 88, height: 88, borderRadius: "50%",
+                          overflow: "hidden", border: "none",
+                          cursor: avatarBusy ? "not-allowed" : "pointer",
+                          opacity: avatarBusy ? 0.55 : 1,
+                          background: avatarUrl
+                            ? `url(${avatarUrl}) center/cover no-repeat`
+                            : "linear-gradient(135deg, #0d1224, #1a1f35)",
+                          display: "flex", alignItems: "center",
+                          justifyContent: "center", fontSize: 32,
+                          color: "rgba(255,255,255,0.35)", flexShrink: 0,
+                        }}
+                      >
+                        {!avatarUrl && ((displayName || email)?.[0]?.toUpperCase() ?? "?")}
+                      </button>
+                    </RingRim>
+                    <div
+                      onClick={() => !avatarBusy && fileRef.current?.click()}
                       style={{
-                        width: 112,
-                        height: 112,
-                        borderRadius: "50%",
-                        overflow: "hidden",
-                        border: "none",
-                        cursor: avatarBusy ? "not-allowed" : "pointer",
-                        opacity: avatarBusy ? 0.55 : 1,
-                        background: avatarUrl
-                          ? `url(${avatarUrl}) center/cover no-repeat`
-                          : "linear-gradient(135deg, #0d1224, #1a1f35)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 40,
-                        color: "rgba(255,255,255,0.35)",
-                        flexShrink: 0,
+                        position: "absolute", bottom: 2, right: 2,
+                        width: 24, height: 24, borderRadius: "50%",
+                        background: "#00e5ff", color: "#050814",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 16, fontWeight: 700, cursor: "pointer",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.5)", lineHeight: 1,
                       }}
                     >
-                      {!avatarUrl && ((displayName || email)?.[0]?.toUpperCase() ?? "?")}
-                    </button>
-                  </RingRim>
-                  {/* Change photo badge */}
-                  <div
-                    onClick={() => !avatarBusy && fileRef.current?.click()}
-                    style={{
-                      position: "absolute",
-                      bottom: 4,
-                      right: 4,
-                      width: 30,
-                      height: 30,
-                      borderRadius: "50%",
-                      background: "#00e5ff",
-                      color: "#050814",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 18,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
-                      lineHeight: 1,
-                    }}
-                  >
-                    +
+                      +
+                    </div>
                   </div>
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>
+                    PROFILE
+                  </span>
+                </div>
+
+                {/* Live cutout avatar */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                  <div style={{
+                    width: 88, height: 88,
+                    border: "1px solid rgba(0,229,255,0.2)",
+                    borderRadius: 12,
+                    background: "rgba(0,229,255,0.04)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    overflow: "hidden", position: "relative",
+                  }}>
+                    {(me as any)?.profile?.avatar_live_url || (me as any)?.creator?.avatarLiveUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={(me as any)?.creator?.avatarLiveUrl || (me as any)?.profile?.avatar_live_url}
+                        alt="Live avatar"
+                        style={{
+                          width: "100%", height: "100%", objectFit: "contain",
+                          filter: "drop-shadow(0 0 8px rgba(0,229,255,0.4))",
+                        }}
+                      />
+                    ) : (
+                      <div style={{ textAlign: "center", padding: 8 }}>
+                        {avatarBusy ? (
+                          <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(0,229,255,0.5)", letterSpacing: "0.08em" }}>
+                            PROCESSING…
+                          </div>
+                        ) : (
+                          <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.08em", lineHeight: 1.6 }}>
+                            UPLOAD PHOTO{"\n"}TO GENERATE
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(0,229,255,0.5)", letterSpacing: "0.1em" }}>
+                    LIVE
+                  </span>
                 </div>
               </div>
 

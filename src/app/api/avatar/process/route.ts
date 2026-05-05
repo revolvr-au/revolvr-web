@@ -10,6 +10,7 @@ const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+process.env.TRANSFORMERS_CACHE = "/tmp";
 
 // Module-level cache — stays warm between invocations on same container
 let segmenter: any = null;
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
     // 1. Load model once, cache it
     if (!segmenter) {
       const { pipeline } = await import("@xenova/transformers");
-      segmenter = await pipeline("image-segmentation", "Xenova/modnet");
+      segmenter = await pipeline("image-segmentation", "Xenova/bria-rmbg-1.4");
     }
 
     // 2. Run background removal

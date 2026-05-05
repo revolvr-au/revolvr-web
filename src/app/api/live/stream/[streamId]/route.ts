@@ -5,32 +5,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { streamId: string } }
 ) {
-  const { streamId } = await params
+  const { streamId } = await params;
 
-  const [profile, creator] = await Promise.all([
-  prisma.profiles.findUnique({
-    where: { email: post.userEmail ?? '' },
-    select: { display_name: true, avatar_url: true }
-  }),
-  prisma.creatorProfile.findUnique({
-    where: { email: post.userEmail ?? '' },
-    select: { handle: true, displayName: true, avatarUrl: true, characterId: true } // 👈 add this
-  })
-])
-
-return NextResponse.json({
-  stream: {
-    id: post.id,
-    status: post.liveEndedAt ? 'ENDED' : 'ACTIVE',
-    ivsPlaybackUrl: post.ivsPlaybackUrl,
-    creatorEmail: post.userEmail,
-    displayName: profile?.display_name || creator?.displayName || post.userEmail?.split('@')[0],
-    handle: creator?.handle || post.userEmail?.split('@')[0],
-    avatarUrl: profile?.avatar_url || creator?.avatarUrl || null,
-    caption: post.caption,
-    characterId: creator?.characterId ?? 1, // 👈 add this
-  }
-})
   // Try IVS post first
   const post = await prisma.post.findUnique({
     where: { id: streamId },
@@ -42,10 +18,9 @@ return NextResponse.json({
       userEmail: true,
       caption: true,
     }
-  })
+  });
 
   if (post && post.postType === 'LIVE') {
-    // Get creator profile
     const [profile, creator] = await Promise.all([
       prisma.profiles.findUnique({
         where: { email: post.userEmail ?? '' },
@@ -53,9 +28,9 @@ return NextResponse.json({
       }),
       prisma.creatorProfile.findUnique({
         where: { email: post.userEmail ?? '' },
-        select: { handle: true, displayName: true, avatarUrl: true }
+        select: { handle: true, displayName: true, avatarUrl: true, avatarLiveUrl: true, characterId: true }
       })
-    ])
+    ]);
 
     return NextResponse.json({
       stream: {
@@ -66,9 +41,11 @@ return NextResponse.json({
         displayName: profile?.display_name || creator?.displayName || post.userEmail?.split('@')[0],
         handle: creator?.handle || post.userEmail?.split('@')[0],
         avatarUrl: profile?.avatar_url || creator?.avatarUrl || null,
+        avatarLiveUrl: creator?.avatarLiveUrl ?? null,
         caption: post.caption,
+        characterId: creator?.characterId ?? 1,
       }
-    })
+    });
   }
 
   // Fall back to Mux stream
@@ -81,11 +58,11 @@ return NextResponse.json({
       creatorEmail: true,
       liveStartedAt: true,
     },
-  })
+  });
 
   if (!stream) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  return NextResponse.json({ stream })
+  return NextResponse.json({ stream });
 }
