@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     // 1. Load model once, cache it
     if (!segmenter) {
       const { pipeline } = await import("@xenova/transformers");
-      segmenter = await pipeline("image-segmentation", "Xenova/bria-rmbg-1.4");
+      segmenter = await pipeline("image-segmentation", "Xenova/u2net");
     }
 
     // 2. Run background removal
