@@ -426,7 +426,7 @@ useEffect(() => {
 
       {/* 3. Creator name + LIVE badge — just below character */}
       <div style={{
-        position: "absolute", top: "44%", left: 12,
+        position: "absolute", top: 175, left: 12,
         display: "flex", flexDirection: "column", gap: 5,
         zIndex: 20,
       }}>
