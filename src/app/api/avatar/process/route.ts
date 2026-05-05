@@ -18,30 +18,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing params" }, { status: 400 });
     }
 
-    // Fetch the image
-    const imgRes = await fetch(avatarUrl);
-    const imgBuffer = await imgRes.arrayBuffer();
-
-    // Call HF Inference API — free, no package needed
+    // Call fal-ai/bria-rmbg via HF router
     const hfRes = await fetch(
-  "https://router.huggingface.co/hf-inference/models/briaai/RMBG-1.4",
-  {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.HF_TOKEN}`,
-      "Content-Type": "application/octet-stream",
-    },
-    body: imgBuffer,
-  }
-);
+      "https://router.huggingface.co/fal-ai/bria-rmbg",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.HF_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ image_url: avatarUrl }),
+      }
+    );
 
     if (!hfRes.ok) {
       const err = await hfRes.text();
       throw new Error(`HF API error: ${err}`);
     }
 
-    const pngBuffer = Buffer.from(await hfRes.arrayBuffer());
+    // fal returns JSON with image URL
+    const json = await hfRes.json();
+    const imageUrl = json?.image?.url;
+    if (!imageUrl) throw new Error(`No image returned from fal: ${JSON.stringify(json)}`);
 
+    // Fetch the processed PNG
+    const pngRes = await fetch(imageUrl);
+    const pngBuffer = Buffer.from(await pngRes.arrayBuffer());
+
+    // Upload to avatars-live bucket
     const filename = `${email.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.png`;
     const { error: uploadErr } = await supabaseAdmin.storage
       .from("avatars-live")
@@ -53,6 +57,7 @@ export async function POST(req: Request) {
       .from("avatars-live")
       .getPublicUrl(filename);
 
+    // Update both tables
     await Promise.all([
       prisma.profiles.update({
         where: { email },
