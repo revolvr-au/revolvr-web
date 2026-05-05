@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
-import { env } from "@xenova/transformers";
+import { env } from "@huggingface/transformers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-// Must set BEFORE any pipeline call
 env.cacheDir = "/tmp/transformers-cache";
-env.allowLocalModels = false;
+env.authToken = process.env.HF_TOKEN ?? "";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,40 +24,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing avatarUrl or email" }, { status: 400 });
     }
 
-    // 1. Load model once, cache it
     if (!segmenter) {
-      const { pipeline } = await import("@xenova/transformers");
-      segmenter = await pipeline("image-segmentation", "Xenova/selfie-segmentation");
+      const { pipeline } = await import("@huggingface/transformers");
+      segmenter = await pipeline("background-removal", "onnx-community/BEN2-ONNX");
     }
 
-    // 2. Run background removal
     const result = await segmenter(avatarUrl);
-    const mask = result?.[0]?.mask;
-    if (!mask) throw new Error("Model returned no mask");
+    const pngBuffer = Buffer.from(await result[0].arrayBuffer());
 
-    // 3. Fetch original + apply mask using sharp (available on Vercel nodejs runtime)
-    const sharp = (await import("sharp")).default;
-    const imgRes = await fetch(avatarUrl);
-    const imgBuffer = Buffer.from(await imgRes.arrayBuffer());
-
-    const { data: rawPixels, info } = await sharp(imgBuffer)
-      .ensureAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
-
-    // Apply mask to alpha channel
-    const maskData = mask.data as Uint8Array;
-    for (let i = 0; i < info.width * info.height; i++) {
-      rawPixels[i * 4 + 3] = maskData[i];
-    }
-
-    const pngBuffer = await sharp(rawPixels, {
-      raw: { width: info.width, height: info.height, channels: 4 },
-    })
-      .png()
-      .toBuffer();
-
-    // 4. Upload transparent PNG to avatars-live bucket
     const filename = `${email.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.png`;
     const { error: uploadErr } = await supabaseAdmin.storage
       .from("avatars-live")
@@ -70,7 +43,6 @@ export async function POST(req: Request) {
       .from("avatars-live")
       .getPublicUrl(filename);
 
-    // 5. Update both tables
     await Promise.all([
       prisma.profiles.update({
         where: { email },
