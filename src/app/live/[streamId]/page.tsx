@@ -195,28 +195,11 @@ export default function LivePage() {
   const sendGift = async (gift: typeof GIFTS[0]) => {
   setGiftOpen(false);
 
-  if (!stream?.creatorEmail) return;
-
-  const res = await fetch("/api/live/gift", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      giftId: gift.id,
-      streamId,
-      creatorEmail: stream.creatorEmail,
-    }),
-  });
-
-  const data = await res.json();
-
-  if (data.error === "insufficient_sparks") {
-    setTopUpOpen(true);
-    return;
-  }
-
+  // Show toast immediately — don't wait for API
   setGiftToast(`${gift.name} sent to ${stream?.displayName ?? "creator"}`);
   setTimeout(() => setGiftToast(null), 2500);
 
+  // Eclipse animation immediately
   if (gift.id === "eclipse" && streamId) {
     const supabase = createSupabaseBrowserClient();
     supabase.channel(`live:${streamId}`).send({
@@ -226,6 +209,23 @@ export default function LivePage() {
     setEclipseActive(true);
     setTimeout(() => setEclipseActive(false), 3000);
   }
+
+  // Fire API in background — don't await
+  if (!stream?.creatorEmail) return;
+  fetch("/api/live/gift", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      giftId: gift.id,
+      streamId,
+      creatorEmail: stream.creatorEmail,
+    }),
+  }).then(r => r.json()).then(data => {
+    if (data.error === "insufficient_sparks") {
+      setGiftToast(null);
+      setTopUpOpen(true);
+    }
+  }).catch(console.error);
 };
 
   const handleGiftPressStart = () => {
