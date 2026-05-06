@@ -467,6 +467,7 @@ enum SupportKind {
   BOOST
   SPIN
   REACTION
+  GIFT
 
   @@schema("public")
 }

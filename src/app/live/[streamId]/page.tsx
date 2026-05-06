@@ -193,19 +193,40 @@ export default function LivePage() {
   };
 
   const sendGift = async (gift: typeof GIFTS[0]) => {
-    setGiftOpen(false);
-    setGiftToast(`${gift.name} sent to ${stream?.displayName ?? "creator"}`);
-    setTimeout(() => setGiftToast(null), 2500);
+  setGiftOpen(false);
 
-    // Eclipse — broadcast to all viewers
-    if (gift.id === "eclipse" && streamId) {
-      const supabase = createSupabaseBrowserClient();
-      supabase.channel(`live:${streamId}`).send({ type: "broadcast", event: "gift", payload: { giftId: "eclipse", senderName: displayName } });
-      setEclipseActive(true);
-      setTimeout(() => setEclipseActive(false), 3000);
-    }
-    // TODO: deduct sparks + credit creator + inject voltage
-  };
+  if (!stream?.creatorEmail) return;
+
+  const res = await fetch("/api/live/gift", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      giftId: gift.id,
+      streamId,
+      creatorEmail: stream.creatorEmail,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (data.error === "insufficient_sparks") {
+    setTopUpOpen(true);
+    return;
+  }
+
+  setGiftToast(`${gift.name} sent to ${stream?.displayName ?? "creator"}`);
+  setTimeout(() => setGiftToast(null), 2500);
+
+  if (gift.id === "eclipse" && streamId) {
+    const supabase = createSupabaseBrowserClient();
+    supabase.channel(`live:${streamId}`).send({
+      type: "broadcast", event: "gift",
+      payload: { giftId: "eclipse", senderName: displayName },
+    });
+    setEclipseActive(true);
+    setTimeout(() => setEclipseActive(false), 3000);
+  }
+};
 
   const handleGiftPressStart = () => {
     longPressTimer.current = setTimeout(() => { setTopUpOpen(true); setGiftOpen(false); }, 600);
