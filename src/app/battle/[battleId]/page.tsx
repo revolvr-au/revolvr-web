@@ -12,6 +12,86 @@ function BoltIcon({ size = 16, color = "#D4AF37" }: { size?: number; color?: str
   );
 }
 
+function LiveVideoPane({ stream, side }: { stream: any; side: "A" | "B" }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (!videoRef.current || !stream?.ivsPlaybackUrl) return;
+    const video = videoRef.current;
+    let ivsPlayer: any = null;
+
+    const init = async () => {
+      await new Promise<void>((resolve) => {
+        const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); };
+        check();
+      });
+      const IVSPlayer = (window as any).IVSPlayer;
+      ivsPlayer = IVSPlayer.create();
+      ivsPlayer.attachHTMLVideoElement(video);
+      ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
+        setTimeout(() => { ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl)); ivsPlayer.play(); }, 3000);
+      });
+      ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
+      ivsPlayer.play();
+    };
+
+    init();
+    return () => { if (ivsPlayer) ivsPlayer.delete(); };
+  }, [stream?.ivsPlaybackUrl]);
+
+  const color = side === "A" ? "#00e5ff" : "#D4AF37";
+
+  return (
+    <div style={{ flex: 1, position: "relative", background: "#000", overflow: "hidden", borderRight: side === "A" ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+      {/* Video */}
+      <video ref={videoRef} autoPlay playsInline muted style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+
+      {/* Dark gradient top + bottom */}
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.7) 100%)", pointerEvents: "none" }} />
+
+      {/* Avatar — top corner */}
+      {(stream?.avatarLiveUrl || stream?.avatarUrl) && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={stream?.avatarLiveUrl ?? stream?.avatarUrl}
+          alt=""
+          style={{
+            position: "absolute",
+            top: 0,
+            [side === "A" ? "left" : "right"]: 0,
+            height: 80,
+            width: "auto",
+            objectFit: "contain",
+            pointerEvents: "none",
+            filter: `drop-shadow(0 0 8px ${color}40)`,
+          }}
+        />
+      )}
+
+      {/* Name + voltage — bottom */}
+      <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        <span style={{ color: "#fff", fontSize: 10, fontFamily: "monospace", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9)" }}>
+          {stream?.displayName ?? (side === "B" ? "WAITING…" : "?")}
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+          <BoltIcon size={10} color={color} />
+          <span style={{ color, fontSize: 11, fontFamily: "monospace", fontWeight: 800 }}>0</span>
+        </div>
+      </div>
+
+      {/* Waiting overlay for B */}
+      {side === "B" && !stream && (
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 8 }}>WAITING FOR</div>
+            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em" }}>CHALLENGER</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BattlePage() {
   const params = useParams<{ battleId: string }>();
   const battleId = params?.battleId;
@@ -27,11 +107,9 @@ export default function BattlePage() {
   const [loading, setLoading] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Tension line position — 50 = centre, 0 = full A win, 100 = full B win
   const totalVoltage = (battle?.voltageA ?? 0) + (battle?.voltageB ?? 0);
   const tensionPos = totalVoltage === 0 ? 50 : Math.round(((battle?.voltageB ?? 0) / totalVoltage) * 100);
 
-  // Get user
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data }) => {
@@ -40,7 +118,14 @@ export default function BattlePage() {
     });
   }, []);
 
-  // Load battle
+  useEffect(() => {
+    if (document.getElementById('ivs-player-script')) return;
+    const script = document.createElement('script');
+    script.id = 'ivs-player-script';
+    script.src = 'https://player.live-video.net/1.29.0/amazon-ivs-player.min.js';
+    document.head.appendChild(script);
+  }, []);
+
   useEffect(() => {
     if (!battleId) return;
     fetch(`/api/battle/${battleId}`)
@@ -48,7 +133,6 @@ export default function BattlePage() {
       .then(async d => {
         if (!d.battle) return;
         setBattle(d.battle);
-        // Load both streams
         const [a, b] = await Promise.all([
           fetch(`/api/live/stream/${d.battle.streamIdA}`).then(r => r.json()),
           d.battle.streamIdB ? fetch(`/api/live/stream/${d.battle.streamIdB}`).then(r => r.json()) : Promise.resolve(null),
@@ -59,12 +143,10 @@ export default function BattlePage() {
       });
   }, [battleId]);
 
-  // Realtime — voltage updates + chat
   useEffect(() => {
     if (!battleId) return;
     const supabase = createSupabaseBrowserClient();
 
-    // Chat
     supabase.from("live_chat_messages").select("*")
       .eq("room_id", `battle:${battleId}`)
       .order("created_at", { ascending: true }).limit(50)
@@ -83,7 +165,6 @@ export default function BattlePage() {
       })
       .subscribe();
 
-    // Poll battle state every 5s
     const poll = setInterval(async () => {
       const res = await fetch(`/api/battle/${battleId}`);
       const data = await res.json();
@@ -120,15 +201,14 @@ export default function BattlePage() {
 
       <style>{`
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
-        @keyframes tensionPulse { 0%,100%{box-shadow:0 0 8px #D4AF37} 50%{box-shadow:0 0 24px #D4AF37, 0 0 48px #D4AF3740} }
+        @keyframes tensionPulse { 0%,100%{box-shadow:0 0 8px #D4AF37} 50%{box-shadow:0 0 24px #D4AF37,0 0 48px #D4AF3740} }
         @keyframes commentDrift { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
-        @keyframes glitch { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-2px)} 40%{transform:translateX(2px)} 60%{transform:translateX(-1px)} 80%{transform:translateX(1px)} }
       `}</style>
 
       {/* Back */}
       <button onClick={() => router.back()} style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", zIndex: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
 
-      {/* CIRCUIT badge */}
+      {/* THE CIRCUIT badge — top center */}
       <div style={{ position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)", zIndex: 30 }}>
         <div style={{ background: "rgba(0,0,0,0.7)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "4px 14px", display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#D4AF37", animation: "livePulse 1.2s ease-in-out infinite" }} />
@@ -136,59 +216,17 @@ export default function BattlePage() {
         </div>
       </div>
 
-      {/* Dual avatar area — top half */}
-      <div style={{ display: "flex", height: "45%", position: "relative" }}>
-
-        {/* Creator A — left */}
-        <div style={{ flex: 1, position: "relative", borderRight: "1px solid rgba(255,255,255,0.05)" }}>
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(0,229,255,0.05), transparent)" }} />
-          {streamA?.avatarLiveUrl || streamA?.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={streamA?.avatarLiveUrl ?? streamA?.avatarUrl} alt="" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", height: "90%", width: "auto", objectFit: "contain", filter: tensionPos > 50 ? "brightness(0.6)" : "brightness(1)" }} />
-          ) : (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, color: "rgba(255,255,255,0.1)" }}>?</div>
-          )}
-          {/* Voltage A */}
-          <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ color: "#00e5ff", fontSize: 11, fontFamily: "monospace", fontWeight: 700 }}>{streamA?.displayName ?? "Creator A"}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <BoltIcon size={12} color="#00e5ff" />
-              <span style={{ color: "#00e5ff", fontSize: 13, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageA ?? 0}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Creator B — right */}
-        <div style={{ flex: 1, position: "relative" }}>
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(212,175,55,0.05), transparent)" }} />
-          {streamB?.avatarLiveUrl || streamB?.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={streamB?.avatarLiveUrl ?? streamB?.avatarUrl} alt="" style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%) scaleX(-1)", height: "90%", width: "auto", objectFit: "contain", filter: tensionPos < 50 ? "brightness(0.6)" : "brightness(1)" }} />
-          ) : (
-            <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.1em" }}>{battle?.status === "pending" ? "WAITING…" : "?"}</span>
-            </div>
-          )}
-          {/* Voltage B */}
-          <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ color: "#D4AF37", fontSize: 11, fontFamily: "monospace", fontWeight: 700 }}>{streamB?.displayName ?? (battle?.status === "pending" ? "Waiting…" : "Creator B")}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <BoltIcon size={12} color="#D4AF37" />
-              <span style={{ color: "#D4AF37", fontSize: 13, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageB ?? 0}</span>
-            </div>
-          </div>
-        </div>
+      {/* Dual live video — top 55% */}
+      <div style={{ display: "flex", height: "55%", position: "relative" }}>
+        <LiveVideoPane stream={streamA} side="A" />
+        <LiveVideoPane stream={streamB} side="B" />
       </div>
 
-      {/* THE CIRCUIT — tension line */}
-      <div style={{ height: 32, position: "relative", display: "flex", alignItems: "center", padding: "0 16px" }}>
-        {/* Track */}
-        <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, position: "relative", overflow: "visible" }}>
-          {/* A fill — cyan */}
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #00e5ff, #00e5ff80)", borderRadius: 2, transition: "width 0.6s cubic-bezier(0.34,1.56,0.64,1)" }} />
-          {/* B fill — gold */}
-          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: `${tensionPos}%`, background: "linear-gradient(to left, #D4AF37, #D4AF3780)", borderRadius: 2, transition: "width 0.6s cubic-bezier(0.34,1.56,0.64,1)" }} />
-          {/* Node */}
+      {/* Tension line */}
+      <div style={{ height: 36, display: "flex", alignItems: "center", padding: "0 16px", background: "rgba(0,0,0,0.8)" }}>
+        <div style={{ flex: 1, height: 3, background: "rgba(255,255,255,0.08)", borderRadius: 2, position: "relative" }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #00e5ff, #00e5ff60)", borderRadius: 2, transition: "width 0.6s cubic-bezier(0.34,1.56,0.64,1)" }} />
+          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: `${tensionPos}%`, background: "linear-gradient(to left, #D4AF37, #D4AF3760)", borderRadius: 2, transition: "width 0.6s cubic-bezier(0.34,1.56,0.64,1)" }} />
           <div style={{ position: "absolute", top: "50%", left: `${100 - tensionPos}%`, transform: "translate(-50%, -50%)", width: 14, height: 14, borderRadius: "50%", background: "#fff", boxShadow: "0 0 12px #D4AF37, 0 0 24px #D4AF3780", animation: "tensionPulse 1.5s ease-in-out infinite", transition: "left 0.6s cubic-bezier(0.34,1.56,0.64,1)", zIndex: 2 }} />
         </div>
       </div>
