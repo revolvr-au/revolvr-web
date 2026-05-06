@@ -107,6 +107,36 @@ export default function BattlePage() {
   const [loading, setLoading] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [giftSide, setGiftSide] = useState<"A" | "B">("A");
+  const [giftToast, setGiftToast] = useState<string | null>(null);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+
+  const GIFTS = [
+    { id: "pulse",    name: "Pulse",    sparks: 10,   color: "#00e5ff" },
+    { id: "amp",      name: "Amp",      sparks: 50,   color: "#00e5ff" },
+    { id: "override", name: "Override", sparks: 150,  color: "#D4AF37" },
+    { id: "monolith", name: "Monolith", sparks: 500,  color: "#D4AF37" },
+    { id: "eclipse",  name: "Eclipse",  sparks: 1500, color: "#fff" },
+  ];
+
+  const sendGift = async (gift: typeof GIFTS[0]) => {
+    setGiftOpen(false);
+    setGiftToast(`${gift.name} → ${giftSide === "A" ? streamA?.displayName : streamB?.displayName}`);
+    setTimeout(() => setGiftToast(null), 2500);
+
+    fetch("/api/battle/gift", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ giftId: gift.id, battleId, side: giftSide }),
+    }).then(r => r.json()).then(data => {
+      if (data.error === "insufficient_sparks") {
+        setGiftToast(null);
+        setTopUpOpen(true);
+      }
+    }).catch(console.error);
+  };
+
   const totalVoltage = (battle?.voltageA ?? 0) + (battle?.voltageB ?? 0);
   const tensionPos = totalVoltage === 0 ? 50 : Math.round(((battle?.voltageB ?? 0) / totalVoltage) * 100);
 
@@ -203,6 +233,7 @@ export default function BattlePage() {
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
         @keyframes tensionPulse { 0%,100%{box-shadow:0 0 8px #D4AF37} 50%{box-shadow:0 0 24px #D4AF37,0 0 48px #D4AF3740} }
         @keyframes commentDrift { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
+        @keyframes giftSlideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
       `}</style>
 
       {/* Back */}
@@ -244,11 +275,75 @@ export default function BattlePage() {
         </div>
       </div>
 
+      {/* Gift side selector + bolt button */}
+      <div style={{ position: "absolute", right: 14, bottom: 70, zIndex: 30, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+
+        {/* Gift picker */}
+        {giftOpen && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+            {/* Side selector */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+              <button onClick={() => setGiftSide("A")} style={{ background: giftSide === "A" ? "rgba(0,229,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "monospace", cursor: "pointer" }}>
+                {streamA?.displayName ?? "A"}
+              </button>
+              <button onClick={() => setGiftSide("B")} style={{ background: giftSide === "B" ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.4)", fontSize: 10, fontFamily: "monospace", cursor: "pointer" }}>
+                {streamB?.displayName ?? "B"}
+              </button>
+            </div>
+            {[...GIFTS].reverse().map((gift, i) => (
+              <button key={gift.id} onClick={() => sendGift(gift)} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.85)", border: `1px solid ${gift.color}40`, borderRadius: 24, padding: "7px 14px 7px 10px", cursor: "pointer", backdropFilter: "blur(10px)", minWidth: 130, animation: `giftSlideUp 0.2s ease-out ${i * 0.05}s both` }}>
+                <BoltIcon size={14} color={gift.color} />
+                <span style={{ color: "#fff", fontSize: 11, fontWeight: 600, flex: 1, textAlign: "left" }}>{gift.name}</span>
+                <span style={{ color: gift.color, fontSize: 10, fontFamily: "monospace" }}>{gift.sparks}⚡</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Bolt button */}
+        <button
+          onClick={() => { setGiftOpen(prev => !prev); setTopUpOpen(false); }}
+          style={{ width: 46, height: 46, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "1px solid rgba(212,175,55,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(6px)" }}
+        >
+          <BoltIcon size={22} color="#D4AF37" />
+        </button>
+      </div>
+
+      {/* Gift toast */}
+      {giftToast && (
+        <div style={{ position: "absolute", bottom: 90, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "7px 18px", color: "#D4AF37", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.08em", zIndex: 50, whiteSpace: "nowrap" }}>
+          ⚡ {giftToast}
+        </div>
+      )}
+
+      {/* Tap outside to close */}
+      {giftOpen && <div style={{ position: "absolute", inset: 0, zIndex: 25 }} onClick={() => setGiftOpen(false)} />}
+
       {/* Chat input */}
       <div style={{ padding: "8px 12px 20px", display: "flex", alignItems: "center", gap: 8 }}>
         <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Say something..." style={{ flex: 1, background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 28, color: "#fff", fontSize: 13, padding: "10px 16px", outline: "none" }} />
         <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 20, cursor: "pointer" }}>➤</button>
       </div>
+
+      {/* Join battle button — shown to challenger */}
+      {battle?.status === "pending" && userEmail && userEmail !== battle?.creatorEmailA && (
+        <div style={{ position: "absolute", top: "50%", right: 0, width: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 40 }}>
+          <button
+            onClick={async () => {
+              const res = await fetch("/api/battle/join", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ battleId, streamId: "YOUR_STREAM_ID" }),
+              });
+              const data = await res.json();
+              if (data.ok) setBattle(data.battle);
+            }}
+            style={{ background: "#D4AF37", border: "none", borderRadius: 24, padding: "12px 24px", color: "#000", fontFamily: "monospace", fontWeight: 700, fontSize: 13, letterSpacing: "0.1em", cursor: "pointer" }}
+          >
+            ⚡ JOIN BATTLE
+          </button>
+        </div>
+      )}
     </div>
   );
 }
