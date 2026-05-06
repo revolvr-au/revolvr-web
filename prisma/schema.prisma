@@ -462,6 +462,25 @@ enum CreatorStatus {
   @@schema("public")
 }
 
+model LiveBattle {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  battleType     String    @default("circuit") @map("battle_type")
+  status         String    @default("pending")
+  streamIdA      String    @map("stream_id_a")
+  streamIdB      String?   @map("stream_id_b")
+  creatorEmailA  String?   @map("creator_email_a")
+  creatorEmailB  String?   @map("creator_email_b")
+  voltageA       Int       @default(0) @map("voltage_a")
+  voltageB       Int       @default(0) @map("voltage_b")
+  winnerEmail    String?   @map("winner_email")
+  startedAt      DateTime? @map("started_at") @db.Timestamptz(6)
+  endedAt        DateTime? @map("ended_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  @@map("live_battles")
+  @@schema("public")
+}
 enum SupportKind {
   TIP
   BOOST
