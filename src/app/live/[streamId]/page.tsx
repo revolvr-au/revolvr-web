@@ -306,7 +306,7 @@ export default function LivePage() {
       <button onClick={() => router.back()} style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>‹</button>
 
       {/* End stream + Battle buttons — top right, creator only */}
-      {isCreator && !ended && (
+      {!ended && stream?.creatorEmail === userEmail && (
         <div style={{ position: "absolute", top: 12, right: 14, display: "flex", gap: 8, zIndex: 30 }}>
           {battleState === "idle" && (
             <button
