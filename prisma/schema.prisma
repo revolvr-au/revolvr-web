@@ -477,6 +477,8 @@ model LiveBattle {
   endedAt        DateTime? @map("ended_at") @db.Timestamptz(6)
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  timerStartedAt DateTime? @map("timer_started_at") @db.Timestamptz(6)
+durationSeconds Int @default(90) @map("duration_seconds")
 
   @@map("live_battles")
   @@schema("public")

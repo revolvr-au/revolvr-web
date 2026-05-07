@@ -112,6 +112,10 @@ export default function BattlePage() {
   const [giftToast, setGiftToast] = useState<string | null>(null);
   const [topUpOpen, setTopUpOpen] = useState(false);
 
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [battleEnded, setBattleEnded] = useState(false);
+  const [winner, setWinner] = useState<string | null>(null);
+
   const GIFTS = [
     { id: "pulse",    name: "Pulse",    sparks: 10,   color: "#00e5ff" },
     { id: "amp",      name: "Amp",      sparks: 50,   color: "#00e5ff" },
@@ -193,6 +197,13 @@ export default function BattlePage() {
       .on("broadcast", { event: "voltage" }, (payload) => {
         setBattle((prev: any) => prev ? { ...prev, ...payload.payload } : prev);
       })
+      .on("broadcast", { event: "battle_ended" }, (payload) => {
+        setBattleEnded(true);
+        setWinner(payload.payload.winnerEmail);
+        setTimeout(() => {
+          if (battle?.streamIdA) router.push(`/live/${battle.streamIdA}`);
+        }, 5000);
+      })
       .subscribe();
 
     const poll = setInterval(async () => {
@@ -203,6 +214,33 @@ export default function BattlePage() {
 
     return () => { supabase.removeChannel(channel); clearInterval(poll); };
   }, [battleId]);
+
+  useEffect(() => {
+    if (!battle?.startedAt || battle?.status !== "active") return;
+
+    const duration = battle.durationSeconds ?? 90;
+    const startedAt = new Date(battle.startedAt).getTime();
+
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const remaining = duration - elapsed;
+
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        fetch("/api/battle/end", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ battleId }),
+        });
+        return;
+      }
+      setTimeLeft(remaining);
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [battle?.startedAt, battle?.status, battle?.durationSeconds, battleId]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -246,6 +284,74 @@ export default function BattlePage() {
           <span style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", fontWeight: 800, letterSpacing: "0.15em" }}>THE CIRCUIT</span>
         </div>
       </div>
+
+      {/* Timer */}
+      {timeLeft !== null && !battleEnded && (
+        <div style={{
+          position: "absolute", top: 14, right: 14, zIndex: 30,
+          background: timeLeft <= 10 ? "rgba(220,30,60,0.8)" : "rgba(0,0,0,0.7)",
+          border: `1px solid ${timeLeft <= 10 ? "rgba(220,30,60,0.6)" : "rgba(255,255,255,0.15)"}`,
+          borderRadius: 20, padding: "4px 12px",
+          color: "#fff", fontSize: 13, fontFamily: "monospace", fontWeight: 700,
+          letterSpacing: "0.1em",
+          transition: "background 0.3s",
+        }}>
+          {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+        </div>
+      )}
+
+      {/* Winner overlay */}
+      {battleEnded && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 100,
+          background: "rgba(0,0,0,0.85)",
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          gap: 16,
+        }}>
+          <div style={{ fontSize: 48 }}>⚡</div>
+          <div style={{
+            fontFamily: "monospace", fontSize: 11,
+            letterSpacing: "0.2em", color: "rgba(255,255,255,0.5)",
+          }}>BATTLE OVER</div>
+          <div style={{
+            fontFamily: "monospace", fontSize: 22,
+            fontWeight: 800, color: "#D4AF37",
+            letterSpacing: "0.1em",
+          }}>
+            {winner === battle?.creatorEmailA
+              ? (streamA?.displayName ?? "Creator A")
+              : (streamB?.displayName ?? "Creator B")} WINS
+          </div>
+          <div style={{
+            display: "flex", gap: 24, marginTop: 8,
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#00e5ff", fontSize: 11, fontFamily: "monospace", marginBottom: 4 }}>
+                {streamA?.displayName ?? "A"}
+              </div>
+              <div style={{ color: "#00e5ff", fontSize: 24, fontFamily: "monospace", fontWeight: 800 }}>
+                {battle?.voltageA ?? 0}⚡
+              </div>
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 24, alignSelf: "center" }}>vs</div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ color: "#D4AF37", fontSize: 11, fontFamily: "monospace", marginBottom: 4 }}>
+                {streamB?.displayName ?? "B"}
+              </div>
+              <div style={{ color: "#D4AF37", fontSize: 24, fontFamily: "monospace", fontWeight: 800 }}>
+                {battle?.voltageB ?? 0}⚡
+              </div>
+            </div>
+          </div>
+          <div style={{
+            color: "rgba(255,255,255,0.3)", fontSize: 11,
+            fontFamily: "monospace", marginTop: 8,
+          }}>
+            Returning to stream…
+          </div>
+        </div>
+      )}
 
       {/* Dual live video — top 55% */}
       <div style={{ display: "flex", height: "55%", position: "relative" }}>

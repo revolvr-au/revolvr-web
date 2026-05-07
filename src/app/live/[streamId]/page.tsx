@@ -42,12 +42,17 @@ export default function LivePage() {
   const [isMuted, setIsMuted] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+
   // Gift state
   const [giftOpen, setGiftOpen] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [giftToast, setGiftToast] = useState<string | null>(null);
   const [eclipseActive, setEclipseActive] = useState(false);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Battle state
+  const [battleState, setBattleState] = useState<"idle" | "seeking" | "matched">("idle");
+  const [battleId, setBattleId] = useState<string | null>(null);
 
   useEffect(() => { return () => {}; }, []);
 
@@ -174,6 +179,11 @@ export default function LivePage() {
           setTimeout(() => setEclipseActive(false), 3000);
         }
       })
+      .on("broadcast", { event: "battle_matched" }, (payload) => {
+        setBattleId(payload.payload.battleId);
+        setBattleState("matched");
+        router.push(`/battle/${payload.payload.battleId}`);
+      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [streamId]);
@@ -190,6 +200,27 @@ export default function LivePage() {
   const endStream = async () => {
     await fetch("/api/live/end", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ streamId }) });
     router.push("/public-feed");
+  };
+
+  const seekBattle = async () => {
+    if (!streamId || !userEmail) return;
+    setBattleState("seeking");
+
+    const res = await fetch("/api/battle/seek", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ streamId }),
+    });
+    const data = await res.json();
+
+    if (data.status === "matched") {
+      setBattleId(data.battleId);
+      setBattleState("matched");
+      router.push(`/battle/${data.battleId}`);
+    } else if (data.status === "seeking") {
+      setBattleId(data.battleId);
+      // Wait for match via realtime
+    }
   };
 
   const sendGift = async (gift: typeof GIFTS[0]) => {
@@ -274,9 +305,48 @@ export default function LivePage() {
       {/* Back button */}
       <button onClick={() => router.back()} style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>‹</button>
 
-      {/* End stream */}
+      {/* End stream + Battle buttons — top right, creator only */}
       {isCreator && !ended && (
-        <button onClick={endStream} style={{ position: "absolute", top: 12, right: 14, background: "rgba(220,30,60,0.85)", border: "none", color: "#fff", fontSize: 11, fontWeight: 700, padding: "5px 13px", borderRadius: 20, cursor: "pointer", zIndex: 30 }}>End</button>
+        <div style={{ position: "absolute", top: 12, right: 14, display: "flex", gap: 8, zIndex: 30 }}>
+          {battleState === "idle" && (
+            <button
+              onClick={seekBattle}
+              style={{
+                background: "rgba(212,175,55,0.15)",
+                border: "1px solid rgba(212,175,55,0.5)",
+                color: "#D4AF37", fontSize: 11, fontWeight: 700,
+                padding: "5px 13px", borderRadius: 20, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 5,
+              }}
+            >
+              <svg width={10} height={10} viewBox="0 0 24 24" fill="#D4AF37">
+                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />
+              </svg>
+              BATTLE
+            </button>
+          )}
+          {battleState === "seeking" && (
+            <div style={{
+              background: "rgba(212,175,55,0.1)",
+              border: "1px solid rgba(212,175,55,0.3)",
+              color: "#D4AF37", fontSize: 10, fontFamily: "monospace",
+              padding: "5px 13px", borderRadius: 20,
+              letterSpacing: "0.1em",
+            }}>
+              SEEKING…
+            </div>
+          )}
+          <button
+            onClick={endStream}
+            style={{
+              background: "rgba(220,30,60,0.85)", border: "none",
+              color: "#fff", fontSize: 11, fontWeight: 700,
+              padding: "5px 13px", borderRadius: 20, cursor: "pointer",
+            }}
+          >
+            End
+          </button>
+        </div>
       )}
 
       {/* Creator name + LIVE */}
