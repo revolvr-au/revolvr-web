@@ -23,29 +23,22 @@ export default function OnboardClient() {
   const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const preview = URL.createObjectURL(file);
     setAvatarPreview(preview);
     setUploading(true);
     setError(null);
-
     try {
       const supabase = createSupabaseBrowserClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setError("Not authenticated."); return; }
-
       const slug = handle.trim() || user.id;
       const path = `${slug}/avatar.jpg`;
-
       const { error: uploadErr } = await supabase.storage
         .from("avatars")
         .upload(path, file, { upsert: true, contentType: file.type });
-
       if (uploadErr) { setError(uploadErr.message); return; }
-
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       setAvatarUrl(publicUrl);
-      // Fire and forget — user moves on immediately
       fetch("/api/avatar/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,193 +86,94 @@ export default function OnboardClient() {
       justifyContent: "center",
       padding: "32px 20px",
     }}>
-      {/* Wordmark */}
-      <div style={{
-        fontFamily: "'Bebas Neue', sans-serif",
-        fontSize: 28,
-        letterSpacing: 8,
-        color: "white",
-        marginBottom: 32,
-      }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');`}</style>
+
+      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white", marginBottom: 32 }}>
         REVOLVR
       </div>
 
-      <div style={{
-        width: "100%",
-        maxWidth: 380,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 20,
-      }}>
-        {/* Heading */}
-        <div style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 36,
-          color: "white",
-          textAlign: "center",
-          lineHeight: 1,
-        }}>
+      <div style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
           WELCOME TO REVOLVR
         </div>
 
-        {/* Subline */}
-        <div style={{
-          fontFamily: "monospace",
-          fontSize: 13,
-          color: "#555",
-          textAlign: "center",
-        }}>
-          Let&apos;s set up your profile.
+        <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+          Set up your profile to get started.
         </div>
 
-        {/* Avatar upload */}
+        {/* Avatar */}
         <button
           type="button"
           onClick={onAvatarClick}
           style={{
-            width: 100,
-            height: 100,
-            borderRadius: "50%",
-            background: "#1a1510",
-            border: "2px solid #2a2520",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            overflow: "hidden",
-            cursor: "pointer",
-            flexShrink: 0,
-            position: "relative",
+            width: 100, height: 100, borderRadius: "50%",
+            background: "#1a1510", border: "2px solid #2a2520",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            overflow: "hidden", cursor: "pointer", flexShrink: 0,
           }}
         >
           {avatarPreview ? (
-            <img
-              src={avatarPreview}
-              alt="avatar"
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
+            <img src={avatarPreview} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <span style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              fontSize: 36,
-              color: "#444",
-            }}>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "#444" }}>
               {displayName.trim() ? initial : "+"}
             </span>
           )}
         </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          style={{ display: "none" }}
-          onChange={onFileChange}
-        />
+        <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} />
 
         {uploading && (
-          <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>
-            uploading…
-          </div>
+          <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>uploading…</div>
         )}
 
-        {/* Handle input */}
+        {/* Handle */}
         <div style={{ width: "100%", position: "relative" }}>
-          <span style={{
-            position: "absolute",
-            left: 18,
-            top: "50%",
-            transform: "translateY(-50%)",
-            fontFamily: "monospace",
-            fontSize: 14,
-            color: "#555",
-            pointerEvents: "none",
-          }}>@</span>
+          <span style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", fontFamily: "monospace", fontSize: 14, color: "#555", pointerEvents: "none" }}>@</span>
           <input
             value={handle}
             onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
             placeholder="yourhandle"
-            style={{
-              width: "100%",
-              boxSizing: "border-box",
-              background: "#110e0b",
-              border: "1px solid #2a2520",
-              borderRadius: 50,
-              padding: "13px 18px 13px 34px",
-              fontFamily: "monospace",
-              fontSize: 14,
-              color: "white",
-              outline: "none",
-            }}
+            style={{ width: "100%", boxSizing: "border-box", background: "#110e0b", border: "1px solid #2a2520", borderRadius: 50, padding: "13px 18px 13px 34px", fontFamily: "monospace", fontSize: 14, color: "white", outline: "none" }}
             onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
           />
         </div>
 
-        {/* Display name input */}
+        {/* Display name */}
         <input
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Display name"
-          style={{
-            width: "100%",
-            boxSizing: "border-box",
-            background: "#110e0b",
-            border: "1px solid #2a2520",
-            borderRadius: 50,
-            padding: "13px 18px",
-            fontFamily: "monospace",
-            fontSize: 14,
-            color: "white",
-            outline: "none",
-          }}
+          style={{ width: "100%", boxSizing: "border-box", background: "#110e0b", border: "1px solid #2a2520", borderRadius: 50, padding: "13px 18px", fontFamily: "monospace", fontSize: 14, color: "white", outline: "none" }}
           onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
         />
 
-        {/* Error */}
         {error && (
-          <div style={{ fontFamily: "monospace", fontSize: 12, color: "#ff3b30", textAlign: "center" }}>
-            {error}
-          </div>
+          <div style={{ fontFamily: "monospace", fontSize: 12, color: "#ff3b30", textAlign: "center" }}>{error}</div>
         )}
 
-        {/* LET'S GO button */}
+        {/* Required note */}
+        <div style={{ fontFamily: "monospace", fontSize: 11, color: "#333", textAlign: "center" }}>
+          Handle and display name are required to continue.
+        </div>
+
         <button
           type="button"
           disabled={!canSubmit}
           onClick={onSubmit}
           style={{
-            width: "100%",
-            padding: "14px 0",
-            borderRadius: 50,
+            width: "100%", padding: "14px 0", borderRadius: 50,
             background: "transparent",
             border: `1px solid ${canSubmit ? "#00e5ff" : "#2a2520"}`,
             color: canSubmit ? "#00e5ff" : "#333",
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: 18,
-            letterSpacing: 3,
+            fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3,
             cursor: canSubmit ? "pointer" : "not-allowed",
             transition: "border-color 0.2s, color 0.2s",
           }}
         >
           {loading ? "SAVING…" : "LET'S GO"}
-        </button>
-
-        {/* Skip */}
-        <button
-          type="button"
-          onClick={() => router.push("/public-feed")}
-          style={{
-            background: "transparent",
-            border: "none",
-            fontFamily: "monospace",
-            fontSize: 12,
-            color: "#333",
-            cursor: "pointer",
-            padding: "4px 0",
-          }}
-        >
-          Skip for now
         </button>
       </div>
     </div>

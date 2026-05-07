@@ -36,8 +36,10 @@ export async function PATCH(req: NextRequest) {
   const email = user.email;
   const now = new Date();
   const bioTrimmed = bio?.trim() ?? null;
+  const handleTrimmed = handle?.trim().toLowerCase() || null;
 
   try {
+    // Always upsert profiles
     await prisma.profiles.upsert({
       where: { email },
       create: {
@@ -55,23 +57,31 @@ export async function PATCH(req: NextRequest) {
         updated_at: now,
       },
     });
-  } catch (e) {
-    console.error("profiles upsert failed:", e);
-    return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
-  }
 
-  const existing = await prisma.creatorProfile.findUnique({ where: { email } });
-  if (existing) {
-    await prisma.creatorProfile.update({
+    // Always upsert CreatorProfile — create if doesn't exist
+    await prisma.creatorProfile.upsert({
       where: { email },
-      data: {
-        handle: handle?.trim() || existing.handle,
+      create: {
+        email,
         displayName: displayName.trim(),
-        avatarUrl: avatarUrl ?? existing.avatarUrl,
-        bio: bioTrimmed ?? existing.bio,
+        handle: handleTrimmed,
+        avatarUrl: avatarUrl ?? null,
+        bio: bioTrimmed,
+        createdAt: now,
+        updatedAt: now,
+      },
+      update: {
+        displayName: displayName.trim(),
+        handle: handleTrimmed,
+        avatarUrl: avatarUrl ?? null,
+        bio: bioTrimmed,
         updatedAt: now,
       },
     });
+
+  } catch (e) {
+    console.error("profile setup failed:", e);
+    return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true });
