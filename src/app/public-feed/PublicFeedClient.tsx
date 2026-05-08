@@ -690,26 +690,11 @@ const Post = memo(function Post({
       }}
     >
       {post.isLive && (post.livePlaybackId || post.ivsPlaybackUrl) ? (
-  <div
-    onClick={() => {
-      if (post.ivsPlaybackUrl) {
-        window.location.href = `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
-      } else {
-        router.push(`/live/${post.liveStreamId}`)
-      }
-    }}
-    onTouchEnd={(e) => {
-      e.stopPropagation()
-      e.preventDefault()
-      const url = post.ivsPlaybackUrl
-        ? `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
-        : `/live/${post.liveStreamId}`
-      window.location.href = url
-    }}
+    <div
     style={{
       position: "absolute", top: 0, left: 0,
       width: "100%", height: "100%",
-      background: "#000", zIndex: 1, cursor: "pointer",
+      background: "#000", zIndex: 1,
       touchAction: "manipulation",
     }}
   >
@@ -784,6 +769,31 @@ const Post = memo(function Post({
           ⚡ {post.voltage || 0} voltage
         </span>
       </div>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          const url = post.ivsPlaybackUrl
+            ? `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
+            : `/live/${post.liveStreamId}`;
+          window.location.href = url;
+        }}
+        style={{
+          marginTop: 20,
+          background: "rgba(255,215,0,0.15)",
+          border: "1px solid rgba(255,215,0,0.5)",
+          borderRadius: 50,
+          padding: "10px 32px",
+          color: "#FFD700",
+          fontSize: 13,
+          fontFamily: "monospace",
+          fontWeight: 700,
+          letterSpacing: "0.15em",
+          cursor: "pointer",
+        }}
+      >
+        JOIN LIVE
+      </button>
     </div>
 
     {/* Bottom info */}

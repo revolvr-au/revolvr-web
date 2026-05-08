@@ -14,8 +14,7 @@ export async function POST(req: NextRequest) {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
+              cookieStore.set(name, value, options))
           } catch {}
         },
       },
@@ -28,10 +27,10 @@ export async function POST(req: NextRequest) {
   const { streamId } = await req.json()
   if (!streamId) return NextResponse.json({ error: 'streamId required' }, { status: 400 })
 
-  // Try IVS post first
+  // Handle IVS post-based stream
   const post = await prisma.post.findUnique({
     where: { id: streamId },
-    select: { id: true, userEmail: true, postType: true, ivsPlaybackUrl: true }
+    select: { id: true, userEmail: true, postType: true }
   })
 
   if (post && post.postType === 'LIVE') {
@@ -40,12 +39,15 @@ export async function POST(req: NextRequest) {
     }
     await prisma.post.update({
       where: { id: streamId },
-      data: { liveEndedAt: new Date() }
+      data: {
+        liveEndedAt: new Date(),
+        isLive: false,        // ← critical: marks it as no longer live
+      }
     })
     return NextResponse.json({ success: true })
   }
 
-  // Fall back to Mux stream
+  // Handle Mux stream
   const dbStream = await prisma.muxLiveStream.findUnique({
     where: { id: streamId }
   })
