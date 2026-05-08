@@ -41,6 +41,7 @@ export default function LivePage() {
   const [ended, setEnded] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const [battleAvailable, setBattleAvailable] = useState(false);
 
 
   // Gift state
@@ -53,6 +54,20 @@ export default function LivePage() {
   // Battle state
   const [battleState, setBattleState] = useState<"idle" | "seeking" | "matched">("idle");
   const [battleId, setBattleId] = useState<string | null>(null);
+
+useEffect(() => {
+  if (!userEmail || !streamId) return;
+  
+  const checkForBattles = async () => {
+    const res = await fetch("/api/battle/available");
+    const data = await res.json();
+    setBattleAvailable(data.available && data.seekerEmail !== userEmail);
+  };
+  
+  checkForBattles();
+  const interval = setInterval(checkForBattles, 5000);
+  return () => clearInterval(interval);
+}, [userEmail, streamId]);
 
   useEffect(() => { return () => {}; }, []);
 
@@ -320,6 +335,22 @@ export default function LivePage() {
 
       {/* Back button */}
       <button onClick={() => router.back()} style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>‹</button>
+
+      {/* Battle available indicator */}
+      {battleAvailable && battleState === "idle" && !ended && stream?.creatorEmail === userEmail && (
+        <div style={{
+          position: "absolute", top: 50, left: "50%", transform: "translateX(-50%)",
+          background: "rgba(212,175,55,0.15)", border: "1px solid rgba(212,175,55,0.5)",
+          borderRadius: 20, padding: "6px 16px", zIndex: 30,
+          display: "flex", alignItems: "center", gap: 6,
+          animation: "livePulse 1.5s ease-in-out infinite",
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#D4AF37" }} />
+          <span style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.1em" }}>
+            BATTLE AVAILABLE
+          </span>
+        </div>
+      )}
 
       {/* End stream + Battle buttons — top right, creator only */}
       {!ended && stream?.creatorEmail === userEmail && (
