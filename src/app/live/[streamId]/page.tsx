@@ -217,6 +217,28 @@ useEffect(() => {
     router.push("/public-feed");
   };
 
+  const battleIdRef = useRef<string | null>(null);
+  const battleStateRef = useRef<"idle" | "seeking" | "matched">("idle");
+
+  useEffect(() => { battleIdRef.current = battleId; }, [battleId]);
+  useEffect(() => { battleStateRef.current = battleState; }, [battleState]);
+
+  // Polling fallback — uses refs not state to avoid stale closures
+  useEffect(() => {
+    const poll = setInterval(async () => {
+      if (battleStateRef.current !== "seeking" || !battleIdRef.current) return;
+      try {
+        const res = await fetch(`/api/battle/${battleIdRef.current}`);
+        const data = await res.json();
+        if (data.battle?.status === "active") {
+          setBattleState("matched");
+          router.push(`/battle/${data.battle.id}`);
+        }
+      } catch {}
+    }, 2000);
+    return () => clearInterval(poll);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const seekBattle = async () => {
     if (!streamId || !userEmail) return;
     setBattleState("seeking");
@@ -234,25 +256,9 @@ useEffect(() => {
       router.push(`/battle/${data.battleId}`);
     } else if (data.status === "seeking") {
       setBattleId(data.battleId);
-      // Wait for match via realtime
+      // Wait for match via realtime or polling
     }
   };
-
-  useEffect(() => {
-    if (battleState !== "seeking" || !battleId) return;
-
-    const poll = setInterval(async () => {
-      const res = await fetch(`/api/battle/${battleId}`);
-      const data = await res.json();
-      if (data.battle?.status === "active") {
-        clearInterval(poll);
-        setBattleState("matched");
-        router.push(`/battle/${data.battle.id}`);
-      }
-    }, 2000);
-
-    return () => clearInterval(poll);
-  }, [battleState, battleId, router]);
 
   const sendGift = async (gift: typeof GIFTS[0]) => {
   setGiftOpen(false);
