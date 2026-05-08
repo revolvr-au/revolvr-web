@@ -21,12 +21,13 @@ export async function POST(req: Request) {
 
     // Look for an open battle seeking a challenger (not created by this user)
     const openBattle = await prisma.liveBattle.findFirst({
-      where: {
-        status: "seeking",
-        creatorEmailA: { not: email },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+  where: {
+    status: "seeking",
+    creatorEmailA: { not: email },
+    streamIdB: null,
+  },
+  orderBy: { createdAt: "asc" },
+});
 
     if (openBattle) {
       // Join existing battle
@@ -63,7 +64,22 @@ export async function POST(req: Request) {
 
       return NextResponse.json({ ok: true, status: "matched", battleId: battle.id, side: "B" });
     }
+    // Check if current user already has a seeking battle
+const myExistingBattle = await prisma.liveBattle.findFirst({
+  where: {
+    status: "seeking",
+    creatorEmailA: email,
+  },
+});
 
+if (myExistingBattle) {
+  return NextResponse.json({ 
+    ok: true, 
+    status: "seeking", 
+    battleId: myExistingBattle.id, 
+    side: "A" 
+  });
+}
     // No open battle — create one and wait
     const battle = await prisma.liveBattle.create({
       data: {

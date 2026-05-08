@@ -38,12 +38,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     await prisma.post.update({
-      where: { id: streamId },
-      data: {
-        liveEndedAt: new Date(),
-        isLive: false,        // ← critical: marks it as no longer live
-      }
-    })
+  where: { id: streamId },
+  data: {
+    liveEndedAt: new Date(),
+    postType: "FEED", // ← mark as no longer LIVE by changing type
+  }
+})
     return NextResponse.json({ success: true })
   }
 
