@@ -42,17 +42,24 @@ export async function POST(req: Request) {
         },
       });
 
-      // Broadcast to both creators — battle is starting
-      await supabaseAdmin.channel(`live:${openBattle.streamIdA}`).send({
-        type: "broadcast",
-        event: "battle_matched",
-        payload: { battleId: battle.id, side: "A" },
-      });
-      await supabaseAdmin.channel(`live:${streamId}`).send({
-        type: "broadcast",
-        event: "battle_matched",
-        payload: { battleId: battle.id, side: "B" },
-      });
+      const [broadcastA, broadcastB] = await Promise.all([
+        supabaseAdmin
+          .channel(`live:${openBattle.streamIdA}`)
+          .send({
+            type: "broadcast",
+            event: "battle_matched",
+            payload: { battleId: battle.id, side: "A" },
+          }),
+        supabaseAdmin
+          .channel(`live:${streamId}`)
+          .send({
+            type: "broadcast",
+            event: "battle_matched",
+            payload: { battleId: battle.id, side: "B" },
+          }),
+      ]);
+
+      console.log("[battle/seek] broadcasts:", broadcastA, broadcastB);
 
       return NextResponse.json({ ok: true, status: "matched", battleId: battle.id, side: "B" });
     }

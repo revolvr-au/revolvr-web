@@ -223,6 +223,22 @@ export default function LivePage() {
     }
   };
 
+  useEffect(() => {
+    if (battleState !== "seeking" || !battleId) return;
+
+    const poll = setInterval(async () => {
+      const res = await fetch(`/api/battle/${battleId}`);
+      const data = await res.json();
+      if (data.battle?.status === "active") {
+        clearInterval(poll);
+        setBattleState("matched");
+        router.push(`/battle/${data.battle.id}`);
+      }
+    }, 2000);
+
+    return () => clearInterval(poll);
+  }, [battleState, battleId, router]);
+
   const sendGift = async (gift: typeof GIFTS[0]) => {
   setGiftOpen(false);
 

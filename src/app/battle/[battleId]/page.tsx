@@ -201,7 +201,17 @@ export default function BattlePage() {
         setBattleEnded(true);
         setWinner(payload.payload.winnerEmail);
         setTimeout(() => {
-          if (battle?.streamIdA) router.push(`/live/${battle.streamIdA}`);
+          if (userEmail === battle?.creatorEmailA && battle?.streamIdA) {
+            router.push(`/live/${battle.streamIdA}`);
+          } else if (userEmail === battle?.creatorEmailB && battle?.streamIdB) {
+            router.push(`/live/${battle.streamIdB}`);
+          } else {
+            const winnerStreamId = payload.payload.winnerEmail === battle?.creatorEmailA
+              ? battle?.streamIdA
+              : battle?.streamIdB;
+            if (winnerStreamId) router.push(`/live/${winnerStreamId}`);
+            else router.push("/public-feed");
+          }
         }, 5000);
       })
       .subscribe();
