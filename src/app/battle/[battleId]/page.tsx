@@ -349,7 +349,7 @@ export default function BattlePage() {
   }
 
   return (
-    <div style={{ height: "100dvh", width: "100%", maxWidth: 480, margin: "0 auto", background: "#000", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100dvh", width: "100%", maxWidth: 480, margin: "0 auto", background: "#000", position: "relative", overflow: "hidden" }}>
 
       <style>{`
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
@@ -431,14 +431,14 @@ export default function BattlePage() {
         </div>
       )}
 
-      {/* Dual live video — 65% of screen */}
-      <div style={{ display: "flex", height: "65%", position: "relative", flexShrink: 0 }}>
+      {/* Dual live video — full height, everything overlaid */}
+      <div style={{ display: "flex", height: "100%", position: "absolute", inset: 0, zIndex: 1 }}>
         <LiveVideoPane stream={streamA} side="A" voltage={battle?.voltageA ?? 0} />
         <LiveVideoPane stream={streamB} side="B" voltage={battle?.voltageB ?? 0} />
       </div>
 
       {/* Tension line */}
-      <div style={{ height: 40, display: "flex", alignItems: "center", padding: "0 16px", background: "rgba(0,0,0,0.9)", flexShrink: 0, gap: 8 }}>
+      <div style={{ position: "absolute", bottom: 120, left: 0, right: 0, height: 40, display: "flex", alignItems: "center", padding: "0 16px", background: "rgba(0,0,0,0.5)", zIndex: 10, gap: 8, backdropFilter: "blur(4px)" }}>
         <span style={{ color: "#00e5ff", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 24, textAlign: "left" }}>{battle?.voltageA ?? 0}</span>
         <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, position: "relative" }}>
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #00e5ff, #00e5ff50)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
@@ -449,7 +449,7 @@ export default function BattlePage() {
       </div>
 
       {/* Comments */}
-      <div style={{ flex: 1, overflow: "hidden", padding: "6px 12px 0", maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)" } as React.CSSProperties}>
+      <div style={{ position: "absolute", bottom: 165, left: 0, right: 0, height: 120, overflow: "hidden", padding: "6px 12px 0", zIndex: 10, maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)" } as React.CSSProperties}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {messages.slice(-8).map((msg, i) => (
             <div key={msg.id ?? i} style={{ display: "flex", gap: 5, alignItems: "baseline", animation: "commentDrift 0.3s ease-out both" }}>
@@ -514,7 +514,7 @@ export default function BattlePage() {
       {(giftOpen || topUpOpen) && <div style={{ position: "absolute", inset: 0, zIndex: 25 }} onClick={() => { setGiftOpen(false); setTopUpOpen(false); }} />}
 
       {/* Chat input */}
-      <div style={{ padding: "6px 12px 16px", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "6px 12px 20px", display: "flex", alignItems: "center", gap: 8, zIndex: 10, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)" }}>
         <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Say something..." style={{ flex: 1, background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 28, color: "#fff", fontSize: 13, padding: "9px 16px", outline: "none" }} />
         <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 18, cursor: "pointer" }}>➤</button>
       </div>
