@@ -20,6 +20,48 @@ function BoltIcon({ size = 22, color = "#D4AF37" }: { size?: number; color?: str
   );
 }
 
+function GiftAsset({ id, size = 32 }: { id: string; size?: number }) {
+  if (id === "pulse") return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#00e5ff" filter="url(#gc)"/>
+      <defs><filter id="gc"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    </svg>
+  );
+  if (id === "amp") return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#00e5ff" strokeWidth="2" opacity="0.4"/>
+      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#00e5ff" filter="url(#ga)"/>
+      <circle cx="20" cy="20" r="8" fill="none" stroke="#00e5ff" strokeWidth="1.5" opacity="0.6"/>
+      <defs><filter id="ga"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    </svg>
+  );
+  if (id === "override") return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      <polygon points="20,2 38,32 2,32" fill="none" stroke="#D4AF37" strokeWidth="2"/>
+      <polygon points="20,8 34,30 6,30" fill="#D4AF3730"/>
+      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#D4AF37" filter="url(#go)"/>
+      <defs><filter id="go"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    </svg>
+  );
+  if (id === "monolith") return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      <rect x="8" y="4" width="24" height="32" rx="3" fill="none" stroke="#D4AF37" strokeWidth="2"/>
+      <rect x="12" y="8" width="16" height="24" rx="2" fill="#D4AF3720"/>
+      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#D4AF37" filter="url(#gm)"/>
+      <defs><filter id="gm"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    </svg>
+  );
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="17" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1"/>
+      <circle cx="20" cy="20" r="12" fill="#111"/>
+      <circle cx="20" cy="20" r="14" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeDasharray="4 2"/>
+      <path d="M21 10L12 22h8l-1 10 12-16h-8l1-6z" fill="#fff" filter="url(#ge)"/>
+      <defs><filter id="ge"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    </svg>
+  );
+}
+
 export default function LivePage() {
   const params = useParams<{ streamId: string }>();
   const streamId = params?.streamId;
@@ -435,12 +477,14 @@ useEffect(() => {
 
       {/* Gift picker — slides up from button */}
       {giftOpen && (
-        <div style={{ position: "absolute", right: 14, bottom: 125, zIndex: 40, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+        <div style={{ position: "absolute", right: 14, bottom: 125, zIndex: 40, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
           {[...GIFTS].reverse().map((gift, i) => (
-            <button key={gift.id} onClick={() => sendGift(gift)} style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(0,0,0,0.85)", border: `1px solid ${gift.color}40`, borderRadius: 24, padding: "7px 14px 7px 10px", cursor: "pointer", animation: `giftSlideUp 0.2s ease-out ${i * 0.05}s both`, backdropFilter: "blur(10px)", minWidth: 130 }}>
-              <BoltIcon size={16} color={gift.color} />
-              <span style={{ color: "#fff", fontSize: 12, fontWeight: 600, flex: 1, textAlign: "left" }}>{gift.name}</span>
-              <span style={{ color: gift.color, fontSize: 11, fontFamily: "monospace" }}>{gift.sparks}⚡</span>
+            <button key={gift.id} onClick={() => sendGift(gift)} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(0,0,0,0.88)", border: `1px solid ${gift.color}30`, borderRadius: 16, padding: "8px 12px 8px 8px", cursor: "pointer", animation: `giftSlideUp 0.2s ease-out ${i * 0.04}s both`, backdropFilter: "blur(12px)", minWidth: 150 }}>
+              <GiftAsset id={gift.id} size={32} />
+              <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em" }}>{gift.name.toUpperCase()}</span>
+                <span style={{ color: gift.color, fontSize: 10, fontFamily: "monospace" }}>{gift.sparks}⚡</span>
+              </div>
             </button>
           ))}
         </div>
