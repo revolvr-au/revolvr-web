@@ -126,6 +126,17 @@ export async function POST(req: Request) {
       },
     });
 
+    // Broadcast gift effect to all viewers
+    await supabaseAdmin.channel(`battle:${battleId}`).send({
+      type: "broadcast",
+      event: "gift_effect",
+      payload: {
+        giftId,
+        side,
+        senderName: viewerEmail?.split("@")[0] ?? "viewer",
+      },
+    });
+
     return NextResponse.json({ ok: true, voltageGain });
 
   } catch (e: any) {
