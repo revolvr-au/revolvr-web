@@ -15,6 +15,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@aws-sdk/client-ivs": "^3.1045.0",
     "@livekit/components-styles": "^1.2.0",
     "@mux/mux-node": "^14.0.1",
     "@prisma/client": "^6.19.0",
