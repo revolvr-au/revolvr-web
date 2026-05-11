@@ -128,12 +128,38 @@ export default function GoLivePage() {
       setCountdown(null);
 
       const res = await fetch("/api/live/create-ivs", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
-      const { streamId, playbackUrl } = data;
+const data = await res.json();
+if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
+const { streamId, playbackUrl, ingestEndpoint } = data;
 
-      broadcastingRef.current = true;
-      await clientRef.current.startBroadcast(process.env.NEXT_PUBLIC_IVS_STREAM_KEY!);
+// Reinitialise IVS client with the channel-specific ingest endpoint
+const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
+const newIngest = (ingestEndpoint ?? '')
+  .replace('rtmps://', '')
+  .replace(':443/app/', '');
+
+const newClient = IVSBroadcastClient.create({
+  streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
+  ingestEndpoint: newIngest,
+});
+
+// Re-add video/audio tracks
+const videoTrack = streamRef.current?.getVideoTracks()[0];
+const audioTrack = streamRef.current?.getAudioTracks()[0];
+if (videoTrack) {
+  await newClient.addVideoInputDevice(new MediaStream([videoTrack]), 'camera1', { index: 0 });
+  newClient.updateVideoDeviceComposition('camera1', { index: 0, x: 0, y: 0, width: 720, height: 1280 });
+}
+if (audioTrack) {
+  await newClient.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
+}
+
+// Delete old client, use new one
+try { clientRef.current?.delete(); } catch {}
+clientRef.current = newClient;
+
+broadcastingRef.current = true;
+await clientRef.current.startBroadcast(data.streamKey);
 
       router.push(`/live/${streamId}?ivs=1&playback=${encodeURIComponent(playbackUrl ?? '')}`);
 

@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { IVSClient, CreateChannelCommand } from "@aws-sdk/client-ivs";
+
+const ivsClient = new IVSClient({
+  region: process.env.AWS_REGION ?? "ap-northeast-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  },
+});
 
 export async function POST(req: Request) {
   try {
@@ -32,22 +41,47 @@ export async function POST(req: Request) {
     });
     const displayName = profile?.display_name ?? user.email!.split("@")[0];
 
+    // Create a dedicated IVS channel for this creator session
+    const channelName = `revolvr-${user.email!.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 40)}-${Date.now()}`;
+
+    const channel = await ivsClient.send(new CreateChannelCommand({
+      name: channelName,
+      latencyMode: "LOW",
+      type: "STANDARD",
+      tags: { creator: user.email!, platform: "revolvr" },
+    }));
+
+    const streamKey = channel.streamKey?.value;
+    const playbackUrl = channel.channel?.playbackUrl;
+    const ingestEndpoint = channel.channel?.ingestEndpoint;
+    const channelArn = channel.channel?.arn;
+
+    if (!streamKey || !playbackUrl || !ingestEndpoint || !channelArn) {
+      throw new Error("IVS channel creation failed — missing credentials");
+    }
+
+    // Create the post with this session's unique playback URL
     const post = await prisma.post.create({
-  data: {
-    userEmail: user.email!,
-    imageUrl: "",
-    caption: `${displayName} is live`,
-    postType: "LIVE",
-    liveStartedAt: new Date(),
-    voltage: 100,
-    ivsPlaybackUrl: process.env.IVS_PLAYBACK_URL ?? null,  // ← this line
-  },
-});
+      data: {
+        userEmail: user.email!,
+        imageUrl: "",
+        caption: `${displayName} is live`,
+        postType: "LIVE",
+        liveStartedAt: new Date(),
+        voltage: 100,
+        ivsPlaybackUrl: playbackUrl,
+        liveStreamId: channelArn, // store ARN so we can delete channel on end
+      },
+    });
 
     return NextResponse.json({
       streamId: post.id,
-      playbackUrl: process.env.IVS_PLAYBACK_URL,
+      streamKey,
+      playbackUrl,
+      ingestEndpoint,
+      channelArn,
     });
+
   } catch (err: any) {
     console.error("create-ivs error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
