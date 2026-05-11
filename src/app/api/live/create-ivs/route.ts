@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         liveStartedAt: new Date(),
         voltage: 100,
         ivsPlaybackUrl: playbackUrl,
-        liveStreamId: channelArn,
+        liveStreamId: null,
       },
     });
 
