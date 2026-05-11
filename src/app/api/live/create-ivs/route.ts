@@ -2,18 +2,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { IVSClient, CreateChannelCommand } from "@aws-sdk/client-ivs";
-
-const ivsClient = new IVSClient({
-  region: process.env.AWS_REGION ?? "ap-northeast-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
 
 export async function POST(req: Request) {
   try {
+    const { IVSClient, CreateChannelCommand } = require("@aws-sdk/client-ivs");
+
+    const ivsClient = new IVSClient({
+      region: process.env.AWS_REGION ?? "ap-northeast-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    });
+
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,7 +42,6 @@ export async function POST(req: Request) {
     });
     const displayName = profile?.display_name ?? user.email!.split("@")[0];
 
-    // Create a dedicated IVS channel for this creator session
     const channelName = `revolvr-${user.email!.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 40)}-${Date.now()}`;
 
     const channel = await ivsClient.send(new CreateChannelCommand({
@@ -60,7 +60,6 @@ export async function POST(req: Request) {
       throw new Error("IVS channel creation failed — missing credentials");
     }
 
-    // Create the post with this session's unique playback URL
     const post = await prisma.post.create({
       data: {
         userEmail: user.email!,
@@ -70,7 +69,7 @@ export async function POST(req: Request) {
         liveStartedAt: new Date(),
         voltage: 100,
         ivsPlaybackUrl: playbackUrl,
-        liveStreamId: channelArn, // store ARN so we can delete channel on end
+        liveStreamId: channelArn,
       },
     });
 
