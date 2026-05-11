@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import { IVSClient, CreateChannelCommand } from "@aws-sdk/client-ivs";
 
 export async function POST(req: Request) {
   try {
-    const ivsClient = new IVSClient({
+    const ivs = eval('require')('@aws-sdk/client-ivs');
+    const ivsClient = new ivs.IVSClient({
       region: process.env.AWS_REGION ?? "ap-northeast-1",
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
 
     const channelName = `revolvr-${user.email!.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 40)}-${Date.now()}`;
 
-    const channel = await ivsClient.send(new CreateChannelCommand({
+    const channel = await ivsClient.send(new ivs.CreateChannelCommand({
       name: channelName,
       latencyMode: "LOW",
       type: "STANDARD",
