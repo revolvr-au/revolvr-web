@@ -397,7 +397,8 @@ export default function BattlePage() {
   }
 
   return (
-    <div style={{ height: "100dvh", width: "100%", maxWidth: 480, margin: "0 auto", background: "#000", position: "relative", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", width: "100vw", background: "#000", position: "relative", overflow: "hidden" }}>
+
 
       <style>{`
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
