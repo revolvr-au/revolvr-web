@@ -101,36 +101,84 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
   const color = side === "A" ? "#00e5ff" : "#D4AF37";
 
   return (
-    <div style={{ flex: 1, position: "relative", background: "#000", overflow: "hidden", borderRight: side === "A" ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
-      <video ref={videoRef} autoPlay playsInline muted style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, transparent 25%, transparent 65%, rgba(0,0,0,0.8) 100%)", pointerEvents: "none" }} />
+    <div style={{
+      width: "50%",
+      height: "100%",
+      position: "relative",
+      background: "#111",
+      overflow: "hidden",
+      borderRight: side === "A" ? "1px solid rgba(255,255,255,0.12)" : "none",
+      flexShrink: 0,
+    }}>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        style={{
+          position: "absolute",
+          top: 0, left: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          objectPosition: "center top",
+        }}
+      />
 
-      {/* Avatar — tiny corner */}
+      {/* Gradient overlays */}
+      <div style={{
+        position: "absolute", inset: 0,
+        background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 20%, transparent 70%, rgba(0,0,0,0.7) 100%)",
+        pointerEvents: "none"
+      }} />
+
+      {/* Avatar corner */}
       {(stream?.avatarLiveUrl || stream?.avatarUrl) && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={stream?.avatarLiveUrl ?? stream?.avatarUrl} alt=""
-          style={{ position: "absolute", top: 0, [side === "A" ? "left" : "right"]: 0, height: 64, width: 64, objectFit: "cover", borderRadius: side === "A" ? "0 0 12px 0" : "0 0 0 12px", pointerEvents: "none", filter: `drop-shadow(0 0 6px ${color}60)` }}
+        <img
+          src={stream?.avatarLiveUrl ?? stream?.avatarUrl}
+          alt=""
+          style={{
+            position: "absolute",
+            top: 0,
+            [side === "A" ? "left" : "right"]: 0,
+            height: 56, width: 56,
+            objectFit: "cover",
+            borderRadius: side === "A" ? "0 0 10px 0" : "0 0 0 10px",
+            pointerEvents: "none",
+          }}
         />
       )}
 
-      {/* Waiting overlay */}
-      {side === "B" && !stream && (
-        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.7)" }}>
+      {/* Waiting overlay — only show when no stream at all */}
+      {!stream && (
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 4 }}>WAITING FOR</div>
-            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em" }}>CHALLENGER</div>
+            <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 4 }}>WAITING FOR</div>
+            <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em" }}>CHALLENGER</div>
           </div>
         </div>
       )}
 
-      {/* Name + voltage */}
-      <div style={{ position: "absolute", bottom: 6, left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-        <span style={{ color: "#fff", fontSize: 9, fontFamily: "monospace", fontWeight: 700, textShadow: "0 1px 4px rgba(0,0,0,0.9)", letterSpacing: "0.05em" }}>
+      {/* Name + voltage — bottom centre of each pane */}
+      <div style={{
+        position: "absolute", bottom: 52, left: 0, right: 0,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+        pointerEvents: "none",
+      }}>
+        <span style={{
+          color: "#fff", fontSize: 10, fontFamily: "monospace", fontWeight: 700,
+          textShadow: "0 1px 6px rgba(0,0,0,0.9)", letterSpacing: "0.05em",
+          maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>
           {stream?.displayName ?? (side === "B" ? "WAITING…" : "?")}
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <svg width={8} height={8} viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill={color}/></svg>
-          <span style={{ color, fontSize: 10, fontFamily: "monospace", fontWeight: 800 }}>{voltage}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+          <svg width={9} height={9} viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill={color}/></svg>
+          <span style={{ color, fontSize: 11, fontFamily: "monospace", fontWeight: 800 }}>{voltage}</span>
         </div>
       </div>
     </div>
@@ -432,7 +480,14 @@ export default function BattlePage() {
       )}
 
       {/* Dual live video — full height, everything overlaid */}
-      <div style={{ display: "flex", height: "100%", position: "absolute", inset: 0, zIndex: 1 }}>
+      <div style={{
+        display: "flex",
+        position: "absolute",
+        inset: 0,
+        zIndex: 1,
+        height: "100%",
+        width: "100%",
+      }}>
         <LiveVideoPane stream={streamA} side="A" voltage={battle?.voltageA ?? 0} />
         <LiveVideoPane stream={streamB} side="B" voltage={battle?.voltageB ?? 0} />
       </div>
