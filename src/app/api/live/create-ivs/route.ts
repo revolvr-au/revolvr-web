@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { IVSClient, CreateChannelCommand } from "@aws-sdk/client-ivs";
 
 export async function POST(req: Request) {
   try {
-    const { IVSClient, CreateChannelCommand } = require("@aws-sdk/client-ivs");
-
     const ivsClient = new IVSClient({
       region: process.env.AWS_REGION ?? "ap-northeast-1",
       credentials: {

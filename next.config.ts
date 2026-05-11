@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['@aws-sdk/client-ivs'],
   images: {
     remotePatterns: [
       {
