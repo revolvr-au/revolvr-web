@@ -89,10 +89,6 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
         const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); };
         check();
       });
-      // Force video element to correct size before attaching
-      if (videoRef.current) {
-        videoRef.current.style.cssText = "position:absolute!important;top:50%!important;left:50%!important;min-width:100%!important;min-height:100%!important;width:auto!important;height:auto!important;transform:translate(-50%,-50%)!important;object-fit:cover!important;display:block!important;";
-      }
       if (cancelled) return;
 
       const IVSPlayer = (window as any).IVSPlayer;
@@ -132,14 +128,28 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
         borderRight: side === "A" ? "1px solid rgba(255,255,255,0.1)" : "none",
       }}
     >
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="ivs-video"
-        style={{}}
-      />
+      <div style={{
+        position: "absolute",
+        top: 0, left: 0,
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+      }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            minWidth: "100%",
+            minHeight: "100%",
+          }}
+        />
+      </div>
 
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
@@ -410,7 +420,6 @@ export default function BattlePage() {
 
 
       <style>{`
-        .ivs-video { position:absolute!important; top:50%!important; left:50%!important; min-width:100%!important; min-height:100%!important; width:auto!important; height:auto!important; transform:translate(-50%,-50%)!important; object-fit:cover!important; display:block!important; }
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
         @keyframes tensionPulse { 0%,100%{box-shadow:0 0 8px #D4AF37} 50%{box-shadow:0 0 32px #D4AF37,0 0 64px #D4AF3740} }
         @keyframes commentDrift { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
