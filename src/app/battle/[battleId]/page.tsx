@@ -406,7 +406,7 @@ export default function BattlePage() {
   }
 
   return (
-    <div style={{ height: "100dvh", width: "100vw", background: "#000", position: "relative", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", width: "100%", maxWidth: "100vw", background: "#000", overflow: "hidden", position: "relative", overflow: "hidden" }}>
 
 
       <style>{`
