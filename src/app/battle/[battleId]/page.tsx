@@ -91,7 +91,7 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
       });
       // Force video element to correct size before attaching
       if (videoRef.current) {
-        videoRef.current.style.cssText = "position:absolute!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:cover!important;display:block!important;";
+        videoRef.current.style.cssText = "position:absolute!important;top:50%!important;left:50%!important;min-width:100%!important;min-height:100%!important;width:auto!important;height:auto!important;transform:translate(-50%,-50%)!important;object-fit:cover!important;display:block!important;";
       }
       if (cancelled) return;
 
@@ -406,11 +406,11 @@ export default function BattlePage() {
   }
 
   return (
-    <div style={{ height: "100dvh", width: "100%", maxWidth: "100vw", background: "#000", overflow: "hidden", position: "relative", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", width: "100%", maxWidth: "100vw", background: "#000", overflow: "hidden", position: "relative" }}>
 
 
       <style>{`
-        .ivs-video { position:absolute!important; top:0!important; left:0!important; width:100%!important; height:100%!important; object-fit:cover!important; object-position:center top!important; display:block!important; }
+        .ivs-video { position:absolute!important; top:50%!important; left:50%!important; min-width:100%!important; min-height:100%!important; width:auto!important; height:auto!important; transform:translate(-50%,-50%)!important; object-fit:cover!important; display:block!important; }
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
         @keyframes tensionPulse { 0%,100%{box-shadow:0 0 8px #D4AF37} 50%{box-shadow:0 0 32px #D4AF37,0 0 64px #D4AF3740} }
         @keyframes commentDrift { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
