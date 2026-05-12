@@ -84,20 +84,36 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
     let cancelled = false;
 
     const init = async () => {
-      // Wait for IVS SDK to load
       await new Promise<void>((resolve) => {
         const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); };
         check();
       });
-      // Stagger second player to avoid decoder contention
-      if (side === "B") {
-        await new Promise(r => setTimeout(r, 1500));
-      }
+      if (side === "B") await new Promise(r => setTimeout(r, 1500));
       if (cancelled) return;
 
       const IVSPlayer = (window as any).IVSPlayer;
       ivsPlayer = IVSPlayer.create();
       ivsPlayer.attachHTMLVideoElement(video);
+
+      // Force cover styles after IVS attaches and every time it plays
+      const forceStyles = () => {
+        if (!video) return;
+        video.style.position = "absolute";
+        video.style.top = "0";
+        video.style.left = "0";
+        video.style.width = "100%";
+        video.style.height = "100%";
+        video.style.objectFit = "cover";
+        video.style.objectPosition = "center center";
+        video.style.display = "block";
+      };
+
+      forceStyles();
+      ivsPlayer.addEventListener(IVSPlayer.PlayerState.PLAYING, forceStyles);
+      ivsPlayer.addEventListener(IVSPlayer.PlayerState.READY, forceStyles);
+      video.addEventListener("loadedmetadata", forceStyles);
+      video.addEventListener("playing", forceStyles);
+
       ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
         if (!cancelled) {
           setTimeout(() => {
@@ -106,8 +122,16 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
           }, 3000);
         }
       });
+
       ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
       ivsPlayer.play();
+
+      // Also poll styles for 10s to catch any late IVS overrides
+      let styleChecks = 0;
+      const styleInterval = setInterval(() => {
+        forceStyles();
+        if (++styleChecks > 20) clearInterval(styleInterval);
+      }, 500);
     };
 
     init();
@@ -115,7 +139,7 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
       cancelled = true;
       if (ivsPlayer) { try { ivsPlayer.delete(); } catch {} }
     };
-  }, [stream?.ivsPlaybackUrl]);
+  }, [stream?.ivsPlaybackUrl, side]);
 
   const color = side === "A" ? "#00e5ff" : "#D4AF37";
 
@@ -146,11 +170,12 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
           muted
           style={{
             position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            minWidth: "100%",
-            minHeight: "100%",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
           }}
         />
       </div>
