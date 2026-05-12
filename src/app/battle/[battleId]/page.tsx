@@ -75,41 +75,67 @@ function FloatingGiftEffect({ fg }: { fg: FloatingGift }) {
 // ── IVS Video pane ──────────────────────────────────────────────────────────
 function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"; voltage: number }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!videoRef.current || !stream?.ivsPlaybackUrl) return;
     const video = videoRef.current;
     let ivsPlayer: any = null;
+    let cancelled = false;
+
     const init = async () => {
+      // Wait for IVS SDK
       await new Promise<void>((resolve) => {
         const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); };
         check();
       });
+      // Wait for container to have real dimensions
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          const h = containerRef.current?.offsetHeight ?? 0;
+          if (h > 10) resolve(); else setTimeout(check, 50);
+        };
+        check();
+      });
+      if (cancelled) return;
+
       const IVSPlayer = (window as any).IVSPlayer;
       ivsPlayer = IVSPlayer.create();
       ivsPlayer.attachHTMLVideoElement(video);
       ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
-        setTimeout(() => { ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl)); ivsPlayer.play(); }, 3000);
+        if (!cancelled) {
+          setTimeout(() => {
+            ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
+            ivsPlayer.play();
+          }, 3000);
+        }
       });
       ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
       ivsPlayer.play();
     };
+
     init();
-    return () => { if (ivsPlayer) ivsPlayer.delete(); };
+    return () => {
+      cancelled = true;
+      if (ivsPlayer) { try { ivsPlayer.delete(); } catch {} }
+    };
   }, [stream?.ivsPlaybackUrl]);
 
   const color = side === "A" ? "#00e5ff" : "#D4AF37";
 
   return (
-    <div style={{
-      width: "50%",
-      height: "100%",
-      position: "relative",
-      background: "#111",
-      overflow: "hidden",
-      borderRight: side === "A" ? "1px solid rgba(255,255,255,0.12)" : "none",
-      flexShrink: 0,
-    }}>
+    <div
+      ref={containerRef}
+      style={{
+        width: "50%",
+        height: "100%",
+        position: "relative",
+        background: "#0a0a0a",
+        overflow: "hidden",
+        flexShrink: 0,
+        borderRight: side === "A" ? "1px solid rgba(255,255,255,0.1)" : "none",
+      }}
+    >
       <video
         ref={videoRef}
         autoPlay
@@ -122,27 +148,24 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
           height: "100%",
           objectFit: "cover",
           objectPosition: "center top",
+          display: "block",
         }}
       />
 
-      {/* Gradient overlays */}
       <div style={{
-        position: "absolute", inset: 0,
+        position: "absolute", inset: 0, pointerEvents: "none",
         background: "linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, transparent 20%, transparent 70%, rgba(0,0,0,0.7) 100%)",
-        pointerEvents: "none"
       }} />
 
-      {/* Avatar corner */}
       {(stream?.avatarLiveUrl || stream?.avatarUrl) && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={stream?.avatarLiveUrl ?? stream?.avatarUrl}
           alt=""
           style={{
-            position: "absolute",
-            top: 0,
+            position: "absolute", top: 0,
             [side === "A" ? "left" : "right"]: 0,
-            height: 56, width: 56,
+            height: 52, width: 52,
             objectFit: "cover",
             borderRadius: side === "A" ? "0 0 10px 0" : "0 0 0 10px",
             pointerEvents: "none",
@@ -150,35 +173,32 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
         />
       )}
 
-      {/* Waiting overlay — only show when no stream at all */}
       {!stream && (
-        <div style={{
-          position: "absolute", inset: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
+        <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 4 }}>WAITING FOR</div>
-            <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em" }}>CHALLENGER</div>
+            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 4 }}>WAITING FOR</div>
+            <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 9, fontFamily: "monospace", letterSpacing: "0.15em" }}>CHALLENGER</div>
           </div>
         </div>
       )}
 
-      {/* Name + voltage — bottom centre of each pane */}
       <div style={{
-        position: "absolute", bottom: 52, left: 0, right: 0,
-        display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+        position: "absolute", bottom: 56, left: 0, right: 0,
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
         pointerEvents: "none",
       }}>
         <span style={{
           color: "#fff", fontSize: 10, fontFamily: "monospace", fontWeight: 700,
-          textShadow: "0 1px 6px rgba(0,0,0,0.9)", letterSpacing: "0.05em",
-          maxWidth: "90%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          textShadow: "0 1px 6px rgba(0,0,0,0.9)", letterSpacing: "0.06em",
+          maxWidth: "88%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
         }}>
           {stream?.displayName ?? (side === "B" ? "WAITING…" : "?")}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-          <svg width={9} height={9} viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill={color}/></svg>
-          <span style={{ color, fontSize: 11, fontFamily: "monospace", fontWeight: 800 }}>{voltage}</span>
+          <svg width={9} height={9} viewBox="0 0 24 24">
+            <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill={color} />
+          </svg>
+          <span style={{ color, fontSize: 11, fontFamily: "monospace", fontWeight: 800 }}>+ {voltage}</span>
         </div>
       </div>
     </div>
