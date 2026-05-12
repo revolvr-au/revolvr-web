@@ -89,6 +89,10 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
         const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); };
         check();
       });
+      // Stagger second player to avoid decoder contention
+      if (side === "B") {
+        await new Promise(r => setTimeout(r, 1500));
+      }
       if (cancelled) return;
 
       const IVSPlayer = (window as any).IVSPlayer;

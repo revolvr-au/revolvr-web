@@ -23,7 +23,7 @@ export default function GoLivePage() {
         const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 720 }, height: { ideal: 1280 } },
+          video: { facingMode, width: { ideal: 720 }, height: { ideal: 1280 }, aspectRatio: { ideal: 9/16 } },
           audio: true,
         });
 
@@ -49,13 +49,32 @@ export default function GoLivePage() {
             'camera1',
             { index: 0 }
           );
-          client.updateVideoDeviceComposition('camera1', {
-            index: 0,
-            x: 0,
-            y: 0,
-            width: 720,
-            height: 1280,
-          });
+          // Detect actual camera dimensions and fit to portrait canvas
+const vw = videoTrack.getSettings().width ?? 720;
+const vh = videoTrack.getSettings().height ?? 1280;
+const isLandscape = vw > vh;
+
+if (isLandscape) {
+  // Camera is landscape — scale to fill portrait canvas, crop sides
+  const scale = 1280 / vh;
+  const scaledW = vw * scale;
+  const offsetX = (720 - scaledW) / 2;
+  client.updateVideoDeviceComposition('camera1', {
+    index: 0,
+    x: offsetX,
+    y: 0,
+    width: scaledW,
+    height: 1280,
+  });
+} else {
+  client.updateVideoDeviceComposition('camera1', {
+    index: 0,
+    x: 0,
+    y: 0,
+    width: 720,
+    height: 1280,
+  });
+}
         }
         if (audioTrack) {
           await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
