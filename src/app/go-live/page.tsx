@@ -34,47 +34,34 @@ export default function GoLivePage() {
           .replace('rtmps://', '')
           .replace(':443/app/', '');
 
+        const videoTrack = stream.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+
+        const vw = videoTrack?.getSettings().width ?? 1280;
+        const vh = videoTrack?.getSettings().height ?? 720;
+        const isLandscape = vw > vh;
+
         const client = IVSBroadcastClient.create({
-          streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
+          streamConfig: isLandscape
+            ? IVSBroadcastClient.BASIC_LANDSCAPE
+            : IVSBroadcastClient.BASIC_PORTRAIT,
           ingestEndpoint,
         });
         clientRef.current = client;
 
-        // Add devices FIRST
-        const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
         if (videoTrack) {
           await client.addVideoInputDevice(
             new MediaStream([videoTrack]),
             'camera1',
             { index: 0 }
           );
-          // Detect actual camera dimensions and fit to portrait canvas
-const vw = videoTrack.getSettings().width ?? 720;
-const vh = videoTrack.getSettings().height ?? 1280;
-const isLandscape = vw > vh;
-
-if (isLandscape) {
-  // Camera is landscape — scale to fill portrait canvas, crop sides
-  const scale = 1280 / vh;
-  const scaledW = vw * scale;
-  const offsetX = (720 - scaledW) / 2;
-  client.updateVideoDeviceComposition('camera1', {
-    index: 0,
-    x: offsetX,
-    y: 0,
-    width: scaledW,
-    height: 1280,
-  });
-} else {
-  client.updateVideoDeviceComposition('camera1', {
-    index: 0,
-    x: 0,
-    y: 0,
-    width: 720,
-    height: 1280,
-  });
-}
+          client.updateVideoDeviceComposition('camera1', {
+            index: 0,
+            x: 0,
+            y: 0,
+            width: isLandscape ? 1280 : 720,
+            height: isLandscape ? 720 : 1280,
+          });
         }
         if (audioTrack) {
           await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
@@ -157,17 +144,30 @@ const newIngest = (ingestEndpoint ?? '')
   .replace('rtmps://', '')
   .replace(':443/app/', '');
 
-const newClient = IVSBroadcastClient.create({
-  streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
-  ingestEndpoint: newIngest,
-});
-
 // Re-add video/audio tracks
 const videoTrack = streamRef.current?.getVideoTracks()[0];
 const audioTrack = streamRef.current?.getAudioTracks()[0];
+
+const vw = videoTrack?.getSettings().width ?? 1280;
+const vh = videoTrack?.getSettings().height ?? 720;
+const isLandscape = vw > vh;
+
+const newClient = IVSBroadcastClient.create({
+  streamConfig: isLandscape
+    ? IVSBroadcastClient.BASIC_LANDSCAPE
+    : IVSBroadcastClient.BASIC_PORTRAIT,
+  ingestEndpoint: newIngest,
+});
+
 if (videoTrack) {
   await newClient.addVideoInputDevice(new MediaStream([videoTrack]), 'camera1', { index: 0 });
-  newClient.updateVideoDeviceComposition('camera1', { index: 0, x: 0, y: 0, width: 720, height: 1280 });
+  newClient.updateVideoDeviceComposition('camera1', {
+    index: 0,
+    x: 0,
+    y: 0,
+    width: isLandscape ? 1280 : 720,
+    height: isLandscape ? 720 : 1280,
+  });
 }
 if (audioTrack) {
   await newClient.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');

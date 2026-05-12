@@ -95,25 +95,6 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
       ivsPlayer = IVSPlayer.create();
       ivsPlayer.attachHTMLVideoElement(video);
 
-      // Force cover styles after IVS attaches and every time it plays
-      const forceStyles = () => {
-        if (!video) return;
-        video.style.position = "absolute";
-        video.style.top = "0";
-        video.style.left = "0";
-        video.style.width = "100%";
-        video.style.height = "100%";
-        video.style.objectFit = "cover";
-        video.style.objectPosition = "center center";
-        video.style.display = "block";
-      };
-
-      forceStyles();
-      ivsPlayer.addEventListener(IVSPlayer.PlayerState.PLAYING, forceStyles);
-      ivsPlayer.addEventListener(IVSPlayer.PlayerState.READY, forceStyles);
-      video.addEventListener("loadedmetadata", forceStyles);
-      video.addEventListener("playing", forceStyles);
-
       ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
         if (!cancelled) {
           setTimeout(() => {
@@ -125,13 +106,6 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
 
       ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
       ivsPlayer.play();
-
-      // Also poll styles for 10s to catch any late IVS overrides
-      let styleChecks = 0;
-      const styleInterval = setInterval(() => {
-        forceStyles();
-        if (++styleChecks > 20) clearInterval(styleInterval);
-      }, 500);
     };
 
     init();
@@ -169,13 +143,9 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
           playsInline
           muted
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
             width: "100%",
             height: "100%",
             objectFit: "cover",
-            display: "block",
           }}
         />
       </div>
