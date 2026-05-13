@@ -100,14 +100,19 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
       ivsPlayer = IVSPlayer.create();
       ivsPlayer.attachHTMLVideoElement(video);
 
-      ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
-        if (!cancelled) {
-          setTimeout(() => {
-            ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
-            ivsPlayer.play();
-          }, 3000);
-        }
-      });
+      let retryCount = 0;
+const maxRetries = 10;
+ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
+  if (cancelled || retryCount >= maxRetries) return;
+  retryCount++;
+  const delay = Math.min(1000 * retryCount, 5000); // 1s, 2s, 3s, 4s, 5s...
+  console.log(`[BATTLE-VIDEO] Side ${side}: retry ${retryCount}/${maxRetries} in ${delay}ms`);
+  setTimeout(() => {
+    if (cancelled) return;
+    ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
+    ivsPlayer.play();
+  }, delay);
+});
 
       ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
       ivsPlayer.play();
