@@ -371,7 +371,7 @@ useEffect(() => {
   };
 
   return (
-    <div style={{ height: "100dvh", width: "100%", maxWidth: 420, margin: "0 auto", background: "#000", position: "relative", overflow: "hidden" }}>
+    <div style={{ height: "100dvh", width: "100vw", background: "#000", position: "relative", overflow: "hidden" }}>
 
       <style>{`
         @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
@@ -381,8 +381,11 @@ useEffect(() => {
         @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      {/* Video */}
+      {/* ── FULL SCREEN VIDEO ── */}
       <video ref={videoRef} autoPlay playsInline muted style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />
+
+      {/* Bottom gradient for readability */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "50%", background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%)", pointerEvents: "none", zIndex: 1 }} />
 
       {/* Eclipse overlay */}
       {eclipseActive && (
@@ -402,109 +405,158 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Creator avatar */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={stream?.avatarLiveUrl ?? stream?.avatarUrl ?? `/character_${stream?.characterId ?? 1}.png`} alt="" style={{ position: "absolute", top: 0, left: 0, height: "160px", width: "auto", objectFit: "contain", zIndex: 10, pointerEvents: "none" }} />
+      {/* ── TOP: Back arrow only ── */}
+      <button onClick={() => router.back()} style={{
+        position: "absolute", top: 16, left: 16,
+        background: "rgba(0,0,0,0.3)", border: "none",
+        color: "#fff", fontSize: 20, width: 34, height: 34,
+        borderRadius: "50%", cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        zIndex: 30, backdropFilter: "blur(4px)",
+      }}>‹</button>
 
-      {/* Back button */}
-      <button onClick={() => router.back()} style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.3)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>‹</button>
-
-      {/* Battle available indicator */}
-      {battleAvailable && battleState === "idle" && !ended && stream?.creatorEmail === userEmail && (
-        <div style={{
-          position: "absolute", top: 50, left: "50%", transform: "translateX(-50%)",
-          background: "rgba(212,175,55,0.15)", border: "1px solid rgba(212,175,55,0.5)",
-          borderRadius: 20, padding: "6px 16px", zIndex: 30,
-          display: "flex", alignItems: "center", gap: 6,
-          animation: "livePulse 1.5s ease-in-out infinite",
-        }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#D4AF37" }} />
-          <span style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.1em" }}>
-            BATTLE AVAILABLE
-          </span>
-        </div>
-      )}
-
-      {/* End stream + Battle buttons — top right, creator only */}
-      {!ended && stream?.creatorEmail === userEmail && (
-        <div style={{ position: "absolute", top: 12, right: 14, display: "flex", gap: 8, zIndex: 30 }}>
-          {battleState === "idle" && (
-            <button
-              onClick={seekBattle}
-              style={{
-                background: "rgba(212,175,55,0.15)",
-                border: "1px solid rgba(212,175,55,0.5)",
-                color: "#D4AF37", fontSize: 11, fontWeight: 700,
-                padding: "5px 13px", borderRadius: 20, cursor: "pointer",
-                display: "flex", alignItems: "center", gap: 5,
-              }}
-            >
-              <svg width={10} height={10} viewBox="0 0 24 24" fill="#D4AF37">
-                <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />
-              </svg>
-              BATTLE
-            </button>
-          )}
-          {battleState === "seeking" && (
-            <div style={{
-              background: "rgba(212,175,55,0.1)",
-              border: "1px solid rgba(212,175,55,0.3)",
-              color: "#D4AF37", fontSize: 10, fontFamily: "monospace",
-              padding: "5px 13px", borderRadius: 20,
-              letterSpacing: "0.1em",
-            }}>
-              SEEKING…
-            </div>
-          )}
-          <button
-            onClick={endStream}
-            style={{
-              background: "rgba(220,30,60,0.85)", border: "none",
-              color: "#fff", fontSize: 11, fontWeight: 700,
-              padding: "5px 13px", borderRadius: 20, cursor: "pointer",
-            }}
-          >
-            End
-          </button>
-        </div>
-      )}
-
-      {/* Creator name + LIVE */}
-      <div style={{ position: "absolute", top: 175, left: 12, display: "flex", flexDirection: "column", gap: 5, zIndex: 20 }}>
-        {stream && <div style={{ color: "#fff", fontSize: 14, fontWeight: 700, textShadow: "0 1px 6px rgba(0,0,0,0.9)" }}>{stream.displayName ?? stream.creatorEmail?.split("@")[0]}</div>}
-        {!ended && (
-          <div style={{ display: "flex", alignItems: "center", gap: 5, background: "rgba(0,0,0,0.35)", borderRadius: 20, padding: "3px 9px 3px 7px", width: "fit-content" }}>
-            <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#D4AF37", animation: "livePulse 1.6s ease-in-out infinite", flexShrink: 0 }} />
-            <span style={{ color: "#D4AF37", fontSize: 11, fontWeight: 800, letterSpacing: "0.1em" }}>LIVE</span>
-            <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 11 }}>{viewerCount}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Comments — top down, fade at bottom */}
-      <div style={{ position: "absolute", left: 12, top: 230, height: "42%", width: "68%", overflow: "hidden", zIndex: 20, maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)" } as React.CSSProperties}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {messages.slice(-12).map((msg, i) => (
-            <div key={msg.id ?? i} style={{ display: "flex", gap: 5, alignItems: "baseline", animation: "commentDrift 0.35s ease-out both" }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#00e5ff", flexShrink: 0, lineHeight: 1.4 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
-              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.88)", lineHeight: 1.4 }}>{msg.message}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Unmute */}
+      {/* Unmute — top right, subtle */}
       {isMuted && (
-        <button onClick={() => { if (videoRef.current) { videoRef.current.muted = false; setIsMuted(false); } }} style={{ position: "absolute", top: 56, right: 14, background: "rgba(0,0,0,0.55)", border: "1px solid rgba(255,255,255,0.18)", color: "#fff", fontSize: 11, fontWeight: 600, padding: "5px 11px", borderRadius: 20, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, zIndex: 20, backdropFilter: "blur(6px)" }}>
+        <button onClick={() => { if (videoRef.current) { videoRef.current.muted = false; setIsMuted(false); } }} style={{
+          position: "absolute", top: 16, right: 16,
+          background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.15)",
+          color: "#fff", fontSize: 11, fontWeight: 600,
+          padding: "6px 12px", borderRadius: 20, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 5,
+          zIndex: 30, backdropFilter: "blur(6px)",
+        }}>
           🔇 Tap to unmute
         </button>
       )}
 
-      {/* Gift picker — slides up from button */}
+      {/* ── COMMENTS — bottom left, above info bar ── */}
+      <div style={{
+        position: "absolute", left: 14, right: 80, bottom: 200,
+        height: 180, overflow: "hidden", zIndex: 20,
+        maskImage: "linear-gradient(to bottom, transparent 0%, black 20%, black 100%)",
+        WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 20%, black 100%)",
+      } as React.CSSProperties}>
+        <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: "100%", gap: 6 }}>
+          {messages.slice(-10).map((msg, i) => (
+            <div key={msg.id ?? i} style={{ display: "flex", gap: 5, alignItems: "baseline", animation: "commentDrift 0.3s ease-out both" }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#00e5ff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
+              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.85)" }}>{msg.message}</span>
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
+      </div>
+
+      {/* ── INFO BAR — Option B layout ── */}
+      <div style={{
+        position: "absolute", bottom: 130, left: 0, right: 0,
+        padding: "0 14px", zIndex: 20,
+        display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+      }}>
+        {/* Left: Creator identity */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {/* LIVE badge + viewer count */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 4,
+              background: "rgba(229,0,76,0.85)", borderRadius: 4,
+              padding: "2px 8px",
+            }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff", animation: "livePulse 1.4s ease-in-out infinite" }} />
+              <span style={{ color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em" }}>LIVE</span>
+            </div>
+            <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontFamily: "monospace" }}>{viewerCount}</span>
+          </div>
+          {/* Creator name */}
+          {stream && (
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 700, textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}>
+              {stream.displayName ?? stream.creatorEmail?.split("@")[0]}
+            </div>
+          )}
+          {/* Handle */}
+          {stream?.handle && (
+            <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 11, fontFamily: "monospace" }}>
+              @{stream.handle}
+            </div>
+          )}
+        </div>
+
+        {/* Right: Actions — creator only */}
+        {!ended && stream?.creatorEmail === userEmail && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+            <button onClick={endStream} style={{
+              background: "rgba(220,30,60,0.85)", border: "none",
+              color: "#fff", fontSize: 11, fontWeight: 700,
+              padding: "6px 16px", borderRadius: 20, cursor: "pointer",
+            }}>End</button>
+
+            {battleState === "idle" && (
+              <button onClick={seekBattle} style={{
+                background: "rgba(212,175,55,0.15)",
+                border: "1px solid rgba(212,175,55,0.5)",
+                color: "#D4AF37", fontSize: 11, fontWeight: 700,
+                padding: "6px 14px", borderRadius: 20, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 5,
+              }}>
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="#D4AF37"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" /></svg>
+                BATTLE
+              </button>
+            )}
+            {battleState === "seeking" && (
+              <div style={{
+                background: "rgba(212,175,55,0.1)",
+                border: "1px solid rgba(212,175,55,0.3)",
+                color: "#D4AF37", fontSize: 10, fontFamily: "monospace",
+                padding: "6px 14px", borderRadius: 20, letterSpacing: "0.1em",
+              }}>SEEKING…</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Battle available notification — above info bar */}
+      {battleAvailable && battleState === "idle" && !ended && stream?.creatorEmail === userEmail && (
+        <div style={{
+          position: "absolute", bottom: 195, left: "50%", transform: "translateX(-50%)",
+          background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.4)",
+          borderRadius: 20, padding: "5px 14px", zIndex: 25,
+          display: "flex", alignItems: "center", gap: 6,
+          animation: "livePulse 1.5s ease-in-out infinite",
+        }}>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#D4AF37" }} />
+          <span style={{ color: "#D4AF37", fontSize: 9, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.1em" }}>BATTLE AVAILABLE</span>
+        </div>
+      )}
+
+      {/* ── RIGHT RAIL: Gift button ── */}
+      <div style={{ position: "absolute", right: 14, bottom: 76, zIndex: 30 }}>
+        <button
+          onClick={() => { if (!topUpOpen) setGiftOpen(prev => !prev); setTopUpOpen(false); }}
+          onMouseDown={handleGiftPressStart} onMouseUp={handleGiftPressEnd}
+          onTouchStart={handleGiftPressStart} onTouchEnd={handleGiftPressEnd}
+          style={{
+            width: 46, height: 46, borderRadius: "50%",
+            background: giftOpen ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.5)",
+            border: `1px solid ${giftOpen ? "#D4AF37" : "rgba(212,175,55,0.4)"}`,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            cursor: "pointer", backdropFilter: "blur(6px)",
+          }}
+        >
+          <BoltIcon size={22} color="#D4AF37" />
+        </button>
+      </div>
+
+      {/* Gift picker */}
       {giftOpen && (
-        <div style={{ position: "absolute", right: 14, bottom: 125, zIndex: 40, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+        <div style={{ position: "absolute", right: 14, bottom: 130, zIndex: 40, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
           {[...GIFTS].reverse().map((gift, i) => (
-            <button key={gift.id} onClick={() => sendGift(gift)} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(0,0,0,0.88)", border: `1px solid ${gift.color}30`, borderRadius: 16, padding: "8px 12px 8px 8px", cursor: "pointer", animation: `giftSlideUp 0.2s ease-out ${i * 0.04}s both`, backdropFilter: "blur(12px)", minWidth: 150 }}>
+            <button key={gift.id} onClick={() => sendGift(gift)} style={{
+              display: "flex", alignItems: "center", gap: 10,
+              background: "rgba(0,0,0,0.88)", border: `1px solid ${gift.color}30`,
+              borderRadius: 16, padding: "8px 12px 8px 8px", cursor: "pointer",
+              animation: `giftSlideUp 0.2s ease-out ${i * 0.04}s both`,
+              backdropFilter: "blur(12px)", minWidth: 150,
+            }}>
               <GiftAsset id={gift.id} size={32} />
               <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
                 <span style={{ color: "#fff", fontSize: 12, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em" }}>{gift.name.toUpperCase()}</span>
@@ -515,9 +567,9 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Top-up floating box */}
+      {/* Top-up modal */}
       {topUpOpen && (
-        <div style={{ position: "absolute", right: 70, bottom: 70, zIndex: 40, background: "rgba(0,0,0,0.92)", border: "1px solid rgba(0,229,255,0.3)", borderRadius: 16, padding: "14px 16px", backdropFilter: "blur(12px)", minWidth: 200 }}>
+        <div style={{ position: "absolute", right: 70, bottom: 80, zIndex: 40, background: "rgba(0,0,0,0.92)", border: "1px solid rgba(0,229,255,0.3)", borderRadius: 16, padding: "14px 16px", backdropFilter: "blur(12px)", minWidth: 200 }}>
           <div style={{ color: "#00e5ff", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 10 }}>TOP UP SPARKS</div>
           {[{ sparks: 100, price: "$2.99" }, { sparks: 300, price: "$7.99" }, { sparks: 750, price: "$17.99" }, { sparks: 2000, price: "$39.99" }].map(b => (
             <button key={b.sparks} onClick={() => { setTopUpOpen(false); router.push("/spark/buy"); }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", marginBottom: 6, color: "#fff" }}>
@@ -531,29 +583,35 @@ useEffect(() => {
 
       {/* Gift toast */}
       {giftToast && (
-        <div style={{ position: "absolute", bottom: 90, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "7px 18px", color: "#D4AF37", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.08em", zIndex: 50, animation: "toastIn 0.2s ease-out", whiteSpace: "nowrap" }}>
+        <div style={{ position: "absolute", bottom: 100, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "7px 18px", color: "#D4AF37", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.08em", zIndex: 50, animation: "toastIn 0.2s ease-out", whiteSpace: "nowrap" }}>
           ⚡ {giftToast}
         </div>
       )}
 
-      {/* Gift bolt button */}
-      <div style={{ position: "absolute", right: 14, bottom: 70, zIndex: 30 }}>
-        <button
-          onClick={() => { if (!topUpOpen) setGiftOpen(prev => !prev); setTopUpOpen(false); }}
-          onMouseDown={handleGiftPressStart}
-          onMouseUp={handleGiftPressEnd}
-          onTouchStart={handleGiftPressStart}
-          onTouchEnd={handleGiftPressEnd}
-          style={{ width: 46, height: 46, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "1px solid rgba(212,175,55,0.4)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(6px)" }}
-        >
-          <BoltIcon size={22} color="#D4AF37" />
-        </button>
-      </div>
-
-      {/* Chat input */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "8px 12px 20px", display: "flex", alignItems: "center", gap: 8, zIndex: 20 }}>
-        <input value={chatInput} onChange={(e) => setChatInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && sendMessage()} placeholder="Say something..." style={{ flex: 1, background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 28, color: "#fff", fontSize: 13, padding: "10px 16px", outline: "none" }} />
-        <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: "2px 4px", flexShrink: 0 }}>➤</button>
+      {/* ── CHAT INPUT — very bottom ── */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0,
+        padding: "8px 14px 24px", zIndex: 20,
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <input
+          value={chatInput}
+          onChange={(e) => setChatInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+          placeholder="Say something..."
+          style={{
+            flex: 1, background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 24, color: "#fff", fontSize: 13,
+            padding: "10px 16px", outline: "none",
+          }}
+        />
+        <button onClick={sendMessage} style={{
+          background: "transparent", border: "none",
+          color: "#D4AF37", fontSize: 20, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "2px 4px", flexShrink: 0,
+        }}>➤</button>
       </div>
 
       {/* Tap outside to close gift/topup */}
