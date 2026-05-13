@@ -78,6 +78,11 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log(`[BATTLE-VIDEO] Side ${side}:`, {
+      hasVideoRef: !!videoRef.current,
+      playbackUrl: stream?.ivsPlaybackUrl ?? 'NONE',
+      streamData: stream ? Object.keys(stream) : 'NO STREAM',
+    });
     if (!videoRef.current || !stream?.ivsPlaybackUrl) return;
     const video = videoRef.current;
     let ivsPlayer: any = null;
