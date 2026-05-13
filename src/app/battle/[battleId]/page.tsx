@@ -391,10 +391,15 @@ export default function BattlePage() {
     const tick = () => {
       const remaining = duration - Math.floor((Date.now() - startedAt) / 1000);
       if (remaining <= 0) {
-        setTimeLeft(0);
-        fetch("/api/battle/end", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ battleId }) });
-        return;
-      }
+  setTimeLeft(0);
+  clearInterval(interval);
+  // Only end once
+  if (!battleEnded) {
+    setBattleEnded(true);
+    fetch("/api/battle/end", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ battleId }) });
+  }
+  return;
+}
       setTimeLeft(remaining);
     };
     tick();
