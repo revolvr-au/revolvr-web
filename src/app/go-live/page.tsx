@@ -180,7 +180,7 @@ clientRef.current = newClient;
 broadcastingRef.current = true;
 await clientRef.current.startBroadcast(data.streamKey);
 
-      router.push(`/live/${streamId}?ivs=1&playback=${encodeURIComponent(playbackUrl ?? '')}`);
+      router.push(`/live/${streamId}?ivs=1&creator=1&key=${encodeURIComponent(data.streamKey)}&playback=${encodeURIComponent(playbackUrl ?? '')}&ingest=${encodeURIComponent(ingestEndpoint ?? '')}`);
 
     } catch (err: any) {
       console.error('Go live error:', err);

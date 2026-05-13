@@ -73,6 +73,7 @@ export default function LivePage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
+  const navigatingToBattleRef = useRef(false);
   const [stream, setStream] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -114,52 +115,73 @@ useEffect(() => {
   useEffect(() => { return () => {}; }, []);
 
   useEffect(() => {
-    if (!isCreator || !creatorStreamKey) return;
-    let wakeLock: any = null;
-    let heartbeat: ReturnType<typeof setInterval> | null = null;
+  if (!isCreator || !creatorStreamKey) return;
+  let cancelled = false;
+  let ivsBroadcastClient: any = null;
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        if (mediaRecorderRef.current?.state === 'inactive') mediaRecorderRef.current.start(100);
-      }
-    };
+  const startIvsBroadcast = async () => {
+    try {
+      const cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 9/16 } },
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+      if (cancelled) { cameraStream.getTracks().forEach(t => t.stop()); return; }
+      cameraStreamRef.current = cameraStream;
 
-    const startStreaming = async () => {
-      try {
-        const cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user', frameRate: { ideal: 30 } },
-          audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 },
+      const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
+      const videoTrack = cameraStream.getVideoTracks()[0];
+      const audioTrack = cameraStream.getAudioTracks()[0];
+      const vw = videoTrack.getSettings().width ?? 1280;
+      const vh = videoTrack.getSettings().height ?? 720;
+      const isLandscape = vw > vh;
+
+      const ingestRaw = new URLSearchParams(window.location.search).get('ingest') ?? '';
+      const ingestEndpoint = decodeURIComponent(ingestRaw)
+        .replace('rtmps://', '')
+        .replace(':443/app/', '');
+
+      ivsBroadcastClient = IVSBroadcastClient.create({
+        streamConfig: isLandscape
+          ? IVSBroadcastClient.BASIC_LANDSCAPE
+          : IVSBroadcastClient.BASIC_PORTRAIT,
+        ingestEndpoint,
+      });
+
+      if (videoTrack) {
+        await ivsBroadcastClient.addVideoInputDevice(new MediaStream([videoTrack]), 'camera1', { index: 0 });
+        ivsBroadcastClient.updateVideoDeviceComposition('camera1', {
+          index: 0, x: 0, y: 0,
+          width: isLandscape ? 1280 : 720,
+          height: isLandscape ? 720 : 1280,
         });
-        cameraStreamRef.current = cameraStream;
-        try { wakeLock = await (navigator as any).wakeLock?.request('screen'); } catch {}
-        const broadcastUrl = process.env.NEXT_PUBLIC_BROADCAST_URL;
-        if (!broadcastUrl) return;
-        const ws = new WebSocket(`${broadcastUrl}?key=${creatorStreamKey}`);
-        wsRef.current = ws;
-        ws.onopen = () => {
-          const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus') ? 'video/webm;codecs=vp8,opus' : 'video/webm';
-          const mr = new MediaRecorder(cameraStream, { mimeType, videoBitsPerSecond: 2500000, audioBitsPerSecond: 128000 });
-          mediaRecorderRef.current = mr;
-          mr.ondataavailable = (e) => { if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) ws.send(e.data); };
-          mr.start(100);
-          document.addEventListener('visibilitychange', handleVisibilityChange);
-          heartbeat = setInterval(() => { if (mediaRecorderRef.current?.state === 'inactive') mediaRecorderRef.current.start(100); }, 2000);
-        };
-        ws.onerror = (err) => console.error('WS error:', err);
-      } catch (err) { console.error('Failed to start streaming:', err); }
-    };
+      }
+      if (audioTrack) {
+        await ivsBroadcastClient.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
+      }
 
-    startStreaming();
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (heartbeat) clearInterval(heartbeat);
-      wakeLock?.release();
-      mediaRecorderRef.current?.stop();
-      wsRef.current?.close();
+      await ivsBroadcastClient.startBroadcast(creatorStreamKey);
+      console.log('[LIVE] IVS broadcast started from live page');
+
+      try { await (navigator as any).wakeLock?.request('screen'); } catch {}
+    } catch (err) {
+      console.error('[LIVE] Failed to start IVS broadcast:', err);
+    }
+  };
+
+  startIvsBroadcast();
+
+  return () => {
+    cancelled = true;
+    if (!navigatingToBattleRef.current) {
       cameraStreamRef.current?.getTracks().forEach(t => t.stop());
-    };
-  }, [isCreator, creatorStreamKey]);
-
+      if (ivsBroadcastClient) {
+        try { ivsBroadcastClient.stopBroadcast(); } catch {}
+        try { ivsBroadcastClient.delete(); } catch {}
+      }
+    }
+  };
+}, [isCreator, creatorStreamKey]);
+  
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
     supabase.auth.getUser().then(({ data }) => {
@@ -239,6 +261,7 @@ useEffect(() => {
       .on("broadcast", { event: "battle_matched" }, (payload) => {
         setBattleId(payload.payload.battleId);
         setBattleState("matched");
+        navigatingToBattleRef.current = true;
         router.push(`/battle/${payload.payload.battleId}`);
       })
       .subscribe();
@@ -274,6 +297,7 @@ useEffect(() => {
         const data = await res.json();
         if (data.battle?.status === "active") {
           setBattleState("matched");
+          navigatingToBattleRef.current = true;
           router.push(`/battle/${data.battle.id}`);
         }
       } catch {}
@@ -295,6 +319,7 @@ useEffect(() => {
     if (data.status === "matched") {
       setBattleId(data.battleId);
       setBattleState("matched");
+      navigatingToBattleRef.current = true;
       router.push(`/battle/${data.battleId}`);
     } else if (data.status === "seeking") {
       setBattleId(data.battleId);
