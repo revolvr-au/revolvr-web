@@ -283,9 +283,25 @@ useEffect(() => {
 
   const sendMessage = async () => {
     if (!chatInput.trim() || !streamId) return;
-    const supabase = createSupabaseBrowserClient();
-    await supabase.from("live_chat_messages").insert({ room_id: streamId, user_email: userEmail, display_name: displayName, message: chatInput.trim() });
+
+    const newMsg = {
+      id: `temp-${Date.now()}`,
+      room_id: streamId,
+      user_email: userEmail,
+      display_name: displayName,
+      message: chatInput.trim(),
+    };
+
+    setMessages((prev) => [...prev.slice(-99), newMsg]);
     setChatInput("");
+
+    const supabase = createSupabaseBrowserClient();
+    await supabase.from("live_chat_messages").insert({
+      room_id: streamId,
+      user_email: userEmail,
+      display_name: displayName,
+      message: newMsg.message,
+    });
   };
 
   const endStream = async () => {
@@ -382,7 +398,13 @@ useEffect(() => {
   };
 
  return (
-    <div style={{ height: viewportHeight, width: "100vw", background: "#000", position: "relative", overflow: "hidden" }}>
+    <div style={{
+      position: "fixed",
+      top: 0, left: 0, right: 0,
+      height: viewportHeight,
+      background: "#000",
+      overflow: "hidden",
+    }}>
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -612,6 +634,9 @@ useEffect(() => {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            onFocus={() => {
+              setTimeout(() => window.scrollTo(0, 0), 50);
+            }}
             placeholder="Say something..."
             style={{
               flex: 1, background: "rgba(255,255,255,0.08)",
