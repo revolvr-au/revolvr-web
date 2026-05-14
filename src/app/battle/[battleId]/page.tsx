@@ -438,8 +438,7 @@ export default function BattlePage() {
   }
 
   return (
-    <div style={{ height: "100dvh", width: "100%", maxWidth: "100vw", background: "#000", overflow: "hidden", position: "relative" }}>
-
+    <div style={{ height: "100dvh", width: "100vw", background: "#000", overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
 
       <style>{`
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
@@ -478,237 +477,157 @@ export default function BattlePage() {
         </div>
       )}
 
-      {/* Eclipse overlay on targeted side */}
-      {eclipseActive && (
-        <div style={{
-          position: "absolute",
-          top: 0, bottom: 0,
-          [eclipseActive === "A" ? "left" : "right"]: 0,
-          width: "50%",
-          background: "rgba(0,0,0,0.75)",
-          zIndex: 45,
-          animation: "eclipseFlash 3s ease-out forwards",
-          pointerEvents: "none",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <div style={{ fontSize: 32, animation: "giftFloat 3s ease-out forwards" }}>🌑</div>
-        </div>
-      )}
-
-      {/* Floating gift effects */}
-      {floatingGifts.map(fg => <FloatingGiftEffect key={fg.key} fg={fg} />)}
-
-      {/* Back */}
-      <button onClick={() => router.back()} style={{ position: "absolute", top: 12, left: 12, background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", zIndex: 30, display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
-
-      {/* THE CIRCUIT badge */}
-      <div style={{ position: "absolute", top: 14, left: "50%", transform: "translateX(-50%)", zIndex: 30 }}>
-        <div style={{ background: "rgba(0,0,0,0.7)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "4px 14px", display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#D4AF37", animation: "livePulse 1.2s ease-in-out infinite" }} />
-          <span style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", fontWeight: 800, letterSpacing: "0.15em" }}>THE CIRCUIT</span>
-        </div>
-      </div>
-
-      {/* Timer */}
-      {timeLeft !== null && !battleEnded && (
-        <div style={{
-          position: "absolute", top: 14, right: 14, zIndex: 30,
-          background: timeLeft <= 10 ? "rgba(220,30,60,0.9)" : "rgba(0,0,0,0.75)",
-          border: `1px solid ${timeLeft <= 10 ? "rgba(220,30,60,0.8)" : "rgba(255,255,255,0.2)"}`,
-          borderRadius: 20, padding: "4px 14px",
-          color: "#fff", fontSize: 14, fontFamily: "monospace", fontWeight: 800,
-          letterSpacing: "0.1em", transition: "all 0.3s",
-          animation: timeLeft <= 10 ? "livePulse 0.5s ease-in-out infinite" : "none",
-        }}>
-          {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
-        </div>
-      )}
-
       {/* ── POST-BATTLE STATS SCREEN ── */}
       {battleEnded && (
         <div style={{ position: "absolute", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.98)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "0 24px" }}>
-
-          {/* Trophy icon */}
           <div style={{ fontSize: 48, animation: "winnerPop 0.6s ease-out" }}>🏆</div>
-
-          {/* Battle over label */}
           <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.3em", color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>The Circuit — Battle Complete</div>
-
-          {/* Winner name */}
-          <div style={{
-            fontFamily: "monospace", fontSize: 22, fontWeight: 800,
-            color: "#D4AF37", letterSpacing: "0.06em", textAlign: "center",
-            animation: "winnerPop 0.6s ease-out 0.2s both",
-            textShadow: "0 0 30px rgba(212,175,55,0.4)",
-          }}>
+          <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 800, color: "#D4AF37", letterSpacing: "0.06em", textAlign: "center", animation: "winnerPop 0.6s ease-out 0.2s both", textShadow: "0 0 30px rgba(212,175,55,0.4)" }}>
             {winner === battle?.creatorEmailA ? (streamA?.displayName ?? "Creator A") : (streamB?.displayName ?? "Creator B")} WINS
           </div>
-
-          {/* Stats card */}
-          <div style={{
-            width: "100%", maxWidth: 320, marginTop: 8,
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 16, padding: "16px 20px",
-            animation: "winnerPop 0.5s ease-out 0.4s both",
-          }}>
-            {/* Score comparison */}
+          <div style={{ width: "100%", maxWidth: 320, marginTop: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 20px", animation: "winnerPop 0.5s ease-out 0.4s both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              {/* Creator A */}
               <div style={{ textAlign: "center", flex: 1 }}>
-                <div style={{
-                  color: winner === battle?.creatorEmailA ? "#D4AF37" : "rgba(255,255,255,0.5)",
-                  fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em",
-                  maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px",
-                }}>
-                  {streamA?.displayName ?? "A"}
-                </div>
-                <div style={{
-                  color: winner === battle?.creatorEmailA ? "#D4AF37" : "#00e5ff",
-                  fontSize: 32, fontFamily: "monospace", fontWeight: 800,
-                }}>
-                  {battle?.voltageA ?? 0}
-                </div>
+                <div style={{ color: winner === battle?.creatorEmailA ? "#D4AF37" : "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamA?.displayName ?? "A"}</div>
+                <div style={{ color: winner === battle?.creatorEmailA ? "#D4AF37" : "#00e5ff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageA ?? 0}</div>
                 <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
               </div>
-
-              {/* VS divider */}
               <div style={{ color: "rgba(255,255,255,0.12)", fontSize: 14, fontWeight: 800, padding: "0 12px" }}>VS</div>
-
-              {/* Creator B */}
               <div style={{ textAlign: "center", flex: 1 }}>
-                <div style={{
-                  color: winner === battle?.creatorEmailB ? "#D4AF37" : "rgba(255,255,255,0.5)",
-                  fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em",
-                  maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px",
-                }}>
-                  {streamB?.displayName ?? "B"}
-                </div>
-                <div style={{
-                  color: winner === battle?.creatorEmailB ? "#D4AF37" : "#00e5ff",
-                  fontSize: 32, fontFamily: "monospace", fontWeight: 800,
-                }}>
-                  {battle?.voltageB ?? 0}
-                </div>
+                <div style={{ color: winner === battle?.creatorEmailB ? "#D4AF37" : "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamB?.displayName ?? "B"}</div>
+                <div style={{ color: winner === battle?.creatorEmailB ? "#D4AF37" : "#00e5ff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageB ?? 0}</div>
                 <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
               </div>
             </div>
-
-            {/* Voltage bar visual */}
             <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 16 }}>
-              <div style={{
-                height: "100%", borderRadius: 2,
-                background: "linear-gradient(90deg, #00e5ff, #D4AF37)",
-                width: `${totalVoltage === 0 ? 50 : Math.round(((battle?.voltageA ?? 0) / totalVoltage) * 100)}%`,
-                transition: "width 1s ease-out",
-              }} />
+              <div style={{ height: "100%", borderRadius: 2, background: "linear-gradient(90deg, #00e5ff, #D4AF37)", width: `${totalVoltage === 0 ? 50 : Math.round(((battle?.voltageA ?? 0) / totalVoltage) * 100)}%`, transition: "width 1s ease-out" }} />
             </div>
-
-            {/* Battle stats row */}
             <div style={{ display: "flex", justifyContent: "space-around" }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ color: "#D4AF37", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>
-                  {(battle?.voltageA ?? 0) + (battle?.voltageB ?? 0)}
-                </div>
+                <div style={{ color: "#D4AF37", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{(battle?.voltageA ?? 0) + (battle?.voltageB ?? 0)}</div>
                 <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>TOTAL SPARKS</div>
               </div>
               <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
               <div style={{ textAlign: "center" }}>
-                <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>
-                  {battle?.durationSeconds ?? 90}s
-                </div>
+                <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{battle?.durationSeconds ?? 90}s</div>
                 <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>DURATION</div>
               </div>
               <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
               <div style={{ textAlign: "center" }}>
-                <div style={{ color: "#00e5ff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>
-                  {Math.abs((battle?.voltageA ?? 0) - (battle?.voltageB ?? 0))}
-                </div>
+                <div style={{ color: "#00e5ff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{Math.abs((battle?.voltageA ?? 0) - (battle?.voltageB ?? 0))}</div>
                 <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>MARGIN</div>
               </div>
             </div>
           </div>
-
-          {/* Redirect notice */}
-          <div style={{
-            color: "rgba(255,255,255,0.2)", fontSize: 10, fontFamily: "monospace",
-            marginTop: 12, letterSpacing: "0.1em",
-            animation: "livePulse 1.5s ease-in-out infinite",
-          }}>
-            RETURNING TO STREAM…
-          </div>
+          <div style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, fontFamily: "monospace", marginTop: 12, letterSpacing: "0.1em", animation: "livePulse 1.5s ease-in-out infinite" }}>RETURNING TO STREAM…</div>
         </div>
       )}
 
-      {/* Dual live video — stacked vertically */}
-      <div style={{
-        display: "flex",
-        flexDirection: "row",
-        position: "absolute",
-        inset: 0,
-        zIndex: 1,
-        height: "100%",
-        width: "100%",
-      }}>
+      {/* ══════════ TOP: HEADER BAR ══════════ */}
+      <div style={{ height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", position: "relative", zIndex: 30 }}>
+        <button onClick={() => router.back()} style={{ background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
+        <div style={{ background: "rgba(0,0,0,0.7)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "4px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#D4AF37", animation: "livePulse 1.2s ease-in-out infinite" }} />
+          <span style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", fontWeight: 800, letterSpacing: "0.15em" }}>THE CIRCUIT</span>
+        </div>
+        {timeLeft !== null && !battleEnded ? (
+          <div style={{
+            background: timeLeft <= 10 ? "rgba(220,30,60,0.9)" : "rgba(0,0,0,0.75)",
+            border: `1px solid ${timeLeft <= 10 ? "rgba(220,30,60,0.8)" : "rgba(255,255,255,0.2)"}`,
+            borderRadius: 20, padding: "4px 14px",
+            color: "#fff", fontSize: 14, fontFamily: "monospace", fontWeight: 800,
+            letterSpacing: "0.1em", transition: "all 0.3s",
+            animation: timeLeft <= 10 ? "livePulse 0.5s ease-in-out infinite" : "none",
+          }}>
+            {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, "0")}
+          </div>
+        ) : <div style={{ width: 30 }} />}
+      </div>
+
+      {/* ══════════ MIDDLE: VIDEO PANES — side by side, 55% of screen ══════════ */}
+      <div style={{ flex: "0 0 55%", display: "flex", flexDirection: "row", position: "relative", overflow: "hidden" }}>
         <LiveVideoPane stream={streamA} side="A" voltage={battle?.voltageA ?? 0} />
         <LiveVideoPane stream={streamB} side="B" voltage={battle?.voltageB ?? 0} />
-      </div>
 
-      {/* Tension line */}
-      <div style={{ position: "absolute", bottom: 52, left: 0, right: 0, height: 28, display: "flex", alignItems: "center", padding: "0 16px", background: "rgba(0,0,0,0.5)", zIndex: 10, gap: 8, backdropFilter: "blur(4px)" }}>
-        <span style={{ color: "#00e5ff", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 24, textAlign: "left" }}>{battle?.voltageA ?? 0}</span>
-        <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, position: "relative" }}>
-          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #00e5ff, #00e5ff50)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
-          <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: `${tensionPos}%`, background: "linear-gradient(to left, #D4AF37, #D4AF3750)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
-          <div style={{ position: "absolute", top: "50%", left: `${100 - tensionPos}%`, transform: "translate(-50%, -50%)", width: 16, height: 16, borderRadius: "50%", background: "#fff", boxShadow: "0 0 14px #D4AF37, 0 0 28px #D4AF3780", animation: "tensionPulse 1.5s ease-in-out infinite", transition: "left 0.5s cubic-bezier(0.34,1.56,0.64,1)", zIndex: 2 }} />
-        </div>
-        <span style={{ color: "#D4AF37", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 24, textAlign: "right" }}>{battle?.voltageB ?? 0}</span>
-      </div>
-
-      {/* Comments */}
-      <div style={{ position: "absolute", bottom: 82, left: 0, right: 80, height: 90, overflow: "hidden", padding: "6px 12px 0", zIndex: 10, maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)" } as React.CSSProperties}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          {messages.slice(-8).map((msg, i) => (
-            <div key={msg.id ?? i} style={{ display: "flex", gap: 5, alignItems: "baseline", animation: "commentDrift 0.3s ease-out both" }}>
-              <span style={{ fontSize: 10, fontWeight: 700, color: "#00e5ff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{msg.message}</span>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-      </div>
-
-      {/* Gift visual picker */}
-      <div style={{ position: "absolute", right: 12, bottom: 48, zIndex: 30, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-        {giftOpen && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
-            {/* Side selector */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-              <button onClick={() => setGiftSide("A")} style={{ background: giftSide === "A" ? "rgba(0,229,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
-                {streamA?.displayName?.split(" ")[0] ?? "A"}
-              </button>
-              <button onClick={() => setGiftSide("B")} style={{ background: giftSide === "B" ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
-                {streamB?.displayName?.split(" ")[0] ?? "B"}
-              </button>
-            </div>
-            {/* Gift tiles — visual icons */}
-            {[...GIFTS].reverse().map((gift, i) => (
-              <button key={gift.id} onClick={() => sendGift(gift)}
-                style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(0,0,0,0.88)", border: `1px solid ${gift.color}30`, borderRadius: 16, padding: "8px 12px 8px 8px", cursor: "pointer", backdropFilter: "blur(12px)", animation: `giftSlideUp 0.2s ease-out ${i * 0.04}s both`, minWidth: 140 }}>
-                <GiftAsset id={gift.id} size={32} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em" }}>{gift.name}</span>
-                  <span style={{ color: gift.color, fontSize: 9, fontFamily: "monospace" }}>{gift.label}</span>
-                </div>
-              </button>
-            ))}
+        {/* Eclipse overlay */}
+        {eclipseActive && (
+          <div style={{
+            position: "absolute", top: 0, bottom: 0,
+            [eclipseActive === "A" ? "left" : "right"]: 0,
+            width: "50%",
+            background: "rgba(0,0,0,0.75)", zIndex: 45,
+            animation: "eclipseFlash 3s ease-out forwards",
+            pointerEvents: "none",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <div style={{ fontSize: 32, animation: "giftFloat 3s ease-out forwards" }}>🌑</div>
           </div>
         )}
 
-        {/* Bolt button */}
-        <button onClick={() => { setGiftOpen(prev => !prev); setTopUpOpen(false); }}
-          style={{ width: 48, height: 48, borderRadius: "50%", background: giftOpen ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.6)", border: `1px solid ${giftOpen ? "#D4AF37" : "rgba(212,175,55,0.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(6px)", transition: "all 0.2s" }}>
-          <svg width={22} height={22} viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#D4AF37"/></svg>
-        </button>
+        {/* Floating gift effects */}
+        {floatingGifts.map(fg => <FloatingGiftEffect key={fg.key} fg={fg} />)}
+      </div>
+
+      {/* ══════════ BOTTOM: TENSION + COMMENTS + CHAT ══════════ */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", position: "relative", background: "rgba(0,0,0,0.85)", zIndex: 10 }}>
+
+        {/* Tension bar */}
+        <div style={{ display: "flex", alignItems: "center", padding: "8px 14px", gap: 8, flexShrink: 0 }}>
+          <span style={{ color: "#00e5ff", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 20, textAlign: "left" }}>{battle?.voltageA ?? 0}</span>
+          <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, position: "relative" }}>
+            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #00e5ff, #00e5ff50)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
+            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: `${tensionPos}%`, background: "linear-gradient(to left, #D4AF37, #D4AF3750)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
+            <div style={{ position: "absolute", top: "50%", left: `${100 - tensionPos}%`, transform: "translate(-50%, -50%)", width: 14, height: 14, borderRadius: "50%", background: "#fff", boxShadow: "0 0 14px #D4AF37, 0 0 28px #D4AF3780", animation: "tensionPulse 1.5s ease-in-out infinite", transition: "left 0.5s cubic-bezier(0.34,1.56,0.64,1)", zIndex: 2 }} />
+          </div>
+          <span style={{ color: "#D4AF37", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 20, textAlign: "right" }}>{battle?.voltageB ?? 0}</span>
+        </div>
+
+        {/* Comments */}
+        <div style={{ flex: 1, overflow: "hidden", padding: "0 12px", position: "relative" }}>
+          <div style={{ position: "absolute", bottom: 0, left: 12, right: 60, display: "flex", flexDirection: "column", gap: 4 }}>
+            {messages.slice(-5).map((msg, i) => (
+              <div key={msg.id ?? i} style={{ display: "flex", gap: 5, alignItems: "baseline", animation: "commentDrift 0.3s ease-out both" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#00e5ff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{msg.message}</span>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Gift bolt — bottom right of comments area */}
+          <div style={{ position: "absolute", right: 8, bottom: 0, zIndex: 30, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            {giftOpen && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                  <button onClick={() => setGiftSide("A")} style={{ background: giftSide === "A" ? "rgba(0,229,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
+                    {streamA?.displayName?.split(" ")[0] ?? "A"}
+                  </button>
+                  <button onClick={() => setGiftSide("B")} style={{ background: giftSide === "B" ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
+                    {streamB?.displayName?.split(" ")[0] ?? "B"}
+                  </button>
+                </div>
+                {[...GIFTS].reverse().map((gift, i) => (
+                  <button key={gift.id} onClick={() => sendGift(gift)} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(0,0,0,0.88)", border: `1px solid ${gift.color}30`, borderRadius: 16, padding: "8px 12px 8px 8px", cursor: "pointer", backdropFilter: "blur(12px)", animation: `giftSlideUp 0.2s ease-out ${i * 0.04}s both`, minWidth: 140 }}>
+                    <GiftAsset id={gift.id} size={32} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: "monospace", letterSpacing: "0.05em" }}>{gift.name}</span>
+                      <span style={{ color: gift.color, fontSize: 9, fontFamily: "monospace" }}>{gift.label}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <button onClick={() => { setGiftOpen(prev => !prev); setTopUpOpen(false); }} style={{ width: 44, height: 44, borderRadius: "50%", background: giftOpen ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.6)", border: `1px solid ${giftOpen ? "#D4AF37" : "rgba(212,175,55,0.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(6px)" }}>
+              <svg width={20} height={20} viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#D4AF37"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {/* Chat input */}
+        <div style={{ flexShrink: 0, padding: "6px 12px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+          <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Say something..." style={{ flex: 1, background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 24, color: "#fff", fontSize: 14, padding: "9px 16px", outline: "none" }} />
+          <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 18, cursor: "pointer" }}>➤</button>
+        </div>
       </div>
 
       {/* Top-up modal */}
@@ -716,8 +635,7 @@ export default function BattlePage() {
         <div style={{ position: "absolute", right: 70, bottom: 70, zIndex: 40, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(0,229,255,0.3)", borderRadius: 16, padding: "14px 16px", backdropFilter: "blur(12px)", minWidth: 190 }}>
           <div style={{ color: "#00e5ff", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 10 }}>TOP UP SPARKS</div>
           {[{ sparks: 100, price: "$2.99" }, { sparks: 300, price: "$7.99" }, { sparks: 750, price: "$17.99" }, { sparks: 2000, price: "$39.99" }].map(b => (
-            <button key={b.sparks} onClick={() => { setTopUpOpen(false); router.push("/spark/buy"); }}
-              style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", marginBottom: 6, color: "#fff" }}>
+            <button key={b.sparks} onClick={() => { setTopUpOpen(false); router.push("/spark/buy"); }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", marginBottom: 6, color: "#fff" }}>
               <span style={{ fontSize: 12, fontWeight: 600 }}>{b.sparks} ⚡</span>
               <span style={{ fontSize: 11, color: "#D4AF37" }}>{b.price}</span>
             </button>
@@ -728,12 +646,6 @@ export default function BattlePage() {
 
       {/* Tap outside to close */}
       {(giftOpen || topUpOpen) && <div style={{ position: "absolute", inset: 0, zIndex: 25 }} onClick={() => { setGiftOpen(false); setTopUpOpen(false); }} />}
-
-      {/* Chat input */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "4px 12px 12px", display: "flex", alignItems: "center", gap: 8, zIndex: 10, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)" }}>
-        <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Say something..." style={{ flex: 1, background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 28, color: "#fff", fontSize: 13, padding: "9px 16px", outline: "none" }} />
-        <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 18, cursor: "pointer" }}>➤</button>
-      </div>
     </div>
   );
 }
