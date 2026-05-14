@@ -490,26 +490,118 @@ export default function BattlePage() {
         </div>
       )}
 
-      {/* Winner overlay */}
+      {/* ── POST-BATTLE STATS SCREEN ── */}
       {battleEnded && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.88)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-          <div style={{ fontSize: 56, animation: "winnerPop 0.6s ease-out" }}>⚡</div>
-          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.25em", color: "rgba(255,255,255,0.4)" }}>BATTLE OVER</div>
-          <div style={{ fontFamily: "monospace", fontSize: 24, fontWeight: 800, color: "#D4AF37", letterSpacing: "0.08em", textAlign: "center", animation: "winnerPop 0.6s ease-out 0.2s both", padding: "0 20px" }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "0 24px" }}>
+
+          {/* Trophy icon */}
+          <div style={{ fontSize: 48, animation: "winnerPop 0.6s ease-out" }}>🏆</div>
+
+          {/* Battle over label */}
+          <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.3em", color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>The Circuit — Battle Complete</div>
+
+          {/* Winner name */}
+          <div style={{
+            fontFamily: "monospace", fontSize: 22, fontWeight: 800,
+            color: "#D4AF37", letterSpacing: "0.06em", textAlign: "center",
+            animation: "winnerPop 0.6s ease-out 0.2s both",
+            textShadow: "0 0 30px rgba(212,175,55,0.4)",
+          }}>
             {winner === battle?.creatorEmailA ? (streamA?.displayName ?? "Creator A") : (streamB?.displayName ?? "Creator B")} WINS
           </div>
-          <div style={{ display: "flex", gap: 32, marginTop: 8 }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#00e5ff", fontSize: 10, fontFamily: "monospace", marginBottom: 6, letterSpacing: "0.1em" }}>{streamA?.displayName ?? "A"}</div>
-              <div style={{ color: "#00e5ff", fontSize: 28, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageA ?? 0}<span style={{ fontSize: 14 }}>⚡</span></div>
+
+          {/* Stats card */}
+          <div style={{
+            width: "100%", maxWidth: 320, marginTop: 8,
+            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 16, padding: "16px 20px",
+            animation: "winnerPop 0.5s ease-out 0.4s both",
+          }}>
+            {/* Score comparison */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              {/* Creator A */}
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <div style={{
+                  color: winner === battle?.creatorEmailA ? "#D4AF37" : "rgba(255,255,255,0.5)",
+                  fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em",
+                  maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px",
+                }}>
+                  {streamA?.displayName ?? "A"}
+                </div>
+                <div style={{
+                  color: winner === battle?.creatorEmailA ? "#D4AF37" : "#00e5ff",
+                  fontSize: 32, fontFamily: "monospace", fontWeight: 800,
+                }}>
+                  {battle?.voltageA ?? 0}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
+              </div>
+
+              {/* VS divider */}
+              <div style={{ color: "rgba(255,255,255,0.12)", fontSize: 14, fontWeight: 800, padding: "0 12px" }}>VS</div>
+
+              {/* Creator B */}
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <div style={{
+                  color: winner === battle?.creatorEmailB ? "#D4AF37" : "rgba(255,255,255,0.5)",
+                  fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em",
+                  maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px",
+                }}>
+                  {streamB?.displayName ?? "B"}
+                </div>
+                <div style={{
+                  color: winner === battle?.creatorEmailB ? "#D4AF37" : "#00e5ff",
+                  fontSize: 32, fontFamily: "monospace", fontWeight: 800,
+                }}>
+                  {battle?.voltageB ?? 0}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
+              </div>
             </div>
-            <div style={{ color: "rgba(255,255,255,0.15)", fontSize: 20, alignSelf: "center" }}>VS</div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", marginBottom: 6, letterSpacing: "0.1em" }}>{streamB?.displayName ?? "B"}</div>
-              <div style={{ color: "#D4AF37", fontSize: 28, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageB ?? 0}<span style={{ fontSize: 14 }}>⚡</span></div>
+
+            {/* Voltage bar visual */}
+            <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 16 }}>
+              <div style={{
+                height: "100%", borderRadius: 2,
+                background: "linear-gradient(90deg, #00e5ff, #D4AF37)",
+                width: `${totalVoltage === 0 ? 50 : Math.round(((battle?.voltageA ?? 0) / totalVoltage) * 100)}%`,
+                transition: "width 1s ease-out",
+              }} />
+            </div>
+
+            {/* Battle stats row */}
+            <div style={{ display: "flex", justifyContent: "space-around" }}>
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "#D4AF37", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>
+                  {(battle?.voltageA ?? 0) + (battle?.voltageB ?? 0)}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>TOTAL SPARKS</div>
+              </div>
+              <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>
+                  {battle?.durationSeconds ?? 90}s
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>DURATION</div>
+              </div>
+              <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "#00e5ff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>
+                  {Math.abs((battle?.voltageA ?? 0) - (battle?.voltageB ?? 0))}
+                </div>
+                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>MARGIN</div>
+              </div>
             </div>
           </div>
-          <div style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, fontFamily: "monospace", marginTop: 8, letterSpacing: "0.1em" }}>RETURNING TO STREAM…</div>
+
+          {/* Redirect notice */}
+          <div style={{
+            color: "rgba(255,255,255,0.2)", fontSize: 10, fontFamily: "monospace",
+            marginTop: 12, letterSpacing: "0.1em",
+            animation: "livePulse 1.5s ease-in-out infinite",
+          }}>
+            RETURNING TO STREAM…
+          </div>
         </div>
       )}
 
