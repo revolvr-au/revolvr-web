@@ -56,7 +56,8 @@ function FloatingGiftEffect({ fg }: { fg: FloatingGift }) {
   return (
     <div style={{
       position: "absolute",
-      [fg.side === "A" ? "left" : "right"]: "10%",
+      left: "50%", transform: "translateX(-50%)",
+      [fg.side === "A" ? "top" : "bottom"]: "10%",
       bottom: "40%",
       zIndex: 50,
       display: "flex",
@@ -131,13 +132,13 @@ ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
     <div
       ref={containerRef}
       style={{
-        width: "50%",
-        height: "100%",
+        width: "100%",
+        height: "50%",
         position: "relative",
         background: "#0a0a0a",
         overflow: "hidden",
         flexShrink: 0,
-        borderRight: side === "A" ? "1px solid rgba(255,255,255,0.1)" : "none",
+        borderBottom: side === "A" ? "1px solid rgba(255,255,255,0.1)" : "none",
       }}
     >
       <div style={{
@@ -172,10 +173,10 @@ ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
           alt=""
           style={{
             position: "absolute", top: 0,
-            [side === "A" ? "left" : "right"]: 0,
-            height: 52, width: 52,
+           left: 0,
+            height: 44, width: 44,
             objectFit: "cover",
-            borderRadius: side === "A" ? "0 0 10px 0" : "0 0 0 10px",
+            borderRadius: "0 0 10px 0",
             pointerEvents: "none",
           }}
         />
@@ -191,7 +192,7 @@ ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
       )}
 
       <div style={{
-        position: "absolute", bottom: 56, left: 0, right: 0,
+        position: "absolute", bottom: 8, left: 0, right: 0,
         display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
         pointerEvents: "none",
       }}>
@@ -481,9 +482,9 @@ export default function BattlePage() {
       {eclipseActive && (
         <div style={{
           position: "absolute",
-          top: 0, bottom: "30%",
-          [eclipseActive === "A" ? "left" : "right"]: 0,
-          width: "50%",
+          left: 0, right: 0,
+          [eclipseActive === "A" ? "top" : "bottom"]: 0,
+          height: "50%",
           background: "rgba(0,0,0,0.75)",
           zIndex: 45,
           animation: "eclipseFlash 3s ease-out forwards",
@@ -638,9 +639,10 @@ export default function BattlePage() {
         </div>
       )}
 
-      {/* Dual live video — full height, everything overlaid */}
+      {/* Dual live video — stacked vertically */}
       <div style={{
         display: "flex",
+        flexDirection: "column",
         position: "absolute",
         inset: 0,
         zIndex: 1,
