@@ -14,6 +14,7 @@ export default function GoLivePage() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const croppedStreamRef = useRef<MediaStream | null>(null);
   const broadcastingRef = useRef(false);
 
   useEffect(() => {
@@ -30,44 +31,7 @@ export default function GoLivePage() {
         if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
 
-        const ingestEndpoint = (process.env.NEXT_PUBLIC_IVS_INGEST_ENDPOINT ?? '')
-          .replace('rtmps://', '')
-          .replace(':443/app/', '');
-
-        const videoTrack = stream.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
-
-        const vw = videoTrack?.getSettings().width ?? 1280;
-        const vh = videoTrack?.getSettings().height ?? 720;
-        const isLandscape = vw > vh;
-
-        const client = IVSBroadcastClient.create({
-          streamConfig: isLandscape
-            ? IVSBroadcastClient.BASIC_LANDSCAPE
-            : IVSBroadcastClient.BASIC_PORTRAIT,
-          ingestEndpoint,
-        });
-        clientRef.current = client;
-
-        if (videoTrack) {
-          await client.addVideoInputDevice(
-            new MediaStream([videoTrack]),
-            'camera1',
-            { index: 0 }
-          );
-          client.updateVideoDeviceComposition('camera1', {
-            index: 0,
-            x: 0,
-            y: 0,
-            width: isLandscape ? 1280 : 720,
-            height: isLandscape ? 720 : 1280,
-          });
-        }
-        if (audioTrack) {
-          await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
-        }
-
-        // Draw camera directly to canvas instead of using attachPreview
+        // Draw camera to canvas (preview + crop source for IVS)
         if (canvasRef.current && streamRef.current) {
           const canvas = canvasRef.current;
           const ctx = canvas.getContext('2d');
@@ -90,6 +54,38 @@ export default function GoLivePage() {
             requestAnimationFrame(draw);
           };
           draw();
+          croppedStreamRef.current = canvas.captureStream(30);
+        }
+
+        const ingestEndpoint = (process.env.NEXT_PUBLIC_IVS_INGEST_ENDPOINT ?? '')
+          .replace('rtmps://', '')
+          .replace(':443/app/', '');
+
+        const client = IVSBroadcastClient.create({
+          streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
+          ingestEndpoint,
+        });
+        clientRef.current = client;
+
+        const videoTrack = croppedStreamRef.current?.getVideoTracks()[0];
+        const audioTrack = stream.getAudioTracks()[0];
+
+        if (videoTrack) {
+          await client.addVideoInputDevice(
+            new MediaStream([videoTrack]),
+            'camera1',
+            { index: 0 }
+          );
+          client.updateVideoDeviceComposition('camera1', {
+            index: 0,
+            x: 0,
+            y: 0,
+            width: 720,
+            height: 1280,
+          });
+        }
+        if (audioTrack) {
+          await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
         }
 
         setCameraReady(true);
@@ -144,18 +140,12 @@ const newIngest = (ingestEndpoint ?? '')
   .replace('rtmps://', '')
   .replace(':443/app/', '');
 
-// Re-add video/audio tracks
-const videoTrack = streamRef.current?.getVideoTracks()[0];
+// Re-add video/audio tracks — use cropped canvas stream so IVS gets clean portrait
+const videoTrack = croppedStreamRef.current?.getVideoTracks()[0];
 const audioTrack = streamRef.current?.getAudioTracks()[0];
 
-const vw = videoTrack?.getSettings().width ?? 1280;
-const vh = videoTrack?.getSettings().height ?? 720;
-const isLandscape = vw > vh;
-
 const newClient = IVSBroadcastClient.create({
-  streamConfig: isLandscape
-    ? IVSBroadcastClient.BASIC_LANDSCAPE
-    : IVSBroadcastClient.BASIC_PORTRAIT,
+  streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
   ingestEndpoint: newIngest,
 });
 
@@ -165,8 +155,8 @@ if (videoTrack) {
     index: 0,
     x: 0,
     y: 0,
-    width: isLandscape ? 1280 : 720,
-    height: isLandscape ? 720 : 1280,
+    width: 720,
+    height: 1280,
   });
 }
 if (audioTrack) {

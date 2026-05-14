@@ -157,22 +157,47 @@ useEffect(() => {
   if (!isCreator || !creatorStreamKey) return;
   let cancelled = false;
   let ivsBroadcastClient: any = null;
+  let croppedStream: MediaStream | null = null;
+  let cropVideoEl: HTMLVideoElement | null = null;
 
   const startIvsBroadcast = async () => {
     try {
       const cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 }, aspectRatio: { ideal: 9/16 } },
+        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 1280 }, aspectRatio: { ideal: 9/16 } },
         audio: { echoCancellation: true, noiseSuppression: true },
       });
       if (cancelled) { cameraStream.getTracks().forEach(t => t.stop()); return; }
       cameraStreamRef.current = cameraStream;
 
+      // Offscreen canvas crop pipeline — gives IVS a clean 720x1280 portrait
+      const canvas = document.createElement('canvas');
+      canvas.width = 720;
+      canvas.height = 1280;
+      const ctx = canvas.getContext('2d');
+      cropVideoEl = document.createElement('video');
+      cropVideoEl.srcObject = cameraStream;
+      cropVideoEl.autoplay = true;
+      cropVideoEl.playsInline = true;
+      cropVideoEl.muted = true;
+      await cropVideoEl.play();
+      const draw = () => {
+        if (cancelled) return;
+        if (ctx && cropVideoEl && cropVideoEl.readyState >= 2) {
+          const vw = cropVideoEl.videoWidth;
+          const vh = cropVideoEl.videoHeight;
+          const scale = Math.max(canvas.width / vw, canvas.height / vh);
+          const x = (canvas.width - vw * scale) / 2;
+          const y = (canvas.height - vh * scale) / 2;
+          ctx.drawImage(cropVideoEl, x, y, vw * scale, vh * scale);
+        }
+        requestAnimationFrame(draw);
+      };
+      draw();
+      croppedStream = canvas.captureStream(30);
+
       const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
-      const videoTrack = cameraStream.getVideoTracks()[0];
+      const videoTrack = croppedStream.getVideoTracks()[0];
       const audioTrack = cameraStream.getAudioTracks()[0];
-      const vw = videoTrack.getSettings().width ?? 1280;
-      const vh = videoTrack.getSettings().height ?? 720;
-      const isLandscape = vw > vh;
 
       const ingestRaw = new URLSearchParams(window.location.search).get('ingest') ?? '';
       const ingestEndpoint = decodeURIComponent(ingestRaw)
@@ -180,9 +205,7 @@ useEffect(() => {
         .replace(':443/app/', '');
 
       ivsBroadcastClient = IVSBroadcastClient.create({
-        streamConfig: isLandscape
-          ? IVSBroadcastClient.BASIC_LANDSCAPE
-          : IVSBroadcastClient.BASIC_PORTRAIT,
+        streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
         ingestEndpoint,
       });
 
@@ -190,8 +213,8 @@ useEffect(() => {
         await ivsBroadcastClient.addVideoInputDevice(new MediaStream([videoTrack]), 'camera1', { index: 0 });
         ivsBroadcastClient.updateVideoDeviceComposition('camera1', {
           index: 0, x: 0, y: 0,
-          width: isLandscape ? 1280 : 720,
-          height: isLandscape ? 720 : 1280,
+          width: 720,
+          height: 1280,
         });
       }
       if (audioTrack) {
@@ -213,6 +236,8 @@ useEffect(() => {
     cancelled = true;
     if (!navigatingToBattleRef.current) {
       cameraStreamRef.current?.getTracks().forEach(t => t.stop());
+      croppedStream?.getTracks().forEach(t => t.stop());
+      if (cropVideoEl) { try { cropVideoEl.pause(); cropVideoEl.srcObject = null; } catch {} }
       if (ivsBroadcastClient) {
         try { ivsBroadcastClient.stopBroadcast(); } catch {}
         try { ivsBroadcastClient.delete(); } catch {}
