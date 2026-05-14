@@ -416,18 +416,34 @@ export default function BattlePage() {
     return () => clearInterval(interval);
   }, [battle?.startedAt, battle?.status, battle?.durationSeconds, battleId]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // scrollIntoView removed — breaks mobile Safari layout
 
   const sendMessage = async () => {
     if (!chatInput.trim() || !battleId) return;
+
+    const newMsg = {
+      id: `temp-${Date.now()}`,
+      room_id: `battle:${battleId}`,
+      user_email: userEmail,
+      display_name: displayName,
+      message: chatInput.trim(),
+    };
+
+    setMessages((prev) => [...prev.slice(-99), newMsg]);
+    setChatInput("");
+
+    // Clear contentEditable div and blur keyboard
+    const el = document.querySelector('[data-placeholder="Say something..."]') as HTMLElement;
+    if (el) el.textContent = "";
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+
     const supabase = createSupabaseBrowserClient();
     await supabase.from("live_chat_messages").insert({
       room_id: `battle:${battleId}`,
       user_email: userEmail,
       display_name: displayName,
-      message: chatInput.trim(),
+      message: newMsg.message,
     });
-    setChatInput("");
   };
 
   if (loading) {
@@ -451,6 +467,7 @@ export default function BattlePage() {
         @keyframes winnerPop { 0%{transform:scale(0.7);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
         @keyframes tensionSurge { 0%{filter:brightness(1)} 50%{filter:brightness(1.8)} 100%{filter:brightness(1)} }
         @keyframes battleWelcomeFade { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+        [data-placeholder]:empty::before { content: attr(data-placeholder); color: rgba(255,255,255,0.35); pointer-events: none; }
       `}</style>
 
       {/* ── BATTLE WELCOME OVERLAY ── */}
@@ -546,7 +563,7 @@ export default function BattlePage() {
       </div>
 
       {/* ══════════ MIDDLE: VIDEO PANES — side by side, 55% of screen ══════════ */}
-      <div style={{ flex: "0 0 55%", display: "flex", flexDirection: "row", position: "relative", overflow: "hidden" }}>
+      <div style={{ flex: "0 0 63%", display: "flex", flexDirection: "row", position: "relative", overflow: "hidden" }}>
         <LiveVideoPane stream={streamA} side="A" voltage={battle?.voltageA ?? 0} />
         <LiveVideoPane stream={streamB} side="B" voltage={battle?.voltageB ?? 0} />
 
@@ -626,7 +643,19 @@ export default function BattlePage() {
 
         {/* Chat input */}
         <div style={{ flexShrink: 0, padding: "6px 12px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-          <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Say something..." style={{ flex: 1, background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 24, color: "#fff", fontSize: 14, padding: "9px 16px", outline: "none" }} />
+          <div
+            contentEditable
+            suppressContentEditableWarning
+            onInput={(e) => setChatInput((e.target as HTMLElement).textContent ?? "")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            data-placeholder="Say something..."
+            style={{ flex: 1, background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 24, color: "#fff", fontSize: 16, padding: "9px 16px", outline: "none", minHeight: 20, maxHeight: 60, overflow: "hidden", WebkitUserSelect: "text", userSelect: "text", wordBreak: "break-word" }}
+          />
           <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 18, cursor: "pointer" }}>➤</button>
         </div>
       </div>
