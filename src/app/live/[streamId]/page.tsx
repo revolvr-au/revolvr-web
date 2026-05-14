@@ -106,6 +106,14 @@ export default function LivePage() {
   // Viewport state for Safari keyboard fix
   const [viewportHeight, setViewportHeight] = useState<string | number>("100dvh");
 
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  useEffect(() => {
+    if (!showWelcome) return;
+    const timer = setTimeout(() => setShowWelcome(false), 4000);
+    return () => clearTimeout(timer);
+  }, [showWelcome]);
+
   useEffect(() => {
     if (!window.visualViewport) return;
     const handleResize = () => setViewportHeight(`${window.visualViewport?.height}px`);
@@ -469,6 +477,7 @@ if (document.activeElement instanceof HTMLElement) {
         @keyframes monolithDrop { 0% { opacity: 0; transform: translateY(-100px) scale(0.6); } 30% { opacity: 1; transform: translateY(10px) scale(1.05); } 45% { transform: translateY(0) scale(1); } 100% { opacity: 0; transform: scale(0.9); } }
         @keyframes lightRays { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 0.7; } 100% { opacity: 0; transform: scale(2.5); } }
         @keyframes eclipseShockwave { 0% { opacity: 0.8; transform: scale(0.1); } 100% { opacity: 0; transform: scale(3); } }
+        @keyframes welcomeFade { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
       `}</style>
 
       {/* ── FULL SCREEN VIDEO ── */}
@@ -587,6 +596,41 @@ if (document.activeElement instanceof HTMLElement) {
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 32, marginBottom: 12 }}>📴</div>
             <div style={{ color: "#fff", fontSize: 16, fontWeight: 600 }}>Stream ended</div>
+          </div>
+        </div>
+      )}
+
+      {/* ── WELCOME CONTEXT OVERLAY ── */}
+      {showWelcome && stream && !ended && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 60,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.55)",
+          animation: "welcomeFade 4s ease-in-out forwards",
+          pointerEvents: "none",
+        }}>
+          <div style={{ textAlign: "center", padding: "0 30px" }}>
+            <div style={{
+              color: "#fff", fontSize: 22, fontWeight: 800,
+              textShadow: "0 2px 12px rgba(0,0,0,0.8)",
+              marginBottom: 6,
+            }}>
+              {stream.displayName ?? stream.creatorEmail?.split("@")[0]}
+            </div>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              background: "rgba(229,0,76,0.85)", borderRadius: 4,
+              padding: "3px 10px", marginBottom: 16,
+            }}>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff" }} />
+              <span style={{ color: "#fff", fontSize: 11, fontWeight: 800, letterSpacing: "0.08em" }}>LIVE</span>
+            </div>
+            <div style={{
+              color: "rgba(255,255,255,0.6)", fontSize: 13,
+              fontFamily: "monospace", letterSpacing: "0.05em",
+            }}>
+              Send sparks to show support ⚡
+            </div>
           </div>
         </div>
       )}
