@@ -654,7 +654,7 @@ export default function BattlePage() {
       </div>
 
       {/* Tension line */}
-      <div style={{ position: "absolute", bottom: 120, left: 0, right: 0, height: 40, display: "flex", alignItems: "center", padding: "0 16px", background: "rgba(0,0,0,0.5)", zIndex: 10, gap: 8, backdropFilter: "blur(4px)" }}>
+      <div style={{ position: "absolute", bottom: 52, left: 0, right: 0, height: 28, display: "flex", alignItems: "center", padding: "0 16px", background: "rgba(0,0,0,0.5)", zIndex: 10, gap: 8, backdropFilter: "blur(4px)" }}>
         <span style={{ color: "#00e5ff", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 24, textAlign: "left" }}>{battle?.voltageA ?? 0}</span>
         <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, position: "relative" }}>
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #00e5ff, #00e5ff50)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
@@ -665,7 +665,7 @@ export default function BattlePage() {
       </div>
 
       {/* Comments */}
-      <div style={{ position: "absolute", bottom: 165, left: 0, right: 0, height: 120, overflow: "hidden", padding: "6px 12px 0", zIndex: 10, maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)" } as React.CSSProperties}>
+      <div style={{ position: "absolute", bottom: 82, left: 0, right: 80, height: 90, overflow: "hidden", padding: "6px 12px 0", zIndex: 10, maskImage: "linear-gradient(to bottom, black 50%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 50%, transparent 100%)" } as React.CSSProperties}>
         <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
           {messages.slice(-8).map((msg, i) => (
             <div key={msg.id ?? i} style={{ display: "flex", gap: 5, alignItems: "baseline", animation: "commentDrift 0.3s ease-out both" }}>
@@ -678,7 +678,7 @@ export default function BattlePage() {
       </div>
 
       {/* Gift visual picker */}
-      <div style={{ position: "absolute", right: 12, bottom: 68, zIndex: 30, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+      <div style={{ position: "absolute", right: 12, bottom: 48, zIndex: 30, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
         {giftOpen && (
           <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
             {/* Side selector */}
@@ -730,7 +730,7 @@ export default function BattlePage() {
       {(giftOpen || topUpOpen) && <div style={{ position: "absolute", inset: 0, zIndex: 25 }} onClick={() => { setGiftOpen(false); setTopUpOpen(false); }} />}
 
       {/* Chat input */}
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "6px 12px 20px", display: "flex", alignItems: "center", gap: 8, zIndex: 10, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)" }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "4px 12px 12px", display: "flex", alignItems: "center", gap: 8, zIndex: 10, background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)" }}>
         <input value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMessage()} placeholder="Say something..." style={{ flex: 1, background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 28, color: "#fff", fontSize: 13, padding: "9px 16px", outline: "none" }} />
         <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 18, cursor: "pointer" }}>➤</button>
       </div>
