@@ -654,7 +654,7 @@ if (document.activeElement instanceof HTMLElement) {
             style={{
               flex: 1, background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 20, color: "#fff", fontSize: 12,
+              borderRadius: 20, color: "#fff", fontSize: 16,
               padding: "8px 14px", outline: "none",
               minWidth: 0,
             }}
