@@ -98,6 +98,17 @@ export default function LivePage() {
   const [battleState, setBattleState] = useState<"idle" | "seeking" | "matched">("idle");
   const [battleId, setBattleId] = useState<string | null>(null);
 
+  // Viewport state for Safari keyboard fix
+  const [viewportHeight, setViewportHeight] = useState<string | number>("100dvh");
+
+  useEffect(() => {
+    if (!window.visualViewport) return;
+    const handleResize = () => setViewportHeight(`${window.visualViewport?.height}px`);
+    window.visualViewport.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.visualViewport?.removeEventListener("resize", handleResize);
+  }, []);
+
 useEffect(() => {
   if (!userEmail || !streamId) return;
   
@@ -371,9 +382,11 @@ useEffect(() => {
   };
 
  return (
-    <div style={{ height: "100dvh", width: "100vw", background: "#000", position: "relative", overflow: "hidden" }}>
+    <div style={{ height: viewportHeight, width: "100vw", background: "#000", position: "relative", overflow: "hidden" }}>
 
       <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
         @keyframes commentFloat {
         0% { opacity: 0; transform: translateX(-20px); }
@@ -437,10 +450,10 @@ useEffect(() => {
       )}
 
       {/* ── FLOATING COMMENTS — mid screen, drift down and fade ── */}
-      <div style={{
+      <div className="no-scrollbar" style={{
         position: "absolute", left: 14, right: 80,
         bottom: 150, height: 200,
-        overflow: "hidden", zIndex: 20,
+        overflowY: "auto", zIndex: 20,
         pointerEvents: "none",
       }}>
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: "100%", gap: 8 }}>
@@ -501,7 +514,7 @@ useEffect(() => {
 
       {/* ── COMPACT BOTTOM BAR ── */}
       <div style={{
-        position: "fixed", bottom: 0, left: 0, right: 0,
+        position: "absolute", bottom: 0, left: 0, right: 0,
         zIndex: 20, padding: "0 14px calc(20px + env(safe-area-inset-bottom))",
         display: "flex", flexDirection: "column", gap: 6,
       }}>
