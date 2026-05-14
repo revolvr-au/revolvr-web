@@ -90,8 +90,13 @@ export default function LivePage() {
   // Gift state
   const [giftOpen, setGiftOpen] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
-  const [giftToast, setGiftToast] = useState<string | null>(null);
   const [eclipseActive, setEclipseActive] = useState(false);
+  // Gift impact state
+  const [activeGiftEffect, setActiveGiftEffect] = useState<{
+    giftId: string;
+    senderName: string;
+    tier: "pulse" | "amp" | "override" | "monolith" | "eclipse";
+  } | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Battle state
@@ -279,10 +284,10 @@ useEffect(() => {
         setMessages((prev) => [...prev.slice(-99), payload.new]);
       })
       .on("broadcast", { event: "gift" }, (payload) => {
-        if (payload.payload?.giftId === "eclipse") {
-          setEclipseActive(true);
-          setTimeout(() => setEclipseActive(false), 3000);
-        }
+        triggerGiftEffect(
+          payload.payload?.giftId ?? "pulse",
+          payload.payload?.senderName ?? "viewer"
+        );
       })
       .on("broadcast", { event: "battle_matched" }, (payload) => {
         setBattleId(payload.payload.battleId);
@@ -375,41 +380,57 @@ if (document.activeElement instanceof HTMLElement) {
     }
   };
 
-  const sendGift = async (gift: typeof GIFTS[0]) => {
-  setGiftOpen(false);
+  const triggerGiftEffect = (giftId: string, senderName: string) => {
+    const tier = giftId as "pulse" | "amp" | "override" | "monolith" | "eclipse";
+    setActiveGiftEffect({ giftId, senderName, tier });
 
-  // Show toast immediately — don't wait for API
-  setGiftToast(`${gift.name} sent to ${stream?.displayName ?? "creator"}`);
-  setTimeout(() => setGiftToast(null), 2500);
+    const durations: Record<string, number> = {
+      pulse: 1200,
+      amp: 1800,
+      override: 2500,
+      monolith: 3500,
+      eclipse: 4000,
+    };
 
-  // Eclipse animation immediately
-  if (gift.id === "eclipse" && streamId) {
-    const supabase = createSupabaseBrowserClient();
-    supabase.channel(`live:${streamId}`).send({
-      type: "broadcast", event: "gift",
-      payload: { giftId: "eclipse", senderName: displayName },
-    });
-    setEclipseActive(true);
-    setTimeout(() => setEclipseActive(false), 3000);
-  }
+    setTimeout(() => setActiveGiftEffect(null), durations[tier] ?? 2000);
 
-  // Fire API in background — don't await
-  if (!stream?.creatorEmail) return;
-  fetch("/api/live/gift", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      giftId: gift.id,
-      streamId,
-      creatorEmail: stream.creatorEmail,
-    }),
-  }).then(r => r.json()).then(data => {
-    if (data.error === "insufficient_sparks") {
-      setGiftToast(null);
-      setTopUpOpen(true);
+    if (tier === "eclipse") {
+      setEclipseActive(true);
+      setTimeout(() => setEclipseActive(false), 4000);
     }
-  }).catch(console.error);
-};
+  };
+
+  const sendGift = async (gift: typeof GIFTS[0]) => {
+    setGiftOpen(false);
+
+    // Trigger visual effect immediately
+    triggerGiftEffect(gift.id, displayName);
+
+    // Broadcast to other viewers
+    if (streamId) {
+      const supabase = createSupabaseBrowserClient();
+      supabase.channel(`live:${streamId}`).send({
+        type: "broadcast", event: "gift",
+        payload: { giftId: gift.id, senderName: displayName },
+      });
+    }
+
+    // Fire API in background
+    if (!stream?.creatorEmail) return;
+    fetch("/api/live/gift", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        giftId: gift.id,
+        streamId,
+        creatorEmail: stream.creatorEmail,
+      }),
+    }).then(r => r.json()).then(data => {
+      if (data.error === "insufficient_sparks") {
+        setTopUpOpen(true);
+      }
+    }).catch(console.error);
+  };
 
   const handleGiftPressStart = () => {
     longPressTimer.current = setTimeout(() => { setTopUpOpen(true); setGiftOpen(false); }, 600);
@@ -440,6 +461,14 @@ if (document.activeElement instanceof HTMLElement) {
         @keyframes eclipseExpand { 0% { transform: scale(0); opacity: 0; } 40% { opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
         @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes glowPulse { 0%, 100% { box-shadow: 0 0 8px rgba(212,175,55,0.4); } 50% { box-shadow: 0 0 20px rgba(212,175,55,0.7), 0 0 40px rgba(212,175,55,0.2); } }
+        @keyframes giftNameFlash { 0% { opacity: 0; transform: scale(0.7); } 20% { opacity: 1; transform: scale(1.05); } 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95) translateY(-10px); } }
+        @keyframes giftBoltFly { 0% { opacity: 0; transform: translateY(60px) scale(0.5); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-200px) scale(1.3); } }
+        @keyframes edgeFlashCyan { 0% { opacity: 0; } 20% { opacity: 0.6; } 100% { opacity: 0; } }
+        @keyframes bannerSlide { 0% { transform: translateX(100%); } 15% { transform: translateX(0); } 85% { transform: translateX(0); } 100% { transform: translateX(-100%); opacity: 0; } }
+        @keyframes screenShake { 0%,100% { transform: translate(0); } 10% { transform: translate(-3px,2px); } 20% { transform: translate(3px,-2px); } 30% { transform: translate(-2px,3px); } 40% { transform: translate(2px,-1px); } 50% { transform: translate(0); } }
+        @keyframes monolithDrop { 0% { opacity: 0; transform: translateY(-100px) scale(0.6); } 30% { opacity: 1; transform: translateY(10px) scale(1.05); } 45% { transform: translateY(0) scale(1); } 100% { opacity: 0; transform: scale(0.9); } }
+        @keyframes lightRays { 0% { opacity: 0; transform: scale(0.3); } 30% { opacity: 0.7; } 100% { opacity: 0; transform: scale(2.5); } }
+        @keyframes eclipseShockwave { 0% { opacity: 0.8; transform: scale(0.1); } 100% { opacity: 0; transform: scale(3); } }
       `}</style>
 
       {/* ── FULL SCREEN VIDEO ── */}
@@ -459,6 +488,97 @@ if (document.activeElement instanceof HTMLElement) {
           <div style={{ width: 120, height: 120, borderRadius: "50%", border: "3px solid #00e5ff", boxShadow: "0 0 60px #00e5ff, 0 0 120px #00e5ff40", animation: "eclipseExpand 3s ease-out forwards" }} />
           <div style={{ position: "absolute", color: "#00e5ff", fontSize: 13, fontFamily: "monospace", letterSpacing: "0.2em", marginTop: 180 }}>ECLIPSE</div>
         </div>
+      )}
+
+      {/* ── GIFT IMPACT EFFECTS ── */}
+      {activeGiftEffect && (
+        <>
+          {/* PULSE — quick name flash + bolt fly */}
+          {activeGiftEffect.tier === "pulse" && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ animation: "giftBoltFly 1.2s ease-out forwards", position: "absolute", bottom: "30%" }}>
+                <BoltIcon size={32} color="#00e5ff" />
+              </div>
+              <div style={{ animation: "giftNameFlash 1.2s ease-out forwards", textAlign: "center" }}>
+                <div style={{ color: "#00e5ff", fontSize: 14, fontWeight: 700, fontFamily: "monospace", textShadow: "0 0 20px rgba(0,229,255,0.6)" }}>{activeGiftEffect.senderName}</div>
+                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace", marginTop: 2 }}>sent PULSE</div>
+              </div>
+            </div>
+          )}
+
+          {/* AMP — larger name + edge flash */}
+          {activeGiftEffect.tier === "amp" && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none" }}>
+              {/* Edge flash */}
+              <div style={{ position: "absolute", inset: 0, border: "3px solid #00e5ff", borderRadius: 0, animation: "edgeFlashCyan 1.8s ease-out forwards", pointerEvents: "none" }} />
+              {/* Center content */}
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ animation: "giftBoltFly 1.5s ease-out forwards", position: "absolute", bottom: "25%" }}>
+                  <BoltIcon size={44} color="#00e5ff" />
+                </div>
+                <div style={{ animation: "giftNameFlash 1.8s ease-out forwards", textAlign: "center" }}>
+                  <div style={{ color: "#00e5ff", fontSize: 20, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 30px rgba(0,229,255,0.7)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#00e5ff", fontSize: 12, fontFamily: "monospace", marginTop: 4, opacity: 0.7 }}>⚡ AMP</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* OVERRIDE — banner slide + shake */}
+          {activeGiftEffect.tier === "override" && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none", animation: "screenShake 0.5s ease-out" }}>
+              <div style={{
+                position: "absolute", top: "40%", left: 0, right: 0,
+                animation: "bannerSlide 2.5s ease-in-out forwards",
+                background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.3), rgba(212,175,55,0.15), transparent)",
+                padding: "14px 20px",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+              }}>
+                <GiftAsset id="override" size={40} />
+                <div>
+                  <div style={{ color: "#D4AF37", fontSize: 18, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 20px rgba(212,175,55,0.6)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#D4AF37", fontSize: 11, fontFamily: "monospace", opacity: 0.7 }}>⚡ OVERRIDE</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MONOLITH — dark overlay + icon drop + light rays */}
+          {activeGiftEffect.tier === "monolith" && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none" }}>
+              {/* Dark overlay */}
+              <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", animation: "giftNameFlash 3.5s ease-out forwards" }} />
+              {/* Light rays */}
+              <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,175,55,0.3) 0%, transparent 70%)", animation: "lightRays 3s ease-out forwards" }} />
+              {/* Monolith icon */}
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ animation: "monolithDrop 3.5s ease-out forwards" }}>
+                  <GiftAsset id="monolith" size={64} />
+                </div>
+                <div style={{ animation: "giftNameFlash 3.5s ease-out 0.5s forwards", opacity: 0, textAlign: "center", marginTop: 12 }}>
+                  <div style={{ color: "#D4AF37", fontSize: 24, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 30px rgba(212,175,55,0.7)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#D4AF37", fontSize: 13, fontFamily: "monospace", marginTop: 4 }}>⚡ MONOLITH</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ECLIPSE — enhanced with sender name + shockwave */}
+          {activeGiftEffect.tier === "eclipse" && (
+            <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none" }}>
+              {/* Shockwave ring */}
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 100, height: 100, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.6)", animation: "eclipseShockwave 2s ease-out forwards" }} />
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 100, height: 100, borderRadius: "50%", border: "2px solid rgba(0,229,255,0.4)", animation: "eclipseShockwave 2s ease-out 0.3s forwards", opacity: 0 }} />
+              {/* Sender name */}
+              <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginTop: 160 }}>
+                <div style={{ animation: "giftNameFlash 4s ease-out 0.5s forwards", opacity: 0, textAlign: "center" }}>
+                  <div style={{ color: "#fff", fontSize: 28, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 40px rgba(0,229,255,0.8), 0 0 80px rgba(0,229,255,0.3)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#00e5ff", fontSize: 14, fontFamily: "monospace", marginTop: 6, letterSpacing: "0.2em" }}>⚡ ECLIPSE ⚡</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Stream ended */}
@@ -711,13 +831,6 @@ if (document.activeElement instanceof HTMLElement) {
             </button>
           ))}
           <button onClick={() => setTopUpOpen(false)} style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 4 }}>Cancel</button>
-        </div>
-      )}
-
-      {/* Gift toast */}
-      {giftToast && (
-        <div style={{ position: "absolute", bottom: 160, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,0.8)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "7px 18px", color: "#D4AF37", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.08em", zIndex: 50, animation: "toastIn 0.2s ease-out", whiteSpace: "nowrap" }}>
-          ⚡ {giftToast}
         </div>
       )}
 
