@@ -294,6 +294,10 @@ useEffect(() => {
 
     setMessages((prev) => [...prev.slice(-99), newMsg]);
     setChatInput("");
+    // Blur input to dismiss keyboard on mobile
+if (document.activeElement instanceof HTMLElement) {
+  document.activeElement.blur();
+}
 
     const supabase = createSupabaseBrowserClient();
     await supabase.from("live_chat_messages").insert({
