@@ -243,10 +243,10 @@ export default function BattlePage() {
   const [showBattleWelcome, setShowBattleWelcome] = useState(true);
 
   useEffect(() => {
-    if (!showBattleWelcome) return;
+    if (!showBattleWelcome || !streamA) return;
     const timer = setTimeout(() => setShowBattleWelcome(false), 4000);
     return () => clearTimeout(timer);
-  }, [showBattleWelcome]);
+  }, [showBattleWelcome, streamA]);
 
   const GIFTS = [
     { id: "pulse",    name: "PULSE",    sparks: 10,   color: "#00e5ff", label: "10⚡" },
