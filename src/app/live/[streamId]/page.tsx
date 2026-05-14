@@ -309,6 +309,8 @@ useEffect(() => {
 
     setMessages((prev) => [...prev.slice(-99), newMsg]);
     setChatInput("");
+    const editable = document.querySelector('[data-placeholder]') as HTMLElement | null;
+    if (editable) editable.textContent = "";
     // Blur input to dismiss keyboard on mobile
 if (document.activeElement instanceof HTMLElement) {
   document.activeElement.blur();
@@ -427,6 +429,7 @@ if (document.activeElement instanceof HTMLElement) {
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        [data-placeholder]:empty::before { content: attr(data-placeholder); color: rgba(255,255,255,0.35); pointer-events: none; }
         @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
         @keyframes commentFloat {
         0% { opacity: 0; transform: translateX(-20px); }
@@ -645,18 +648,28 @@ if (document.activeElement instanceof HTMLElement) {
           )}
 
           {/* Chat input */}
-          <input
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            
-            placeholder="Say something..."
+          <div
+            contentEditable
+            suppressContentEditableWarning
+            onInput={(e) => setChatInput((e.target as HTMLElement).textContent ?? "")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+                (e.target as HTMLElement).textContent = "";
+              }
+            }}
+            data-placeholder="Say something..."
             style={{
               flex: 1, background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(255,255,255,0.06)",
               borderRadius: 20, color: "#fff", fontSize: 16,
               padding: "8px 14px", outline: "none",
-              minWidth: 0,
+              minWidth: 0, minHeight: 20,
+              WebkitUserSelect: "text",
+              userSelect: "text",
+              wordBreak: "break-word",
+              maxHeight: 60, overflow: "hidden",
             }}
           />
 
