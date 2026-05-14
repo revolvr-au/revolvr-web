@@ -109,6 +109,21 @@ export default function LivePage() {
     return () => window.visualViewport?.removeEventListener("resize", handleResize);
   }, []);
 
+  // iOS Safari keyboard dismiss fix
+  useEffect(() => {
+    const resetScroll = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    window.addEventListener('resize', resetScroll);
+    window.addEventListener('focusout', resetScroll);
+    return () => {
+      window.removeEventListener('resize', resetScroll);
+      window.removeEventListener('focusout', resetScroll);
+    };
+  }, []);
+
 useEffect(() => {
   if (!userEmail || !streamId) return;
   
