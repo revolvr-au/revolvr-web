@@ -240,6 +240,13 @@ export default function BattlePage() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [battleEnded, setBattleEnded] = useState(false);
   const [winner, setWinner] = useState<string | null>(null);
+  const [showBattleWelcome, setShowBattleWelcome] = useState(true);
+
+  useEffect(() => {
+    if (!showBattleWelcome) return;
+    const timer = setTimeout(() => setShowBattleWelcome(false), 4000);
+    return () => clearTimeout(timer);
+  }, [showBattleWelcome]);
 
   const GIFTS = [
     { id: "pulse",    name: "PULSE",    sparks: 10,   color: "#00e5ff", label: "10⚡" },
@@ -442,7 +449,33 @@ export default function BattlePage() {
         @keyframes eclipseFlash { 0%{opacity:0} 20%{opacity:0.7} 80%{opacity:0.5} 100%{opacity:0} }
         @keyframes winnerPop { 0%{transform:scale(0.7);opacity:0} 60%{transform:scale(1.08)} 100%{transform:scale(1);opacity:1} }
         @keyframes tensionSurge { 0%{filter:brightness(1)} 50%{filter:brightness(1.8)} 100%{filter:brightness(1)} }
+        @keyframes battleWelcomeFade { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
       `}</style>
+
+      {/* ── BATTLE WELCOME OVERLAY ── */}
+      {showBattleWelcome && !battleEnded && streamA && (
+        <div style={{
+          position: "absolute", inset: 0, zIndex: 90,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "rgba(0,0,0,0.65)",
+          animation: "battleWelcomeFade 4s ease-in-out forwards",
+          pointerEvents: "none",
+        }}>
+          <div style={{ textAlign: "center", padding: "0 30px" }}>
+            <div style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.25em", marginBottom: 12 }}>THE CIRCUIT</div>
+            <div style={{ color: "#00e5ff", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(0,229,255,0.4)", marginBottom: 4 }}>
+              {streamA?.displayName ?? "Creator A"}
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 14, fontWeight: 800, marginBottom: 4 }}>VS</div>
+            <div style={{ color: "#D4AF37", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(212,175,55,0.4)", marginBottom: 16 }}>
+              {streamB?.displayName ?? "Challenger"}
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.05em" }}>
+              Send sparks to tip the balance ⚡
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Eclipse overlay on targeted side */}
       {eclipseActive && (
@@ -492,7 +525,7 @@ export default function BattlePage() {
 
       {/* ── POST-BATTLE STATS SCREEN ── */}
       {battleEnded && (
-        <div style={{ position: "absolute", inset: 0, zIndex: 100, background: "rgba(0,0,0,0.92)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "0 24px" }}>
+        <div style={{ position: "absolute", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.98)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "0 24px" }}>
 
           {/* Trophy icon */}
           <div style={{ fontSize: 48, animation: "winnerPop 0.6s ease-out" }}>🏆</div>
