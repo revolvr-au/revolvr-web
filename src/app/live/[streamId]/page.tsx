@@ -376,10 +376,9 @@ useEffect(() => {
       <style>{`
         @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.75); } }
         @keyframes commentFloat {
-          0% { opacity: 0; transform: translateX(-20px); }
-          10% { opacity: 1; transform: translateX(0); }
-          70% { opacity: 1; transform: translateY(0); }
-          100% { opacity: 0; transform: translateY(40px); }
+        0% { opacity: 0; transform: translateX(-20px); }
+        15% { opacity: 1; transform: translateX(0); }
+        100% { opacity: 1; transform: translateX(0); }
         }
         @keyframes giftSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes eclipseExpand { 0% { transform: scale(0); opacity: 0; } 40% { opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
@@ -440,7 +439,7 @@ useEffect(() => {
       {/* ── FLOATING COMMENTS — mid screen, drift down and fade ── */}
       <div style={{
         position: "absolute", left: 14, right: 80,
-        top: "40%", height: "25%",
+        bottom: 150, height: 200,
         overflow: "hidden", zIndex: 20,
         pointerEvents: "none",
       }}>
@@ -502,8 +501,8 @@ useEffect(() => {
 
       {/* ── COMPACT BOTTOM BAR ── */}
       <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        zIndex: 20, padding: "0 14px 20px",
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        zIndex: 20, padding: "0 14px calc(20px + env(safe-area-inset-bottom))",
         display: "flex", flexDirection: "column", gap: 6,
       }}>
 
