@@ -279,7 +279,7 @@ useEffect(() => {
     return () => { supabase.removeChannel(channel); };
   }, [streamId]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // scrollIntoView removed — it breaks mobile Safari layout
 
   const sendMessage = async () => {
     if (!chatInput.trim() || !streamId) return;
@@ -399,11 +399,10 @@ useEffect(() => {
 
  return (
     <div style={{
-      position: "fixed",
-      top: 0, left: 0, right: 0,
-      height: viewportHeight,
+      position: "relative",
+      height: "100dvh", width: "100vw",
       background: "#000",
-      overflow: "hidden",
+      overflow: "hidden"
     }}>
 
       <style>{`
@@ -471,29 +470,26 @@ useEffect(() => {
         }}>🔇 Tap to unmute</button>
       )}
 
-      {/* ── FLOATING COMMENTS — mid screen, drift down and fade ── */}
-      <div className="no-scrollbar" style={{
+      {/* ── COMMENTS ── */}
+      <div style={{
         position: "absolute", left: 14, right: 80,
-        bottom: 150, height: 200,
-        overflowY: "auto", zIndex: 20,
+        bottom: 150, zIndex: 20,
         pointerEvents: "none",
+        display: "flex", flexDirection: "column",
+        gap: 6,
       }}>
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end", minHeight: "100%", gap: 8 }}>
-          {messages.slice(-6).map((msg, i) => (
-            <div key={msg.id ?? i} style={{
-              display: "flex", gap: 5, alignItems: "baseline",
-              animation: "commentFloat 4s ease-out forwards",
-              background: "rgba(0,0,0,0.25)",
-              borderRadius: 16, padding: "4px 10px",
-              width: "fit-content",
-              backdropFilter: "blur(4px)",
-            }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: "#00e5ff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.9)" }}>{msg.message}</span>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
+        {messages.slice(-5).map((msg, i) => (
+          <div key={msg.id ?? i} style={{
+            display: "flex", gap: 5, alignItems: "baseline",
+            background: "rgba(0,0,0,0.3)",
+            borderRadius: 14, padding: "5px 10px",
+            width: "fit-content",
+            maxWidth: "100%",
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#00e5ff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.9)" }}>{msg.message}</span>
+          </div>
+        ))}
       </div>
 
       {/* ── GIFT PICKER — floats above bottom bar ── */}
@@ -634,9 +630,7 @@ useEffect(() => {
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-            onFocus={() => {
-              setTimeout(() => window.scrollTo(0, 0), 50);
-            }}
+            
             placeholder="Say something..."
             style={{
               flex: 1, background: "rgba(255,255,255,0.08)",
