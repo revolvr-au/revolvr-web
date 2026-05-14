@@ -132,13 +132,13 @@ ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
     <div
       ref={containerRef}
       style={{
-        width: "100%",
-        height: "50%",
+        width: "50%",
+        height: "100%",
         position: "relative",
         background: "#0a0a0a",
         overflow: "hidden",
         flexShrink: 0,
-        borderBottom: side === "A" ? "1px solid rgba(255,255,255,0.1)" : "none",
+        borderRight: side === "A" ? "1px solid rgba(255,255,255,0.1)" : "none",
       }}
     >
       <div style={{
@@ -482,9 +482,9 @@ export default function BattlePage() {
       {eclipseActive && (
         <div style={{
           position: "absolute",
-          left: 0, right: 0,
-          [eclipseActive === "A" ? "top" : "bottom"]: 0,
-          height: "50%",
+          top: 0, bottom: 0,
+          [eclipseActive === "A" ? "left" : "right"]: 0,
+          width: "50%",
           background: "rgba(0,0,0,0.75)",
           zIndex: 45,
           animation: "eclipseFlash 3s ease-out forwards",
@@ -642,7 +642,7 @@ export default function BattlePage() {
       {/* Dual live video — stacked vertically */}
       <div style={{
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "row",
         position: "absolute",
         inset: 0,
         zIndex: 1,
