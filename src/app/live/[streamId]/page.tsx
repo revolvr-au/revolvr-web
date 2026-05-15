@@ -161,7 +161,6 @@ useEffect(() => {
   let cropVideoEl: HTMLVideoElement | null = null;
   let drawInterval: ReturnType<typeof setInterval> | null = null;
   let visibilityHandler: (() => void) | null = null;
-  let broadcastHealthInterval: ReturnType<typeof setInterval> | null = null;
 
   const startIvsBroadcast = async () => {
     try {
@@ -249,17 +248,18 @@ useEffect(() => {
       await ivsBroadcastClient.startBroadcast(creatorStreamKey);
       console.log('[LIVE] IVS broadcast started from live page');
 
-      broadcastHealthInterval = setInterval(() => {
-        try {
-          const state = ivsBroadcastClient?.getConnectionState?.();
-          if (state && state !== 'connected') {
-            console.warn('[LIVE] IVS broadcast unhealthy, state:', state, '— reconnecting');
-            ivsBroadcastClient.startBroadcast(creatorStreamKey).catch((e: any) => console.error('[LIVE] reconnect failed:', e));
-          }
-        } catch (e) {
-          console.error('[LIVE] health check failed:', e);
+      ivsBroadcastClient.on('connectionStateChange', (state: string) => {
+        console.log('[LIVE] broadcast connection state:', state);
+        if (state === 'failed' || state === 'disconnected') {
+          console.warn('[LIVE] broadcast dropped, reconnecting in 2s');
+          setTimeout(() => {
+            if (!cancelled) {
+              ivsBroadcastClient.startBroadcast(creatorStreamKey)
+                .catch((e: any) => console.error('[LIVE] reconnect failed:', e));
+            }
+          }, 2000);
         }
-      }, 10000);
+      });
 
       try { await (navigator as any).wakeLock?.request('screen'); } catch {}
     } catch (err) {
@@ -272,7 +272,6 @@ useEffect(() => {
   return () => {
     cancelled = true;
     if (drawInterval) { clearInterval(drawInterval); drawInterval = null; }
-    if (broadcastHealthInterval) { clearInterval(broadcastHealthInterval); broadcastHealthInterval = null; }
     if (visibilityHandler) { document.removeEventListener('visibilitychange', visibilityHandler); visibilityHandler = null; }
     if (!navigatingToBattleRef.current) {
       cameraStreamRef.current?.getTracks().forEach(t => t.stop());
