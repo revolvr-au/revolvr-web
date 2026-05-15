@@ -21,13 +21,15 @@ export default function GoLivePage() {
   useEffect(() => {
     let active = true;
     let drawInterval: ReturnType<typeof setInterval> | null = null;
+    let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
     let visibilityHandler: (() => void) | null = null;
+    let canvasCtx: CanvasRenderingContext2D | null = null;
     const init = async () => {
       try {
         const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
 
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 480 }, height: { ideal: 854 }, aspectRatio: { ideal: 9/16 }, frameRate: { ideal: 30, max: 30 } },
+          video: { facingMode, width: { ideal: 480 }, height: { ideal: 854 }, aspectRatio: { ideal: 9/16 }, frameRate: { ideal: 30, max: 30 }, focusMode: 'continuous', exposureMode: 'continuous', whiteBalanceMode: 'continuous' } as MediaTrackConstraints,
           audio: true,
         });
 
@@ -38,6 +40,7 @@ export default function GoLivePage() {
         if (canvasRef.current && streamRef.current) {
           const canvas = canvasRef.current;
           const ctx = canvas.getContext('2d');
+          canvasCtx = ctx;
           const videoEl = document.createElement('video');
           videoEl.srcObject = streamRef.current;
           videoEl.autoplay = true;
@@ -52,14 +55,12 @@ export default function GoLivePage() {
             if (ctx && videoEl.readyState >= 2) {
               const vw = videoEl.videoWidth;
               const vh = videoEl.videoHeight;
-              const scale = Math.min(canvas.width / vw, canvas.height / vh);
-              const dw = vw * scale;
-              const dh = vh * scale;
-              const x = (canvas.width - dw) / 2;
-              const y = (canvas.height - dh) / 2;
-              ctx.fillStyle = "#000";
+              const scale = Math.max(canvas.width / vw, canvas.height / vh) * 0.85;
+              const x = (canvas.width - vw * scale) / 2;
+              const y = (canvas.height - vh * scale) / 2;
+              ctx.fillStyle = '#000';
               ctx.fillRect(0, 0, canvas.width, canvas.height);
-              ctx.drawImage(videoEl, x, y, dw, dh);
+              ctx.drawImage(videoEl, x, y, vw * scale, vh * scale);
             }
           };
           draw();
@@ -105,6 +106,17 @@ export default function GoLivePage() {
           await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
         }
 
+        // Keepalive: prevent canvas captureStream from going idle while broadcasting
+        if (typeof (client as any).enableVideo === 'function') {
+          (client as any).enableVideo();
+        } else {
+          keepAliveInterval = setInterval(() => {
+            if (broadcastingRef.current && canvasCtx) {
+              canvasCtx.fillRect(0, 0, 1, 1);
+            }
+          }, 5000);
+        }
+
         setCameraReady(true);
         setError(null);
       } catch (err: any) {
@@ -119,6 +131,7 @@ export default function GoLivePage() {
     return () => {
       active = false;
       if (drawInterval) clearInterval(drawInterval);
+      if (keepAliveInterval) clearInterval(keepAliveInterval);
       if (visibilityHandler) document.removeEventListener("visibilitychange", visibilityHandler);
       if (!broadcastingRef.current) {
         streamRef.current?.getTracks().forEach(t => t.stop());
