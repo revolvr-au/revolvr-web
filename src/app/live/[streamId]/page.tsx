@@ -161,6 +161,7 @@ useEffect(() => {
   let cropVideoEl: HTMLVideoElement | null = null;
   let drawInterval: ReturnType<typeof setInterval> | null = null;
   let visibilityHandler: (() => void) | null = null;
+  let broadcastHealthInterval: ReturnType<typeof setInterval> | null = null;
 
   const startIvsBroadcast = async () => {
     try {
@@ -206,7 +207,12 @@ useEffect(() => {
       };
       draw();
       drawInterval = setInterval(draw, 33);
-      visibilityHandler = () => { if (!document.hidden) draw(); };
+      visibilityHandler = () => {
+        if (!document.hidden) {
+          draw();
+          (navigator as any).wakeLock?.request('screen').catch(() => {});
+        }
+      };
       document.addEventListener('visibilitychange', visibilityHandler);
       croppedStream = canvas.captureStream(30);
 
@@ -223,6 +229,10 @@ useEffect(() => {
         streamConfig: { ...IVSBroadcastClient.BASIC_PORTRAIT, maxResolution: { width: 480, height: 854 } },
         ingestEndpoint,
       });
+      console.log('[LIVE] ivsBroadcastClient methods:', [
+        ...Object.keys(ivsBroadcastClient),
+        ...Object.getOwnPropertyNames(Object.getPrototypeOf(ivsBroadcastClient)),
+      ]);
 
       if (videoTrack) {
         await ivsBroadcastClient.addVideoInputDevice(new MediaStream([videoTrack]), 'camera1', { index: 0 });
@@ -239,6 +249,18 @@ useEffect(() => {
       await ivsBroadcastClient.startBroadcast(creatorStreamKey);
       console.log('[LIVE] IVS broadcast started from live page');
 
+      broadcastHealthInterval = setInterval(() => {
+        try {
+          const state = ivsBroadcastClient?.getConnectionState?.();
+          if (state && state !== 'connected') {
+            console.warn('[LIVE] IVS broadcast unhealthy, state:', state, '— reconnecting');
+            ivsBroadcastClient.startBroadcast(creatorStreamKey).catch((e: any) => console.error('[LIVE] reconnect failed:', e));
+          }
+        } catch (e) {
+          console.error('[LIVE] health check failed:', e);
+        }
+      }, 10000);
+
       try { await (navigator as any).wakeLock?.request('screen'); } catch {}
     } catch (err) {
       console.error('[LIVE] Failed to start IVS broadcast:', err);
@@ -250,6 +272,7 @@ useEffect(() => {
   return () => {
     cancelled = true;
     if (drawInterval) { clearInterval(drawInterval); drawInterval = null; }
+    if (broadcastHealthInterval) { clearInterval(broadcastHealthInterval); broadcastHealthInterval = null; }
     if (visibilityHandler) { document.removeEventListener('visibilitychange', visibilityHandler); visibilityHandler = null; }
     if (!navigatingToBattleRef.current) {
       cameraStreamRef.current?.getTracks().forEach(t => t.stop());
