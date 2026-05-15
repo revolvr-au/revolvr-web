@@ -1,7 +1,7 @@
 "use client";
+export const dynamic = 'force-dynamic';
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import IVSBroadcastClient from "amazon-ivs-web-broadcast";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function GoLivePage() {
@@ -24,6 +24,8 @@ export default function GoLivePage() {
     let visibilityHandler: (() => void) | null = null;
     const init = async () => {
       try {
+        const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
+
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode, width: { ideal: 480 }, height: { ideal: 854 }, aspectRatio: { ideal: 9/16 }, frameRate: { ideal: 30, max: 30 } },
           audio: true,
