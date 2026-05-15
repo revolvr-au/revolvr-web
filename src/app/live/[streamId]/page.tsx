@@ -342,7 +342,6 @@ useEffect(() => {
         ivsPlayer.addEventListener(PlayerEventType.ERROR, (err: any) => {
           if (err.type === ErrorType.NOT_AVAILABLE) setTimeout(() => { ivsPlayer.load(src); ivsPlayer.play(); }, 3000);
         });
-        ivsPlayer.setBufferSize(0.5);
         ivsPlayer.setRebufferToLive(true);
         ivsPlayer.setLiveLowLatencyEnabled(true);
         ivsPlayer.setVolume(0);
