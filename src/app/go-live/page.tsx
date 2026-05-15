@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import IVSBroadcastClient from "amazon-ivs-web-broadcast";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function GoLivePage() {
@@ -19,12 +20,12 @@ export default function GoLivePage() {
 
   useEffect(() => {
     let active = true;
+    let drawInterval: ReturnType<typeof setInterval> | null = null;
+    let visibilityHandler: (() => void) | null = null;
     const init = async () => {
       try {
-        const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
-
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode, width: { ideal: 720 }, height: { ideal: 1280 }, aspectRatio: { ideal: 9/16 } },
+          video: { facingMode, width: { ideal: 480 }, height: { ideal: 854 }, aspectRatio: { ideal: 9/16 }, frameRate: { ideal: 30, max: 30 } },
           audio: true,
         });
 
@@ -40,20 +41,31 @@ export default function GoLivePage() {
           videoEl.autoplay = true;
           videoEl.playsInline = true;
           videoEl.muted = true;
+          await new Promise<void>((resolve) => {
+            if (videoEl.readyState >= 1) { resolve(); return; }
+            videoEl.addEventListener('loadedmetadata', () => resolve(), { once: true });
+          });
           await videoEl.play();
           const draw = () => {
-            if (!active) return;
             if (ctx && videoEl.readyState >= 2) {
               const vw = videoEl.videoWidth;
               const vh = videoEl.videoHeight;
-              const scale = Math.max(canvas.width / vw, canvas.height / vh);
-              const x = (canvas.width - vw * scale) / 2;
-              const y = (canvas.height - vh * scale) / 2;
-              ctx.drawImage(videoEl, x, y, vw * scale, vh * scale);
+              const scale = Math.min(canvas.width / vw, canvas.height / vh);
+              const dw = vw * scale;
+              const dh = vh * scale;
+              const x = (canvas.width - dw) / 2;
+              const y = (canvas.height - dh) / 2;
+              ctx.fillStyle = "#000";
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(videoEl, x, y, dw, dh);
             }
-            requestAnimationFrame(draw);
           };
           draw();
+          drawInterval = setInterval(draw, 33);
+          visibilityHandler = () => {
+            if (document.visibilityState === "visible") draw();
+          };
+          document.addEventListener("visibilitychange", visibilityHandler);
           croppedStreamRef.current = canvas.captureStream(30);
         }
 
@@ -62,7 +74,10 @@ export default function GoLivePage() {
           .replace(':443/app/', '');
 
         const client = IVSBroadcastClient.create({
-          streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
+          streamConfig: {
+            ...IVSBroadcastClient.BASIC_PORTRAIT,
+            maxResolution: { width: 480, height: 854 },
+          },
           ingestEndpoint,
         });
         clientRef.current = client;
@@ -80,8 +95,8 @@ export default function GoLivePage() {
             index: 0,
             x: 0,
             y: 0,
-            width: 720,
-            height: 1280,
+            width: 480,
+            height: 854,
           });
         }
         if (audioTrack) {
@@ -101,6 +116,8 @@ export default function GoLivePage() {
 
     return () => {
       active = false;
+      if (drawInterval) clearInterval(drawInterval);
+      if (visibilityHandler) document.removeEventListener("visibilitychange", visibilityHandler);
       if (!broadcastingRef.current) {
         streamRef.current?.getTracks().forEach(t => t.stop());
         try { clientRef.current?.delete(); } catch {}
@@ -134,38 +151,14 @@ const data = await res.json();
 if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
 const { streamId, playbackUrl, ingestEndpoint } = data;
 
-// Reinitialise IVS client with the channel-specific ingest endpoint
-const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
 const newIngest = (ingestEndpoint ?? '')
   .replace('rtmps://', '')
   .replace(':443/app/', '');
 
-// Re-add video/audio tracks — use cropped canvas stream so IVS gets clean portrait
-const videoTrack = croppedStreamRef.current?.getVideoTracks()[0];
-const audioTrack = streamRef.current?.getAudioTracks()[0];
-
-const newClient = IVSBroadcastClient.create({
-  streamConfig: IVSBroadcastClient.BASIC_PORTRAIT,
-  ingestEndpoint: newIngest,
-});
-
-if (videoTrack) {
-  await newClient.addVideoInputDevice(new MediaStream([videoTrack]), 'camera1', { index: 0 });
-  newClient.updateVideoDeviceComposition('camera1', {
-    index: 0,
-    x: 0,
-    y: 0,
-    width: 720,
-    height: 1280,
-  });
+// Update ingest endpoint on the existing client (built on mount) and broadcast
+if (clientRef.current?.config) {
+  clientRef.current.config.ingestEndpoint = newIngest;
 }
-if (audioTrack) {
-  await newClient.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
-}
-
-// Delete old client, use new one
-try { clientRef.current?.delete(); } catch {}
-clientRef.current = newClient;
 
 broadcastingRef.current = true;
 await clientRef.current.startBroadcast(data.streamKey);
@@ -187,8 +180,8 @@ await clientRef.current.startBroadcast(data.streamKey);
     }}>
       <canvas
         ref={canvasRef}
-        width={720}
-        height={1280}
+        width={480}
+        height={854}
         style={{
           position: "absolute", top: 0, left: 0,
           width: "100%", height: "100%",
