@@ -334,7 +334,7 @@ useEffect(() => {
         });
         ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.STATE_CHANGED, (state: any) => {
           console.log('[IVS-LIVE] state:', state);
-          if (state === IVSPlayer.PlayerState.READY) {
+          if (state === IVSPlayer.PlayerState.READY || state === IVSPlayer.PlayerState.IDLE) {
             ivsPlayer.play();
           }
         });
@@ -342,8 +342,10 @@ useEffect(() => {
         ivsPlayer.addEventListener(PlayerEventType.ERROR, (err: any) => {
           if (err.type === ErrorType.NOT_AVAILABLE) setTimeout(() => { ivsPlayer.load(src); ivsPlayer.play(); }, 3000);
         });
+        ivsPlayer.setBufferSize(0.5);
         ivsPlayer.setRebufferToLive(true);
         ivsPlayer.setLiveLowLatencyEnabled(true);
+        ivsPlayer.setVolume(0);
         await new Promise(r => setTimeout(r, 5000));
         ivsPlayer.load(src); ivsPlayer.play(); return;
       }
