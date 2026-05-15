@@ -262,14 +262,6 @@ useEffect(() => {
   }, [streamId]);
 
   useEffect(() => {
-    if (document.getElementById('ivs-player-script')) return;
-    const script = document.createElement('script');
-    script.id = 'ivs-player-script';
-    script.src = 'https://player.live-video.net/1.29.0/amazon-ivs-player.min.js';
-    document.head.appendChild(script);
-  }, []);
-
-  useEffect(() => {
     if (!videoRef.current || !stream || stream.status === 'IDLE') return;
     const video = videoRef.current;
     const src = stream?.ivsPlaybackUrl ? decodeURIComponent(stream.ivsPlaybackUrl) : stream?.muxPlaybackId ? `https://stream.mux.com/${stream.muxPlaybackId}.m3u8` : null;
@@ -277,7 +269,13 @@ useEffect(() => {
     let ivsPlayer: any = null, hls: any = null;
     const initPlayer = async () => {
       if (stream?.ivsPlaybackUrl) {
-        await new Promise<void>((resolve) => { const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); }; check(); });
+        await new Promise<void>((resolve) => {
+          if ((window as any).IVSPlayer) { resolve(); return; }
+          const interval = setInterval(() => {
+            if ((window as any).IVSPlayer) { clearInterval(interval); resolve(); }
+          }, 50);
+          window.addEventListener('load', () => { clearInterval(interval); if ((window as any).IVSPlayer) resolve(); }, { once: true });
+        });
         const IVSPlayer = (window as any).IVSPlayer;
         ivsPlayer = IVSPlayer.create();
         ivsPlayer.attachHTMLVideoElement(video);
@@ -294,9 +292,7 @@ useEffect(() => {
       if (Hls.isSupported()) { hls = new Hls({ lowLatencyMode: true }); hls.loadSource(src); hls.attachMedia(video); hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); }); }
     };
     initPlayer();
-    const observer = new MutationObserver(() => { video.style.width='100%'; video.style.height='100%'; video.style.position='absolute'; video.style.inset='0'; video.style.objectFit='cover'; });
-    observer.observe(video, { attributes: true, attributeFilter: ['width', 'height', 'style'] });
-    return () => { observer.disconnect(); if (ivsPlayer) ivsPlayer.delete(); if (hls) hls.destroy(); video.pause(); video.removeAttribute('src'); video.load(); };
+    return () => { if (ivsPlayer) ivsPlayer.delete(); if (hls) hls.destroy(); video.pause(); video.removeAttribute('src'); video.load(); };
   }, [stream?.muxPlaybackId, stream?.ivsPlaybackUrl, stream?.status]);
 
   useEffect(() => {
