@@ -267,6 +267,7 @@ useEffect(() => {
     const src = stream?.ivsPlaybackUrl ? decodeURIComponent(stream.ivsPlaybackUrl) : stream?.muxPlaybackId ? `https://stream.mux.com/${stream.muxPlaybackId}.m3u8` : null;
     if (!src) return;
     let ivsPlayer: any = null, hls: any = null;
+    let bufferTimer: ReturnType<typeof setTimeout> | null = null;
     const initPlayer = async () => {
       if (stream?.ivsPlaybackUrl) {
         await new Promise<void>((resolve) => {
@@ -279,9 +280,28 @@ useEffect(() => {
         const IVSPlayer = (window as any).IVSPlayer;
         ivsPlayer = IVSPlayer.create();
         ivsPlayer.attachHTMLVideoElement(video);
+        ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.BUFFER_UPDATE, () => {
+          if (ivsPlayer.getState() === IVSPlayer.PlayerState.BUFFERING) {
+            if (!bufferTimer) {
+              bufferTimer = setTimeout(() => {
+                bufferTimer = null;
+                ivsPlayer.load(src);
+                ivsPlayer.play();
+              }, 8000);
+            }
+          } else {
+            if (bufferTimer) { clearTimeout(bufferTimer); bufferTimer = null; }
+          }
+        });
+        ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.STATE_CHANGED, (state: any) => {
+          console.log('[IVS-LIVE] state:', state);
+          if (state === IVSPlayer.PlayerState.READY) {
+            ivsPlayer.play();
+          }
+        });
         const { PlayerEventType, ErrorType } = IVSPlayer;
         ivsPlayer.addEventListener(PlayerEventType.ERROR, (err: any) => {
-          if (err.type === ErrorType.NOT_AVAILABLE) setTimeout(() => { ivsPlayer.load(src); ivsPlayer.play(); }, 3000);
+          if (err.type === ErrorType.NOT_AVAILABLE) setTimeout(() => { ivsPlayer.load(src); ivsPlayer.play(); }, 1000);
         });
         ivsPlayer.setRebufferToLive(true);
         ivsPlayer.setLiveLowLatencyEnabled(true);
@@ -292,7 +312,7 @@ useEffect(() => {
       if (Hls.isSupported()) { hls = new Hls({ lowLatencyMode: true }); hls.loadSource(src); hls.attachMedia(video); hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); }); }
     };
     initPlayer();
-    return () => { if (ivsPlayer) ivsPlayer.delete(); if (hls) hls.destroy(); video.pause(); video.removeAttribute('src'); video.load(); };
+    return () => { if (bufferTimer) { clearTimeout(bufferTimer); bufferTimer = null; } if (ivsPlayer) ivsPlayer.delete(); if (hls) hls.destroy(); video.pause(); video.removeAttribute('src'); video.load(); };
   }, [stream?.muxPlaybackId, stream?.ivsPlaybackUrl, stream?.status]);
 
   useEffect(() => {
