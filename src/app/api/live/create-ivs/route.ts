@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const { IvsClient, CreateChannelCommand } = ivs;
 
     const ivsClient = new IvsClient({
-      region: process.env.AWS_IVS_REGION ?? 'ap-southeast-2',
+      region: process.env.AWS_IVS_REGION ?? 'ap-southeast-1',
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
