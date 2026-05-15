@@ -344,7 +344,7 @@ useEffect(() => {
         });
         ivsPlayer.setRebufferToLive(true);
         ivsPlayer.setLiveLowLatencyEnabled(true);
-        await new Promise(r => setTimeout(r, 3000));
+        await new Promise(r => setTimeout(r, 5000));
         ivsPlayer.load(src); ivsPlayer.play(); return;
       }
       if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = src; video.load(); video.muted = true; video.play().catch(() => {}); return; }
