@@ -9,10 +9,10 @@ export async function POST(req: Request) {
     const { IvsClient, CreateChannelCommand } = ivs;
 
     const ivsClient = new IvsClient({
-      region: process.env.AWS_REGION ?? "ap-northeast-1",
+      region: process.env.AWS_IVS_REGION ?? 'ap-southeast-2',
       credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID ?? '',
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY ?? '',
       },
     });
 
@@ -70,6 +70,7 @@ export async function POST(req: Request) {
         liveStartedAt: new Date(),
         voltage: 100,
         ivsPlaybackUrl: playbackUrl,
+        channelArn,
         liveStreamId: null,
       },
     });

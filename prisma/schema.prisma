@@ -27,6 +27,7 @@ model Post {
   liveStartedAt  DateTime? @map("live_started_at") @db.Timestamptz(6)
 liveEndedAt    DateTime? @map("live_ended_at") @db.Timestamptz(6)
 ivsPlaybackUrl String?   @map("ivs_playback_url")
+  channelArn     String?
 
   comments   Comment[]      @relation("PostComments")
   likes      Like[]         @relation("PostLikes")
