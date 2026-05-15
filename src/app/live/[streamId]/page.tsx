@@ -340,10 +340,11 @@ useEffect(() => {
         });
         const { PlayerEventType, ErrorType } = IVSPlayer;
         ivsPlayer.addEventListener(PlayerEventType.ERROR, (err: any) => {
-          if (err.type === ErrorType.NOT_AVAILABLE) setTimeout(() => { ivsPlayer.load(src); ivsPlayer.play(); }, 1000);
+          if (err.type === ErrorType.NOT_AVAILABLE) setTimeout(() => { ivsPlayer.load(src); ivsPlayer.play(); }, 3000);
         });
         ivsPlayer.setRebufferToLive(true);
         ivsPlayer.setLiveLowLatencyEnabled(true);
+        await new Promise(r => setTimeout(r, 3000));
         ivsPlayer.load(src); ivsPlayer.play(); return;
       }
       if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = src; video.load(); video.muted = true; video.play().catch(() => {}); return; }
