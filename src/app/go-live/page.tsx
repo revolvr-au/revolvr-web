@@ -123,7 +123,7 @@ export default function GoLivePage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push("/login"); return; }
 
-      for (let i = 3; i >= 1; i--) {
+      for (let i = 2; i >= 1; i--) {
         setCountdown(i);
         await new Promise(r => setTimeout(r, 1000));
       }

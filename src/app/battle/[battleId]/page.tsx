@@ -94,7 +94,7 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
         const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); };
         check();
       });
-      if (side === "B") await new Promise(r => setTimeout(r, 1500));
+      if (side === "B") await new Promise(r => setTimeout(r, 300));
       if (cancelled) return;
 
       const IVSPlayer = (window as any).IVSPlayer;
@@ -115,6 +115,8 @@ ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
   }, delay);
 });
 
+      ivsPlayer.setRebufferToLive(true);
+      ivsPlayer.setLiveLowLatencyEnabled(true);
       ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
       ivsPlayer.play();
     };
