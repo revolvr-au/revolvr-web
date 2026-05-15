@@ -20,6 +20,7 @@ export default function RootLayout({
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
+        <script async src="https://player.live-video.net/1.29.0/amazon-ivs-player.min.js" />
       </head>
       <body className="min-h-screen bg-[#050814] text-white">
         <KeyboardHandler />

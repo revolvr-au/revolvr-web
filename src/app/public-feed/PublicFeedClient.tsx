@@ -117,6 +117,8 @@ export default function PublicFeedClient() {
   const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
   const stableNoiseRef = useRef<Record<string, number>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const firstPostRef = useRef<HTMLDivElement | null>(null);
+  const [hasFirstPostRendered, setHasFirstPostRendered] = useState(false);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -153,100 +155,57 @@ export default function PublicFeedClient() {
     };
   }, []);
 
+const clusterMapRef = useRef<Record<string, number>>({});
+useEffect(() => { clusterMapRef.current = clusterMap; }, [clusterMap]);
+
 useEffect(() => {
   const interval = window.setInterval(() => {
+    // 1. interactionMap decay
     setInteractionMap((prev) => {
       const updated: Record<string, number> = {};
-
       Object.entries(prev).forEach(([key, value]) => {
         const decayed = value * 0.82;
-        if (decayed > 0.5) {
-          updated[key] = decayed;
-        }
+        if (decayed > 0.5) updated[key] = decayed;
       });
-
       return areNumberMapsEqual(prev, updated) ? prev : updated;
     });
-  }, 5000);
 
-  return () => window.clearInterval(interval);
-}, []);
-
-useEffect(() => {
-  const interval = window.setInterval(() => {
+    // 2. clusterMap decay — sync ref synchronously so step 3 sees the new value
     setClusterMap((prev) => {
       const updated: Record<string, number> = {};
-
       Object.entries(prev).forEach(([key, value]) => {
         const decayed = value * 0.88;
-        if (decayed > 0.5) {
-          updated[key] = decayed;
-        }
+        if (decayed > 0.5) updated[key] = decayed;
       });
-
-      return areNumberMapsEqual(prev, updated) ? prev : updated;
+      const next = areNumberMapsEqual(prev, updated) ? prev : updated;
+      clusterMapRef.current = next;
+      return next;
     });
-  }, 7000);
 
-  return () => window.clearInterval(interval);
-}, []);
-
-useEffect(() => {
-  const entries = Object.entries(clusterMap);
-
-  if (entries.length === 0) {
-    setMomentum((prev) =>
-      prev.cluster === null && prev.strength === 0
-        ? prev
-        : { cluster: null, strength: 0 }
-    );
-    return;
-  }
-
-  const [topCluster, value] = entries.sort((a, b) => b[1] - a[1])[0];
-
-  if (value <= 2.4) {
-    setMomentum((prev) =>
-      prev.cluster === null && prev.strength === 0
-        ? prev
-        : { cluster: null, strength: 0 }
-    );
-    return;
-  }
-
-  const nextMomentum = {
-    cluster: topCluster,
-    strength: Math.min(value, 5),
-  };
-
-  setMomentum((prev) =>
-    prev.cluster === nextMomentum.cluster && prev.strength === nextMomentum.strength
-      ? prev
-      : nextMomentum
-  );
-}, [clusterMap]);
-
-useEffect(() => {
-  const interval = window.setInterval(() => {
+    // 3 + 4. Re-derive momentum from decayed clusterMap, then apply momentum decay
     setMomentum((prev) => {
-      if (!prev.cluster) return prev;
+      const entries = Object.entries(clusterMapRef.current);
+      let next: { cluster: string | null; strength: number };
 
-      const newStrength = prev.strength * 0.85;
-
-      if (newStrength < 0.5) {
-        return prev.cluster === null && prev.strength === 0
-          ? prev
-          : { cluster: null, strength: 0 };
+      if (entries.length === 0) {
+        next = { cluster: null, strength: 0 };
+      } else {
+        const [topCluster, value] = entries.sort((a, b) => b[1] - a[1])[0];
+        next = value <= 2.4
+          ? { cluster: null, strength: 0 }
+          : { cluster: topCluster, strength: Math.min(value, 5) };
       }
 
-      return newStrength === prev.strength
-        ? prev
-        : {
-            ...prev,
-            strength: newStrength,
-          };
+      if (next.cluster) {
+        const decayed = next.strength * 0.85;
+        next = decayed < 0.5
+          ? { cluster: null, strength: 0 }
+          : { cluster: next.cluster, strength: decayed };
+      }
+
+      return prev.cluster === next.cluster && prev.strength === next.strength ? prev : next;
     });
-  }, 4000);
+  }, 5000);
 
   return () => window.clearInterval(interval);
 }, []);
@@ -283,6 +242,20 @@ useEffect(() => {
       }
     });
   }, [posts]);
+
+  useEffect(() => {
+    if (hasFirstPostRendered) return;
+    const el = firstPostRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setHasFirstPostRendered(true);
+        observer.disconnect();
+      }
+    }, { threshold: 0.5 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visiblePosts.length, hasFirstPostRendered]);
 
   // Ranking philosophy:
   // 1. Voltage is the baseline public energy signal
@@ -479,11 +452,12 @@ useEffect(() => {
    >
       
       
-        {loading && limitedPosts.length === 0 && <PostSkeleton />}
+        {!hasFirstPostRendered && <PostSkeleton />}
         {limitedPosts.map((post, i) => (
 
     <div
       key={post.id ?? i}
+      ref={i === 0 ? firstPostRef : undefined}
       className="h-full w-full flex-shrink-0 transition-transform transition-shadow duration-300 ease-out"
     >
       <Post
@@ -559,7 +533,14 @@ const Post = memo(function Post({
   const router = useRouter();
   const [showBurst, setShowBurst] = useState(false);
   const [localBoost, setLocalBoost] = useState(0);
+  const [liveAvatarSrc, setLiveAvatarSrc] = useState<string | null>(null);
   const lastTapRef = useRef(0);
+
+  useEffect(() => {
+    if (post.isLive && post.avatarUrl) {
+      setLiveAvatarSrc(post.avatarUrl);
+    }
+  }, [post.isLive, post.avatarUrl]);
   const boostTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const burstTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const MAX_VOLTAGE = 100;
@@ -725,8 +706,8 @@ const Post = memo(function Post({
           border: "2px solid rgba(255,215,0,0.2)",
           animation: "livePulseRing 1.5s ease-in-out infinite 0.3s",
         }} />
-        {post.avatarUrl ? (
-          <img src={post.avatarUrl} style={{
+        {liveAvatarSrc ? (
+          <img src={liveAvatarSrc} style={{
             width: 80, height: 80, borderRadius: "50%",
             objectFit: "cover", border: "3px solid #fff",
           }} />

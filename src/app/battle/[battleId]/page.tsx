@@ -79,6 +79,7 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    console.log(`[IVS-TIMING] Side ${side} useEffect start @ ${Date.now()}`);
     console.log(`[BATTLE-VIDEO] Side ${side}:`, {
       hasVideoRef: !!videoRef.current,
       playbackUrl: stream?.ivsPlaybackUrl ?? 'NONE',
@@ -91,9 +92,16 @@ function LiveVideoPane({ stream, side, voltage }: { stream: any; side: "A" | "B"
 
     const init = async () => {
       await new Promise<void>((resolve) => {
-        const check = () => { if ((window as any).IVSPlayer) resolve(); else setTimeout(check, 100); };
-        check();
+        if ((window as any).IVSPlayer) { resolve(); return; }
+        const interval = setInterval(() => {
+          if ((window as any).IVSPlayer) { clearInterval(interval); resolve(); }
+        }, 50);
+        window.addEventListener('load', () => {
+          clearInterval(interval);
+          resolve();
+        }, { once: true });
       });
+      console.log(`[IVS-TIMING] Side ${side} IVSPlayer resolved @ ${Date.now()}`);
       if (side === "B") await new Promise(r => setTimeout(r, 300));
       if (cancelled) return;
 
@@ -115,9 +123,14 @@ ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
   }, delay);
 });
 
+      ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.PLAYING, () => {
+        console.log(`[IVS-TIMING] Side ${side} PLAYING @ ${Date.now()}`);
+      });
+
       ivsPlayer.setRebufferToLive(true);
       ivsPlayer.setLiveLowLatencyEnabled(true);
       ivsPlayer.load(decodeURIComponent(stream.ivsPlaybackUrl));
+      console.log(`[IVS-TIMING] Side ${side} after load() @ ${Date.now()}`);
       ivsPlayer.play();
     };
 
@@ -300,26 +313,15 @@ export default function BattlePage() {
   }, []);
 
   useEffect(() => {
-    if (document.getElementById('ivs-player-script')) return;
-    const script = document.createElement('script');
-    script.id = 'ivs-player-script';
-    script.src = 'https://player.live-video.net/1.29.0/amazon-ivs-player.min.js';
-    document.head.appendChild(script);
-  }, []);
-
-  useEffect(() => {
     if (!battleId) return;
+    // Battle + both streams fetched in parallel server-side via Promise.all
     fetch(`/api/battle/${battleId}`)
       .then(r => r.json())
-      .then(async d => {
+      .then(d => {
         if (!d.battle) return;
         setBattle(d.battle);
-        const [a, b] = await Promise.all([
-          fetch(`/api/live/stream/${d.battle.streamIdA}`).then(r => r.json()),
-          d.battle.streamIdB ? fetch(`/api/live/stream/${d.battle.streamIdB}`).then(r => r.json()) : Promise.resolve(null),
-        ]);
-        if (a?.stream) setStreamA(a.stream);
-        if (b?.stream) setStreamB(b.stream);
+        if (d.streamA) setStreamA(d.streamA);
+        if (d.streamB) setStreamB(d.streamB);
         setLoading(false);
       });
   }, [battleId]);
@@ -364,13 +366,7 @@ export default function BattlePage() {
       })
       .subscribe();
 
-    const poll = setInterval(async () => {
-      const res = await fetch(`/api/battle/${battleId}`);
-      const data = await res.json();
-      if (data.battle) setBattle(data.battle);
-    }, 5000);
-
-    return () => { supabase.removeChannel(channel); clearInterval(poll); };
+    return () => { supabase.removeChannel(channel); };
   }, [battleId, spawnGift]);
 
   // Post-battle redirect — uses userEmail state directly
@@ -450,8 +446,46 @@ export default function BattlePage() {
 
   if (loading) {
     return (
-      <div style={{ height: "100dvh", background: "#000", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ color: "#D4AF37", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.2em" }}>LOADING BATTLE…</span>
+      <div style={{ height: "100dvh", width: "100vw", background: "#000", overflow: "hidden", position: "relative", display: "flex", flexDirection: "column" }}>
+        <style>{`
+          @keyframes skeletonShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        `}</style>
+
+        {/* Header outline */}
+        <div style={{ height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px" }}>
+          <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
+          <div style={{ width: 120, height: 22, borderRadius: 11, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.18)" }} />
+          <div style={{ width: 60, height: 22, borderRadius: 11, background: "rgba(255,255,255,0.05)" }} />
+        </div>
+
+        {/* Two video-pane skeletons */}
+        <div style={{ flex: "0 0 63%", display: "flex", flexDirection: "row", position: "relative", overflow: "hidden" }}>
+          {(["A", "B"] as const).map((side) => (
+            <div key={side} style={{
+              width: "50%", height: "100%", position: "relative", background: "#0a0a0a",
+              borderRight: side === "A" ? "1px solid rgba(255,255,255,0.1)" : "none",
+              display: "flex", alignItems: "flex-end", justifyContent: "center", paddingBottom: 30,
+            }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: "50%",
+                background: "linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.04) 100%)",
+                backgroundSize: "200% 100%",
+                animation: "skeletonShimmer 1.4s ease-in-out infinite",
+              }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom: tension bar placeholder */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.85)" }}>
+          <div style={{ padding: "8px 14px" }}>
+            <div style={{ height: 4, borderRadius: 2,
+              background: "linear-gradient(90deg, rgba(0,229,255,0.08) 0%, rgba(255,255,255,0.06) 50%, rgba(212,175,55,0.08) 100%)",
+              backgroundSize: "200% 100%",
+              animation: "skeletonShimmer 1.6s ease-in-out infinite",
+            }} />
+          </div>
+        </div>
       </div>
     );
   }
