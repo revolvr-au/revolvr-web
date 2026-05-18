@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import FeedLayout from "./FeedLayout";
 import PublicFeedClient from "@/app/public-feed/PublicFeedClient";
 import { PeoplePageContent } from "@/app/people/page";
 import { SparkContent } from "@/app/spark/page";
@@ -16,9 +15,7 @@ export default function TabShell() {
   return (
     <>
       <div style={{ display: pathname === "/public-feed" ? "block" : "none" }}>
-        <FeedLayout>
-          <PublicFeedClient />
-        </FeedLayout>
+        <PublicFeedClient />
       </div>
       <div style={{ display: pathname === "/people" ? "block" : "none" }}>
         <PeoplePageContent />

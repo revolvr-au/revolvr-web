@@ -1,15 +1,40 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart } from "lucide-react";
+import {
+  Heart,
+  ThumbsUp,
+  MessageCircle,
+  Gift,
+  Plus,
+  Repeat2,
+  Bookmark,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
-import RightRail from "@/components/RightRail";
-import PostCaption from "@/components/PostCaption";
 import CommentsPanel from "@/components/CommentsPanel";
 import { useRouter } from "next/navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import MediaCarousel from "@/components/MediaCarousel";
 import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
+
+const GOLD = "#F5C518";
+const ACTION_KEYS = ["LIKE", "COMMENT", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
+type ActionKey = (typeof ACTION_KEYS)[number];
+
+const ACTION_ICONS: Record<
+  ActionKey,
+  { Icon: typeof ThumbsUp; glow: string }
+> = {
+  LIKE: { Icon: ThumbsUp, glow: "#ff4d6d" },
+  COMMENT: { Icon: MessageCircle, glow: "#5ec5ff" },
+  GIFT: { Icon: Gift, glow: GOLD },
+  CREATE: { Icon: Plus, glow: "#ffffff" },
+  REPOST: { Icon: Repeat2, glow: "#3ddc97" },
+  SAVE: { Icon: Bookmark, glow: "#c084fc" },
+};
 
 type AnalyticsPayload = {
   surface: string;
@@ -461,9 +486,7 @@ useEffect(() => {
     overflow: "hidden"
   }}
 >
-        {peopleRow.length > 0 && (
-          <PeopleRow people={peopleRow} onSelect={setSelectedPerson} />
-        )}
+        <TopChrome />
         <div
   ref={scrollContainerRef}
   onScroll={handleFeedScroll}
@@ -504,6 +527,8 @@ useEffect(() => {
         rewardCount={rewardMap[post.id] || 0}
         commentsOpen={!!commentsPanelPostId}
         scrollContainerRef={scrollContainerRef}
+        people={peopleRow}
+        onSelectPerson={setSelectedPerson}
       />
     </div>
 ))}
@@ -524,55 +549,6 @@ useEffect(() => {
   );
 }
 
-function PeopleRow({
-  people,
-  onSelect,
-}: {
-  people: PeopleCardUser[];
-  onSelect: (p: PeopleCardUser) => void;
-}) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 12,
-        left: 0,
-        right: 0,
-        zIndex: 60,
-        display: "flex",
-        gap: 10,
-        padding: "0 14px",
-        overflowX: "auto",
-        scrollbarWidth: "none",
-        msOverflowStyle: "none",
-      }}
-      className="no-scrollbar"
-    >
-      {people.map((p) => (
-        <button
-          key={p.handle}
-          onClick={() => onSelect(p)}
-          aria-label={`Open ${p.handle}`}
-          style={{
-            flexShrink: 0,
-            width: 44,
-            height: 44,
-            borderRadius: "50%",
-            padding: 0,
-            border: p.isLive
-              ? "2px solid #F5C518"
-              : "1px solid rgba(255,255,255,0.18)",
-            background: p.avatarUrl
-              ? `url(${p.avatarUrl}) center/cover`
-              : "linear-gradient(135deg, #1a2030, #0a0e18)",
-            cursor: "pointer",
-            boxShadow: p.isLive ? "0 0 12px rgba(245,197,24,0.35)" : "none",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 const Post = memo(function Post({
   post,
   liked,
@@ -591,6 +567,8 @@ const Post = memo(function Post({
   rewardCount,
   commentsOpen,
   scrollContainerRef,
+  people,
+  onSelectPerson,
 }: {
   post: any;
   liked: boolean;
@@ -609,6 +587,8 @@ const Post = memo(function Post({
   rewardCount: number;
   commentsOpen: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
+  people: PeopleCardUser[];
+  onSelectPerson: (p: PeopleCardUser) => void;
 }) {
   const router = useRouter();
   const [showBurst, setShowBurst] = useState(false);
@@ -923,39 +903,717 @@ const Post = memo(function Post({
         </div>
       )}
 
-      {!commentsOpen && !post.isLive && (
-        <RightRail
-          liked={liked}
+      {!commentsOpen && (
+        <FeedOverlay
+          post={post}
+          voltage={voltage}
+          people={people}
+          onSelectPerson={onSelectPerson}
           onLike={handleInteract}
           onComment={handleOpenComments}
           onShare={handleShare}
           onReward={handleReward}
           onCreate={handleCreate}
-          onGoLive={onGoLive}
+          liked={liked}
           rewardCount={rewardCount}
-          avatarUrl={post.avatarUrl}
-          username={post.handle ? `@${post.handle}` : undefined}
-          ringTier={post.ringTier}
         />
-      )}
-
-      {post.caption && !post.isLive && (
-        <div
-          style={{
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          <PostCaption
-            username={post.handle || "user"}
-            caption={post.caption}
-            avatarUrl={post.avatarUrl}
-            postId={String(post.id)}
-            latestComment={post.latestComment ?? null}
-            ringTier={post.ringTier}
-          />
-        </div>
       )}
     </div>
   );
 });
+
+function TopChrome() {
+  const [tranche, setTranche] = useState(false);
+  return (
+    <>
+      <button
+        onClick={() => setTranche((t) => !t)}
+        aria-label="Toggle wordmark"
+        style={{
+          position: "absolute",
+          top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+          left: 14,
+          zIndex: 80,
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          color: "rgba(255,255,255,0.95)",
+          fontSize: 11,
+          fontWeight: 700,
+          fontFamily: "monospace",
+          letterSpacing: "0.22em",
+          cursor: "pointer",
+        }}
+      >
+        {tranche ? "TRANCHE" : "REVOLVR"}
+      </button>
+      <div
+        style={{
+          position: "absolute",
+          top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+          right: 14,
+          zIndex: 80,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
+        <span
+          style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: "#ff2d55",
+            boxShadow: "0 0 8px rgba(255,45,85,0.7)",
+            animation: "topLivePulse 1.4s ease-in-out infinite",
+          }}
+        />
+        <span
+          style={{
+            fontSize: 9,
+            fontWeight: 700,
+            fontFamily: "monospace",
+            letterSpacing: "0.22em",
+            color: "#ff2d55",
+          }}
+        >
+          LIVE
+        </span>
+      </div>
+      <style>{`
+        @keyframes topLivePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.4); }
+        }
+      `}</style>
+    </>
+  );
+}
+
+function VoltageSpark({ size = 11, color = GOLD }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z" />
+    </svg>
+  );
+}
+
+function FeedOverlay({
+  post,
+  voltage,
+  people,
+  onSelectPerson,
+  onLike,
+  onComment,
+  onShare: _onShare,
+  onReward,
+  onCreate,
+  liked,
+  rewardCount: _rewardCount,
+}: {
+  post: any;
+  voltage: number;
+  people: PeopleCardUser[];
+  onSelectPerson: (p: PeopleCardUser) => void;
+  onLike: () => void;
+  onComment: () => void;
+  onShare: () => void;
+  onReward: () => void;
+  onCreate: () => void;
+  liked: boolean;
+  rewardCount: number;
+}) {
+  const [tickedVoltage, setTickedVoltage] = useState(voltage);
+  useEffect(() => {
+    setTickedVoltage(voltage);
+    const id = window.setInterval(() => {
+      setTickedVoltage((v) => v + (Math.random() > 0.55 ? 1 : 0));
+    }, 1800);
+    return () => window.clearInterval(id);
+  }, [voltage]);
+
+  const [trancheVisible, setTrancheVisible] = useState(false);
+  const [trancheDismissed, setTrancheDismissed] = useState(false);
+  useEffect(() => {
+    if (voltage > 80 && !trancheDismissed) setTrancheVisible(true);
+  }, [voltage, trancheDismissed]);
+
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  const flashTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
+  const showFlash = useCallback((msg: string) => {
+    setFlashMessage(msg);
+    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+    flashTimerRef.current = window.setTimeout(() => setFlashMessage(null), 900);
+  }, []);
+  useEffect(() => () => {
+    if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
+  }, []);
+
+  const handleAction = useCallback(
+    (key: ActionKey) => {
+      switch (key) {
+        case "LIKE":
+          onLike();
+          showFlash(liked ? "UNLIKED" : "LIKED");
+          break;
+        case "COMMENT":
+          onComment();
+          break;
+        case "GIFT":
+          onReward();
+          showFlash("GIFT SENT");
+          break;
+        case "CREATE":
+          onCreate();
+          break;
+        case "REPOST":
+          showFlash("REPOSTED");
+          break;
+        case "SAVE":
+          showFlash("SAVED");
+          break;
+      }
+    },
+    [onLike, onComment, onReward, onCreate, liked, showFlash],
+  );
+
+  return (
+    <>
+      {flashMessage && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 50,
+            padding: "8px 18px",
+            background: "rgba(6,10,15,0.85)",
+            border: `1px solid ${GOLD}`,
+            color: GOLD,
+            fontFamily: "monospace",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.24em",
+            borderRadius: 999,
+            pointerEvents: "none",
+            animation: "flashPulse 0.9s ease-out",
+          }}
+        >
+          {flashMessage}
+        </div>
+      )}
+
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 30,
+          padding: "0 10px 24px",
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)",
+          background:
+            "linear-gradient(0deg, rgba(6,10,15,0.97) 0%, rgba(6,10,15,0.58) 62%, transparent 100%)",
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 10,
+          pointerEvents: "none",
+        }}
+      >
+        {/* LEFT COLUMN */}
+        <div
+          style={{
+            width: 58,
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+            pointerEvents: "auto",
+          }}
+        >
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              border: "1.5px solid rgba(245,197,24,0.45)",
+              background: post.avatarUrl
+                ? `url(${post.avatarUrl}) center/cover`
+                : "linear-gradient(135deg, #1a2030, #0a0e18)",
+              boxSizing: "border-box",
+            }}
+          />
+          <div
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              fontFamily: "monospace",
+              color: "#fff",
+              letterSpacing: "0.04em",
+              maxWidth: 58,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {post.handle ? `@${post.handle}` : "@user"}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 3,
+              color: GOLD,
+              fontFamily: "monospace",
+              fontSize: 11,
+              fontWeight: 700,
+            }}
+          >
+            <VoltageSpark size={10} />
+            {tickedVoltage}
+          </div>
+          {post.isLive && (
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: "#ff2d55",
+                  boxShadow: "0 0 6px rgba(255,45,85,0.8)",
+                  animation: "feedLivePulse 1.2s ease-in-out infinite",
+                }}
+              />
+              <span
+                style={{
+                  fontSize: 8,
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  color: "#ff2d55",
+                  letterSpacing: "0.2em",
+                }}
+              >
+                LIVE
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* MIDDLE COLUMN */}
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            position: "relative",
+            pointerEvents: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
+          {trancheVisible && (
+            <TrancheCard
+              post={post}
+              voltage={tickedVoltage}
+              onDismiss={() => {
+                setTrancheVisible(false);
+                setTrancheDismissed(true);
+              }}
+            />
+          )}
+          <div style={{ position: "relative", maxHeight: 120 }}>
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 18,
+                background:
+                  "linear-gradient(180deg, rgba(6,10,15,1) 0%, transparent 100%)",
+                pointerEvents: "none",
+                zIndex: 1,
+              }}
+            />
+            <div
+              style={{
+                maxHeight: 120,
+                overflowY: "auto",
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+                padding: "8px 2px 0",
+                fontSize: 11,
+                lineHeight: 1.55,
+                color: "rgba(255,255,255,0.86)",
+                fontFamily:
+                  '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif',
+              }}
+              className="no-scrollbar"
+            >
+              {post.caption || ""}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div
+          style={{
+            width: 120,
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+            pointerEvents: "auto",
+          }}
+        >
+          <PeopleCylinder people={people} onOpen={onSelectPerson} />
+          <div
+            style={{
+              width: "60%",
+              height: 1,
+              background: "rgba(255,255,255,0.06)",
+            }}
+          />
+          <ActionCylinder onAction={handleAction} liked={liked} />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes feedLivePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(1.5); }
+        }
+        @keyframes flashPulse {
+          0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
+          30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); }
+        }
+      `}</style>
+    </>
+  );
+}
+
+function TrancheCard({
+  post,
+  voltage,
+  onDismiss,
+}: {
+  post: any;
+  voltage: number;
+  onDismiss: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        border: `1px solid ${GOLD}`,
+        borderRadius: 12,
+        padding: "8px 28px 8px 10px",
+        background: "rgba(245,197,24,0.06)",
+        boxShadow: "0 6px 24px rgba(245,197,24,0.18)",
+        fontFamily: "monospace",
+        animation: "trancheFade 240ms ease-out",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+        <VoltageSpark size={10} />
+        <span style={{ fontSize: 8, color: GOLD, letterSpacing: "0.24em", fontWeight: 700 }}>
+          TRANCHE
+        </span>
+        <span style={{ marginLeft: "auto", fontSize: 9, color: GOLD, fontWeight: 700 }}>
+          ⚡ {voltage}
+        </span>
+      </div>
+      <div
+        style={{
+          fontSize: 10,
+          color: "rgba(255,255,255,0.86)",
+          lineHeight: 1.5,
+        }}
+      >
+        {post.latestComment ?? "Voltage threshold reached — this post is trending."}
+      </div>
+      <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>
+        @{post.handle ?? "user"}
+      </div>
+      <button
+        onClick={onDismiss}
+        aria-label="Dismiss tranche"
+        style={{
+          position: "absolute",
+          top: 4,
+          right: 4,
+          width: 18,
+          height: 18,
+          borderRadius: "50%",
+          background: "transparent",
+          border: "none",
+          color: "rgba(255,255,255,0.55)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          padding: 0,
+        }}
+      >
+        <X size={12} />
+      </button>
+      <style>{`
+        @keyframes trancheFade {
+          0% { opacity: 0; transform: translateY(4px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+const PEOPLE_SIZES = [17, 22, 27, 22, 17];
+const PEOPLE_OPACITIES = [0.35, 0.6, 1, 0.6, 0.35];
+
+function PeopleCylinder({
+  people,
+  onOpen,
+}: {
+  people: PeopleCardUser[];
+  onOpen: (p: PeopleCardUser) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const touchStartRef = useRef<number | null>(null);
+
+  const total = people.length;
+  const visible = useMemo(() => {
+    if (total === 0) return [];
+    const out: (PeopleCardUser | null)[] = [];
+    for (let offset = -2; offset <= 2; offset += 1) {
+      const i = ((index + offset) % total + total) % total;
+      out.push(people[i] ?? null);
+    }
+    return out;
+  }, [people, index, total]);
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartRef.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartRef.current;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 24 || total === 0) return;
+    setIndex((i) => (i + (dx < 0 ? 1 : -1) + total) % total);
+  };
+
+  if (total === 0) {
+    return (
+      <div
+        style={{
+          height: 36,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 8,
+          fontFamily: "monospace",
+          color: "rgba(255,255,255,0.25)",
+          letterSpacing: "0.2em",
+        }}
+      >
+        NO PEOPLE
+      </div>
+    );
+  }
+
+  const centre = visible[2];
+
+  return (
+    <div
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      style={{
+        width: "100%",
+        height: 40,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 4,
+        userSelect: "none",
+      }}
+    >
+      {visible.map((p, i) => {
+        const size = PEOPLE_SIZES[i];
+        const opacity = PEOPLE_OPACITIES[i];
+        const isCentre = i === 2;
+        return (
+          <button
+            key={`${p?.handle ?? "empty"}-${i}`}
+            onClick={() => {
+              if (isCentre && p) onOpen(p);
+            }}
+            aria-label={isCentre && p ? `Open ${p.handle}` : undefined}
+            style={{
+              width: size,
+              height: size,
+              borderRadius: "50%",
+              padding: 0,
+              border: isCentre
+                ? `1.5px solid ${GOLD}`
+                : "1px solid rgba(255,255,255,0.15)",
+              background: p?.avatarUrl
+                ? `url(${p.avatarUrl}) center/cover`
+                : "linear-gradient(135deg, #1a2030, #0a0e18)",
+              opacity,
+              boxShadow: isCentre ? "0 0 12px rgba(245,197,24,0.55)" : "none",
+              transition: "all 240ms ease",
+              cursor: isCentre ? "pointer" : "default",
+              flexShrink: 0,
+            }}
+          />
+        );
+      })}
+      <span style={{ display: "none" }}>{centre?.handle}</span>
+    </div>
+  );
+}
+
+function ActionCylinder({
+  onAction,
+  liked,
+}: {
+  onAction: (k: ActionKey) => void;
+  liked: boolean;
+}) {
+  const [index, setIndex] = useState(0);
+  const total = ACTION_KEYS.length;
+  const touchStartRef = useRef<number | null>(null);
+
+  const rotateBy = (dir: 1 | -1) => {
+    setIndex((i) => (i + dir + total) % total);
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    touchStartRef.current = e.touches[0].clientX;
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartRef.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartRef.current;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 24) return;
+    rotateBy(dx < 0 ? 1 : -1);
+  };
+
+  const activeKey = ACTION_KEYS[index];
+  const { Icon: ActiveIcon, glow: activeGlow } = ACTION_ICONS[activeKey];
+  const prevKey = ACTION_KEYS[(index - 1 + total) % total];
+  const nextKey = ACTION_KEYS[(index + 1) % total];
+  const { Icon: PrevIcon } = ACTION_ICONS[prevKey];
+  const { Icon: NextIcon } = ACTION_ICONS[nextKey];
+
+  const isLiked = liked && activeKey === "LIKE";
+
+  return (
+    <div
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+      style={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 4,
+        userSelect: "none",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          height: 32,
+          perspective: 200,
+        }}
+      >
+        <button
+          onClick={() => rotateBy(-1)}
+          aria-label="Previous action"
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 2,
+            color: "rgba(255,255,255,0.4)",
+            cursor: "pointer",
+            display: "flex",
+          }}
+        >
+          <ChevronLeft size={14} />
+        </button>
+        <div
+          style={{
+            opacity: 0.28,
+            transform: "rotateY(-55deg)",
+            transformOrigin: "right center",
+          }}
+        >
+          <PrevIcon size={16} color="rgba(255,255,255,0.85)" />
+        </div>
+        <button
+          onClick={() => onAction(activeKey)}
+          aria-label={activeKey}
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            display: "flex",
+            transform: "rotateY(0deg)",
+            transition: "transform 280ms cubic-bezier(0.4,0.8,0.2,1)",
+            filter: `drop-shadow(0 0 8px ${activeGlow})`,
+          }}
+          key={activeKey}
+        >
+          <ActiveIcon
+            size={21}
+            color={isLiked ? activeGlow : "#fff"}
+            fill={isLiked ? activeGlow : "none"}
+          />
+        </button>
+        <div
+          style={{
+            opacity: 0.28,
+            transform: "rotateY(55deg)",
+            transformOrigin: "left center",
+          }}
+        >
+          <NextIcon size={16} color="rgba(255,255,255,0.85)" />
+        </div>
+        <button
+          onClick={() => rotateBy(1)}
+          aria-label="Next action"
+          style={{
+            background: "transparent",
+            border: "none",
+            padding: 2,
+            color: "rgba(255,255,255,0.4)",
+            cursor: "pointer",
+            display: "flex",
+          }}
+        >
+          <ChevronRight size={14} />
+        </button>
+      </div>
+      <span
+        style={{
+          fontFamily: "monospace",
+          fontSize: 8,
+          letterSpacing: "0.22em",
+          color: "rgba(255,255,255,0.6)",
+        }}
+      >
+        {activeKey}
+      </span>
+    </div>
+  );
+}
