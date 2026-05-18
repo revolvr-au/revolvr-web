@@ -9,6 +9,7 @@ import CommentsPanel from "@/components/CommentsPanel";
 import { useRouter } from "next/navigation";
 import VideoPlayer from "@/components/VideoPlayer";
 import MediaCarousel from "@/components/MediaCarousel";
+import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
 
 type AnalyticsPayload = {
   surface: string;
@@ -119,6 +120,28 @@ export default function PublicFeedClient() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const firstPostRef = useRef<HTMLDivElement | null>(null);
   const [hasFirstPostRendered, setHasFirstPostRendered] = useState(false);
+  const [peopleRow, setPeopleRow] = useState<PeopleCardUser[]>([]);
+  const [selectedPerson, setSelectedPerson] = useState<PeopleCardUser | null>(null);
+
+  useEffect(() => {
+    fetch("/api/people-rail")
+      .then((r) => r.json())
+      .then((data) => {
+        const merged: PeopleCardUser[] = [
+          ...(Array.isArray(data.live) ? data.live : []),
+          ...(Array.isArray(data.creators) ? data.creators : []),
+          ...(Array.isArray(data.newPeople) ? data.newPeople : []),
+        ];
+        const seen = new Set<string>();
+        const deduped = merged.filter((p) => {
+          if (!p?.handle || seen.has(p.handle)) return false;
+          seen.add(p.handle);
+          return true;
+        });
+        setPeopleRow(deduped);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -438,6 +461,9 @@ useEffect(() => {
     overflow: "hidden"
   }}
 >
+        {peopleRow.length > 0 && (
+          <PeopleRow people={peopleRow} onSelect={setSelectedPerson} />
+        )}
         <div
   ref={scrollContainerRef}
   onScroll={handleFeedScroll}
@@ -490,6 +516,60 @@ useEffect(() => {
           onClose={() => setCommentsPanelPostId(null)}
         />
       )}
+
+      {selectedPerson && (
+        <PeopleCard user={selectedPerson} onClose={() => setSelectedPerson(null)} />
+      )}
+    </div>
+  );
+}
+
+function PeopleRow({
+  people,
+  onSelect,
+}: {
+  people: PeopleCardUser[];
+  onSelect: (p: PeopleCardUser) => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        left: 0,
+        right: 0,
+        zIndex: 60,
+        display: "flex",
+        gap: 10,
+        padding: "0 14px",
+        overflowX: "auto",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+      }}
+      className="no-scrollbar"
+    >
+      {people.map((p) => (
+        <button
+          key={p.handle}
+          onClick={() => onSelect(p)}
+          aria-label={`Open ${p.handle}`}
+          style={{
+            flexShrink: 0,
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            padding: 0,
+            border: p.isLive
+              ? "2px solid #F5C518"
+              : "1px solid rgba(255,255,255,0.18)",
+            background: p.avatarUrl
+              ? `url(${p.avatarUrl}) center/cover`
+              : "linear-gradient(135deg, #1a2030, #0a0e18)",
+            cursor: "pointer",
+            boxShadow: p.isLive ? "0 0 12px rgba(245,197,24,0.35)" : "none",
+          }}
+        />
+      ))}
     </div>
   );
 }
