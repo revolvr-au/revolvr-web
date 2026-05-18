@@ -947,45 +947,6 @@ function TopChrome() {
       >
         {tranche ? "TRANCHE" : "REVOLVR"}
       </button>
-      <div
-        style={{
-          position: "absolute",
-          top: "calc(env(safe-area-inset-top, 0px) + 14px)",
-          right: 14,
-          zIndex: 80,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        <span
-          style={{
-            width: 7,
-            height: 7,
-            borderRadius: "50%",
-            background: "#ff2d55",
-            boxShadow: "0 0 8px rgba(255,45,85,0.7)",
-            animation: "topLivePulse 1.4s ease-in-out infinite",
-          }}
-        />
-        <span
-          style={{
-            fontSize: 9,
-            fontWeight: 700,
-            fontFamily: "monospace",
-            letterSpacing: "0.22em",
-            color: "#ff2d55",
-          }}
-        >
-          LIVE
-        </span>
-      </div>
-      <style>{`
-        @keyframes topLivePulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(1.4); }
-        }
-      `}</style>
     </>
   );
 }

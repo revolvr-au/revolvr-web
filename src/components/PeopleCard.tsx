@@ -442,13 +442,13 @@ export default function PeopleCard({
         {/* PROFILE SECTION */}
         <div style={{ position: "relative", padding: "22px 16px 8px", zIndex: 10 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ position: "relative", width: 88, height: 88 }}>
+            <div style={{ position: "relative", width: 80, height: 80 }}>
               {/* Avatar */}
               <div
                 data-people-card="avatar"
                 style={{
-                  width: 88,
-                  height: 88,
+                  width: 80,
+                  height: 80,
                   borderRadius: "50%",
                   border: `1px solid ${avatarBorder}`,
                   background: user.avatarUrl
