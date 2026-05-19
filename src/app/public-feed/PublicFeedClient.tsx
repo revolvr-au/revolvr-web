@@ -1144,6 +1144,7 @@ function FeedOverlay({
           alignItems: "flex-end",
           gap: 10,
           pointerEvents: "none",
+          touchAction: "pan-y",
         }}
       >
         {/* LEFT COLUMN */}
@@ -1441,16 +1442,15 @@ function PeopleCylinder({
 
   const onTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation();
-    if (e.cancelable) e.preventDefault();
     touchStartRef.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
     e.stopPropagation();
-    if (e.cancelable) e.preventDefault();
     if (touchStartRef.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartRef.current;
     touchStartRef.current = null;
-    if (Math.abs(dx) < 24 || total === 0) return;
+    // Tap (<=10px) — let the native click fire on the centre button.
+    if (Math.abs(dx) <= 10 || total === 0) return;
     setIndex((i) => (i + (dx < 0 ? 1 : -1) + total) % total);
   };
 
@@ -1488,7 +1488,7 @@ function PeopleCylinder({
         justifyContent: "center",
         gap: 4,
         userSelect: "none",
-        touchAction: "none",
+        touchAction: "pan-y",
       }}
     >
       {visible.map((p, i) => {
@@ -1556,16 +1556,15 @@ function ActionCylinder({
 
   const onTouchStart = (e: React.TouchEvent) => {
     e.stopPropagation();
-    if (e.cancelable) e.preventDefault();
     touchStartRef.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
     e.stopPropagation();
-    if (e.cancelable) e.preventDefault();
     if (touchStartRef.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartRef.current;
     touchStartRef.current = null;
-    if (Math.abs(dx) < 24) return;
+    // Tap (<=10px) — let the native click fire on the active button.
+    if (Math.abs(dx) <= 10) return;
     rotateBy(dx < 0 ? 1 : -1);
   };
 
@@ -1591,7 +1590,7 @@ function ActionCylinder({
         alignItems: "center",
         gap: 4,
         userSelect: "none",
-        touchAction: "none",
+        touchAction: "pan-y",
       }}
     >
       <div
