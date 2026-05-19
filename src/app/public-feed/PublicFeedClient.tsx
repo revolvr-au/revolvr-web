@@ -305,6 +305,16 @@ useEffect(() => {
     return () => observer.disconnect();
   }, [visiblePosts.length, hasFirstPostRendered]);
 
+  // Skeleton fallback: the skeleton is the first scroll-snap item, so the
+  // first post sits below the fold and the IntersectionObserver never trips
+  // until the user manually scrolls. Force-resolve after 2s once we know
+  // posts are loaded so the feed is never permanently masked by the skeleton.
+  useEffect(() => {
+    if (hasFirstPostRendered || posts.length === 0) return;
+    const t = window.setTimeout(() => setHasFirstPostRendered(true), 2000);
+    return () => window.clearTimeout(t);
+  }, [posts.length, hasFirstPostRendered]);
+
   // Ranking philosophy:
   // 1. Voltage is the baseline public energy signal
   // 2. Direct interaction is the strongest session signal
@@ -1410,9 +1420,13 @@ function PeopleCylinder({
   }, [people, index, total]);
 
   const onTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
     touchStartRef.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
     if (touchStartRef.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartRef.current;
     touchStartRef.current = null;
@@ -1445,6 +1459,7 @@ function PeopleCylinder({
     <div
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
+      onTouchMove={(e) => e.stopPropagation()}
       style={{
         width: "100%",
         height: 40,
@@ -1453,6 +1468,7 @@ function PeopleCylinder({
         justifyContent: "center",
         gap: 4,
         userSelect: "none",
+        touchAction: "none",
       }}
     >
       {visible.map((p, i) => {
@@ -1519,9 +1535,13 @@ function ActionCylinder({
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
     touchStartRef.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault();
     if (touchStartRef.current == null) return;
     const dx = e.changedTouches[0].clientX - touchStartRef.current;
     touchStartRef.current = null;
@@ -1543,6 +1563,7 @@ function ActionCylinder({
     <div
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
+      onTouchMove={(e) => e.stopPropagation()}
       style={{
         width: "100%",
         display: "flex",
@@ -1550,6 +1571,7 @@ function ActionCylinder({
         alignItems: "center",
         gap: 4,
         userSelect: "none",
+        touchAction: "none",
       }}
     >
       <div
