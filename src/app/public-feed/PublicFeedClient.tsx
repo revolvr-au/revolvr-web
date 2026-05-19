@@ -84,6 +84,9 @@ const getStableNoise = (key: string) => {
 let feedCache: { posts: any[]; ts: number } | null = null;
 const FEED_CACHE_TTL = 30_000;
 
+// Module-level so dismissals survive Post unmount/remount during scroll.
+const dismissedTranches = new Set<string>();
+
 function PostSkeleton() {
   return (
     <div
@@ -1021,10 +1024,17 @@ function FeedOverlay({
     return () => window.clearInterval(id);
   }, [voltage]);
 
+  const trancheKey = String(post.id ?? "");
   const [trancheVisible, setTrancheVisible] = useState(false);
-  const [trancheDismissed, setTrancheDismissed] = useState(false);
+  const [trancheDismissed, setTrancheDismissed] = useState(() =>
+    dismissedTranches.has(trancheKey),
+  );
   useEffect(() => {
-    if (voltage > 80 && !trancheDismissed) setTrancheVisible(true);
+    if (trancheDismissed) return;
+    if (voltage <= 500) return;
+    // 5s earn-in delay so TRANCHE feels like it climbed there, not a load artefact.
+    const t = window.setTimeout(() => setTrancheVisible(true), 5000);
+    return () => window.clearTimeout(t);
   }, [voltage, trancheDismissed]);
 
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
@@ -1233,6 +1243,7 @@ function FeedOverlay({
               post={post}
               voltage={tickedVoltage}
               onDismiss={() => {
+                dismissedTranches.add(trancheKey);
                 setTrancheVisible(false);
                 setTrancheDismissed(true);
               }}
@@ -1358,7 +1369,16 @@ function TrancheCard({
           lineHeight: 1.5,
         }}
       >
-        {post.latestComment ?? "Voltage threshold reached — this post is trending."}
+        {(() => {
+          // API returns latestComment as { id, body, userEmail } | null.
+          const body =
+            typeof post.latestComment === "string"
+              ? post.latestComment
+              : post.latestComment?.body;
+          return body && body.length > 10
+            ? body
+            : "Voltage threshold reached — this post is trending.";
+        })()}
       </div>
       <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>
         @{post.handle ?? "user"}
