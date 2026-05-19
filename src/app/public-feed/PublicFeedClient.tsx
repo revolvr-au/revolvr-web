@@ -1022,7 +1022,23 @@ function FeedOverlay({
           break;
         case "GIFT":
           onReward();
-          showFlash("GIFT SENT");
+          if (post.isLive && post.liveStreamId) {
+            fetch("/api/live/gift", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                giftId: "pulse",
+                streamId: post.liveStreamId,
+                creatorEmail: post.userEmail,
+              }),
+            })
+              .then((r) => {
+                showFlash(r.ok ? "GIFT SENT" : "NOT ENOUGH SPARKS");
+              })
+              .catch(() => showFlash("NOT ENOUGH SPARKS"));
+          } else {
+            showFlash("GIFT SENT");
+          }
           break;
         case "CREATE":
           onCreate();
@@ -1035,7 +1051,7 @@ function FeedOverlay({
           break;
       }
     },
-    [onLike, onComment, onReward, onCreate, liked, showFlash],
+    [onLike, onComment, onReward, onCreate, liked, showFlash, post],
   );
 
   return (
