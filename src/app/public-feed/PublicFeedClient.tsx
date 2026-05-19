@@ -603,11 +603,9 @@ const Post = memo(function Post({
   }, [post.isLive, post.avatarUrl]);
   const boostTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const burstTimeoutRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
-  const MAX_VOLTAGE = 100;
   const BOOST_AMOUNT = 20;
   const postId = String(post.id ?? "");
-  const baseVoltage = post.voltage || 0;
-  const voltage = Math.min(baseVoltage + localBoost, MAX_VOLTAGE);
+  const voltage = (post.voltage || 0) + localBoost;
   const voltageScale =
     voltage > 80
       ? "scale-[1.008]"
@@ -1008,8 +1006,8 @@ function FeedOverlay({
   useEffect(() => {
     setTickedVoltage(voltage);
     const id = window.setInterval(() => {
-      setTickedVoltage((v) => v + (Math.random() > 0.55 ? 1 : 0));
-    }, 1800);
+      setTickedVoltage((v) => v + 1);
+    }, 8000);
     return () => window.clearInterval(id);
   }, [voltage]);
 
@@ -1577,7 +1575,9 @@ function ActionCylinder({
             display: "flex",
             transform: "rotateY(0deg)",
             transition: "transform 280ms cubic-bezier(0.4,0.8,0.2,1)",
-            filter: `drop-shadow(0 0 8px ${activeGlow})`,
+            filter: isLiked
+              ? `drop-shadow(0 0 8px #ff4d6d)`
+              : `drop-shadow(0 0 4px rgba(255,255,255,0.3))`,
           }}
           key={activeKey}
         >
