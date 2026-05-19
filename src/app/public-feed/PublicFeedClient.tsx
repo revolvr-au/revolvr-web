@@ -937,16 +937,36 @@ function TopChrome() {
           background: "transparent",
           border: "none",
           padding: 0,
-          color: "rgba(255,255,255,0.95)",
-          fontSize: 11,
+          color: tranche ? GOLD : "rgba(255,255,255,0.95)",
+          fontSize: 14,
           fontWeight: 700,
           fontFamily: "monospace",
-          letterSpacing: "0.22em",
+          letterSpacing: "0.28em",
           cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          textShadow: tranche
+            ? `0 0 10px ${GOLD}, 0 0 18px rgba(245,197,24,0.55)`
+            : "none",
         }}
       >
+        <span
+          style={{
+            display: "inline-flex",
+            animation: "voltPulse 2s ease-in-out infinite",
+          }}
+        >
+          <VoltageSpark size={8} />
+        </span>
         {tranche ? "TRANCHE" : "REVOLVR"}
       </button>
+      <style>{`
+        @keyframes voltPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.45; transform: scale(1.18); }
+        }
+      `}</style>
     </>
   );
 }
