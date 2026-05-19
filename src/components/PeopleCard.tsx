@@ -36,6 +36,15 @@ const ORBIT_RADIUS = 115;
 const ROTATION_DEG_PER_SEC = 8;
 const SLOTS = 6;
 
+const SLOT_TINTS = [
+  "rgba(30,20,50,0.95)",
+  "rgba(20,35,50,0.95)",
+  "rgba(20,45,30,0.95)",
+  "rgba(50,25,15,0.95)",
+  "rgba(50,15,20,0.95)",
+  "rgba(30,30,15,0.95)",
+];
+
 function PlayIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.75)">
@@ -437,19 +446,30 @@ export default function PeopleCard({
               zIndex: 5,
             }}
           >
+            <defs>
+              <path
+                id="peopleCardSpokePath"
+                d={`M${spoke.from.x} ${spoke.from.y} L${spoke.to.x} ${spoke.to.y}`}
+              />
+            </defs>
             <line
               x1={spoke.from.x}
               y1={spoke.from.y}
               x2={spoke.to.x}
               y2={spoke.to.y}
-              stroke={GOLD}
-              strokeWidth="1.2"
+              stroke="rgba(245,197,24,0.9)"
+              strokeWidth="1.8"
               strokeDasharray="4 4"
               strokeLinecap="round"
               style={{
                 animation: "peopleCardDashMove 0.9s linear infinite",
               }}
             />
+            <circle r="3" fill="#F5C518" opacity="0.8">
+              <animateMotion dur="0.8s" repeatCount="indefinite">
+                <mpath href="#peopleCardSpokePath" />
+              </animateMotion>
+            </circle>
           </svg>
         )}
 
@@ -462,6 +482,51 @@ export default function PeopleCard({
             zIndex: 10,
           }}
         >
+          {/* Orbit ring track */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              width: ORBIT_RADIUS * 2,
+              height: ORBIT_RADIUS * 2,
+              left: `calc(50% - ${ORBIT_RADIUS}px)`,
+              top: `calc(50% - ${ORBIT_RADIUS}px)`,
+              borderRadius: "50%",
+              border: "1px solid rgba(245,197,24,0.12)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              width: ORBIT_RADIUS * 2 - 4,
+              height: ORBIT_RADIUS * 2 - 4,
+              left: `calc(50% - ${ORBIT_RADIUS - 2}px)`,
+              top: `calc(50% - ${ORBIT_RADIUS - 2}px)`,
+              borderRadius: "50%",
+              border: "1px solid rgba(245,197,24,0.05)",
+              pointerEvents: "none",
+            }}
+          />
+
+          {/* Avatar presence glow */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              width: 140,
+              height: 140,
+              left: "calc(50% - 70px)",
+              top: "calc(50% - 70px)",
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(245,197,24,0.12) 0%, rgba(245,197,24,0.04) 50%, transparent 70%)",
+              pointerEvents: "none",
+              animation: "avatarPulse 3s ease-in-out infinite",
+            }}
+          />
+
           {/* Centred avatar wrapper */}
           <div
             style={{
@@ -591,23 +656,26 @@ export default function PeopleCard({
                   position: "absolute",
                   left: "50%",
                   top: "50%",
-                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.3 : 1})`,
                   width: 44,
                   height: 44,
                   borderRadius: 10,
-                  background: "rgba(22,28,40,0.95)",
-                  border: isTimed
+                  background: SLOT_TINTS[i % 6],
+                  border: isActive
+                    ? `1.5px solid rgba(245,197,24,0.9)`
+                    : isTimed
                     ? `1px solid rgba(245,197,24,0.55)`
-                    : isActive
-                    ? `1px solid rgba(245,197,24,0.6)`
                     : "1px solid rgba(255,255,255,0.06)",
+                  boxShadow: isActive
+                    ? "0 0 20px rgba(245,197,24,0.4), 0 0 40px rgba(245,197,24,0.15)"
+                    : "none",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
                   padding: 0,
                   animation: isTimed ? "peopleCardTimedGlow 2.2s ease-in-out infinite" : "none",
-                  transition: "border 180ms ease",
+                  transition: "all 220ms cubic-bezier(0.34,1.56,0.64,1)",
                   boxSizing: "border-box",
                 }}
               >
@@ -623,7 +691,7 @@ export default function PeopleCard({
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            padding: "0 16px 8px",
+            padding: "16px 16px 8px",
             zIndex: 10,
             position: "relative",
           }}
@@ -855,6 +923,10 @@ export default function PeopleCard({
           @keyframes peopleCardScan {
             0% { background-position: 0 0; }
             100% { background-position: 0 60px; }
+          }
+          @keyframes avatarPulse {
+            0%, 100% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.15); opacity: 1; }
           }
         `}</style>
       </div>
