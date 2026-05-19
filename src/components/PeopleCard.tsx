@@ -32,11 +32,8 @@ const LINK_STATES: LinkState[] = ["LINK", "WATCHING", "CONSIDERING", "LINKED"];
 
 const GOLD = "#F5C518";
 
-const SLOT_SCALES = [0.72, 0.88, 1.0, 1.0, 0.88, 0.72];
-
-const ARC_START = 195;
-const ARC_END = 345;
-const ARC_RADIUS = 118;
+const ORBIT_RADIUS = 115;
+const ROTATION_DEG_PER_SEC = 8;
 const SLOTS = 6;
 
 function PlayIcon({ size = 16 }: { size?: number }) {
@@ -217,6 +214,8 @@ export default function PeopleCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const [avatarCenter, setAvatarCenter] = useState<{ x: number; y: number } | null>(null);
   const [slotCenters, setSlotCenters] = useState<Record<number, { x: number; y: number }>>({});
+  const [rotation, setRotation] = useState(0);
+  const rafRef = useRef<number | null>(null);
 
   const linkState: LinkState = LINK_STATES[linkStateIndex];
   const isLinked = linkState === "LINKED";
@@ -333,6 +332,21 @@ export default function PeopleCard({
     setSlotCenters(newSlots);
   }, [activeSlot, posts.length]);
 
+  useEffect(() => {
+    if (activeSlot !== null) return;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      setRotation((r) => (r + ROTATION_DEG_PER_SEC * dt) % 360);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, [activeSlot]);
+
   const activePost = activeSlot != null ? posts[activeSlot] : null;
   const spoke = activeSlot != null && avatarCenter && slotCenters[activeSlot]
     ? { from: avatarCenter, to: slotCenters[activeSlot] }
@@ -439,145 +453,132 @@ export default function PeopleCard({
           </svg>
         )}
 
-        {/* PROFILE SECTION */}
-        <div style={{ position: "relative", padding: "22px 16px 8px", zIndex: 10 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ position: "relative", width: 80, height: 80 }}>
-              {/* Avatar */}
-              <div
-                data-people-card="avatar"
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  border: `1px solid ${avatarBorder}`,
-                  background: user.avatarUrl
-                    ? `url(${user.avatarUrl}) center/cover`
-                    : "linear-gradient(135deg, #1a2030 0%, #0a0e18 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 28,
-                  color: "rgba(255,255,255,0.5)",
-                  fontWeight: 700,
-                  transition: "border 220ms ease",
-                  boxSizing: "border-box",
-                }}
-              >
-                {!user.avatarUrl && initial}
-              </div>
-
-              {/* Voltage badge */}
-              <div
-                style={{
-                  position: "absolute",
-                  right: -4,
-                  bottom: -2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  padding: "3px 8px",
-                  borderRadius: 999,
-                  background: "linear-gradient(135deg, #f5c518 0%, #d9a700 100%)",
-                  color: "#0a0e16",
-                  fontSize: 9,
-                  fontWeight: 800,
-                  letterSpacing: "0.05em",
-                  boxShadow: "0 4px 10px rgba(245,197,24,0.32)",
-                }}
-              >
-                <SparkIcon size={9} color="#0a0e16" />
-                {user.voltage ?? 0}
-              </div>
-
-              {/* BIO badge */}
-              <button
-                onClick={handleBio}
-                style={{
-                  position: "absolute",
-                  top: -4,
-                  left: -10,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "3px 8px",
-                  borderRadius: 999,
-                  background: "rgba(10,14,22,0.95)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  cursor: "pointer",
-                  fontFamily: "monospace",
-                  color: "#fff",
-                  animation: bioPlaying ? "peopleCardBioPulse 1.2s ease-out" : "none",
-                }}
-              >
-                <span
-                  style={{
-                    width: 5,
-                    height: 5,
-                    borderRadius: "50%",
-                    background: bioPlaying ? GOLD : "rgba(255,255,255,0.5)",
-                  }}
-                />
-                <span style={{ fontSize: 7, letterSpacing: "0.18em", color: "rgba(255,255,255,0.7)" }}>
-                  BIO
-                </span>
-                {bioPlaying ? (
-                  <span style={{ display: "flex", alignItems: "center", gap: 1.5, height: 8 }}>
-                    {[0, 1, 2, 3].map((i) => (
-                      <span
-                        key={i}
-                        style={{
-                          display: "block",
-                          width: 1.5,
-                          height: 6,
-                          background: GOLD,
-                          borderRadius: 1,
-                          animation: `peopleCardWaveBar 0.6s ease-in-out ${i * 0.08}s infinite`,
-                        }}
-                      />
-                    ))}
-                  </span>
-                ) : (
-                  <span style={{ fontSize: 8, color: "rgba(255,255,255,0.55)" }}>{bioCount}</span>
-                )}
-              </button>
-            </div>
-
-            <div
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                color: "#fff",
-                marginTop: 12,
-                letterSpacing: "0.02em",
-              }}
-            >
-              {user.displayName ?? user.handle}
-            </div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
-              @{user.handle}
-            </div>
-
-            {isLinked && <VoltageFlow from={user.voltage ?? 0} to={(user.voltage ?? 0) + 88} />}
-          </div>
-        </div>
-
-        {/* ORBIT ARC */}
+        {/* ORBIT ZONE - centred avatar + 6 posts revolving on a 360° ring */}
         <div
           style={{
             position: "relative",
-            height: 130,
-            margin: "8px 0 4px",
+            height: 260,
+            margin: "10px 0 0",
             zIndex: 10,
           }}
         >
+          {/* Centred avatar wrapper */}
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 100,
+              height: 100,
+            }}
+          >
+            {/* Avatar */}
+            <div
+              data-people-card="avatar"
+              style={{
+                width: 100,
+                height: 100,
+                borderRadius: "50%",
+                border: `1px solid ${avatarBorder}`,
+                background: user.avatarUrl
+                  ? `url(${user.avatarUrl}) center/cover`
+                  : "linear-gradient(135deg, #1a2030 0%, #0a0e18 100%)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 34,
+                color: "rgba(255,255,255,0.5)",
+                fontWeight: 700,
+                transition: "border 220ms ease",
+                boxSizing: "border-box",
+              }}
+            >
+              {!user.avatarUrl && initial}
+            </div>
+
+            {/* Voltage badge */}
+            <div
+              style={{
+                position: "absolute",
+                right: -6,
+                bottom: -2,
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "3px 8px",
+                borderRadius: 999,
+                background: "linear-gradient(135deg, #f5c518 0%, #d9a700 100%)",
+                color: "#0a0e16",
+                fontSize: 9,
+                fontWeight: 800,
+                letterSpacing: "0.05em",
+                boxShadow: "0 4px 10px rgba(245,197,24,0.32)",
+              }}
+            >
+              <SparkIcon size={9} color="#0a0e16" />
+              {user.voltage ?? 0}
+            </div>
+
+            {/* BIO badge */}
+            <button
+              onClick={handleBio}
+              style={{
+                position: "absolute",
+                top: -4,
+                left: -10,
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "3px 8px",
+                borderRadius: 999,
+                background: "rgba(10,14,22,0.95)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                cursor: "pointer",
+                fontFamily: "monospace",
+                color: "#fff",
+                animation: bioPlaying ? "peopleCardBioPulse 1.2s ease-out" : "none",
+              }}
+            >
+              <span
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: "50%",
+                  background: bioPlaying ? GOLD : "rgba(255,255,255,0.5)",
+                }}
+              />
+              <span style={{ fontSize: 7, letterSpacing: "0.18em", color: "rgba(255,255,255,0.7)" }}>
+                BIO
+              </span>
+              {bioPlaying ? (
+                <span style={{ display: "flex", alignItems: "center", gap: 1.5, height: 8 }}>
+                  {[0, 1, 2, 3].map((i) => (
+                    <span
+                      key={i}
+                      style={{
+                        display: "block",
+                        width: 1.5,
+                        height: 6,
+                        background: GOLD,
+                        borderRadius: 1,
+                        animation: `peopleCardWaveBar 0.6s ease-in-out ${i * 0.08}s infinite`,
+                      }}
+                    />
+                  ))}
+                </span>
+              ) : (
+                <span style={{ fontSize: 8, color: "rgba(255,255,255,0.55)" }}>{bioCount}</span>
+              )}
+            </button>
+          </div>
+
+          {/* 6 posts revolving on a full 360° ring */}
           {posts.map((post, i) => {
-            const t = SLOTS === 1 ? 0.5 : i / (SLOTS - 1);
-            const angle = ARC_START + (ARC_END - ARC_START) * t;
-            const rad = (angle * Math.PI) / 180;
-            const x = Math.cos(rad) * ARC_RADIUS;
-            const y = Math.sin(rad) * ARC_RADIUS;
-            const scale = SLOT_SCALES[i] ?? 0.72;
+            const angleDeg = i * 60 + rotation;
+            const rad = (angleDeg * Math.PI) / 180;
+            const x = Math.cos(rad) * ORBIT_RADIUS;
+            const y = Math.sin(rad) * ORBIT_RADIUS;
             const isTimed = post.type === "timed";
             const isActive = activeSlot === i;
 
@@ -589,10 +590,10 @@ export default function PeopleCard({
                 style={{
                   position: "absolute",
                   left: "50%",
-                  top: 0,
-                  transform: `translate(calc(-50% + ${x}px), ${y + ARC_RADIUS - 8}px) scale(${scale})`,
-                  width: 46,
-                  height: 62,
+                  top: "50%",
+                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+                  width: 44,
+                  height: 44,
                   borderRadius: 10,
                   background: "rgba(22,28,40,0.95)",
                   border: isTimed
@@ -606,7 +607,7 @@ export default function PeopleCard({
                   cursor: "pointer",
                   padding: 0,
                   animation: isTimed ? "peopleCardTimedGlow 2.2s ease-in-out infinite" : "none",
-                  transition: "border 180ms ease, transform 240ms ease",
+                  transition: "border 180ms ease",
                   boxSizing: "border-box",
                 }}
               >
@@ -614,6 +615,34 @@ export default function PeopleCard({
               </button>
             );
           })}
+        </div>
+
+        {/* Name + handle BELOW orbit zone */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "0 16px 8px",
+            zIndex: 10,
+            position: "relative",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: "#fff",
+              letterSpacing: "0.02em",
+            }}
+          >
+            {user.displayName ?? user.handle}
+          </div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
+            @{user.handle}
+          </div>
+
+          {isLinked && <VoltageFlow from={user.voltage ?? 0} to={(user.voltage ?? 0) + 88} />}
         </div>
 
         {/* Detail strip */}
