@@ -103,6 +103,7 @@ export async function GET() {
         createdAt: p.createdAt,
         latestComment,
         ringTier,
+        voltage: p.voltage ?? 0,
         // Live fields
         isLive: p.postType === "LIVE" && (live?.status === "ACTIVE" || (!!(p as any).ivsPlaybackUrl && !(p as any).liveEndedAt)),
         liveStreamId: live?.id ?? null,
