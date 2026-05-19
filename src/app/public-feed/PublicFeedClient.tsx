@@ -1018,6 +1018,7 @@ function FeedOverlay({
   }, [voltage, trancheDismissed]);
 
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  const [giftPending, setGiftPending] = useState(false);
   const flashTimerRef = useRef<ReturnType<typeof window.setTimeout> | null>(null);
   const showFlash = useCallback((msg: string) => {
     setFlashMessage(msg);
@@ -1039,8 +1040,10 @@ function FeedOverlay({
           onComment();
           break;
         case "GIFT":
-          onReward();
+          if (giftPending) break;
           if (post.isLive && post.liveStreamId) {
+            onReward();
+            setGiftPending(true);
             fetch("/api/live/gift", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1050,12 +1053,19 @@ function FeedOverlay({
                 creatorEmail: post.userEmail,
               }),
             })
-              .then((r) => {
-                showFlash(r.ok ? "GIFT SENT" : "NOT ENOUGH SPARKS");
+              .then(async (r) => {
+                if (r.ok) {
+                  showFlash("⚡ GIFT SENT");
+                  return;
+                }
+                const body = (await r.json().catch(() => ({}))) as { error?: string };
+                const msg = typeof body.error === "string" ? body.error : "";
+                showFlash(/sparks/i.test(msg) ? "NOT ENOUGH SPARKS" : "GIFT FAILED");
               })
-              .catch(() => showFlash("NOT ENOUGH SPARKS"));
+              .catch(() => showFlash("GIFT FAILED"))
+              .finally(() => setGiftPending(false));
           } else {
-            showFlash("GIFT SENT");
+            showFlash("GIFTS FOR LIVE STREAMS");
           }
           break;
         case "CREATE":
@@ -1069,7 +1079,7 @@ function FeedOverlay({
           break;
       }
     },
-    [onLike, onComment, onReward, onCreate, liked, showFlash, post],
+    [onLike, onComment, onReward, onCreate, liked, showFlash, post, giftPending],
   );
 
   return (
@@ -1273,7 +1283,11 @@ function FeedOverlay({
               background: "rgba(255,255,255,0.06)",
             }}
           />
-          <ActionCylinder onAction={handleAction} liked={liked} />
+          <ActionCylinder
+            onAction={handleAction}
+            liked={liked}
+            giftPending={giftPending}
+          />
         </div>
       </div>
 
@@ -1286,6 +1300,10 @@ function FeedOverlay({
           0% { opacity: 0; transform: translate(-50%, -50%) scale(0.85); }
           30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
           100% { opacity: 0; transform: translate(-50%, -50%) scale(1.04); }
+        }
+        @keyframes giftPending {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.7; }
         }
       `}</style>
     </>
@@ -1486,9 +1504,11 @@ function PeopleCylinder({
 function ActionCylinder({
   onAction,
   liked,
+  giftPending,
 }: {
   onAction: (k: ActionKey) => void;
   liked: boolean;
+  giftPending: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const total = ACTION_KEYS.length;
@@ -1517,6 +1537,7 @@ function ActionCylinder({
   const { Icon: NextIcon } = ACTION_ICONS[nextKey];
 
   const isLiked = liked && activeKey === "LIKE";
+  const isGiftPending = giftPending && activeKey === "GIFT";
 
   return (
     <div
@@ -1565,19 +1586,28 @@ function ActionCylinder({
           <PrevIcon size={16} color="rgba(255,255,255,0.85)" />
         </div>
         <button
-          onClick={() => onAction(activeKey)}
+          onClick={() => {
+            if (isGiftPending) return;
+            onAction(activeKey);
+          }}
           aria-label={activeKey}
+          aria-busy={isGiftPending}
+          disabled={isGiftPending}
           style={{
             background: "transparent",
             border: "none",
             padding: 0,
-            cursor: "pointer",
+            cursor: isGiftPending ? "wait" : "pointer",
             display: "flex",
             transform: "rotateY(0deg)",
             transition: "transform 280ms cubic-bezier(0.4,0.8,0.2,1)",
+            opacity: isGiftPending ? 0.4 : 1,
             filter: isLiked
               ? `drop-shadow(0 0 8px #ff4d6d)`
               : `drop-shadow(0 0 4px rgba(255,255,255,0.3))`,
+            animation: isGiftPending
+              ? "giftPending 1s ease-in-out infinite"
+              : undefined,
           }}
           key={activeKey}
         >
