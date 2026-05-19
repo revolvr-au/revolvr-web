@@ -223,7 +223,8 @@ export default function PeopleCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const [avatarCenter, setAvatarCenter] = useState<{ x: number; y: number } | null>(null);
   const [slotCenters, setSlotCenters] = useState<Record<number, { x: number; y: number }>>({});
-  const [rotation, setRotation] = useState(0);
+  const rotationRef = useRef(0);
+  const orbitWrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
   const linkState: LinkState = LINK_STATES[linkStateIndex];
@@ -347,7 +348,10 @@ export default function PeopleCard({
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
-      setRotation((r) => (r + ROTATION_DEG_PER_SEC * dt) % 360);
+      rotationRef.current = (rotationRef.current + ROTATION_DEG_PER_SEC * dt) % 360;
+      if (orbitWrapperRef.current) {
+        orbitWrapperRef.current.style.transform = `rotateZ(${rotationRef.current}deg)`;
+      }
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -638,51 +642,62 @@ export default function PeopleCard({
             </button>
           </div>
 
-          {/* 6 posts revolving on a full 360° ring */}
-          {posts.map((post, i) => {
-            const angleDeg = i * 60 + rotation;
-            const rad = (angleDeg * Math.PI) / 180;
-            const x = Math.cos(rad) * ORBIT_RADIUS;
-            const y = Math.sin(rad) * ORBIT_RADIUS;
-            const isTimed = post.type === "timed";
-            const isActive = activeSlot === i;
+          {/* 6 posts revolving on a full 360° ring — wrapper rotates via ref, no re-renders */}
+          <div
+            ref={orbitWrapperRef}
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              willChange: "transform",
+            }}
+          >
+            {posts.map((post, i) => {
+              const angleDeg = i * 60;
+              const rad = (angleDeg * Math.PI) / 180;
+              const x = Math.cos(rad) * ORBIT_RADIUS;
+              const y = Math.sin(rad) * ORBIT_RADIUS;
+              const isTimed = post.type === "timed";
+              const isActive = activeSlot === i;
 
-            return (
-              <button
-                key={post.id}
-                data-slot={i}
-                onClick={() => handleSlot(i)}
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: "50%",
-                  transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.3 : 1})`,
-                  width: 44,
-                  height: 44,
-                  borderRadius: 10,
-                  background: SLOT_TINTS[i % 6],
-                  border: isActive
-                    ? `1.5px solid rgba(245,197,24,0.9)`
-                    : isTimed
-                    ? `1px solid rgba(245,197,24,0.55)`
-                    : "1px solid rgba(255,255,255,0.06)",
-                  boxShadow: isActive
-                    ? "0 0 20px rgba(245,197,24,0.4), 0 0 40px rgba(245,197,24,0.15)"
-                    : "none",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  padding: 0,
-                  animation: isTimed ? "peopleCardTimedGlow 2.2s ease-in-out infinite" : "none",
-                  transition: "all 220ms cubic-bezier(0.34,1.56,0.64,1)",
-                  boxSizing: "border-box",
-                }}
-              >
-                <PostSlotIcon type={post.type} />
-              </button>
-            );
-          })}
+              return (
+                <button
+                  key={post.id}
+                  data-slot={i}
+                  onClick={() => handleSlot(i)}
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "50%",
+                    transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.3 : 1})`,
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: SLOT_TINTS[i % 6],
+                    border: isActive
+                      ? `1.5px solid rgba(245,197,24,0.9)`
+                      : isTimed
+                      ? `1px solid rgba(245,197,24,0.55)`
+                      : "1px solid rgba(255,255,255,0.06)",
+                    boxShadow: isActive
+                      ? "0 0 20px rgba(245,197,24,0.4), 0 0 40px rgba(245,197,24,0.15)"
+                      : "none",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    padding: 0,
+                    animation: isTimed ? "peopleCardTimedGlow 2.2s ease-in-out infinite" : "none",
+                    transition: "all 220ms cubic-bezier(0.34,1.56,0.64,1)",
+                    boxSizing: "border-box",
+                    pointerEvents: "auto",
+                  }}
+                >
+                  <PostSlotIcon type={post.type} />
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Name + handle BELOW orbit zone */}

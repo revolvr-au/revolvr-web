@@ -1411,7 +1411,17 @@ function PeopleCylinder({
           <button
             key={`${p?.handle ?? "empty"}-${i}`}
             onClick={() => {
-              if (isCentre && p) onOpen(p);
+              if (isCentre && p) {
+                onOpen({
+                  ...p,
+                  mutuals: [{ handle: "aj" }, { handle: "ms" }],
+                  recentLinkers: [
+                    { handle: "kr" },
+                    { handle: "tl" },
+                    { handle: "yc" },
+                  ],
+                });
+              }
             }}
             aria-label={isCentre && p ? `Open ${p.handle}` : undefined}
             style={{
