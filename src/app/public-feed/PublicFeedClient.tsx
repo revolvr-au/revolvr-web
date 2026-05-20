@@ -1178,8 +1178,8 @@ function FeedOverlay({
               onOpenControlPanel(post.userEmail || post.id);
             }}
             style={{
-              width: 42,
-              height: 42,
+              width: 50,
+              height: 50,
               borderRadius: "50%",
               border: "1.5px solid rgba(245,197,24,0.45)",
               background: post.avatarUrl

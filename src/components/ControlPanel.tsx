@@ -116,11 +116,43 @@ export default function ControlPanel({
 
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: "auto", position: "relative", zIndex: 1, paddingBottom: 24 }} className="no-scrollbar">
-          <div style={{ padding: "16px 20px 8px" }}>
-            <p style={{ fontSize: 13, color: "#888", margin: 0, fontFamily: "monospace" }}>
-              Viewing: <span style={{ color: "#00e5ff" }}>{userId}</span>
-            </p>
-          </div>
+          <button
+            onClick={() => navigate(handle ? `/u/${handle}` : `/u/${userId?.split('@')[0] || 'user'}`)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: "16px 20px",
+              background: "rgba(255, 255, 255, 0.03)",
+              border: "none",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+              width: "100%",
+              textAlign: "left",
+              cursor: "pointer",
+              transition: "background 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)")}
+          >
+            <div
+              style={{
+                width: 50,
+                height: 50,
+                borderRadius: "50%",
+                border: "1.5px solid rgba(0, 229, 255, 0.4)",
+                background: "linear-gradient(135deg, #1a2030, #0a0e18)",
+                flexShrink: 0,
+              }}
+            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ color: "#fff", fontSize: 16, fontWeight: 700, fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", letterSpacing: "0.02em" }}>
+                {handle ? `@${handle}` : "View Profile"}
+              </span>
+              <span style={{ color: "rgba(0, 229, 255, 0.8)", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.05em" }}>
+                {userId}
+              </span>
+            </div>
+          </button>
 
           <MenuDivider />
 
