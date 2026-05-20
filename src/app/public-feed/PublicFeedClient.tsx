@@ -1434,7 +1434,7 @@ function TrancheCard({
   );
 }
 
-const PEOPLE_SIZES = [17, 22, 27, 22, 17];
+const PEOPLE_SIZES = [20, 26, 34, 26, 20];
 const PEOPLE_OPACITIES = [0.35, 0.6, 1, 0.6, 0.35];
 
 function PeopleCylinder({
@@ -1617,7 +1617,7 @@ function ActionCylinder({
           alignItems: "center",
           justifyContent: "center",
           gap: 6,
-          height: 32,
+          height: 40,
           perspective: 200,
         }}
       >
@@ -1633,7 +1633,7 @@ function ActionCylinder({
             display: "flex",
           }}
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={18} />
         </button>
         <div
           style={{
@@ -1642,7 +1642,7 @@ function ActionCylinder({
             transformOrigin: "right center",
           }}
         >
-          <PrevIcon size={16} color="rgba(255,255,255,0.85)" />
+          <PrevIcon size={20} color="rgba(255,255,255,0.85)" />
         </div>
         <button
           onClick={() => {
@@ -1671,7 +1671,7 @@ function ActionCylinder({
           key={activeKey}
         >
           <ActiveIcon
-            size={21}
+            size={26}
             color={isLiked ? activeGlow : "#fff"}
             fill={isLiked ? activeGlow : "none"}
           />
@@ -1683,7 +1683,7 @@ function ActionCylinder({
             transformOrigin: "left center",
           }}
         >
-          <NextIcon size={16} color="rgba(255,255,255,0.85)" />
+          <NextIcon size={20} color="rgba(255,255,255,0.85)" />
         </div>
         <button
           onClick={() => rotateBy(1)}
@@ -1697,7 +1697,7 @@ function ActionCylinder({
             display: "flex",
           }}
         >
-          <ChevronRight size={14} />
+          <ChevronRight size={18} />
         </button>
       </div>
       <span
