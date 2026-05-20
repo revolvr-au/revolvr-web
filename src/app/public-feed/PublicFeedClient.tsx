@@ -16,6 +16,7 @@ import {
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import CommentsPanel from "@/components/CommentsPanel";
 import { useRouter } from "next/navigation";
+import ControlPanel from "@/components/ControlPanel";
 import VideoPlayer from "@/components/VideoPlayer";
 import MediaCarousel from "@/components/MediaCarousel";
 import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
@@ -142,6 +143,7 @@ export default function PublicFeedClient() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isCreator, setIsCreator] = useState(false);
   const [commentsPanelPostId, setCommentsPanelPostId] = useState<string | null>(null);
+  const [controlPanelUserId, setControlPanelUserId] = useState<string | null>(null);
   const userEmailRef = useRef<string | null>(null);
   const [rewardMap, setRewardMap] = useState<Record<string, number>>({});
   const stableNoiseRef = useRef<Record<string, number>>({});
@@ -539,6 +541,7 @@ useEffect(() => {
         isNext={i === activeIndex + 1}
         rewardCount={rewardMap[post.id] || 0}
         commentsOpen={!!commentsPanelPostId}
+        onOpenControlPanel={(userId) => setControlPanelUserId(userId)}
         scrollContainerRef={scrollContainerRef}
         people={peopleRow}
         onSelectPerson={setSelectedPerson}
@@ -549,10 +552,15 @@ useEffect(() => {
 
       {commentsPanelPostId && (
         <CommentsPanel
+          open={!!commentsPanelPostId}
           postId={commentsPanelPostId}
           userEmail={userEmail}
           onClose={() => setCommentsPanelPostId(null)}
         />
+      )}
+
+      {controlPanelUserId && (
+        <ControlPanel userId={controlPanelUserId} onClose={() => setControlPanelUserId(null)} />
       )}
 
       {selectedPerson && (
@@ -581,6 +589,7 @@ const Post = memo(function Post({
   commentsOpen,
   scrollContainerRef,
   people,
+  onOpenControlPanel,
   onSelectPerson,
 }: {
   post: any;
@@ -601,6 +610,7 @@ const Post = memo(function Post({
   commentsOpen: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
   people: PeopleCardUser[];
+  onOpenControlPanel: (userId: string) => void;
   onSelectPerson: (p: PeopleCardUser) => void;
 }) {
   const router = useRouter();
@@ -925,6 +935,7 @@ const Post = memo(function Post({
           onShare={handleShare}
           onReward={handleReward}
           onCreate={handleCreate}
+          onOpenControlPanel={onOpenControlPanel}
           liked={liked}
           rewardCount={rewardCount}
         />
@@ -1000,6 +1011,7 @@ function FeedOverlay({
   onShare: _onShare,
   onReward,
   onCreate,
+  onOpenControlPanel,
   liked,
   rewardCount: _rewardCount,
 }: {
@@ -1012,6 +1024,7 @@ function FeedOverlay({
   onShare: () => void;
   onReward: () => void;
   onCreate: () => void;
+  onOpenControlPanel: (userId: string) => void;
   liked: boolean;
   rewardCount: number;
 }) {
@@ -1160,6 +1173,10 @@ function FeedOverlay({
           }}
         >
           <div
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenControlPanel(post.userEmail || post.id);
+            }}
             style={{
               width: 42,
               height: 42,
@@ -1169,6 +1186,7 @@ function FeedOverlay({
                 ? `url(${post.avatarUrl}) center/cover`
                 : "linear-gradient(135deg, #1a2030, #0a0e18)",
               boxSizing: "border-box",
+              cursor: "pointer",
             }}
           />
           <div

@@ -1,37 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { X, SendHorizontal } from "lucide-react";
 import CommentsList from "@/components/CommentsList";
+import SlideUpSheet from "./SlideUpSheet";
 
 const REACTIONS = ["🔥", "⚡", "👀", "💎", "🎯"];
 
 export default function CommentsPanel({
   postId,
   onClose,
+  open,
   userEmail,
 }: {
   postId: string;
   onClose: () => void;
+  open: boolean;
   userEmail: string | null;
 }) {
-  const [visible, setVisible] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [replyTo, setReplyTo] = useState<{ id: string; userEmail: string } | null>(null);
   const [tappedReaction, setTappedReaction] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
-
-  const panelRef = useRef<HTMLDivElement>(null);
-  const handleRef = useRef<HTMLDivElement>(null);
-  const dragStartY = useRef<number | null>(null);
-  const isDragging = dragOffset > 0;
-
-  // Mount animation — one frame delay so transition fires
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setVisible(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   // iOS keyboard: reposition + resize panel via direct DOM so React state
   // doesn't cause a delayed re-render that lets the panel jump first.
@@ -55,11 +45,6 @@ export default function CommentsPanel({
       window.visualViewport?.removeEventListener("scroll", handler);
     };
   }, []);
-
-  const dismiss = useCallback(() => {
-    setVisible(false);
-    setTimeout(onClose, 220);
-  }, [onClose]);
 
   const sendComment = useCallback(
     async (body: string) => {
@@ -90,109 +75,33 @@ export default function CommentsPanel({
     [sendComment],
   );
 
-  // Drag handle gesture
-  const onHandlePointerDown = useCallback((e: React.PointerEvent) => {
-    dragStartY.current = e.clientY;
-    handleRef.current?.setPointerCapture(e.pointerId);
-  }, []);
-
-  const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (dragStartY.current === null) return;
-    const delta = e.clientY - dragStartY.current;
-    if (delta > 0) setDragOffset(delta);
-  }, []);
-
-  const onHandlePointerUp = useCallback(() => {
-    if (dragOffset > 120) {
-      dismiss();
-    } else {
-      setDragOffset(0);
-    }
-    dragStartY.current = null;
-  }, [dragOffset, dismiss]);
-
-  const panelOpacity = isDragging ? Math.max(0, 1 - dragOffset / 280) : visible ? 1 : 0;
-  const panelTransform = isDragging
-    ? `scale(1) translateY(${dragOffset}px)`
-    : visible
-    ? "scale(1) translateY(0)"
-    : "scale(0.95) translateY(0)";
-
   return (
-    <div
-      onClick={dismiss}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 200,
-      }}
-    >
+    <SlideUpSheet open={open} onClose={onClose} id="comments-panel">
       <div
-        id="comments-panel"
-        ref={panelRef}
-        onClick={(e) => e.stopPropagation()}
         style={{
-          position: "fixed",
-          left: 0,
-          right: 0,
-          top: "12.5dvh",
-          width: "100%",
-          height: "75dvh",
-          maxHeight: "75vh",
           display: "flex",
           flexDirection: "column",
           background: "rgba(5, 8, 20, 0.75)",
           backdropFilter: "blur(40px)",
           WebkitBackdropFilter: "blur(40px)",
           border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 24,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
           overflow: "hidden",
           boxShadow: "0 0 60px rgba(0,229,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
-          transition: isDragging ? "none" : "transform 0.22s ease, opacity 0.22s ease",
-          transform: panelTransform,
-          opacity: panelOpacity,
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-          willChange: "transform, opacity",
+          height: "75dvh",
         }}
       >
         {/* Scanlines overlay */}
         <div style={{
           position: "absolute",
           inset: 0,
-          borderRadius: 24,
           pointerEvents: "none",
           zIndex: 0,
           backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)",
           opacity: 0.4,
         }} />
-
-        {/* Drag handle */}
-        <div
-          ref={handleRef}
-          onPointerDown={onHandlePointerDown}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={onHandlePointerUp}
-          style={{
-            flexShrink: 0,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingTop: 12,
-            paddingBottom: 8,
-            cursor: "grab",
-            touchAction: "none",
-            userSelect: "none",
-          }}
-        >
-          <div
-            style={{
-              width: 36,
-              height: 4,
-              borderRadius: 2,
-              background: "rgba(255,255,255,0.2)",
-            }}
-          />
-        </div>
 
         {/* Header */}
         <div
@@ -206,7 +115,7 @@ export default function CommentsPanel({
         >
           <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "rgba(255,255,255,0.9)" }}>Comments</span>
           <button
-            onClick={dismiss}
+            onClick={onClose}
             type="button"
             style={{
               width: 28,
@@ -259,7 +168,6 @@ export default function CommentsPanel({
             flexShrink: 0,
             background: "rgba(0,0,0,0.4)",
             borderTop: "1px solid rgba(0,229,255,0.1)",
-            borderRadius: "0 0 24px 24px",
             padding: "12px 16px",
             paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
             display: "flex",
@@ -379,6 +287,6 @@ export default function CommentsPanel({
           </div>
         </div>
       </div>
-    </div>
+    </SlideUpSheet>
   );
 }
