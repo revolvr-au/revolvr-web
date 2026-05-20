@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChevronLeft, Zap } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 export default function CreatePage() {
@@ -13,6 +14,8 @@ export default function CreatePage() {
   const [statusMsg, setStatusMsg] = useState("");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [mode, setMode] = useState<"UPLOAD" | "LIVE">("UPLOAD");
+  const [isTranche, setIsTranche] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -137,11 +140,18 @@ export default function CreatePage() {
   return (
     <div style={{
       minHeight: "100dvh",
-      background: "#0a0806",
+      background: "rgba(5, 8, 20, 1)",
       color: "white",
       display: "flex",
       flexDirection: "column",
+      fontFamily: "monospace",
     }}>
+      <style>{`
+        @keyframes pulse-target {
+          0%, 100% { transform: scale(1); opacity: 0.8; }
+          50% { transform: scale(1.1); opacity: 0.3; }
+        }
+      `}</style>
       {/* TOP NAV */}
       <div style={{
         display: "flex",
@@ -152,29 +162,54 @@ export default function CreatePage() {
       }}>
         <button
           onClick={() => router.back()}
-          style={{ background: "none", border: "none", color: "white", fontSize: 22, cursor: "pointer" }}
-        >←</button>
+          style={{ background: "none", border: "none", color: "white", cursor: "pointer", padding: 0 }}
+        ><ChevronLeft size={24} /></button>
         <div style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 16,
-          letterSpacing: 6,
-          color: "white",
-        }}>REVOLVR</div>
-        <div style={{ width: 32 }} />
+          fontSize: 12,
+          letterSpacing: 2,
+          color: "rgba(255,255,255,0.7)",
+        }}>[ COMMAND CENTER ]</div>
+        <div style={{ width: 24 }} />
+      </div>
+
+      {/* MODE SWITCHER */}
+      <div style={{ display: "flex", gap: 10, padding: "0 20px 16px" }}>
+        <button onClick={() => setMode("UPLOAD")} style={{
+          flex: 1, padding: "10px", fontSize: 11, letterSpacing: 1, fontFamily: "inherit", cursor: "pointer",
+          background: mode === "UPLOAD" ? "rgba(0,229,255,0.1)" : "transparent",
+          border: `1px solid ${mode === "UPLOAD" ? "#00e5ff" : "rgba(255,255,255,0.2)"}`,
+          color: mode === "UPLOAD" ? "#00e5ff" : "rgba(255,255,255,0.5)",
+          textShadow: mode === "UPLOAD" ? "0 0 8px rgba(0,229,255,0.5)" : "none",
+          transition: "all 0.2s"
+        }}>[ SECURE UPLOAD ]</button>
+        <button onClick={() => setMode("LIVE")} style={{
+          flex: 1, padding: "10px", fontSize: 11, letterSpacing: 1, fontFamily: "inherit", cursor: "pointer",
+          background: mode === "LIVE" ? "rgba(0,229,255,0.1)" : "transparent",
+          border: `1px solid ${mode === "LIVE" ? "#00e5ff" : "rgba(255,255,255,0.2)"}`,
+          color: mode === "LIVE" ? "#00e5ff" : "rgba(255,255,255,0.5)",
+          textShadow: mode === "LIVE" ? "0 0 8px rgba(0,229,255,0.5)" : "none",
+          transition: "all 0.2s"
+        }}>[ GO LIVE ]</button>
       </div>
 
       {/* PREVIEW */}
       <div style={{
-        width: "100%",
+        margin: "0 20px",
+        width: "calc(100% - 40px)",
         aspectRatio: "9/16",
         maxHeight: "60dvh",
-        background: "rgba(255,255,255,0.03)",
-        border: "1px dashed rgba(255,255,255,0.15)",
+        background: "rgba(0,229,255,0.02)",
+        border: "1px solid rgba(0,229,255,0.3)",
+        boxShadow: "inset 0 0 20px rgba(0,229,255,0.05), 0 0 10px rgba(0,229,255,0.1)",
         position: "relative",
         overflow: "hidden",
         flexShrink: 0,
       }}>
-        {previews.length === 0 ? (
+        {mode === "LIVE" ? (
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.4)" }}>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", letterSpacing: 2, textAlign: "center" }}>[ AWS WEBRTC FEED OFFLINE ]</div>
+          </div>
+        ) : previews.length === 0 ? (
           <label style={{
             position: "absolute",
             inset: 0,
@@ -185,9 +220,11 @@ export default function CreatePage() {
             cursor: "pointer",
             gap: 8,
           }}>
-            <div style={{ fontSize: 36, opacity: 0.3 }}>+</div>
-            <div style={{ fontSize: 13, opacity: 0.4, fontFamily: "monospace", letterSpacing: 2 }}>
-              TAP TO UPLOAD
+            <div style={{ width: 48, height: 48, border: "1px solid rgba(0,229,255,0.4)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse-target 2s infinite" }}>
+              <div style={{ width: 6, height: 6, background: "#00e5ff", borderRadius: "50%" }} />
+            </div>
+            <div style={{ fontSize: 12, color: "#00e5ff", letterSpacing: 2, marginTop: 8 }}>
+              [ INITIATE MEDIA INGESTION ]
             </div>
             <input
               type="file"
@@ -251,55 +288,61 @@ export default function CreatePage() {
         padding: "16px 20px",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 16,
         flexShrink: 0,
       }}>
-        <div style={{
-          background: "rgba(255,255,255,0.05)",
-          border: "1px solid rgba(255,255,255,0.1)",
-          borderRadius: 16,
-          padding: "12px 16px",
+        <textarea
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="ENTER METADATA..."
+          rows={2}
+          style={{
+            width: "100%",
+            minHeight: "44px",
+            maxHeight: "100px",
+            color: "white",
+            caretColor: "white",
+            background: "rgba(0, 229, 255, 0.03)",
+            border: "1px solid rgba(0, 229, 255, 0.2)",
+            outline: "none",
+            resize: "none",
+            overflowY: "auto",
+            fontSize: 13,
+            lineHeight: 1.6,
+            fontFamily: "inherit",
+            padding: "12px",
+          }}
+        />
+
+        <div onClick={() => setIsTranche(!isTranche)} style={{
+          display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
+          border: `1px solid ${isTranche ? "#F5C518" : "rgba(255,255,255,0.1)"}`,
+          background: isTranche ? "rgba(245,197,24,0.1)" : "rgba(255,255,255,0.02)",
+          padding: "10px 12px", transition: "all 0.2s"
         }}>
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Say something about this..."
-            rows={2}
-            style={{
-              width: "100%",
-              minHeight: "44px",
-              maxHeight: "100px",
-              color: "white",
-              caretColor: "white",
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              resize: "none",
-              overflowY: "auto",
-              fontSize: 16,
-              lineHeight: 1.6,
-              fontFamily: "inherit",
-            }}
-          />
+          <Zap size={16} color={isTranche ? "#F5C518" : "rgba(255,255,255,0.4)"} />
+          <div style={{ fontSize: 12, color: isTranche ? "#F5C518" : "rgba(255,255,255,0.4)", letterSpacing: 2 }}>[ IGNITE TRANCHE ]</div>
         </div>
 
         <button
           onClick={handleSubmit}
-          disabled={!files.length || loading}
+          disabled={(mode === "UPLOAD" && !files.length) || loading}
           style={{
             width: "100%",
             padding: 14,
-            borderRadius: 999,
-            border: "none",
-            background: !files.length ? "rgba(255,255,255,0.1)" : "white",
-            color: !files.length ? "rgba(255,255,255,0.4)" : "black",
-            fontWeight: 600,
-            fontSize: 16,
+            border: "1px solid #F5C518",
+            background: "rgba(245, 197, 24, 0.15)",
+            color: "#F5C518",
+            fontWeight: "bold",
+            fontSize: 14,
             cursor: !files.length ? "not-allowed" : "pointer",
             transition: "all 0.2s ease",
+            fontFamily: "inherit",
+            letterSpacing: 2,
+            opacity: (!files.length && mode === "UPLOAD") || loading ? 0.5 : 1,
           }}
         >
-          {loadingLabel()}
+          {mode === "UPLOAD" ? (loading ? loadingLabel().toUpperCase() : "[ EXECUTE UPLOAD ]") : "[ INITIATE BROADCAST ]"}
         </button>
       </div>
     </div>
