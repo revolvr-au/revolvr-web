@@ -25,12 +25,12 @@ export default function CreatePage() {
     let activeStream: MediaStream | null = null;
     async function enableCamera() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "user" }, 
+          audio: true 
+        });
         activeStream = stream;
         setMediaStream(stream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
       } catch (err) {
         console.error("Camera access denied", err);
       }
@@ -44,6 +44,14 @@ export default function CreatePage() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (videoRef.current && mediaStream) {
+      videoRef.current.srcObject = mediaStream;
+      // Force iOS Safari to kick-start the stream rendering
+      videoRef.current.play().catch(err => console.error("iOS Video playback failed:", err));
+    }
+  }, [mediaStream]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
