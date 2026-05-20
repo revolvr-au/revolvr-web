@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Zap } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
@@ -17,6 +17,33 @@ export default function CreatePage() {
   const [mode, setMode] = useState<"UPLOAD" | "LIVE">("UPLOAD");
   const [isTranche, setIsTranche] = useState(false);
   const router = useRouter();
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+
+  useEffect(() => {
+    let activeStream: MediaStream | null = null;
+    async function enableCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+        activeStream = stream;
+        setMediaStream(stream);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (err) {
+        console.error("Camera access denied", err);
+      }
+    }
+    enableCamera();
+
+    return () => {
+      // Cleanup: kill the camera light when unmounting
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -217,7 +244,16 @@ export default function CreatePage() {
       }}>
         {mode === "LIVE" ? (
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.4)" }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", letterSpacing: 2, textAlign: "center" }}>[ AWS WEBRTC FEED OFFLINE ]</div>
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              style={{ position: "absolute", width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
+            />
+            {!mediaStream && (
+              <div style={{ position: "absolute", fontSize: 12, color: "rgba(255,255,255,0.3)", letterSpacing: 2, textAlign: "center" }}>[ AWS WEBRTC FEED OFFLINE ]</div>
+            )}
           </div>
         ) : previews.length === 0 ? (
           <label style={{
