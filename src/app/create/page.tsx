@@ -151,6 +151,16 @@ export default function CreatePage() {
           0%, 100% { transform: scale(1); opacity: 0.8; }
           50% { transform: scale(1.1); opacity: 0.3; }
         }
+        @keyframes scanner {
+          0% { top: 0; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
       `}</style>
       {/* TOP NAV */}
       <div style={{
@@ -168,7 +178,7 @@ export default function CreatePage() {
           fontSize: 12,
           letterSpacing: 2,
           color: "rgba(255,255,255,0.7)",
-        }}>[ COMMAND CENTER ]</div>
+        }}>[ AUTONOMOUS COMMAND ]</div>
         <div style={{ width: 24 }} />
       </div>
 
@@ -224,7 +234,7 @@ export default function CreatePage() {
               <div style={{ width: 6, height: 6, background: "#00e5ff", borderRadius: "50%" }} />
             </div>
             <div style={{ fontSize: 12, color: "#00e5ff", letterSpacing: 2, marginTop: 8 }}>
-              [ INITIATE MEDIA INGESTION ]
+              [ AWAITING MEDIA INGESTION ]
             </div>
             <input
               type="file"
@@ -245,6 +255,16 @@ export default function CreatePage() {
               <img src={previews[activeIndex]} alt="preview"
                 style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             )}
+            
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}>
+              <div style={{
+                position: "absolute", top: 10, left: 10, color: "#00e5ff", fontSize: 10, fontFamily: "monospace", animation: "blink 1s infinite"
+              }}>SYSTEM: ANALYZING TENSORS...</div>
+              <div style={{
+                position: "absolute", left: 0, right: 0, height: 2, background: "rgba(0, 229, 255, 0.5)", boxShadow: "0 0 10px rgba(0, 229, 255, 0.8)", animation: "scanner 3s linear infinite"
+              }} />
+            </div>
+
             {previews.length > 1 && (
               <div style={{
                 position: "absolute", bottom: 10, left: 0, right: 0,
@@ -291,28 +311,40 @@ export default function CreatePage() {
         gap: 16,
         flexShrink: 0,
       }}>
-        <textarea
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          placeholder="ENTER METADATA..."
-          rows={2}
-          style={{
-            width: "100%",
-            minHeight: "44px",
-            maxHeight: "100px",
-            color: "white",
-            caretColor: "white",
-            background: "rgba(0, 229, 255, 0.03)",
-            border: "1px solid rgba(0, 229, 255, 0.2)",
-            outline: "none",
-            resize: "none",
-            overflowY: "auto",
-            fontSize: 13,
-            lineHeight: 1.6,
-            fontFamily: "inherit",
-            padding: "12px",
-          }}
-        />
+        <div style={{
+          background: "rgba(0, 229, 255, 0.03)",
+          border: "1px solid rgba(0, 229, 255, 0.2)",
+          padding: "12px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          fontSize: 12,
+          color: "rgba(0, 229, 255, 0.8)"
+        }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ marginBottom: 4 }}>GENERATED CAPTION:</span>
+            <textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="[ Waiting for media... ]"
+              rows={2}
+              style={{
+                width: "100%",
+                color: "white",
+                caretColor: "white",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                resize: "none",
+                overflowY: "auto",
+                fontSize: 12,
+                fontFamily: "inherit",
+              }}
+            />
+          </div>
+          <div>DETECTED CLUSTER: &nbsp;[ --- ]</div>
+          <div>VOLTAGE PREDICTION: [ CALCULATING ]</div>
+        </div>
 
         <div onClick={() => setIsTranche(!isTranche)} style={{
           display: "flex", alignItems: "center", gap: 10, cursor: "pointer",
@@ -321,7 +353,7 @@ export default function CreatePage() {
           padding: "10px 12px", transition: "all 0.2s"
         }}>
           <Zap size={16} color={isTranche ? "#F5C518" : "rgba(255,255,255,0.4)"} />
-          <div style={{ fontSize: 12, color: isTranche ? "#F5C518" : "rgba(255,255,255,0.4)", letterSpacing: 2 }}>[ IGNITE TRANCHE ]</div>
+          <div style={{ fontSize: 12, color: isTranche ? "#F5C518" : "rgba(255,255,255,0.4)", letterSpacing: 2 }}>[ NEURAL TRANCHE IGNITION ]</div>
         </div>
 
         <button
@@ -342,7 +374,7 @@ export default function CreatePage() {
             opacity: (!files.length && mode === "UPLOAD") || loading ? 0.5 : 1,
           }}
         >
-          {mode === "UPLOAD" ? (loading ? loadingLabel().toUpperCase() : "[ EXECUTE UPLOAD ]") : "[ INITIATE BROADCAST ]"}
+          {loading ? loadingLabel().toUpperCase() : "[ EXECUTE DEPLOYMENT ]"}
         </button>
       </div>
     </div>
