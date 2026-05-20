@@ -51,7 +51,7 @@ export default function CreatePage() {
       // Force iOS Safari to kick-start the stream rendering
       videoRef.current.play().catch(err => console.error("iOS Video playback failed:", err));
     }
-  }, [mediaStream]);
+  }, [mediaStream, mode, previews.length]);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -267,19 +267,51 @@ export default function CreatePage() {
           <label style={{
             position: "absolute",
             inset: 0,
+            cursor: "pointer",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            cursor: "pointer",
             gap: 8,
+            background: "#000"
           }}>
-            <div style={{ width: 48, height: 48, border: "1px solid rgba(0,229,255,0.4)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse-target 2s infinite" }}>
-              <div style={{ width: 6, height: 6, background: "#00e5ff", borderRadius: "50%" }} />
+            {mediaStream && (
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  zIndex: 1,
+                  transform: "scaleX(-1)"
+                }}
+              />
+            )}
+            
+            {/* Scanning Layer and Targets forced to zIndex: 10 to mount directly on top of the face */}
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 10 }}>
+              <div style={{
+                position: "absolute", top: 10, left: 10, color: "#00e5ff", fontSize: 10, fontFamily: "monospace", animation: "blink 1s infinite"
+              }}>SYSTEM: ANALYZING TENSORS...</div>
+              <div style={{
+                position: "absolute", left: 0, right: 0, height: 2, background: "rgba(0, 229, 255, 0.5)", boxShadow: "0 0 10px rgba(0, 229, 255, 0.8)", animation: "scanner 3s linear infinite"
+              }} />
             </div>
-            <div style={{ fontSize: 12, color: "#00e5ff", letterSpacing: 2, marginTop: 8 }}>
-              [ AWAITING MEDIA INGESTION ]
+
+            <div style={{ zIndex: 10, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <div style={{ width: 48, height: 48, border: "1px solid rgba(0,229,255,0.4)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse-target 2s infinite" }}>
+                <div style={{ width: 6, height: 6, background: "#00e5ff", borderRadius: "50%" }} />
+              </div>
+              <div style={{ fontSize: 12, color: "#00e5ff", letterSpacing: 2, marginTop: 8 }}>
+                [ SENSOR ARRAY ACTIVE ]
+              </div>
             </div>
+
             <input
               type="file"
               accept="image/*,video/*"
