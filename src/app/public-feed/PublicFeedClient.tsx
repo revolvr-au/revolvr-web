@@ -470,14 +470,34 @@ useEffect(() => {
 }, [router]);
 
   const handleDoubleTapLike = useCallback((postId: string) => {
-    setLikedMap((prev) => {
-      if (prev[postId]) return prev;
+    const email = userEmailRef.current;
+    if (!email) {
+      setLikedMap((prev) => (prev[postId] ? prev : { ...prev, [postId]: true }));
+      return;
+    }
 
-      return {
-        ...prev,
-        [postId]: true,
-      };
+    let optimisticNext = false;
+    setLikedMap((prev) => {
+      optimisticNext = !prev[postId];
+      return { ...prev, [postId]: optimisticNext };
     });
+
+    fetch("/api/likes/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, userEmail: email }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`like_failed_${res.status}`);
+        const data = (await res.json().catch(() => null)) as { liked?: boolean } | null;
+        if (data && typeof data.liked === "boolean" && data.liked !== optimisticNext) {
+          setLikedMap((prev) => ({ ...prev, [postId]: data.liked! }));
+        }
+      })
+      .catch((err) => {
+        console.error("Like toggle failed:", err);
+        setLikedMap((prev) => ({ ...prev, [postId]: !optimisticNext }));
+      });
   }, []);
 
   const handleInteract = useCallback((postId: string) => {
