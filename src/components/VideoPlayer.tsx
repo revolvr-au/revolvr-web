@@ -29,6 +29,9 @@ type Props = {
 };
 
 export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrollContainerRef }: Props) {
+  // Evaluates image asset paths instantly from standard storage locations
+  const isImage = playbackId?.endsWith('.jpg') || playbackId?.endsWith('.jpeg') || playbackId?.endsWith('.png') || playbackId?.includes('image') || playbackId?.startsWith('data:');
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<any>(null);
   const loopCountRef = useRef(0);
@@ -42,12 +45,13 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
   const scrubRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
 
-  // Load HLS
+  // Load HLS Stream
   useEffect(() => {
+    if (isImage) return;
     const video = videoRef.current;
     if (!video) return;
 
-    const src = `https://stream.mux.com/${playbackId}.m3u8`;
+    const src = playbackId.startsWith('http') ? playbackId : `https://stream.mux.com/${playbackId}.m3u8`;
 
     async function initHls() {
       const Hls = (await import("hls.js")).default;
@@ -68,14 +72,15 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
       hlsRef.current?.destroy();
       hlsRef.current = null;
     };
-  }, [playbackId]);
+  }, [playbackId, isImage]);
 
   // Preload next video
   useEffect(() => {
+    if (isImage) return;
     const video = videoRef.current;
     if (!video || !isNext) return;
 
-    const src = `https://stream.mux.com/${playbackId}.m3u8`;
+    const src = playbackId.startsWith('http') ? playbackId : `https://stream.mux.com/${playbackId}.m3u8`;
 
     async function preload() {
       const Hls = (await import("hls.js")).default;
@@ -96,10 +101,11 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
         hlsRef.current = null;
       }
     };
-  }, [isNext, playbackId]);
+  }, [isNext, playbackId, isImage]);
 
-  // Play/pause based on active state
+  // Play/pause based on active stream visibility parameters
   useEffect(() => {
+    if (isImage) return;
     const video = videoRef.current;
     if (!video) return;
 
@@ -119,21 +125,22 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
       video.pause();
       video.currentTime = 0;
     }
-  }, [isActive]);
+  }, [isActive, isImage]);
 
   // Sound unlock subscription
   useEffect(() => {
     const unsub = subscribeUnlock(() => {
       setUnlocked(true);
-      if (videoRef.current && isActive) {
+      if (videoRef.current && isActive && !isImage) {
         videoRef.current.muted = false;
       }
     });
     return unsub;
-  }, [isActive]);
+  }, [isActive, isImage]);
 
-  // Progress tracking + loop counter
+  // Progress tracking + loop counter loops
   useEffect(() => {
+    if (isImage) return;
     const video = videoRef.current;
     if (!video) return;
 
@@ -160,9 +167,15 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
       video.removeEventListener("durationchange", onDurationChange);
       video.removeEventListener("ended", onEnded);
     };
-  }, []);
+  }, [isImage]);
 
   const handleTap = useCallback(() => {
+    // Immediate short-circuit exit strategy for flat image content
+    if (isImage) {
+      onTap?.();
+      return;
+    }
+
     if (!globalUnlocked) {
       triggerUnlock();
       if (videoRef.current) videoRef.current.muted = false;
@@ -193,9 +206,9 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
     }
 
     onTap?.();
-  }, [finished, onTap]);
+  }, [finished, onTap, isImage]);
 
-  // Scrubber
+  // Track scrubber manipulation
   const scrub = useCallback((clientX: number) => {
     const track = scrubRef.current;
     const video = videoRef.current;
@@ -208,12 +221,14 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
 
   const onScrubStart = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isImage) return;
     isDraggingRef.current = true;
     videoRef.current?.pause();
     scrub(e.clientX);
-  }, [scrub]);
+  }, [scrub, isImage]);
 
   useEffect(() => {
+    if (isImage) return;
     const onMove = (e: MouseEvent) => {
       if (!isDraggingRef.current) return;
       scrub(e.clientX);
@@ -243,7 +258,7 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
       window.removeEventListener("mouseup", onUp);
       window.removeEventListener("touchend", onUp);
     };
-  }, [scrub, paused, finished, scrollContainerRef]);
+  }, [scrub, paused, finished, scrollContainerRef, isImage]);
 
   const pct = duration > 0 ? (progress / duration) * 100 : 0;
 
@@ -252,23 +267,38 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
       onClick={handleTap}
       style={{ position: "absolute", inset: 0, zIndex: 0, cursor: "pointer" }}
     >
-      <video
-        ref={videoRef}
-        muted
-        playsInline
-        preload="auto"
-        poster={`https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=800`}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-        }}
-      />
+      {/* EXPLICIT CONDITIONAL FORK FOR HARDWARE CAPTURES VS BROADCAST CHANNELS */}
+      {isImage ? (
+        <img
+          src={playbackId}
+          alt="Platform feed transmission snapshot"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          muted
+          playsInline
+          preload="auto"
+          poster={playbackId.startsWith('http') ? undefined : `https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=800`}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+          }}
+        />
+      )}
 
-      {/* Pause bars */}
-      {showPauseBars && (
+      {/* Pause bars tracking */}
+      {showPauseBars && !isImage && (
         <div style={{
           position: "absolute", inset: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -287,8 +317,8 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
         </div>
       )}
 
-      {/* Tap for sound hint */}
-      {!unlocked && isActive && (
+      {/* Tap for sound hint configuration */}
+      {!unlocked && isActive && !isImage && (
         <div style={{
           position: "absolute", top: 14, right: 14,
           background: "rgba(0,0,0,0.45)",
@@ -301,8 +331,8 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
         </div>
       )}
 
-      {/* Watch again overlay */}
-      {finished && (
+      {/* Watch again overlay component */}
+      {finished && !isImage && (
         <div style={{
           position: "absolute", inset: 0,
           background: "rgba(0,0,0,0.55)",
@@ -315,68 +345,48 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
         </div>
       )}
 
-      {/* Scrubber */}
-      <div
-        style={{
-          position: "absolute", bottom: 96, left: 16, right: 80,
-          zIndex: 25, pointerEvents: "auto",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
+      {/* Primary Timeline Scrubber Control Interface */}
+      {!isImage && (
         <div
-          ref={scrubRef}
-          onMouseDown={onScrubStart}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            if (scrollContainerRef?.current) {
-              scrollContainerRef.current.style.overflowY = "hidden";
-              scrollContainerRef.current.style.scrollSnapType = "none";
-            }
-            isDraggingRef.current = true;
-            videoRef.current?.pause();
-            scrub(e.touches[0].clientX);
-          }}
           style={{
-            height: 44,
-            display: "flex",
-            alignItems: "center",
-            cursor: "pointer",
-            touchAction: "none",
+            position: "absolute", bottom: 96, left: 16, right: 80,
+            zIndex: 25, pointerEvents: "auto",
           }}
+          onClick={(e) => e.stopPropagation()}
         >
-          <div style={{
-            width: "100%", height: 2,
-            background: "rgba(255,255,255,0.2)",
-            borderRadius: 1, position: "relative",
-          }}>
+          <div
+            ref={scrubRef}
+            onMouseDown={onScrubStart}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (scrollContainerRef?.current) {
+                scrollContainerRef.current.style.overflowY = "hidden";
+                scrollContainerRef.current.style.scrollSnapType = "none";
+              }
+              isDraggingRef.current = true;
+              videoRef.current?.pause();
+              scrub(e.touches[0].clientX);
+            }}
+            style={{
+              height: 44,
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+              touchAction: "none",
+            }}
+          >
             <div style={{
-              height: "100%", width: `${pct}%`,
-              background: "rgba(255,255,255,0.85)",
+              width: "100%", height: 2,
+              background: "rgba(255,255,255,0.2)",
               borderRadius: 1, position: "relative",
             }}>
               <div style={{
-                width: 8, height: 8, borderRadius: "50%",
-                background: "#fff", position: "absolute",
-                right: -4, top: -3,
-              }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes revolvr-fade-out {
-          0% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-        @keyframes revolvr-hint-fade {
-          0% { opacity: 0; }
-          20% { opacity: 1; }
-          70% { opacity: 1; }
-          100% { opacity: 0; }
-        }
-      `}</style>
-    </div>
-  );
-}
+                height: "100%", width: `${pct}%`,
+                background: "rgba(255,255,255,0.85)",
+                borderRadius: 1, position: "relative",
+              }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: "50%",
+                  background: "#fff", position: "absolute",
+                  right: -
