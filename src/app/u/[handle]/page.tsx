@@ -76,7 +76,7 @@ export default async function ProfilePage({
   const { data: { user } } = await supabase.auth.getUser();
   const currentUserEmail = user?.email ?? null;
 
-  const [posts, recentVoltageEvents, followRecord] = await Promise.all([
+  const [posts, recentVoltageEvents, followRecord, savedCount] = await Promise.all([
     prisma.post.findMany({
       where: { userEmail: email },
       orderBy: { createdAt: "desc" },
@@ -102,6 +102,7 @@ export default async function ProfilePage({
           select: { id: true },
         })
       : Promise.resolve(null),
+    prisma.savedPost.count({ where: { userEmail: email } }),
   ]);
 
   const isFollowing = !!followRecord;
@@ -131,6 +132,7 @@ export default async function ProfilePage({
         posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
         isFollowing={isFollowing}
         isCreator={isCreator}
+        savedCount={savedCount}
       />
     </div>
   );

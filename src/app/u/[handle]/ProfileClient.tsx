@@ -33,29 +33,65 @@ export default function ProfileClient({
   posts,
   isFollowing = false,
   isCreator = false,
+  savedCount = 0,
 }: {
   profile: Profile;
   posts: ProfilePost[];
   isFollowing?: boolean;
   isCreator?: boolean;
+  savedCount?: number;
 }) {
   const [followed, setFollowed] = useState(isFollowing);
+  const [followPending, setFollowPending] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const ringColor = getRingColor(profile.ringTier);
 
   useEffect(() => {
-  const supabase = createSupabaseBrowserClient();
-  supabase.auth.getUser().then(({ data: { user } }) => {
-    console.log("AUTH EMAIL:", user?.email, "PROFILE EMAIL:", profile.email);
-    if (user?.email && profile.email) {
-      setIsOwnProfile(
-        user.email.trim().toLowerCase() === profile.email.trim().toLowerCase()
-      );
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      const email = user?.email ?? null;
+      setCurrentUserEmail(email);
+      if (email && profile.email) {
+        setIsOwnProfile(
+          email.trim().toLowerCase() === profile.email.trim().toLowerCase()
+        );
+      }
+    });
+  }, [profile.email]);
+
+  const handleFollowClick = async () => {
+    if (followPending) return;
+    if (!currentUserEmail || isOwnProfile) return;
+
+    const nextFollowed = !followed;
+    const action = nextFollowed ? "follow" : "unfollow";
+
+    setFollowed(nextFollowed);
+    setFollowPending(true);
+
+    try {
+      const res = await fetch("/api/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          viewerEmail: currentUserEmail,
+          targetHandle: profile.handle,
+          action,
+        }),
+      });
+      if (!res.ok) throw new Error(`follow_failed_${res.status}`);
+      const data = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      if (!data?.ok) throw new Error("follow_not_ok");
+    } catch (err) {
+      console.error("Follow toggle failed:", err);
+      setFollowed(!nextFollowed);
+    } finally {
+      setFollowPending(false);
     }
-  });
-}, [profile.email]);
+  };
 
   const postsCount = posts?.length ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
@@ -262,6 +298,7 @@ export default function ProfileClient({
             totalVoltage={profile.totalVoltage}
             recentVoltage={profile.recentVoltage}
             postCount={profile.postCount}
+            savedCount={savedCount}
           />
 
           <div style={{ textAlign: "center", marginTop: 4 }}>
@@ -316,7 +353,8 @@ export default function ProfileClient({
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 8, width: "100%", maxWidth: 320, marginTop: 20 }}>
           <button
-            onClick={() => setFollowed(prev => !prev)}
+            onClick={handleFollowClick}
+            disabled={followPending || isOwnProfile || !currentUserEmail}
             style={{
               flex: 1, padding: "11px 0",
               borderRadius: 50,
@@ -328,7 +366,8 @@ export default function ProfileClient({
                 : "none",
               color: followed ? "#00e5ff" : "#000",
               fontSize: 13, fontWeight: 700,
-              cursor: "pointer",
+              cursor: (followPending || isOwnProfile || !currentUserEmail) ? "not-allowed" : "pointer",
+              opacity: followPending ? 0.6 : 1,
               transition: "all 0.25s ease",
               letterSpacing: 0.5,
               fontFamily: "monospace",

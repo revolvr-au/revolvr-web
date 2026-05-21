@@ -1,20 +1,23 @@
 "use client";
 
+import { Bookmark } from "lucide-react";
+
 type Props = {
   name: string;
   totalVoltage: number;
   recentVoltage: number;
   postCount: number;
+  savedCount?: number;
 };
 
-export default function ProfileHeader({ name, totalVoltage, recentVoltage, postCount }: Props) {
+export default function ProfileHeader({ name, totalVoltage, recentVoltage, postCount, savedCount = 0 }: Props) {
   const momentumState = totalVoltage > 0 && recentVoltage > totalVoltage * 0.2 ? "Rising" : "Stable";
 
   return (
     <div style={{ textAlign: "center", color: "white" }}>
       <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: 1 }}>{name}</div>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 12 }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 28, marginTop: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(totalVoltage)}</div>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>VOLTAGE</div>
@@ -22,6 +25,13 @@ export default function ProfileHeader({ name, totalVoltage, recentVoltage, postC
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{postCount}</div>
           <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>POSTS</div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+            <Bookmark size={14} strokeWidth={2.25} />
+            {savedCount}
+          </div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>SAVED</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{momentumState}</div>
