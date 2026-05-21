@@ -1,0 +1,34 @@
+export const dynamic = "force-dynamic";
+
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+
+export async function POST(req: Request) {
+  const { postId, userEmail } = await req.json();
+
+  if (!postId || !userEmail) {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  const existing = await prisma.savedPost.findUnique({
+    where: {
+      postId_userEmail: { postId, userEmail },
+    },
+  });
+
+  if (existing) {
+    await prisma.savedPost.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.savedPost.create({
+      data: { postId, userEmail },
+    });
+  }
+
+  const count = await prisma.savedPost.count({ where: { postId } });
+
+  return NextResponse.json({
+    ok: true,
+    saved: !existing,
+    count,
+  });
+}

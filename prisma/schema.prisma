@@ -31,6 +31,7 @@ ivsPlaybackUrl String?   @map("ivs_playback_url")
   comments   Comment[]      @relation("PostComments")
   likes      Like[]         @relation("PostLikes")
   media      PostMedia[]    @relation("PostMedia")
+  saves      SavedPost[]    @relation("PostSaves")
   reactions  PostReaction[] @relation("PostReactions")
   liveStream MuxLiveStream? @relation("LiveStreamPosts", fields: [liveStreamId], references: [id])
 
@@ -65,6 +66,19 @@ model Like {
   post      Post     @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userEmail])
+  @@index([postId])
+  @@schema("public")
+}
+
+model SavedPost {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String
+  createdAt DateTime @default(now())
+  post      Post     @relation("PostSaves", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userEmail])
+  @@index([userEmail])
   @@index([postId])
   @@schema("public")
 }

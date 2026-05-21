@@ -136,6 +136,7 @@ export default function PublicFeedClient() {
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+  const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
   const [interactionMap, setInteractionMap] = useState<Record<string, number>>({});
   const [clusterMap, setClusterMap] = useState<Record<string, number>>({});
   const [momentum, setMomentum] = useState<{
@@ -500,6 +501,37 @@ useEffect(() => {
       });
   }, []);
 
+  const handleToggleSave = useCallback((postId: string) => {
+    const email = userEmailRef.current;
+    if (!email) {
+      setSavedMap((prev) => (prev[postId] ? prev : { ...prev, [postId]: true }));
+      return;
+    }
+
+    let optimisticNext = false;
+    setSavedMap((prev) => {
+      optimisticNext = !prev[postId];
+      return { ...prev, [postId]: optimisticNext };
+    });
+
+    fetch("/api/saves/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, userEmail: email }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`save_failed_${res.status}`);
+        const data = (await res.json().catch(() => null)) as { saved?: boolean } | null;
+        if (data && typeof data.saved === "boolean" && data.saved !== optimisticNext) {
+          setSavedMap((prev) => ({ ...prev, [postId]: data.saved! }));
+        }
+      })
+      .catch((err) => {
+        console.error("Save toggle failed:", err);
+        setSavedMap((prev) => ({ ...prev, [postId]: !optimisticNext }));
+      });
+  }, []);
+
   const handleInteract = useCallback((postId: string) => {
     const post = posts.find((candidate) => String(candidate.id) === postId);
     const cluster = getClusterKey(post);
@@ -566,6 +598,8 @@ useEffect(() => {
       <Post
         post={post}
         liked={!!likedMap[String(post.id ?? i)]}
+        saved={!!savedMap[String(post.id ?? i)]}
+        onToggleSave={handleToggleSave}
         onDoubleTapLike={handleDoubleTapLike}
         onOpenComments={openComments}
         onShare={handleShare}
@@ -612,11 +646,13 @@ useEffect(() => {
 const Post = memo(function Post({
   post,
   liked,
+  saved,
+  onToggleSave,
   onDoubleTapLike,
   onOpenComments,
   onShare,
   onReward,
-  onCreate,  
+  onCreate,
   onGoLive,
   onInteract,
   currentUserId,
@@ -633,6 +669,8 @@ const Post = memo(function Post({
 }: {
   post: any;
   liked: boolean;
+  saved: boolean;
+  onToggleSave: (postId: string) => void;
   onDoubleTapLike: (postId: string) => void;
   onOpenComments: (postId: string) => void;
   onShare: (postId: string) => void;
@@ -767,6 +805,10 @@ const Post = memo(function Post({
   const handleReward = useCallback(() => {
     onReward(postId);
   }, [onReward, postId]);
+
+  const handleSave = useCallback(() => {
+    onToggleSave(postId);
+  }, [onToggleSave, postId]);
 
   const handleCreate = useCallback(() => {
     onCreate();
@@ -974,8 +1016,10 @@ const Post = memo(function Post({
           onShare={handleShare}
           onReward={handleReward}
           onCreate={handleCreate}
+          onSave={handleSave}
           onOpenControlPanel={onOpenControlPanel}
           liked={liked}
+          saved={saved}
           rewardCount={rewardCount}
         />
       )}
@@ -1050,8 +1094,10 @@ function FeedOverlay({
   onShare: _onShare,
   onReward,
   onCreate,
+  onSave,
   onOpenControlPanel,
   liked,
+  saved,
   rewardCount: _rewardCount,
 }: {
   post: any;
@@ -1063,8 +1109,10 @@ function FeedOverlay({
   onShare: () => void;
   onReward: () => void;
   onCreate: () => void;
+  onSave: () => void;
   onOpenControlPanel: (userId: string) => void;
   liked: boolean;
+  saved: boolean;
   rewardCount: number;
 }) {
   const [tickedVoltage, setTickedVoltage] = useState(voltage);
@@ -1147,11 +1195,12 @@ function FeedOverlay({
           showFlash("REPOSTED");
           break;
         case "SAVE":
-          showFlash("SAVED");
+          onSave();
+          showFlash(saved ? "UNSAVED" : "SAVED");
           break;
       }
     },
-    [onLike, onComment, onReward, onCreate, liked, showFlash, post, giftPending],
+    [onLike, onComment, onReward, onCreate, onSave, liked, saved, showFlash, post, giftPending],
   );
 
   return (
