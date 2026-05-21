@@ -124,12 +124,20 @@ export default function CreatePage() {
       if (!initialRes.ok) throw new Error("Failed to secure core record reference.");
       const postData = await initialRes.json();
 
+      // Safely pull the ID variable path regardless of flat or nested backend payload structures
+      const targetPostId = postData.id || postData.post?.id || postData.data?.id;
+
+      if (!targetPostId) {
+        throw new Error("Unable to parse a valid record assignment ID from server response.");
+      }
+
       if (files.length > 0) {
         setStatusMsg("Ingesting binary assets directly to storage...");
         const formData = new FormData();
         formData.append("file", files[0]);
 
-        const mediaRes = await fetch(`/api/posts/${postData.id}/media`, {
+        // Route to the validated target database identifier row cleanly
+        const mediaRes = await fetch(`/api/posts/${targetPostId}/media`, {
           method: "POST",
           body: formData
         });
