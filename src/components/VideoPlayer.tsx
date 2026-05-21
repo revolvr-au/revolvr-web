@@ -387,6 +387,32 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
                 borderRadius: 1, position: "relative",
               }}>
                 <div style={{
-                  width: 8, height: 8, borderRadius: "50%",
-                  background: "#fff", position: "absolute",
-                  right: -
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: "#fff",
+                  position: "absolute",
+                  right: -4,
+                  top: -3,
+                }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes revolvr-fade-out {
+          0% { opacity: 0; transform: scale(0.8); }
+          20% { opacity: 1; transform: scale(1); }
+          80% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0; transform: scale(1.1); }
+        }
+        @keyframes revolvr-hint-fade {
+          0%, 100% { opacity: 0; transform: translateY(4px); }
+          15%, 85% { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}
