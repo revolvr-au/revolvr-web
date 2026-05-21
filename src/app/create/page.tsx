@@ -35,15 +35,18 @@ export default function CreatePage() {
         console.error("Camera access denied", err);
       }
     }
-    enableCamera();
+    
+    if (previews.length === 0) {
+      enableCamera();
+    }
 
     return () => {
-      // Cleanup: kill the camera light when unmounting
+      // Cleanup: kill the camera light when unmounting or transitioning to preview
       if (activeStream) {
         activeStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, []);
+  }, [previews.length]);
 
   useEffect(() => {
     if (videoRef.current && mediaStream) {
@@ -201,7 +204,7 @@ export default function CreatePage() {
 
       {/* 1. BACKGROUND VIDEO / MEDIA LAYER */}
       <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
-        {previews.length > 0 && mode === "UPLOAD" ? (
+        {previews.length > 0 ? (
           <>
             {files[activeIndex]?.type.startsWith("video/") ? (
               <video src={previews[activeIndex]} autoPlay muted loop playsInline
@@ -333,7 +336,7 @@ export default function CreatePage() {
           gap: 12,
           fontSize: 11,
           color: "rgba(0, 229, 255, 0.8)",
-          marginBottom: 24,
+          marginBottom: previews.length > 0 ? 90 : 24,
           boxShadow: "0 8px 32px rgba(0,0,0,0.5)"
         }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -368,37 +371,23 @@ export default function CreatePage() {
         </div>
 
         {/* TikTok-Style Shutter Button */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", height: 76 }}>
-          {mode === "UPLOAD" && previews.length === 0 ? (
-            <label style={{
-              width: 76, height: 76, borderRadius: "50%", border: "4px solid #fff",
-              display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.5)"
-            }}>
-              <div style={{
-                width: 56, height: 56, borderRadius: "50%", background: "#00e5ff",
-                boxShadow: "0 0 20px #00e5ff"
-              }} />
-              <input
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                hidden
-                onChange={(e) => {
-                  if (e.target.files?.length) handleFiles(e.target.files);
-                }}
-              />
-            </label>
-          ) : (
+        {previews.length === 0 && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", height: 76 }}>
             <button
-              onClick={handleSubmit}
-              disabled={loading || (mode === "UPLOAD" && !files.length)}
+              onClick={() => {
+                if (mode === "UPLOAD") {
+                  document.getElementById('hidden-file-input')?.click();
+                } else {
+                  handleSubmit();
+                }
+              }}
+              disabled={loading}
               style={{
                 width: 76, height: 76, borderRadius: "50%", border: "4px solid #fff",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 background: "transparent", cursor: loading ? "not-allowed" : "pointer", padding: 0,
                 boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
-                opacity: (loading || (mode === "UPLOAD" && !files.length)) ? 0.5 : 1
+                opacity: loading ? 0.5 : 1
               }}
             >
               <div style={{
@@ -410,15 +399,49 @@ export default function CreatePage() {
                 {loading && <div style={{ fontSize: 10, color: "#fff", fontWeight: "bold" }}>...</div>}
               </div>
             </button>
-          )}
+            <input
+              id="hidden-file-input"
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                if (e.target.files?.length) handleFiles(e.target.files);
+              }}
+            />
 
-          {/* Status Label */}
-          {loading && statusMsg && (
-            <div style={{ position: "absolute", bottom: -24, fontSize: 10, color: "rgba(255,255,255,0.7)", letterSpacing: 1 }}>
-              {statusMsg.toUpperCase()}
-            </div>
-          )}
-        </div>
+            {/* Status Label */}
+            {loading && statusMsg && (
+              <div style={{ position: "absolute", bottom: -24, fontSize: 10, color: "rgba(255,255,255,0.7)", letterSpacing: 1 }}>
+                {statusMsg.toUpperCase()}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* EXECUTE DEPLOYMENT BAR */}
+        {previews.length > 0 && (
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100,
+            padding: "16px 20px calc(16px + env(safe-area-inset-bottom))",
+            background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)",
+            borderTop: "1px solid rgba(212,175,55,0.3)"
+          }}>
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                width: "100%", padding: "16px", borderRadius: 12,
+                background: "linear-gradient(90deg, #D4AF37, #AA8C2C)",
+                border: "none", color: "#000", fontSize: 14, fontWeight: "bold",
+                letterSpacing: 2, cursor: loading ? "not-allowed" : "pointer",
+                boxShadow: "0 0 20px rgba(212,175,55,0.4)", opacity: loading ? 0.7 : 1
+              }}
+            >
+              {loading ? (statusMsg || "DEPLOYING...").toUpperCase() : "[ EXECUTE DEPLOYMENT ]"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
