@@ -392,7 +392,7 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
                   borderRadius: "50%",
                   background: "#fff",
                   position: "absolute",
-                  right: -4,
+                  right: -4, top: -3,4,
                   top: -3,
                 }} />
               </div>
