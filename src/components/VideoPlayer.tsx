@@ -387,14 +387,14 @@ export default function VideoPlayer({ playbackId, isActive, isNext, onTap, scrol
                 borderRadius: 1, position: "relative",
               }}>
                 <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: "#fff",
-                  position: "absolute",
-                  right: -4, top: -3,4,
-                  top: -3,
-                }} />
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#fff",
+                position: "absolute",
+                right: -4,
+                top: -3,
+              }} />
               </div>
             </div>
           </div>
