@@ -85,6 +85,12 @@ const getStableNoise = (key: string) => {
 let feedCache: { posts: any[]; ts: number } | null = null;
 const FEED_CACHE_TTL = 30_000;
 
+export function resetFeedCache() {
+  feedCache = null;
+}
+
+const FRESH_POST_WINDOW_MS = 300_000;
+
 // Module-level so dismissals survive Post unmount/remount during scroll.
 const dismissedTranches = new Set<string>();
 
@@ -267,7 +273,7 @@ useEffect(() => {
   const INTERACTION_WEIGHT = 7;
   const CLUSTER_WEIGHT = 4;
   const MOMENTUM_WEIGHT = 5;
-  const RECENCY_WEIGHT = 0.00000008;
+  const RECENCY_WEIGHT = 0.0000002;
   const MAX_MOMENTUM_STRENGTH = 4;
 
   useEffect(() => {
@@ -275,7 +281,7 @@ useEffect(() => {
       setLoading(false);
       return;
     }
-    fetch("/api/public-feed")
+    fetch(`/api/public-feed?t=${Date.now()}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data.posts)) {
@@ -327,7 +333,19 @@ useEffect(() => {
   // 4. Momentum creates temporary waves without locking the feed
   // 5. Recency keeps fresh content in play
   const rankedPosts = useMemo(() => {
-    return [...posts].sort((a, b) => {
+    const now = Date.now();
+    const fresh: any[] = [];
+    const rest: any[] = [];
+    for (const post of posts) {
+      const createdAtMs = post.createdAt ? new Date(post.createdAt).getTime() : 0;
+      if (createdAtMs && now - createdAtMs < FRESH_POST_WINDOW_MS) {
+        fresh.push(post);
+      } else {
+        rest.push(post);
+      }
+    }
+    fresh.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    rest.sort((a, b) => {
       const vA = a.voltage || 0;
       const vB = b.voltage || 0;
       const iA = interactionMap[String(a.id)] || 0;
@@ -362,6 +380,7 @@ useEffect(() => {
 
       return scoreB - scoreA;
     });
+    return [...fresh, ...rest];
   }, [posts, interactionMap, clusterMap, momentum]);
 
   const [debouncedRanked, setDebouncedRanked] = useState(rankedPosts);

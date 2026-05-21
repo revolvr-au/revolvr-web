@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Zap } from "lucide-react";
+import { resetFeedCache } from "@/app/public-feed/PublicFeedClient";
 
 export default function CreatePage() {
   const router = useRouter();
@@ -146,6 +147,7 @@ export default function CreatePage() {
       }
 
       setStatusMsg("Deployment complete.");
+      resetFeedCache();
       router.push("/public-feed");
     } catch (err: any) {
       console.error("Pipeline failure:", err);

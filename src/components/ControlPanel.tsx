@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Zap } from "lucide-react";
 import SlideUpSheet from "@/components/SlideUpSheet";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
@@ -23,6 +23,24 @@ export default function ControlPanel({
 }: ControlPanelProps) {
   const router = useRouter();
   const [logoutPending, setLogoutPending] = useState(false);
+  const [sparkBalance, setSparkBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    fetch(`/api/credits?email=${encodeURIComponent(userId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setSparkBalance(typeof data?.sparks === "number" ? data.sparks : 0);
+      })
+      .catch(() => {
+        if (!cancelled) setSparkBalance(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const navigate = (path: string) => {
     onClose();
@@ -150,6 +168,49 @@ export default function ControlPanel({
               </span>
               <span style={{ color: "rgba(0, 229, 255, 0.8)", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.05em" }}>
                 {userId}
+              </span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => navigate("/spark/buy")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "14px 20px",
+              background: "rgba(245, 197, 24, 0.06)",
+              border: "none",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
+              width: "100%",
+              textAlign: "left",
+              cursor: "pointer",
+              transition: "background 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245, 197, 24, 0.12)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(245, 197, 24, 0.06)")}
+          >
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                border: "1px solid rgba(245, 197, 24, 0.4)",
+                background: "rgba(245, 197, 24, 0.08)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Zap size={16} color="#F5C518" fill="#F5C518" />
+            </div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 6, flex: 1 }}>
+              <span style={{ color: "#F5C518", fontSize: 18, fontWeight: 700, fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", letterSpacing: "0.02em" }}>
+                {sparkBalance === null ? "—" : sparkBalance.toLocaleString()}
+              </span>
+              <span style={{ color: "rgba(245, 197, 24, 0.7)", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em", textTransform: "uppercase" }}>
+                Sparks
               </span>
             </div>
           </button>
