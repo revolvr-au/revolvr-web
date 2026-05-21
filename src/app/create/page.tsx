@@ -76,20 +76,28 @@ export default function CreatePage() {
 
         const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
 
-        fetch(dataUrl)
-          .then(res => res.blob())
-          .then(blob => {
-            const capturedFile = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
-            setFiles([capturedFile]);
-            setPreviews([dataUrl]);
-            setActiveIndex(0);
-            
-            // Clean up running hardware instantly upon snapshot freezing
-            if (mediaStream) {
-              mediaStream.getTracks().forEach(track => track.stop());
-              setMediaStream(null);
-            }
-          });
+        // Direct structural conversion from base64 to clean binary byte data
+        const byteString = atob(dataUrl.split(',')[1]);
+        const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+
+        const blob = new Blob([ab], { type: mimeString });
+        const capturedFile = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+
+        setFiles([capturedFile]);
+        setPreviews([dataUrl]);
+        setActiveIndex(0);
+        
+        // Clean up running hardware instantly upon snapshot freezing
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+          setMediaStream(null);
+        }
       }
     }
   };
