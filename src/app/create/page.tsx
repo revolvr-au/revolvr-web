@@ -110,11 +110,12 @@ export default function CreatePage() {
 
     try {
       // Create initial platform placeholder shell
+      const finalCaption = caption.trim() || "Transmission finalized via Autonomous Command";
       const initialRes = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          caption: caption || "Transmission finalized via Autonomous Command",
+          caption: finalCaption,
           isTranche
         })
       });
