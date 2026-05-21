@@ -137,6 +137,7 @@ export default function PublicFeedClient() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [savedMap, setSavedMap] = useState<Record<string, boolean>>({});
+  const [repostedMap, setRepostedMap] = useState<Record<string, boolean>>({});
   const [interactionMap, setInteractionMap] = useState<Record<string, number>>({});
   const [clusterMap, setClusterMap] = useState<Record<string, number>>({});
   const [momentum, setMomentum] = useState<{
@@ -532,6 +533,37 @@ useEffect(() => {
       });
   }, []);
 
+  const handleToggleRepost = useCallback((postId: string) => {
+    const email = userEmailRef.current;
+    if (!email) {
+      setRepostedMap((prev) => (prev[postId] ? prev : { ...prev, [postId]: true }));
+      return;
+    }
+
+    let optimisticNext = false;
+    setRepostedMap((prev) => {
+      optimisticNext = !prev[postId];
+      return { ...prev, [postId]: optimisticNext };
+    });
+
+    fetch("/api/reposts/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId, userEmail: email }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`repost_failed_${res.status}`);
+        const data = (await res.json().catch(() => null)) as { reposted?: boolean } | null;
+        if (data && typeof data.reposted === "boolean" && data.reposted !== optimisticNext) {
+          setRepostedMap((prev) => ({ ...prev, [postId]: data.reposted! }));
+        }
+      })
+      .catch((err) => {
+        console.error("Repost toggle failed:", err);
+        setRepostedMap((prev) => ({ ...prev, [postId]: !optimisticNext }));
+      });
+  }, []);
+
   const handleInteract = useCallback((postId: string) => {
     const post = posts.find((candidate) => String(candidate.id) === postId);
     const cluster = getClusterKey(post);
@@ -599,7 +631,9 @@ useEffect(() => {
         post={post}
         liked={!!likedMap[String(post.id ?? i)]}
         saved={!!savedMap[String(post.id ?? i)]}
+        reposted={!!repostedMap[String(post.id ?? i)]}
         onToggleSave={handleToggleSave}
+        onToggleRepost={handleToggleRepost}
         onDoubleTapLike={handleDoubleTapLike}
         onOpenComments={openComments}
         onShare={handleShare}
@@ -647,7 +681,9 @@ const Post = memo(function Post({
   post,
   liked,
   saved,
+  reposted,
   onToggleSave,
+  onToggleRepost,
   onDoubleTapLike,
   onOpenComments,
   onShare,
@@ -670,7 +706,9 @@ const Post = memo(function Post({
   post: any;
   liked: boolean;
   saved: boolean;
+  reposted: boolean;
   onToggleSave: (postId: string) => void;
+  onToggleRepost: (postId: string) => void;
   onDoubleTapLike: (postId: string) => void;
   onOpenComments: (postId: string) => void;
   onShare: (postId: string) => void;
@@ -809,6 +847,10 @@ const Post = memo(function Post({
   const handleSave = useCallback(() => {
     onToggleSave(postId);
   }, [onToggleSave, postId]);
+
+  const handleRepost = useCallback(() => {
+    onToggleRepost(postId);
+  }, [onToggleRepost, postId]);
 
   const handleCreate = useCallback(() => {
     onCreate();
@@ -1017,9 +1059,11 @@ const Post = memo(function Post({
           onReward={handleReward}
           onCreate={handleCreate}
           onSave={handleSave}
+          onRepost={handleRepost}
           onOpenControlPanel={onOpenControlPanel}
           liked={liked}
           saved={saved}
+          reposted={reposted}
           rewardCount={rewardCount}
         />
       )}
@@ -1095,9 +1139,11 @@ function FeedOverlay({
   onReward,
   onCreate,
   onSave,
+  onRepost,
   onOpenControlPanel,
   liked,
   saved,
+  reposted,
   rewardCount: _rewardCount,
 }: {
   post: any;
@@ -1110,9 +1156,11 @@ function FeedOverlay({
   onReward: () => void;
   onCreate: () => void;
   onSave: () => void;
+  onRepost: () => void;
   onOpenControlPanel: (userId: string) => void;
   liked: boolean;
   saved: boolean;
+  reposted: boolean;
   rewardCount: number;
 }) {
   const [tickedVoltage, setTickedVoltage] = useState(voltage);
@@ -1192,7 +1240,8 @@ function FeedOverlay({
           onCreate();
           break;
         case "REPOST":
-          showFlash("REPOSTED");
+          onRepost();
+          showFlash(reposted ? "UNREPOSTED" : "REPOSTED");
           break;
         case "SAVE":
           onSave();
@@ -1200,7 +1249,7 @@ function FeedOverlay({
           break;
       }
     },
-    [onLike, onComment, onReward, onCreate, onSave, liked, saved, showFlash, post, giftPending],
+    [onLike, onComment, onReward, onCreate, onSave, onRepost, liked, saved, reposted, showFlash, post, giftPending],
   );
 
   return (
