@@ -116,7 +116,8 @@ export default function CreatePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           caption: finalCaption,
-          isTranche
+          isTranche,
+          userEmail: "revolvrassist@gmail.com"
         })
       });
 
