@@ -102,7 +102,7 @@ export default async function ProfilePage({
           select: { id: true },
         })
       : Promise.resolve(null),
-    prisma.savedPost.count({ where: { userEmail: email } }),
+    prisma.savedPost.count({ where: { userEmail: email } }).catch(() => 0),
   ]);
 
   const isFollowing = !!followRecord;
