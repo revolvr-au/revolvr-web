@@ -735,3 +735,85 @@ enum LiveStreamStatus {
 
   @@schema("public")
 }
+
+model Gath {
+  id           String        @id @default(uuid())
+  name         String
+  description  String?
+  type         GathType      @default(OPEN)
+  status       GathStatus    @default(ACTIVE)
+  creatorEmail String
+  sparkCost    Int           @default(0)
+  launchDate   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  members      GathMember[]
+  messages     GathMessage[]
+  posts        GathPost[]
+
+  @@index([creatorEmail])
+  @@index([type])
+  @@index([status])
+  @@schema("public")
+}
+
+model GathMember {
+  id        String   @id @default(uuid())
+  gathId    String
+  userEmail String
+  role      GathRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+  gath      Gath     @relation(fields: [gathId], references: [id], onDelete: Cascade)
+
+  @@unique([gathId, userEmail])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model GathMessage {
+  id        String   @id @default(uuid())
+  gathId    String
+  userEmail String
+  content   String
+  voltage   Int      @default(0)
+  createdAt DateTime @default(now())
+  gath      Gath     @relation(fields: [gathId], references: [id], onDelete: Cascade)
+
+  @@index([gathId])
+  @@schema("public")
+}
+
+model GathPost {
+  id       String   @id @default(uuid())
+  gathId   String
+  postId   String
+  seededAt DateTime @default(now())
+  gath     Gath     @relation(fields: [gathId], references: [id], onDelete: Cascade)
+
+  @@unique([gathId, postId])
+  @@schema("public")
+}
+
+enum GathType {
+  OPEN
+  PRIVATE
+  BUSINESS
+
+  @@schema("public")
+}
+
+enum GathStatus {
+  PRELAUNCHING
+  ACTIVE
+  ARCHIVED
+
+  @@schema("public")
+}
+
+enum GathRole {
+  IGNITER
+  HOST
+  MEMBER
+
+  @@schema("public")
+}

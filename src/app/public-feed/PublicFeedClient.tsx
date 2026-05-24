@@ -9,6 +9,7 @@ import {
   Plus,
   Repeat2,
   Bookmark,
+  Users,
   ChevronLeft,
   ChevronRight,
   X,
@@ -20,9 +21,10 @@ import ControlPanel from "@/components/ControlPanel";
 import VideoPlayer from "@/components/VideoPlayer";
 import MediaCarousel from "@/components/MediaCarousel";
 import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
+import GathWindow from "@/components/GathWindow";
 
 const GOLD = "#F5C518";
-const ACTION_KEYS = ["LIKE", "COMMENT", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
+const ACTION_KEYS = ["LIKE", "COMMENT", "GIFT", "CREATE", "REPOST", "SAVE", "GATH"] as const;
 type ActionKey = (typeof ACTION_KEYS)[number];
 
 const ACTION_ICONS: Record<
@@ -35,6 +37,7 @@ const ACTION_ICONS: Record<
   CREATE: { Icon: Plus, glow: "#ffffff" },
   REPOST: { Icon: Repeat2, glow: "#3ddc97" },
   SAVE: { Icon: Bookmark, glow: "#c084fc" },
+  GATH: { Icon: Users, glow: GOLD },
 };
 
 type AnalyticsPayload = {
@@ -160,6 +163,7 @@ export default function PublicFeedClient() {
   const [hasFirstPostRendered, setHasFirstPostRendered] = useState(false);
   const [peopleRow, setPeopleRow] = useState<PeopleCardUser[]>([]);
   const [selectedPerson, setSelectedPerson] = useState<PeopleCardUser | null>(null);
+  const [gathWindowPostId, setGathWindowPostId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/people-rail")
@@ -467,6 +471,10 @@ useEffect(() => {
     router.push("/create");
   }, [router]);
 
+  const handleOpenGath = useCallback((postId: string) => {
+    setGathWindowPostId(postId);
+  }, []);
+
   const handleGoLive = useCallback(() => {
   router.push("/go-live");
 }, [router]);
@@ -652,6 +660,7 @@ useEffect(() => {
         scrollContainerRef={scrollContainerRef}
         people={peopleRow}
         onSelectPerson={setSelectedPerson}
+        onOpenGath={handleOpenGath}
       />
     </div>
 ))}
@@ -673,6 +682,13 @@ useEffect(() => {
       {selectedPerson && (
         <PeopleCard user={selectedPerson} onClose={() => setSelectedPerson(null)} />
       )}
+
+      <GathWindow
+        open={gathWindowPostId !== null}
+        onClose={() => setGathWindowPostId(null)}
+        userEmail={userEmail}
+        seedPostId={gathWindowPostId}
+      />
     </div>
   );
 }
@@ -702,6 +718,7 @@ const Post = memo(function Post({
   people,
   onOpenControlPanel,
   onSelectPerson,
+  onOpenGath,
 }: {
   post: any;
   liked: boolean;
@@ -727,6 +744,7 @@ const Post = memo(function Post({
   people: PeopleCardUser[];
   onOpenControlPanel: (userId: string) => void;
   onSelectPerson: (p: PeopleCardUser) => void;
+  onOpenGath: (postId: string) => void;
 }) {
   const router = useRouter();
   const [showBurst, setShowBurst] = useState(false);
@@ -855,6 +873,10 @@ const Post = memo(function Post({
   const handleCreate = useCallback(() => {
     onCreate();
   }, [onCreate]);
+
+  const handleGath = useCallback(() => {
+    onOpenGath(postId);
+  }, [onOpenGath, postId]);
 
   const isOwner = post.userEmail === currentUserId;
 
@@ -1060,6 +1082,7 @@ const Post = memo(function Post({
           onCreate={handleCreate}
           onSave={handleSave}
           onRepost={handleRepost}
+          onGath={handleGath}
           onOpenControlPanel={onOpenControlPanel}
           liked={liked}
           saved={saved}
@@ -1140,6 +1163,7 @@ function FeedOverlay({
   onCreate,
   onSave,
   onRepost,
+  onGath,
   onOpenControlPanel,
   liked,
   saved,
@@ -1157,6 +1181,7 @@ function FeedOverlay({
   onCreate: () => void;
   onSave: () => void;
   onRepost: () => void;
+  onGath: () => void;
   onOpenControlPanel: (userId: string) => void;
   liked: boolean;
   saved: boolean;
@@ -1247,9 +1272,12 @@ function FeedOverlay({
           onSave();
           showFlash(saved ? "UNSAVED" : "SAVED");
           break;
+        case "GATH":
+          onGath();
+          break;
       }
     },
-    [onLike, onComment, onReward, onCreate, onSave, onRepost, liked, saved, reposted, showFlash, post, giftPending],
+    [onLike, onComment, onReward, onCreate, onSave, onRepost, onGath, liked, saved, reposted, showFlash, post, giftPending],
   );
 
   return (

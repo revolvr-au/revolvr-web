@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
+import GathWindow from "@/components/GathWindow";
 
 export type PeopleCardUser = {
   handle: string;
@@ -220,7 +222,16 @@ export default function PeopleCard({
   const [bioCount, setBioCount] = useState(233);
   const [linkStateIndex, setLinkStateIndex] = useState(0);
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  const [gathOpen, setGathOpen] = useState(false);
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setViewerEmail(data.user?.email ?? null);
+    });
+  }, []);
   const [avatarCenter, setAvatarCenter] = useState<{ x: number; y: number } | null>(null);
   const [slotCenters, setSlotCenters] = useState<Record<number, { x: number; y: number }>>({});
   const rotationRef = useRef(0);
@@ -792,6 +803,8 @@ export default function PeopleCard({
           {/* GATH */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 44 }}>
             <button
+              onClick={() => setGathOpen(true)}
+              aria-label="Open GATH"
               style={{
                 width: 34,
                 height: 34,
@@ -945,6 +958,14 @@ export default function PeopleCard({
           }
         `}</style>
       </div>
+
+      <GathWindow
+        open={gathOpen}
+        onClose={() => setGathOpen(false)}
+        userEmail={viewerEmail}
+        prefillDescription={`with @${user.handle}`}
+        mode="simple"
+      />
     </div>
   );
 }
