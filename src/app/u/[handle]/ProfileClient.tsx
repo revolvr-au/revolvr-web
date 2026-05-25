@@ -359,21 +359,22 @@ export default function ProfileClient({
               flex: 1, padding: "11px 0",
               borderRadius: 50,
               background: followed
-                ? "rgba(0,229,255,0.08)"
-                : "rgba(255,255,255,0.95)",
+                ? "rgba(22,28,40,0.95)"
+                : "#F5C518",
               border: followed
-                ? "1px solid rgba(0,229,255,0.3)"
-                : "none",
-              color: followed ? "#00e5ff" : "#000",
-              fontSize: 13, fontWeight: 700,
+                ? "1px solid rgba(245,197,24,0.45)"
+                : "1px solid #F5C518",
+              color: followed ? "#F5C518" : "#0a0e16",
+              fontSize: 12, fontWeight: 800,
               cursor: (followPending || isOwnProfile || !currentUserEmail) ? "not-allowed" : "pointer",
               opacity: followPending ? 0.6 : 1,
               transition: "all 0.25s ease",
-              letterSpacing: 0.5,
+              letterSpacing: "0.22em",
               fontFamily: "monospace",
+              boxShadow: followed ? "none" : "0 4px 20px rgba(245,197,24,0.28)",
             }}
           >
-            {followed ? "Following" : "Follow"}
+            {followed ? "LINKED" : "LINK"}
           </button>
           <button style={{
             flex: 1, padding: "11px 0",

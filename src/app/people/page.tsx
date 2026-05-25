@@ -345,18 +345,20 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         style={{
           width: "100%",
           fontSize: 10,
-          fontWeight: 600,
-          color: "rgba(255,255,255,0.85)",
-          background: "rgba(255,255,255,0.07)",
-          border: "1px solid rgba(255,255,255,0.15)",
+          fontWeight: 800,
+          color: "#0a0e16",
+          background: GOLD,
+          border: `1px solid ${GOLD}`,
           borderRadius: 20,
           height: 28,
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily: "monospace",
+          letterSpacing: "0.22em",
+          boxShadow: "0 4px 14px rgba(245,197,24,0.22)",
           cursor: "pointer",
         }}
         onClick={e => { e.stopPropagation(); }}
       >
-        Follow
+        LINK
       </button>
 
       {/* Scrolling marquee comment */}
@@ -412,19 +414,21 @@ function NewCard({ person, onClick }: { person: NewPerson; onClick: () => void }
       <button
         style={{
           fontSize: 10,
-          fontWeight: 600,
-          color: "rgba(255,255,255,0.6)",
-          background: "rgba(255,255,255,0.06)",
-          border: "1px solid rgba(255,255,255,0.12)",
+          fontWeight: 800,
+          color: "#0a0e16",
+          background: GOLD,
+          border: `1px solid ${GOLD}`,
           borderRadius: 20,
           padding: "3px 12px",
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily: "monospace",
+          letterSpacing: "0.22em",
+          boxShadow: "0 4px 14px rgba(245,197,24,0.22)",
           cursor: "pointer",
           width: "100%",
         }}
         onClick={e => { e.stopPropagation(); }}
       >
-        Follow
+        LINK
       </button>
     </div>
   );

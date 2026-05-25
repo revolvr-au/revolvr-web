@@ -27,7 +27,7 @@ const TIERS: TierConfig[] = [
       "Feed access",
       "Post content",
       "Basic profile",
-      "Follow creators",
+      "Link with creators",
       "25% revenue share on gifts",
     ],
     buttonLabel: "Current plan",

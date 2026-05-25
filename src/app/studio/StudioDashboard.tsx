@@ -409,7 +409,7 @@ export default function StudioDashboard({
             { label: "Total Users", value: pulse?.users },
             { label: "Total Creators", value: pulse?.creators },
             { label: "Total Posts", value: pulse?.posts },
-            { label: "Total Follows", value: pulse?.follows },
+            { label: "Total Links", value: pulse?.follows },
             { label: "Posts (24h)", value: pulse?.recentPosts, highlight: true },
             { label: "Events (24h)", value: pulse?.recentEvents, highlight: true },
           ].map(({ label, value, highlight }) => (
