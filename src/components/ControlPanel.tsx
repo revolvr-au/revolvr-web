@@ -14,6 +14,25 @@ type ControlPanelProps = {
   handle?: string;
 };
 
+type MyGath = {
+  id: string;
+  name: string;
+  type: "OPEN" | "PRIVATE" | "BUSINESS";
+  status: "PRELAUNCHING" | "ACTIVE" | "ARCHIVED";
+  memberCount: number;
+  role: "IGNITER" | "HOST" | "MEMBER";
+};
+
+const GOLD = "#F5C518";
+
+function SparkGoldIcon({ size = 12 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={GOLD}>
+      <path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z" />
+    </svg>
+  );
+}
+
 export default function ControlPanel({
   userId,
   onClose,
@@ -24,6 +43,7 @@ export default function ControlPanel({
   const router = useRouter();
   const [logoutPending, setLogoutPending] = useState(false);
   const [sparkBalance, setSparkBalance] = useState<number | null>(null);
+  const [myGaths, setMyGaths] = useState<MyGath[] | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -36,6 +56,33 @@ export default function ControlPanel({
       })
       .catch(() => {
         if (!cancelled) setSparkBalance(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    fetch(`/api/gath/my-gaths?email=${encodeURIComponent(userId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const gaths: MyGath[] = Array.isArray(data?.gaths)
+          ? data.gaths.map((g: any) => ({
+              id: g.id,
+              name: g.name,
+              type: g.type,
+              status: g.status,
+              memberCount: g.memberCount ?? 0,
+              role: g.role,
+            }))
+          : [];
+        setMyGaths(gaths);
+      })
+      .catch(() => {
+        if (!cancelled) setMyGaths([]);
       });
     return () => {
       cancelled = true;
@@ -214,6 +261,166 @@ export default function ControlPanel({
               </span>
             </div>
           </button>
+
+          {/* MY GATHS */}
+          <div style={{ padding: "12px 20px 8px" }}>
+            <div
+              style={{
+                fontSize: 9,
+                fontFamily: "monospace",
+                letterSpacing: 2,
+                color: "#555",
+                textTransform: "uppercase",
+                paddingBottom: 8,
+              }}
+            >
+              MY GATHS
+            </div>
+
+            {myGaths === null ? (
+              <div
+                style={{
+                  fontSize: 10,
+                  fontFamily: "monospace",
+                  color: "rgba(255,255,255,0.25)",
+                  letterSpacing: "0.18em",
+                  padding: "8px 0",
+                }}
+              >
+                LOADING…
+              </div>
+            ) : myGaths.length === 0 ? (
+              <div
+                style={{
+                  fontSize: 10,
+                  fontFamily: "monospace",
+                  color: "rgba(255,255,255,0.3)",
+                  letterSpacing: "0.22em",
+                  padding: "8px 0",
+                }}
+              >
+                NO GATHS YET
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {myGaths.slice(0, 3).map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => navigate(`/gath/${g.id}`)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      width: "100%",
+                      padding: "10px 12px",
+                      background: "rgba(255,255,255,0.025)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: 10,
+                      cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: "50%",
+                        background: "rgba(245,197,24,0.08)",
+                        border: `1px solid rgba(245,197,24,0.4)`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <SparkGoldIcon size={12} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: "monospace",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: "#fff",
+                          letterSpacing: "0.04em",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {g.name}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          marginTop: 3,
+                          fontFamily: "monospace",
+                          fontSize: 8,
+                          letterSpacing: "0.18em",
+                          color: "rgba(255,255,255,0.45)",
+                        }}
+                      >
+                        <span>{g.memberCount} MEMBERS</span>
+                        <span
+                          style={{
+                            padding: "1px 5px",
+                            border: `1px solid ${g.type === "BUSINESS" ? GOLD : "rgba(255,255,255,0.12)"}`,
+                            borderRadius: 4,
+                            color: g.type === "BUSINESS" ? GOLD : "rgba(255,255,255,0.7)",
+                          }}
+                        >
+                          {g.type}
+                        </span>
+                      </div>
+                    </div>
+                    {g.role === "IGNITER" && (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          padding: "2px 6px",
+                          border: `1px solid ${GOLD}`,
+                          borderRadius: 999,
+                          background: "rgba(245,197,24,0.06)",
+                          fontFamily: "monospace",
+                          fontSize: 8,
+                          fontWeight: 700,
+                          letterSpacing: "0.22em",
+                          color: GOLD,
+                          flexShrink: 0,
+                        }}
+                      >
+                        <SparkGoldIcon size={8} />
+                        IGNITER
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => navigate("/people")}
+              style={{
+                marginTop: 10,
+                background: "transparent",
+                border: "none",
+                color: GOLD,
+                fontFamily: "monospace",
+                fontSize: 9,
+                letterSpacing: "0.24em",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              SEE ALL GATHS →
+            </button>
+          </div>
 
           <MenuDivider />
 

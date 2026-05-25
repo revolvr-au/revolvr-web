@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, Send } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, Lock, Send, Share2, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
+import SlideUpSheet from "@/components/SlideUpSheet";
 
 const GOLD = "#F5C518";
 
@@ -124,6 +125,23 @@ function MemberAvatar({
   );
 }
 
+type CountdownParts = { d: number; h: number; m: number; s: number };
+
+function pad2(n: number) {
+  return n.toString().padStart(2, "0");
+}
+
+function diffToParts(targetMs: number, nowMs: number): CountdownParts | null {
+  const diff = targetMs - nowMs;
+  if (diff <= 0) return null;
+  const totalSec = Math.floor(diff / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return { d, h, m, s };
+}
+
 export default function GathRoomClient({ id }: { id: string }) {
   const router = useRouter();
   const [gath, setGath] = useState<GathDetail | null>(null);
@@ -133,6 +151,13 @@ export default function GathRoomClient({ id }: { id: string }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [joining, setJoining] = useState(false);
+  const [seededPost, setSeededPost] = useState<SeededPost | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [activating, setActivating] = useState(false);
+  const [liveFlash, setLiveFlash] = useState(false);
+  const [membersOpen, setMembersOpen] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const loadGath = useCallback(async () => {
@@ -210,9 +235,118 @@ export default function GathRoomClient({ id }: { id: string }) {
     scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [gath?.messages.length]);
 
-  const isMember =
-    !!userEmail &&
-    !!gath?.members.some((m) => m.userEmail === userEmail);
+  // Fetch the first seeded post — the room API surface only exposes ids, so we
+  // hit /api/posts/[postId] for the full payload.
+  useEffect(() => {
+    const firstId = gath?.seededPosts[0]?.id;
+    if (!firstId) {
+      setSeededPost(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/posts/${firstId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const p = data?.post ?? data;
+        if (!p?.id) {
+          setSeededPost(gath?.seededPosts[0] ?? null);
+          return;
+        }
+        setSeededPost({
+          id: p.id,
+          caption: p.caption ?? "",
+          imageUrl: p.imageUrl ?? p.media_url ?? "",
+          media_url: p.media_url ?? null,
+          userEmail: p.userEmail ?? "",
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setSeededPost(gath?.seededPosts[0] ?? null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [gath?.seededPosts]);
+
+  // Countdown ticker — only runs while pre-launching with a launchDate.
+  const launchTargetMs = useMemo(() => {
+    if (!gath?.launchDate) return null;
+    const t = new Date(gath.launchDate).getTime();
+    return Number.isFinite(t) ? t : null;
+  }, [gath?.launchDate]);
+
+  const isPreLaunching =
+    gath?.status === "PRELAUNCHING" && launchTargetMs !== null;
+
+  useEffect(() => {
+    if (!isPreLaunching) return;
+    const tick = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(tick);
+  }, [isPreLaunching]);
+
+  const countdown = useMemo(() => {
+    if (!isPreLaunching || launchTargetMs === null) return null;
+    return diffToParts(launchTargetMs, now);
+  }, [isPreLaunching, launchTargetMs, now]);
+
+  // Auto-activate when countdown hits zero
+  useEffect(() => {
+    if (!isPreLaunching || activating) return;
+    if (launchTargetMs === null || launchTargetMs > now) return;
+    setActivating(true);
+    fetch(`/api/gath/${id}/activate`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gathId: id }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.ok && data.gath) {
+          setGath((prev) =>
+            prev ? { ...prev, status: data.gath.status } : prev,
+          );
+          setLiveFlash(true);
+          setTimeout(() => setLiveFlash(false), 3500);
+        }
+      })
+      .finally(() => setActivating(false));
+  }, [isPreLaunching, activating, launchTargetMs, now, id]);
+
+  const userMembership = useMemo(
+    () =>
+      gath?.members.find((m) => m.userEmail === userEmail) ?? null,
+    [gath?.members, userEmail],
+  );
+  const isMember = !!userMembership;
+  const userRole = userMembership?.role ?? null;
+  const canInvite = userRole === "IGNITER" || userRole === "HOST";
+  const isPrivate = gath?.type === "PRIVATE";
+
+  const handleCopyLink = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 1800);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleShare = useCallback(async () => {
+    if (typeof window === "undefined") return;
+    const url = window.location.href;
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: gath?.name ?? "GATH", url });
+        return;
+      } catch {
+        // user dismissed or share failed — fall through to copy
+      }
+    }
+    await handleCopyLink();
+  }, [gath?.name, handleCopyLink]);
 
   const handleSend = useCallback(async () => {
     const content = draft.trim();
@@ -315,7 +449,6 @@ export default function GathRoomClient({ id }: { id: string }) {
     );
   }
 
-  const seededPost = gath.seededPosts[0];
   const visibleMembers = gath.members.slice(0, 5);
   const igniter = gath.members.find((m) => m.role === "IGNITER");
 
@@ -405,7 +538,118 @@ export default function GathRoomClient({ id }: { id: string }) {
               )}
             </div>
           </div>
+
+          {isPrivate && canInvite && (
+            <button
+              type="button"
+              onClick={() => setInviteOpen(true)}
+              aria-label="Invite"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "5px 9px",
+                borderRadius: 999,
+                background: "transparent",
+                border: `1px solid ${GOLD}`,
+                color: GOLD,
+                fontFamily: "monospace",
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: "0.22em",
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              <Share2 size={10} />
+              INVITE
+            </button>
+          )}
+          {isPrivate && !canInvite && (
+            <span
+              aria-label="Private gath"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "5px 9px",
+                borderRadius: 999,
+                background: "rgba(245,197,24,0.06)",
+                border: `1px solid ${GOLD}`,
+                color: GOLD,
+                fontFamily: "monospace",
+                fontSize: 9,
+                fontWeight: 700,
+                letterSpacing: "0.22em",
+                flexShrink: 0,
+              }}
+            >
+              <Lock size={10} />
+              PRIVATE GATH
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setMembersOpen(true)}
+            aria-label="Members"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "5px 9px",
+              borderRadius: 999,
+              background: "transparent",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.8)",
+              fontFamily: "monospace",
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: "0.22em",
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            <Users size={10} />
+            MEMBERS
+          </button>
         </div>
+
+        {/* Pre-launch countdown */}
+        {isPreLaunching && countdown && (
+          <div
+            style={{
+              marginBottom: 10,
+              fontFamily: "monospace",
+              fontSize: 11,
+              color: GOLD,
+              letterSpacing: "0.22em",
+              fontWeight: 700,
+            }}
+          >
+            LAUNCHES IN {countdown.d}D {pad2(countdown.h)}H{" "}
+            {pad2(countdown.m)}M {pad2(countdown.s)}S
+          </div>
+        )}
+        {liveFlash && (
+          <div
+            style={{
+              marginBottom: 10,
+              padding: "6px 10px",
+              borderRadius: 8,
+              border: `1px solid ${GOLD}`,
+              background: "rgba(245,197,24,0.1)",
+              fontFamily: "monospace",
+              fontSize: 10,
+              color: GOLD,
+              letterSpacing: "0.28em",
+              fontWeight: 700,
+              textAlign: "center",
+            }}
+          >
+            GATH IS LIVE
+          </div>
+        )}
 
         {/* IGNITER chip */}
         {igniter && (
@@ -432,50 +676,62 @@ export default function GathRoomClient({ id }: { id: string }) {
 
         {/* Seeded post */}
         {seededPost && (
-          <div
-            onClick={() => router.push(`/post/${seededPost.id}`)}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: 8,
-              background: "rgba(255,255,255,0.025)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 10,
-              marginBottom: 10,
-              cursor: "pointer",
-            }}
-          >
+          <div style={{ marginBottom: 10 }}>
             <div
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 8,
-                background: seededPost.imageUrl
-                  ? `url(${seededPost.imageUrl}) center/cover`
-                  : "linear-gradient(135deg, #1a2030, #0a0e18)",
-                flexShrink: 0,
+                fontFamily: "monospace",
+                fontSize: 9,
+                fontWeight: 700,
+                color: GOLD,
+                letterSpacing: "0.24em",
+                marginBottom: 6,
               }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
+            >
+              SEEDED POST
+            </div>
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => router.push("/public-feed")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push("/public-feed");
+                }
+              }}
+              style={{
+                background: "rgba(7,11,27,0.85)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                borderRadius: 12,
+                padding: 12,
+                cursor: "pointer",
+                display: "flow-root",
+              }}
+            >
+              {seededPost.imageUrl && (
+                <div
+                  style={{
+                    float: "left",
+                    width: 60,
+                    height: 60,
+                    borderRadius: 8,
+                    marginRight: 10,
+                    background: `url(${seededPost.imageUrl}) center/cover`,
+                    flexShrink: 0,
+                  }}
+                />
+              )}
               <div
                 style={{
-                  fontSize: 8,
-                  letterSpacing: "0.22em",
-                  color: GOLD,
-                  fontWeight: 700,
-                  marginBottom: 2,
-                }}
-              >
-                SEEDED POST
-              </div>
-              <div
-                style={{
-                  fontSize: 10,
+                  fontFamily:
+                    '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif',
+                  fontSize: 12,
+                  lineHeight: 1.45,
                   color: "rgba(255,255,255,0.7)",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
                 }}
               >
                 {seededPost.caption || "—"}
@@ -698,6 +954,264 @@ export default function GathRoomClient({ id }: { id: string }) {
           </div>
         )}
       </div>
+
+      {/* LINK COPIED flash */}
+      {linkCopied && (
+        <div
+          style={{
+            position: "fixed",
+            top: 28,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 30,
+            padding: "8px 14px",
+            borderRadius: 999,
+            background: "rgba(7,11,27,0.95)",
+            border: `1px solid ${GOLD}`,
+            color: GOLD,
+            fontFamily: "monospace",
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.28em",
+            boxShadow: "0 6px 18px rgba(0,0,0,0.4)",
+          }}
+        >
+          LINK COPIED
+        </div>
+      )}
+
+      {/* INVITE sheet */}
+      <SlideUpSheet open={inviteOpen} onClose={() => setInviteOpen(false)}>
+        <div
+          style={{
+            background: "rgba(5,8,20,0.95)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            padding: "18px 18px calc(env(safe-area-inset-bottom, 0px) + 22px)",
+            color: "#fff",
+            fontFamily: "monospace",
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.28em",
+                color: GOLD,
+              }}
+            >
+              INVITE TO GATH
+            </div>
+            <button
+              type="button"
+              onClick={() => setInviteOpen(false)}
+              aria-label="Close"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.06)",
+                border: "none",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: "rgba(255,255,255,0.55)",
+              wordBreak: "break-all",
+              padding: 10,
+              borderRadius: 10,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            {typeof window !== "undefined" ? window.location.href : ""}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: 10,
+                background: "transparent",
+                border: `1px solid ${GOLD}`,
+                color: GOLD,
+                fontFamily: "monospace",
+                fontWeight: 800,
+                fontSize: 11,
+                letterSpacing: "0.28em",
+                cursor: "pointer",
+              }}
+            >
+              COPY LINK
+            </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              style={{
+                flex: 1,
+                padding: "12px",
+                borderRadius: 10,
+                background: GOLD,
+                color: "#0a0e16",
+                border: "none",
+                fontFamily: "monospace",
+                fontWeight: 800,
+                fontSize: 11,
+                letterSpacing: "0.28em",
+                cursor: "pointer",
+              }}
+            >
+              SHARE
+            </button>
+          </div>
+        </div>
+      </SlideUpSheet>
+
+      {/* MEMBERS sheet */}
+      <SlideUpSheet open={membersOpen} onClose={() => setMembersOpen(false)}>
+        <div
+          style={{
+            background: "rgba(5,8,20,0.95)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            padding: "16px 0 calc(env(safe-area-inset-bottom, 0px) + 16px)",
+            color: "#fff",
+            fontFamily: "monospace",
+            maxHeight: "75dvh",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "0 18px 12px",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.28em",
+                color: GOLD,
+              }}
+            >
+              MEMBERS · {gath.memberCount}
+            </div>
+            <button
+              type="button"
+              onClick={() => setMembersOpen(false)}
+              aria-label="Close"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.06)",
+                border: "none",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div
+            style={{
+              overflowY: "auto",
+              flex: 1,
+              padding: "8px 0",
+            }}
+          >
+            {gath.members.map((m) => (
+              <div
+                key={m.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 18px",
+                }}
+              >
+                <MemberAvatar email={m.userEmail} size={36} role={m.role} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: "#fff",
+                      letterSpacing: "0.04em",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    @{handleFromEmail(m.userEmail)}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: "rgba(255,255,255,0.4)",
+                      letterSpacing: "0.18em",
+                      marginTop: 2,
+                    }}
+                  >
+                    JOINED{" "}
+                    {new Date(m.joinedAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </div>
+                </div>
+                <span
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: 999,
+                    fontSize: 8,
+                    fontWeight: 700,
+                    letterSpacing: "0.22em",
+                    border: `1px solid ${m.role === "IGNITER" ? GOLD : "rgba(255,255,255,0.15)"}`,
+                    color: m.role === "IGNITER" ? GOLD : "rgba(255,255,255,0.75)",
+                    background:
+                      m.role === "IGNITER" ? "rgba(245,197,24,0.06)" : "transparent",
+                  }}
+                >
+                  {m.role}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </SlideUpSheet>
     </div>
   );
 }
