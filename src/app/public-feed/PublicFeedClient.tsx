@@ -24,7 +24,7 @@ import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
 import GathWindow from "@/components/GathWindow";
 
 const GOLD = "#F5C518";
-const ACTION_KEYS = ["LIKE", "COMMENT", "GIFT", "CREATE", "REPOST", "SAVE", "GATH"] as const;
+const ACTION_KEYS = ["LIKE", "COMMENT", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
 type ActionKey = (typeof ACTION_KEYS)[number];
 
 const ACTION_ICONS: Record<
