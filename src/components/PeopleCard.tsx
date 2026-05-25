@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import GathWindow from "@/components/GathWindow";
 
@@ -225,6 +226,8 @@ export default function PeopleCard({
   const [gathOpen, setGathOpen] = useState(false);
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const goToProfile = () => router.push(`/u/${user.handle}`);
 
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -556,6 +559,9 @@ export default function PeopleCard({
             {/* Avatar */}
             <div
               data-people-card="avatar"
+              onClick={goToProfile}
+              role="button"
+              tabIndex={0}
               style={{
                 width: 100,
                 height: 100,
@@ -572,6 +578,7 @@ export default function PeopleCard({
                 fontWeight: 700,
                 transition: "border 220ms ease",
                 boxSizing: "border-box",
+                cursor: "pointer",
               }}
             >
               {!user.avatarUrl && initial}
@@ -713,6 +720,9 @@ export default function PeopleCard({
 
         {/* Name + handle BELOW orbit zone */}
         <div
+          onClick={goToProfile}
+          role="button"
+          tabIndex={0}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -720,6 +730,7 @@ export default function PeopleCard({
             padding: "16px 16px 8px",
             zIndex: 10,
             position: "relative",
+            cursor: "pointer",
           }}
         >
           <div
