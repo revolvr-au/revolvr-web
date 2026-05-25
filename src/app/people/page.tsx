@@ -6,6 +6,24 @@ import FeedLayout from "@/components/FeedLayout";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 import RingRim from "@/components/RingRim";
 import { useRingStatus } from "@/hooks/useRingStatus";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
+
+const GOLD = "#F5C518";
+
+type GathStatus = "ACTIVE" | "PRELAUNCHING" | string;
+type GathType = "OPEN" | "PRIVATE" | "BUSINESS";
+
+type Gath = {
+  id: string;
+  name: string;
+  description: string | null;
+  type: GathType;
+  status: GathStatus;
+  creatorEmail: string;
+  launchDate: string | null;
+  memberCount: number;
+  createdAt: string;
+};
 
 type LivePerson = {
   handle: string;
@@ -425,6 +443,140 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
+function SparkIcon({ size = 10, color = GOLD }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z" />
+    </svg>
+  );
+}
+
+function formatLaunchDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }).toUpperCase();
+}
+
+function GathCard({
+  gath,
+  joined,
+  joining,
+  onJoin,
+}: {
+  gath: Gath;
+  joined: boolean;
+  joining: boolean;
+  onJoin: () => void;
+}) {
+  const igniterHandle = gath.creatorEmail.split("@")[0];
+  const isPreLaunch = gath.status === "PRELAUNCHING";
+
+  return (
+    <div
+      style={{
+        background: "rgba(22,28,40,0.95)",
+        borderRadius: 12,
+        padding: "14px 16px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        border: "1px solid rgba(255,255,255,0.04)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: "white",
+              fontFamily: "Inter, system-ui, sans-serif",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {gath.name}
+          </div>
+        </div>
+        <button
+          onClick={onJoin}
+          disabled={joined || joining || isPreLaunch}
+          style={{
+            fontSize: 9,
+            fontFamily: "monospace",
+            letterSpacing: "0.22em",
+            fontWeight: 700,
+            color: joined ? "rgba(245,197,24,0.55)" : isPreLaunch ? "rgba(255,255,255,0.25)" : GOLD,
+            background: "transparent",
+            border: `1px solid ${joined ? "rgba(245,197,24,0.35)" : isPreLaunch ? "rgba(255,255,255,0.12)" : GOLD}`,
+            borderRadius: 20,
+            padding: "4px 14px",
+            cursor: joined || joining || isPreLaunch ? "default" : "pointer",
+            flexShrink: 0,
+          }}
+        >
+          {joined ? "JOINED" : joining ? "…" : "JOIN"}
+        </button>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexWrap: "wrap",
+          fontFamily: "monospace",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 8,
+            letterSpacing: "0.22em",
+            fontWeight: 700,
+            color: "rgba(255,255,255,0.6)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            borderRadius: 4,
+            padding: "2px 6px",
+          }}
+        >
+          {gath.type}
+        </span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)" }}>
+          {gath.memberCount} {gath.memberCount === 1 ? "member" : "members"}
+        </span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.7)" }}>
+          <SparkIcon size={10} color={GOLD} />
+          <span>@{igniterHandle}</span>
+        </span>
+      </div>
+
+      {isPreLaunch && (
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            alignSelf: "flex-start",
+            fontSize: 9,
+            fontFamily: "monospace",
+            letterSpacing: "0.22em",
+            fontWeight: 700,
+            color: GOLD,
+            background: "rgba(245,197,24,0.08)",
+            border: "1px solid rgba(245,197,24,0.35)",
+            borderRadius: 6,
+            padding: "3px 8px",
+          }}
+        >
+          <SparkIcon size={9} color={GOLD} />
+          PRE-LAUNCH{gath.launchDate ? ` · ${formatLaunchDate(gath.launchDate)}` : ""}
+        </div>
+      )}
+    </div>
+  );
+}
+
 let peopleCache: { data: PeopleData; ts: number } | null = null;
 const PEOPLE_CACHE_TTL = 30_000;
 
@@ -434,6 +586,13 @@ export function PeoplePageContent() {
   const [loading, setLoading] = useState(peopleCache === null);
   const { } = useRingStatus();
   const showGate = false;
+
+  const [activeTab, setActiveTab] = useState<"people" | "gaths">("people");
+  const [gaths, setGaths] = useState<Gath[] | null>(null);
+  const [gathsLoading, setGathsLoading] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
+  const [joiningIds, setJoiningIds] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(() => {
     fetch("/api/people-rail")
@@ -455,6 +614,55 @@ export function PeoplePageContent() {
     const interval = setInterval(fetchData, PEOPLE_CACHE_TTL);
     return () => clearInterval(interval);
   }, [fetchData]);
+
+  useEffect(() => {
+    const sb = createSupabaseBrowserClient();
+    sb.auth.getUser().then(({ data: userData }) => {
+      setUserEmail(userData.user?.email ?? null);
+    }).catch(() => setUserEmail(null));
+  }, []);
+
+  useEffect(() => {
+    if (activeTab !== "gaths" || gaths !== null) return;
+    setGathsLoading(true);
+    fetch("/api/gath/list")
+      .then(r => r.json())
+      .then(d => setGaths(Array.isArray(d?.gaths) ? d.gaths : []))
+      .catch(() => setGaths([]))
+      .finally(() => setGathsLoading(false));
+  }, [activeTab, gaths]);
+
+  const handleJoinGath = useCallback(async (gathId: string) => {
+    if (!userEmail || joinedIds.has(gathId) || joiningIds.has(gathId)) return;
+    setJoiningIds(prev => {
+      const next = new Set(prev);
+      next.add(gathId);
+      return next;
+    });
+    try {
+      const res = await fetch("/api/gath/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gathId, userEmail }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (res.ok && body?.ok) {
+        setJoinedIds(prev => {
+          const next = new Set(prev);
+          next.add(gathId);
+          return next;
+        });
+      }
+    } catch {
+      /* swallow — JOIN stays available for retry */
+    } finally {
+      setJoiningIds(prev => {
+        const next = new Set(prev);
+        next.delete(gathId);
+        return next;
+      });
+    }
+  }, [userEmail, joinedIds, joiningIds]);
 
   const go = (handle: string) => router.push(`/u/${handle}`);
 
@@ -489,7 +697,101 @@ export function PeoplePageContent() {
         paddingRight: 16,
         scrollbarWidth: "none",
       }}>
-        {loading ? (
+        {/* TAB STRIP */}
+        <div style={{
+          display: "flex",
+          gap: 28,
+          marginBottom: 22,
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}>
+          {([
+            { key: "people", label: "PEOPLE" },
+            { key: "gaths", label: "GATHS" },
+          ] as const).map(t => {
+            const active = activeTab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: "10px 0",
+                  borderBottom: active ? `2px solid ${GOLD}` : "2px solid transparent",
+                  color: active ? "white" : "rgba(255,255,255,0.35)",
+                  fontFamily: "monospace",
+                  fontSize: 11,
+                  letterSpacing: "0.14em",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  marginBottom: -1,
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {activeTab === "gaths" ? (
+          gathsLoading ? (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: "60%",
+              fontSize: 11,
+              fontFamily: "monospace",
+              letterSpacing: "2px",
+              color: "rgba(255,255,255,0.25)",
+              textTransform: "uppercase",
+            }}>
+              Loading…
+            </div>
+          ) : (gaths?.length ?? 0) === 0 ? (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              paddingTop: 80,
+              gap: 8,
+              textAlign: "center",
+              paddingLeft: 24,
+              paddingRight: 24,
+            }}>
+              <div style={{
+                fontSize: 36,
+                fontFamily: "'Bebas Neue', sans-serif",
+                color: "rgba(255,255,255,0.15)",
+                letterSpacing: "4px",
+              }}>
+                GATHS
+              </div>
+              <div style={{
+                fontSize: 11,
+                fontFamily: "monospace",
+                letterSpacing: "2px",
+                color: "rgba(255,255,255,0.25)",
+                textTransform: "uppercase",
+              }}>
+                No gaths yet — start one in the feed
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {gaths!.map(g => (
+                <GathCard
+                  key={g.id}
+                  gath={g}
+                  joined={joinedIds.has(g.id)}
+                  joining={joiningIds.has(g.id)}
+                  onJoin={() => handleJoinGath(g.id)}
+                />
+              ))}
+            </div>
+          )
+        ) : loading ? (
           <div style={{
             display: "flex",
             alignItems: "center",
