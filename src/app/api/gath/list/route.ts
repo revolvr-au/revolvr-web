@@ -16,6 +16,15 @@ export async function GET() {
       take: 60,
     });
 
+    const emails = Array.from(new Set(gaths.map((g) => g.creatorEmail)));
+    const profiles = emails.length
+      ? await prisma.creatorProfile.findMany({
+          where: { email: { in: emails } },
+          select: { email: true, handle: true },
+        })
+      : [];
+    const handleByEmail = new Map(profiles.map((p) => [p.email, p.handle]));
+
     const sorted = gaths
       .map((g) => ({
         id: g.id,
@@ -24,6 +33,7 @@ export async function GET() {
         type: g.type,
         status: g.status,
         creatorEmail: g.creatorEmail,
+        creatorHandle: handleByEmail.get(g.creatorEmail) ?? null,
         launchDate: g.launchDate,
         memberCount: g._count.members,
         createdAt: g.createdAt,

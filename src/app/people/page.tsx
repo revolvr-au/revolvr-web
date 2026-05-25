@@ -20,6 +20,7 @@ type Gath = {
   type: GathType;
   status: GathStatus;
   creatorEmail: string;
+  creatorHandle: string | null;
   launchDate: string | null;
   memberCount: number;
   createdAt: string;
@@ -468,7 +469,7 @@ function GathCard({
   joining: boolean;
   onJoin: () => void;
 }) {
-  const igniterHandle = gath.creatorEmail.split("@")[0];
+  const igniterHandle = gath.creatorHandle ?? gath.creatorEmail.split("@")[0];
   const isPreLaunch = gath.status === "PRELAUNCHING";
 
   return (
