@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-type ActionMode = "tip" | "boost" | "spin" | "reaction" | "vote";
+type ActionMode = "tip" | "boost" | "spin" | "reaction";
 
 type PostLite = { id: string };
 
@@ -80,7 +80,6 @@ export default function PublicFeedDock({
       { mode: "boost", label: "Highlight", icon: "⭐" },
       { mode: "spin", label: "Pulse", icon: "💫" },
       { mode: "reaction", label: "Bloom", icon: "🌸" },
-      { mode: "vote", label: "Signal", icon: "🐝" },
     ],
     []
   );
@@ -124,23 +123,7 @@ export default function PublicFeedDock({
           <span className="text-lg leading-none">💬</span>
         </button>
 
-        <button
-          type="button"
-          disabled={!canAct}
-          onClick={() => activePostId && onShare(activePostId)}
-          className={[
-            "w-12 h-12 rounded-full border border-white/10 bg-black/35 backdrop-blur",
-            "flex items-center justify-center",
-            "active:scale-[0.98] transition",
-            !canAct ? "opacity-40 cursor-not-allowed" : "hover:bg-black/45",
-          ].join(" ")}
-          aria-label="Share"
-          title="Share"
-        >
-          <span className="text-lg leading-none">↗</span>
-        </button>
-      </div>
-
+    
       {/* BOTTOM-LEFT REWARD BUTTON */}
       <div className="fixed left-3 bottom-28 z-50">
         <button
@@ -161,8 +144,9 @@ export default function PublicFeedDock({
         </button>
 
         {/* Reward tray */}
+        <div className="fixed left-3 bottom-28 z-50 relative"></div>
         {rewardOpen && canAct ? (
-          <div className="mt-2 w-56 rounded-2xl border border-white/10 bg-black/55 backdrop-blur p-2 shadow-lg shadow-black/40">
+          <div className="absolute bottom-16 left-0 w-56 rounded-2xl ...">
             <div className="text-[11px] text-white/60 px-2 pb-2">Reward this post</div>
             <div className="grid grid-cols-2 gap-2">
               {rewardItems.map((it) => (

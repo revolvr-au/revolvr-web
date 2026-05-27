@@ -51,6 +51,7 @@ export function MediaCarousel({
                 poster={m.posterUrl}
                 controls
                 playsInline
+                loop
                 className="w-full max-h-[480px] object-cover"
               />
             ) : (

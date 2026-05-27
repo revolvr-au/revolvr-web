@@ -1,44 +1,63 @@
-export const dynamic = "force-dynamic";
-
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; // <-- IMPORTANT: use your singleton
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const postId = searchParams.get("postId");
+  try {
+    console.log("👉 GET /api/comments hit");
 
-  if (!postId) {
-    return NextResponse.json({ comments: [] });
-  }
+    const { searchParams } = new URL(req.url);
+    const postId = searchParams.get("postId");
 
-  const comments = await prisma.comment.findMany({
-    where: { postId, parentId: null },
-    orderBy: { createdAt: "asc" },
-    include: {
-      replies: {
-        orderBy: { createdAt: "asc" },
+    if (!postId) {
+      return NextResponse.json({ ok: false, comments: [] });
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: { postId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        postId: true,
+        userEmail: true,
+        body: true,
+        parentId: true,
+        createdAt: true,
+        voltage: true,
+        tranched: true,
+        tranchedAt: true,
       },
-    },
-  });
+    });
 
-  return NextResponse.json({ comments });
-}
+    return NextResponse.json({ ok: true, comments });
 
-export async function POST(req: Request) {
-  const { postId, userEmail, body, parentId } = await req.json();
-
-  if (!postId || !userEmail || !body) {
-    return NextResponse.json({ ok: false }, { status: 400 });
+  } catch (error) {
+    console.error("🔥 GET COMMENTS ERROR:", error);
+    return NextResponse.json({ ok: false, comments: [] });
   }
+}
+export async function POST(req: Request) {
+  try {
+    console.log("👉 POST /api/comments hit");
 
-  const comment = await prisma.comment.create({
-    data: {
-      postId,
-      userEmail,
-      body,
-      parentId: parentId ?? null,
-    },
-  });
+    const { postId, userEmail, body, parentId } = await req.json();
 
-  return NextResponse.json({ ok: true, comment });
+    if (!postId || !userEmail || !body) {
+      return NextResponse.json({ ok: false }, { status: 400 });
+    }
+
+    const comment = await prisma.comment.create({
+      data: {
+        postId,
+        userEmail,
+        body,
+        parentId: parentId ?? null,
+      },
+    });
+
+    return NextResponse.json({ ok: true, comment });
+
+  } catch (error) {
+    console.error("🔥 POST COMMENT ERROR:", error);
+    return NextResponse.json({ ok: false }, { status: 500 });
+  }
 }

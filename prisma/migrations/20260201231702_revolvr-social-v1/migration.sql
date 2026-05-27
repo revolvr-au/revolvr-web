@@ -44,7 +44,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS "Post" (
     "id" TEXT NOT NULL,
     "userEmail" TEXT NOT NULL,
-    "imageUrl" TEXT NOT NULL,
+    "image_Url" TEXT NOT NULL,
     "caption" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,

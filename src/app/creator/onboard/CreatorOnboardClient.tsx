@@ -5,18 +5,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 const supabase = createSupabaseBrowserClient();
+const CHARACTERS = [1, 2, 3, 4, 5];
 
 export default function CreatorOnboardClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [step, setStep] = useState<1 | 2>(1);
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [characterId, setCharacterId] = useState<number>(1);
   const [loading, setLoading] = useState(false);
   const [redirectingStripe, setRedirectingStripe] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // If we arrived here specifically to continue to Stripe, do NOT render the form.
   useEffect(() => {
     let cancelled = false;
 
@@ -35,7 +37,7 @@ export default function CreatorOnboardClient() {
             return;
           }
 
-          const stripeRes = await fetch("/api/stripe/connect/create", {
+          const stripeRes = await fetch("/api/stripe/connect/link", {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
             cache: "no-store",
@@ -53,7 +55,6 @@ export default function CreatorOnboardClient() {
             return;
           }
 
-          // If we couldn't redirect for some reason, fall back to showing the form with an error.
           if (!cancelled) {
             setRedirectingStripe(false);
             setErr(stripeJson?.error || "Could not start Stripe onboarding.");
@@ -61,7 +62,6 @@ export default function CreatorOnboardClient() {
           return;
         }
 
-        // Normal behavior: if already a creator, skip onboarding
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
         if (!token) return;
@@ -84,9 +84,7 @@ export default function CreatorOnboardClient() {
     }
 
     run();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [router, searchParams]);
 
   const onActivate = async () => {
@@ -118,10 +116,19 @@ export default function CreatorOnboardClient() {
         return;
       }
 
-      // After activation, go to Stripe (API will 409->terms if required)
+      // Save character choice
+      await fetch("/api/creator/profile/update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ characterId }),
+      });
+
       setRedirectingStripe(true);
 
-      const stripeRes = await fetch("/api/stripe/connect/create", {
+      const stripeRes = await fetch("/api/stripe/connect/link", {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
@@ -150,54 +157,178 @@ export default function CreatorOnboardClient() {
     }
   };
 
-  // ✅ This removes the “glitch”: no onboard UI renders while redirecting.
+  const canSubmitStep1 = handle.trim().length > 0 && displayName.trim().length > 0;
+
   if (redirectingStripe) {
     return (
-      <div className="mx-auto max-w-md px-6 py-10">
-        <h1 className="text-2xl font-semibold">Redirecting to Stripe…</h1>
-        <p className="mt-2 text-sm text-white/70">Please wait.</p>
+      <div style={{
+        minHeight: "100dvh", background: "#0a0806",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center", gap: 16,
+      }}>
+        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white" }}>
+          REVOLVR
+        </div>
+        <div style={{ fontFamily: "monospace", fontSize: 13, color: "#00e5ff", letterSpacing: 2 }}>
+          REDIRECTING TO STRIPE…
+        </div>
+        <div style={{ fontFamily: "monospace", fontSize: 11, color: "#333" }}>Please wait.</div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-md px-6 py-10">
-      <h1 className="text-2xl font-semibold">Creator onboarding</h1>
-      <p className="mt-2 text-sm text-white/70">
-        Choose your creator handle and display name to enable payouts.
-      </p>
+    <div style={{
+      minHeight: "100dvh", background: "#0a0806",
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      padding: "32px 20px",
+    }}>
+      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white", marginBottom: 32 }}>
+        REVOLVR
+      </div>
 
-      {err && (
-        <div className="mt-4 rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-          {err}
-        </div>
-      )}
+      <div style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
 
-      <div className="mt-6 space-y-3">
-        <label className="block text-sm text-white/80">Handle</label>
-        <input
-          value={handle}
-          onChange={(e) => setHandle(e.target.value)}
-          className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
-          placeholder="yourhandle"
-        />
+        {/* ── STEP 1: Handle + display name ── */}
+        {step === 1 && (
+          <>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
+              BECOME A CREATOR
+            </div>
+            <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+              Choose your handle and display name to enable payouts.
+            </div>
 
-        <label className="block text-sm text-white/80">Display name</label>
-        <input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          className="w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-white"
-          placeholder="Your Name"
-        />
+            {err && (
+              <div style={{ fontFamily: "monospace", fontSize: 12, color: "#ff3b30", textAlign: "center", width: "100%" }}>
+                {err}
+              </div>
+            )}
 
-        <button
-          type="button"
-          disabled={loading}
-          onClick={onActivate}
-          className="mt-2 w-full rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-60"
-        >
-          {loading ? "Saving…" : "Continue"}
-        </button>
+            <input
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
+              placeholder="yourhandle"
+              style={{
+                width: "100%", boxSizing: "border-box",
+                background: "#110e0b", border: "1px solid #2a2520",
+                borderRadius: 50, padding: "13px 18px",
+                fontFamily: "monospace", fontSize: 14, color: "white", outline: "none",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
+            />
+
+            <input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Display name"
+              style={{
+                width: "100%", boxSizing: "border-box",
+                background: "#110e0b", border: "1px solid #2a2520",
+                borderRadius: 50, padding: "13px 18px",
+                fontFamily: "monospace", fontSize: 14, color: "white", outline: "none",
+              }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
+            />
+
+            <button
+              type="button"
+              disabled={!canSubmitStep1}
+              onClick={() => setStep(2)}
+              style={{
+                width: "100%", padding: "14px 0", borderRadius: 50,
+                background: "transparent",
+                border: `1px solid ${canSubmitStep1 ? "#00e5ff" : "#2a2520"}`,
+                color: canSubmitStep1 ? "#00e5ff" : "#333",
+                fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3,
+                cursor: canSubmitStep1 ? "pointer" : "not-allowed",
+                transition: "border-color 0.2s, color 0.2s",
+              }}
+            >
+              NEXT
+            </button>
+          </>
+        )}
+
+        {/* ── STEP 2: Character picker ── */}
+        {step === 2 && (
+          <>
+            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
+              PICK YOUR CHARACTER
+            </div>
+            <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+              This character will appear on your live streams.
+            </div>
+
+            <div style={{
+              display: "grid", gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 10, width: "100%", marginTop: 8,
+            }}>
+              {CHARACTERS.map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setCharacterId(id)}
+                  style={{
+                    background: characterId === id ? "rgba(0,229,255,0.08)" : "#110e0b",
+                    border: `2px solid ${characterId === id ? "#00e5ff" : "#2a2520"}`,
+                    borderRadius: 12, padding: "6px 4px 0",
+                    cursor: "pointer", display: "flex",
+                    flexDirection: "column", alignItems: "center",
+                    transition: "border-color 0.15s, background 0.15s",
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/character_${id}.png`}
+                    alt={`Character ${id}`}
+                    style={{ width: "100%", height: "auto", display: "block" }}
+                  />
+                </button>
+              ))}
+            </div>
+
+            {err && (
+              <div style={{ fontFamily: "monospace", fontSize: 12, color: "#ff3b30", textAlign: "center", width: "100%" }}>
+                {err}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: 10, width: "100%" }}>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                style={{
+                  flex: 1, padding: "14px 0", borderRadius: 50,
+                  background: "transparent", border: "1px solid #2a2520",
+                  color: "#555", fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 18, letterSpacing: 3, cursor: "pointer",
+                }}
+              >
+                BACK
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={onActivate}
+                style={{
+                  flex: 2, padding: "14px 0", borderRadius: 50,
+                  background: "transparent", border: "1px solid #00e5ff",
+                  color: "#00e5ff", fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 18, letterSpacing: 3,
+                  cursor: loading ? "not-allowed" : "pointer",
+                  transition: "border-color 0.2s, color 0.2s",
+                }}
+              >
+                {loading ? "SAVING…" : "CONTINUE"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

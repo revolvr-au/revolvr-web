@@ -1,92 +1,37 @@
 "use client";
 
-import Link from "next/link";
-import type { ReactNode } from "react";
-import { Radio } from "lucide-react";
+import BottomBar from "./BottomBar";
+import TopBar from "./TopBar";
 
 type Props = {
-  children: ReactNode;
-  title?: string;
-  right?: ReactNode;
-  onGoLive?: () => void;
-  showMenu?: boolean;
-  menuHref?: string;
-  isLive?: boolean; // 🔴 NEW: allows layout to react to live state
+  children: React.ReactNode;
 };
 
-export default function FeedLayout({
-  children,
-  title,
-  right,
-  onGoLive,
-  showMenu = false,
-  menuHref = "/command",
-  isLive = false,
-}: Props) {
+export default function FeedLayout({ children }: Props) {
   return (
-    <div className="min-h-screen bg-[#050814] text-white relative">
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        background: "#020617",
+        minHeight: "100vh"
+      }}
+    >
+      {/* SINGLE FEED CONTAINER */}
+      <div
+  style={{
+    width: "100%",
+    maxWidth: "100%",
+    height: "100dvh",
+    overflow: "hidden",
+    position: "relative"
+  }}
+>
+        <TopBar />
+        <BottomBar />
 
-      {/* HEADER (hidden during LIVE) */}
-      {!isLive && (
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-black/40 backdrop-blur-md">
-          <div className="mx-auto flex w-full max-w-[720px] items-center justify-between gap-3 px-4 py-3">
-
-            {/* Brand */}
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold tracking-wider bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
-                {(title ?? "REVOLVR").toUpperCase()}
-              </h1>
-            </div>
-
-            {/* Right Controls */}
-            <div className="flex items-center gap-2">
-
-              {/* 🔴 Go Live */}
-              <button
-                type="button"
-                onClick={() => onGoLive?.()}
-                disabled={!onGoLive}
-                className={`
-                  relative inline-flex h-10 w-10 items-center justify-center
-                  rounded-xl transition active:scale-95
-                  ${
-                    isLive
-                      ? "bg-red-600 shadow-[0_0_20px_rgba(255,0,60,0.6)]"
-                      : "bg-white/5 hover:bg-white/10"
-                  }
-                  disabled:opacity-40 disabled:cursor-not-allowed
-                `}
-                aria-label="Go Live"
-              >
-                <Radio className="w-5 h-5 text-white" />
-
-                {/* Live pulse dot */}
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              </button>
-
-              {right ?? null}
-
-              {showMenu && (
-                <Link
-                  href={menuHref}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 transition hover:bg-white/10 active:scale-95"
-                  aria-label="Menu"
-                >
-                  ☰
-                </Link>
-              )}
-            </div>
-          </div>
-        </header>
-      )}
-
-      {/* MAIN CONTENT */}
-      <main className={`${isLive ? "p-0" : "w-full px-4 py-6"}`}>
-        <div className={`${isLive ? "" : "mx-auto w-full max-w-[720px]"}`}>
-          {children}
-        </div>
-      </main>
-
+        {children}
+      </div>
     </div>
   );
 }

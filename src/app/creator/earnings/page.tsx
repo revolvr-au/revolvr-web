@@ -1,90 +1,68 @@
-// src/app/creator/earnings/page.tsx
-export const dynamic = "force-dynamic";
+"use client";
 
-import { getCreatorEarnings } from "@/lib/creatorEarnings";
+import { useRouter } from "next/navigation";
 
-function formatAudCents(cents: number) {
-  const dollars = cents / 100;
-  return dollars.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
-}
-
-export default async function CreatorEarningsPage() {
-  // TODO: replace with real logged-in email (Supabase auth)
-  const creatorEmail = ""; // hydrate from authed user
-
-  if (!creatorEmail) {
-    return (
-      <div className="mx-auto max-w-3xl p-6">
-        <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
-        <p className="mt-3 text-sm text-neutral-600">
-          You must be logged in to view earnings.
-        </p>
-      </div>
-    );
-  }
-
-  const data = await getCreatorEarnings(creatorEmail);
+export default function CreatorEarningsPage() {
+  const router = useRouter();
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
-      <h1 className="text-2xl font-semibold">Creator Dashboard</h1>
+    <div style={{
+      minHeight: "100vh",
+      background: "#0a0806",
+      color: "white",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      maxWidth: 480,
+      margin: "0 auto",
+      padding: "24px 20px 60px",
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+      `}</style>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border bg-white p-4 shadow-sm">
-          <div className="text-sm text-neutral-500">Lifetime earned</div>
-          <div className="mt-1 text-2xl font-semibold">
-            {formatAudCents(data.balances.lifetimeEarned)}
-          </div>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 48 }}>
+        <button
+          onClick={() => router.back()}
+          style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "4px 2px" }}
+        >←</button>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "#333", textTransform: "uppercase" }}>
+          Creator
         </div>
-
-        <div className="rounded-xl border bg-white p-4 shadow-sm">
-          <div className="text-sm text-neutral-500">Available balance</div>
-          <div className="mt-1 text-2xl font-semibold">
-            {formatAudCents(data.balances.availableBalance)}
-          </div>
-        </div>
+        <div style={{ width: 30 }} />
       </div>
 
-      <div className="mt-8 rounded-xl border bg-white p-4 shadow-sm">
-        <h2 className="text-lg font-semibold">Recent payments</h2>
+      {/* Title */}
+      <h1 style={{
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: 52,
+        letterSpacing: 2,
+        color: "white",
+        margin: "0 0 10px",
+        lineHeight: 1,
+      }}>
+        Earnings Dashboard
+      </h1>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="text-neutral-500">
-              <tr className="border-b">
-                <th className="py-2 pr-4">Date</th>
-                <th className="py-2 pr-4">Type</th>
-                <th className="py-2 pr-4">Gross</th>
-                <th className="py-2 pr-4">Creator</th>
-                <th className="py-2 pr-4">ID</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.recentPayments.map((p) => (
-                <tr key={p.id} className="border-b last:border-b-0">
-                  <td className="py-2 pr-4">
-                    {new Date(p.createdAt).toLocaleString("en-AU")}
-                  </td>
-                  <td className="py-2 pr-4">{p.type}</td>
-                  <td className="py-2 pr-4">{formatAudCents(p.amountGross)}</td>
-                  <td className="py-2 pr-4">{formatAudCents(p.amountCreator)}</td>
-                  <td className="py-2 pr-4 font-mono text-xs text-neutral-600">
-                    {p.id.slice(0, 18)}…
-                  </td>
-                </tr>
-              ))}
+      {/* Subtitle */}
+      <p style={{ fontSize: 13, color: "#888", margin: "0 0 36px", lineHeight: 1.6 }}>
+        Your earnings overview will appear here.
+      </p>
 
-              {data.recentPayments.length === 0 && (
-                <tr>
-                  <td className="py-6 text-neutral-500" colSpan={5}>
-                    No payments yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />
+
+      {/* Status badge */}
+      <span style={{
+        fontFamily: "monospace",
+        fontSize: 10,
+        letterSpacing: 2,
+        color: "#00e5ff",
+        border: "1px solid rgba(0,229,255,0.3)",
+        borderRadius: 4,
+        padding: "4px 10px",
+        textTransform: "uppercase",
+      }}>
+        Coming Soon
+      </span>
     </div>
   );
 }

@@ -2,31 +2,51 @@ generator client {
   provider = "prisma-client-js"
 }
 
-
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  schemas  = ["public"]
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public"]
 }
-
 
 model Post {
-  id        String   @id @default(uuid())
-  userEmail String
-  imageUrl  String
-  caption   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String         @id @default(uuid())
+  userEmail         String         @map("user_Email")
+  imageUrl          String
+  caption           String
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  media_url         String?
+  cloudflareVideoId String?
+  muxPlaybackId     String?
+  postType          PostType       @default(FEED)
+  sparkEligible     Boolean        @default(false)
+  voltage           Int            @default(0)
+  expiresAt         DateTime?
+  liveStreamId  String?   @map("live_stream_id")
+  liveStartedAt  DateTime? @map("live_started_at") @db.Timestamptz(6)
+liveEndedAt    DateTime? @map("live_ended_at") @db.Timestamptz(6)
+ivsPlaybackUrl String?   @map("ivs_playback_url")
 
-  likes Like[]      @relation("PostLikes")
-  media PostMedia[] @relation("PostMedia")
+  comments   Comment[]      @relation("PostComments")
+  likes      Like[]         @relation("PostLikes")
+  media      PostMedia[]    @relation("PostMedia")
+  saves      SavedPost[]    @relation("PostSaves")
+  reposts    Repost[]       @relation("PostReposts")
+  reactions  PostReaction[] @relation("PostReactions")
+  liveStream MuxLiveStream? @relation("LiveStreamPosts", fields: [liveStreamId], references: [id])
 
-  // ✅ ADD THESE (inverse relation fields)
-  reactions PostReaction[] @relation("PostReactions")
-  comments  Comment[]      @relation("PostComments")
-
+  @@index([createdAt])
+  @@index([userEmail], map: "Post_userEmail_idx")
+  @@index([sparkEligible, voltage(sort: Desc)], map: "Post_spark_voltage_idx")
   @@schema("public")
 }
+
+/// We could not retrieve columns for the underlying table. Either it has none or you are missing rights to see them. Please check your privileges.
+// model identities {
+// @@ignore
+// @@schema("public")
+// }
 
 model liveSession {
   id          String   @id @default(uuid())
@@ -38,47 +58,442 @@ model liveSession {
 
   @@schema("public")
 }
+
 model Like {
   id        String   @id @default(uuid())
   postId    String
   userEmail String
   createdAt DateTime @default(now())
+  post      Post     @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
 
-  post Post @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, userEmail]) // ✅ add this
+  @@unique([postId, userEmail])
+  @@index([postId])
   @@schema("public")
 }
 
+model SavedPost {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String
+  createdAt DateTime @default(now())
+  post      Post     @relation("PostSaves", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userEmail])
+  @@index([userEmail])
+  @@index([postId])
+  @@schema("public")
+}
+
+model Repost {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String
+  createdAt DateTime @default(now())
+  post      Post     @relation("PostReposts", fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userEmail])
+  @@index([userEmail])
+  @@index([postId])
+  @@schema("public")
+}
 
 model PostReaction {
   id        String   @id @default(uuid())
   postId    String
   userEmail String
-  type      String // e.g. "like", "heart", "🔥", etc
+  emoji     String
   createdAt DateTime @default(now())
+  post      Post     @relation("PostReactions", fields: [postId], references: [id], onDelete: Cascade)
 
-  post Post @relation("PostReactions", fields: [postId], references: [id], onDelete: Cascade)
-
+  @@unique([postId, userEmail, emoji])
   @@index([postId])
   @@index([userEmail])
   @@schema("public")
 }
 
 model Comment {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   postId    String
   userEmail String
   body      String
   parentId  String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
 
-  post    Post      @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
-  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies Comment[] @relation("CommentReplies")
+  // ── TRANCHE ADDITIONS ──
+  voltage           Int       @default(0)
+  originalLanguage  String    @default("en")
+  tranched          Boolean   @default(false)
+  tranchedAt        DateTime?
+  quietPeriodEndsAt DateTime?
+
+  parent        Comment?              @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies       Comment[]             @relation("CommentReplies")
+  post          Post                  @relation("PostComments", fields: [postId], references: [id], onDelete: Cascade)
+  voltageEvents CommentVoltageEvent[]
+  trancheEvent  TrancheEvent?         @relation("CommentTranche")
+  witnesses     TrancheWitness[]
+  factChecks    TFCFactCheck[]
 
   @@index([postId])
   @@index([parentId])
+  @@index([tranched, voltage(sort: Desc)])
+  @@index([userEmail])
+  @@index([originalLanguage])
+  @@schema("public")
+}
+
+model CommentVoltageEvent {
+  id         String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  commentId  String
+  actorEmail String
+  points     Int
+  eventType  CommentVoltageEventType
+  dedupeKey  String?                 @unique
+  metadata   Json?
+  createdAt  DateTime                @default(now()) @db.Timestamptz(6)
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([commentId, createdAt(sort: Desc)])
+  @@index([actorEmail])
+  @@map("comment_voltage_events")
+  @@schema("public")
+}
+
+enum CommentVoltageEventType {
+  VOLT_RECEIVED
+  REPLY_RECEIVED
+  REACTION_RECEIVED
+  WITNESS_RECEIVED
+
+  @@schema("public")
+}
+
+model TrancheEvent {
+  id                      String        @id @default(uuid())
+  commentId               String        @unique
+  postId                  String
+  commentAuthorEmail      String
+  postCreatorEmail        String
+  breakoutVoltage         Int
+  postVoltageAtBreakout   Int
+  voltageSharePct         Float
+  timeToThresholdMs       Int
+  originalLanguage        String        @default("en")
+  status                  TrancheStatus @default(ACTIVE)
+  sinBinLevel             Int           @default(0)
+  sinBinExpiresAt         DateTime?
+  struckOutAt             DateTime?
+  struckOutReason         String?
+  gathId                  String?
+  totalWitnesses          Int           @default(0)
+  totalReplies            Int           @default(0)
+  totalVoltsSinceBreakout Int           @default(0)
+  peakVoltage             Int           @default(0)
+  isSponsored             Boolean       @default(false)
+  sponsorEmail            String?
+  sponsorApprovedAt       DateTime?
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  comment           Comment                   @relation("CommentTranche", fields: [commentId], references: [id])
+  witnesses         TrancheWitness[]
+  notifications     TrancheNotification[]
+  sinBinLogs        TrancheSinBinLog[]
+  factChecks        TFCFactCheck[]
+  originatorPayouts TrancheOriginatorPayout[]
+
+  @@index([postId])
+  @@index([commentAuthorEmail])
+  @@index([postCreatorEmail])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([originalLanguage, status])
+  @@index([gathId])
+  @@map("tranche_events")
+  @@schema("public")
+}
+
+enum TrancheStatus {
+  ACTIVE
+  SIN_BIN
+  STRUCK_OUT
+  ARCHIVED
+
+  @@schema("public")
+}
+
+model TrancheConfig {
+  id                   String   @id @default("singleton")
+  absoluteVoltageFloor Int      @default(200)
+  relativeVoltageShare Float    @default(0.15)
+  quietPeriodSeconds   Int      @default(90)
+  sinBin1Minutes       Int      @default(10)
+  sinBin2Minutes       Int      @default(30)
+  maxWitnessesPerUser  Int      @default(1)
+  sponsorRevenueShare  Float    @default(0.20)
+  creatorRevenueShare  Float    @default(0.10)
+  updatedAt            DateTime @updatedAt
+  updatedBy            String?
+
+  @@map("tranche_config")
+  @@schema("public")
+}
+
+model TrancheWitness {
+  id               String   @id @default(uuid())
+  trancheEventId   String
+  commentId        String
+  witnessEmail     String
+  voltageAtWitness Int
+  createdAt        DateTime @default(now())
+
+  trancheEvent TrancheEvent @relation(fields: [trancheEventId], references: [id], onDelete: Cascade)
+  comment      Comment      @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([trancheEventId, witnessEmail])
+  @@index([witnessEmail])
+  @@index([trancheEventId])
+  @@map("tranche_witnesses")
+  @@schema("public")
+}
+
+model TrancheNotification {
+  id             String                  @id @default(uuid())
+  trancheEventId String
+  recipientEmail String
+  type           TrancheNotificationType
+  isRead         Boolean                 @default(false)
+  isPlatformWide Boolean                 @default(false)
+  metadata       Json?
+  sentAt         DateTime                @default(now())
+
+  trancheEvent TrancheEvent @relation(fields: [trancheEventId], references: [id], onDelete: Cascade)
+
+  @@index([recipientEmail, isRead])
+  @@index([trancheEventId])
+  @@map("tranche_notifications")
+  @@schema("public")
+}
+
+enum TrancheNotificationType {
+  BREAKOUT_AUTHOR
+  BREAKOUT_CREATOR
+  WITNESS_EARLY
+  SIN_BIN_1
+  SIN_BIN_2
+  STRUCK_OUT
+  COLLISION_DETECTED
+  GATH_SEEDED
+  SPONSORED
+  TFC_FILED
+  TFC_CLEARED
+  ORIGINATOR_PAYOUT
+
+  @@schema("public")
+}
+
+model TFCMember {
+  id             String    @id @default(uuid())
+  userEmail      String    @unique
+  status         TFCStatus @default(ACTIVE)
+  languages      String[]  @default(["en"])
+  domains        String[]  @default([])
+  accuracyScore  Float     @default(1.0)
+  totalChecks    Int       @default(0)
+  correctChecks  Int       @default(0)
+  termStartedAt  DateTime  @default(now())
+  termEndsAt     DateTime
+  isProfessional Boolean   @default(false)
+  orgName        String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  factChecks   TFCFactCheck[]
+  contests     TFCContest[]   @relation("TFCMemberContests")
+  panelReviews TFCContest[]   @relation("TFCPanelReviews")
+
+  @@index([status])
+  @@index([termEndsAt])
+  @@map("tfc_members")
+  @@schema("public")
+}
+
+enum TFCStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  PROFESSIONAL
+
+  @@schema("public")
+}
+
+model TFCFactCheck {
+  id             String         @id @default(uuid())
+  trancheEventId String
+  commentId      String
+  checkerEmail   String
+  claim          String
+  verdict        TFCVerdict
+  correction     String?
+  sources        String[]       @default([])
+  language       String         @default("en")
+  status         TFCCheckStatus @default(PENDING)
+  sinBinApplied  Int            @default(0)
+  contestedAt    DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  trancheEvent TrancheEvent @relation(fields: [trancheEventId], references: [id])
+  comment      Comment      @relation(fields: [commentId], references: [id])
+  checker      TFCMember    @relation(fields: [checkerEmail], references: [userEmail])
+  contest      TFCContest?
+
+  @@index([trancheEventId])
+  @@index([checkerEmail])
+  @@index([verdict])
+  @@map("tfc_fact_checks")
+  @@schema("public")
+}
+
+enum TFCVerdict {
+  TRUE
+  FALSE
+  MISLEADING
+  UNVERIFIABLE
+  SATIRE
+
+  @@schema("public")
+}
+
+enum TFCCheckStatus {
+  PENDING
+  ACTIVE
+  CONTESTED
+  PANEL_REVIEW
+  RESOLVED
+  OVERTURNED
+
+  @@schema("public")
+}
+
+model TFCContest {
+  id              String             @id @default(uuid())
+  factCheckId     String             @unique
+  contestantEmail String
+  counterSources  String[]           @default([])
+  argument        String
+  outcome         TFCContestOutcome?
+  panelEmails     String[]           @default([])
+  resolvedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  factCheck    TFCFactCheck @relation(fields: [factCheckId], references: [id])
+  filer        TFCMember?   @relation("TFCMemberContests", fields: [contestantEmail], references: [userEmail])
+  panelMembers TFCMember[]  @relation("TFCPanelReviews")
+
+  @@index([contestantEmail])
+  @@map("tfc_contests")
+  @@schema("public")
+}
+
+enum TFCContestOutcome {
+  UPHELD
+  REJECTED
+  SPLIT
+
+  @@schema("public")
+}
+
+model TrancheSinBinLog {
+  id             String    @id @default(uuid())
+  trancheEventId String
+  level          Int
+  reason         String
+  appliedBy      String
+  expiresAt      DateTime?
+  liftedAt       DateTime?
+  createdAt      DateTime  @default(now())
+
+  trancheEvent TrancheEvent @relation(fields: [trancheEventId], references: [id])
+
+  @@index([trancheEventId])
+  @@map("tranche_sin_bin_logs")
+  @@schema("public")
+}
+
+model TrancheOriginatorPayout {
+  id               String           @id @default(uuid())
+  trancheEventId   String
+  recipientEmail   String
+  role             OriginatorRole
+  sourceType       OriginatorSource
+  grossCents       Int
+  recipientCents   Int
+  platformCents    Int
+  currency         String           @default("AUD")
+  status           PayoutStatus     @default(PENDING)
+  stripeTransferId String?
+  createdAt        DateTime         @default(now())
+  settledAt        DateTime?
+
+  trancheEvent TrancheEvent @relation(fields: [trancheEventId], references: [id])
+
+  @@index([recipientEmail])
+  @@index([trancheEventId])
+  @@index([status])
+  @@map("tranche_originator_payouts")
+  @@schema("public")
+}
+
+enum OriginatorRole {
+  COMMENT_AUTHOR
+  POST_CREATOR
+
+  @@schema("public")
+}
+
+enum OriginatorSource {
+  GATH_TICKET
+  SPONSORSHIP
+  COMMERCE
+
+  @@schema("public")
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  SETTLED
+  FAILED
+
+  @@schema("public")
+}
+
+model TrancheCollision {
+  id              String          @id @default(uuid())
+  trancheEventIdA String
+  trancheEventIdB String
+  detectedAt      DateTime        @default(now())
+  conflictSummary String?
+  status          CollisionStatus @default(ACTIVE)
+  resolvedAt      DateTime?
+  winnerEventId   String?
+
+  @@unique([trancheEventIdA, trancheEventIdB])
+  @@index([trancheEventIdA])
+  @@index([trancheEventIdB])
+  @@index([status])
+  @@map("tranche_collisions")
+  @@schema("public")
+}
+
+enum CollisionStatus {
+  ACTIVE
+  RESOLVED
+  EXPIRED
+
   @@schema("public")
 }
 
@@ -89,8 +504,7 @@ model PostMedia {
   url       String
   order     Int      @map("order")
   createdAt DateTime @default(now()) @db.Timestamptz(6)
-
-  post Post @relation("PostMedia", fields: [postId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostMedia", fields: [postId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@schema("public")
@@ -127,15 +541,21 @@ model UserCredits {
   spins     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  sparks Int @default(0)
 
   @@schema("public")
 }
 
 model CreatorBalance {
-  creatorEmail     String   @id
-  totalEarnedCents Int      @default(0)
-  availableCents   Int      @default(0)
-  updatedAt        DateTime @updatedAt
+  creatorEmail       String   @id
+  totalEarnedCents   Int      @default(0)
+  availableCents     Int      @default(0)
+  updatedAt          DateTime @updatedAt
+  taxCountry         String?  @default("AU") @map("tax_country")
+  taxId              String?  @map("tax_id")
+  taxIdVerified      Boolean? @default(false) @map("tax_id_verified")
+  taxReserveCents    Int      @default(0) @map("tax_reserve_cents")
+  totalWithheldCents Int      @default(0) @map("total_withheld_cents")
 
   @@schema("public")
 }
@@ -220,70 +640,17 @@ model StripeCheckoutReceipt {
   @@schema("public")
 }
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model FeedSnapshot {
+  id          String   @id @default(uuid())
+  viewerEmail String   @map("viewer_email")
+  postId      String   @map("post_id")
+  rankScore   Float    @default(0) @map("rank_score")
+  payload     Json
+  createdAt   DateTime @default(now()) @map("created_at")
 
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-/// This model contains an expression index which requires additional setup for migrations. Visit https://pris.ly/d/expression-indexes for more info.
+  @@index([viewerEmail])
+  @@schema("public")
+}
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -295,9 +662,8 @@ model creator_profiles {
   handle        String?
   revenue_share Decimal  @default(0.45) @db.Decimal
   created_at    DateTime @default(now()) @db.Timestamptz(6)
-
-  avatar_url String?
-  bio        String? @db.Text
+  avatar_url    String?
+  bio           String?
 
   @@index([user_id])
   @@schema("public")
@@ -339,28 +705,13 @@ model live_chat_messages {
 }
 
 model live_polls {
-  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  live_id    String       @unique(map: "live_polls_live_unique") @db.Uuid
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  live_id    String   @unique(map: "live_polls_live_unique") @db.Uuid
   option_a   String
   option_b   String
-  expires_at DateTime     @db.Timestamptz(6)
-  created_at DateTime     @default(now()) @db.Timestamptz(6)
-  live_votes live_votes[]
+  expires_at DateTime @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
 
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model live_votes {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  poll_id    String     @db.Uuid
-  user_id    String     @db.Uuid
-  choice     String
-  created_at DateTime   @default(now()) @db.Timestamptz(6)
-  live_polls live_polls @relation(fields: [poll_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([poll_id], map: "live_votes_poll_idx")
-  @@index([user_id], map: "live_votes_user_idx")
   @@schema("public")
 }
 
@@ -379,12 +730,15 @@ model paid_reactions {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model profiles {
-  email        String   @id
-  display_name String?
-  avatar_url   String?
-  bio          String?
-  created_at   DateTime @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  email               String   @id
+  display_name        String?
+  avatar_url          String?
+  bio                 String?
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
+  avatar_live_url     String?
+  stripe_customer_id  String?
+  subscription_status String?  @default("inactive")
 
   @@schema("public")
 }
@@ -400,40 +754,102 @@ model spinner_spins {
   @@schema("public")
 }
 
+
+
 model CreatorProfile {
-  id                             String        @id @default(cuid())
-  email                          String        @unique
-  displayName                    String
-  handle                         String?       @unique
-  bio                            String?       @db.Text
-  avatarUrl                      String?       @map("avatar_url") @db.Text
-  payoutShare                    Int           @default(45)
-  status                         CreatorStatus @default(ACTIVE)
-  createdAt                      DateTime      @default(now())
-  updatedAt                      DateTime      @updatedAt
-  stripeAccountId                String?       @map("stripe_account_id")
-  stripeOnboardingStatus         String        @default("not_started") @map("stripe_onboarding_status")
-  payoutCurrency                 String        @default("aud") @map("payout_currency")
-  stripeChargesEnabled           Boolean       @default(false) @map("stripe_charges_enabled")
-  stripePayoutsEnabled           Boolean       @default(false) @map("stripe_payouts_enabled")
-  isVerified                     Boolean       @default(false) @map("is_verified")
-  verifiedSince                  DateTime?     @map("verified_since") @db.Timestamptz(6)
-  stripeCustomerId               String?       @map("stripe_customer_id")
-  stripeSubscriptionId           String?       @unique(map: "creatorprofile_stripe_subscription_id_key") @map("stripe_subscription_id")
-  verificationPriceId            String?       @map("verification_price_id")
-  verificationStatus             String        @default("inactive") @map("verification_status")
-  verificationCurrentPeriodEnd   DateTime?     @map("verification_current_period_end") @db.Timestamptz(6)
-  blue_tick_status               String        @default("inactive")
-  blue_tick_sub_id               String?
+  id          String        @id @default(cuid())
+  email       String        @unique
+  displayName String
+  handle      String?       @unique
+  payoutShare Int           @default(45)
+  status      CreatorStatus @default(ACTIVE)
+  characterId  Int  @default(1) @map("character_id")
+  avatarLiveUrl String? @map("avatar_live_url")
+
+  // 🔥 VOLTAGE SYSTEM
+  voltage       Int                   @default(0)
+  voltageEvents CreatorVoltageEvent[]
+
+  createdAt                      DateTime  @default(now())
+  updatedAt                      DateTime  @updatedAt
+  avatarUrl                      String?   @map("avatar_url")
+  bio                            String?
+  blue_tick_cancel_at_period_end Boolean   @default(false)
+  blue_tick_current_period_end   DateTime? @db.Timestamptz(6)
   blue_tick_customer_id          String?
-  blue_tick_current_period_end   DateTime?     @db.Timestamptz(6)
-  blue_tick_cancel_at_period_end Boolean       @default(false)
-  creatorTermsAccepted           Boolean       @default(false) @map("creator_terms_accepted")
-  creatorTermsAcceptedAt         DateTime?     @map("creator_terms_accepted_at") @db.Timestamptz(6)
-  creatorTermsVersion            String?       @map("creator_terms_version")
+  blue_tick_status               String    @default("inactive")
+  blue_tick_sub_id               String?
+  creatorTermsAccepted           Boolean   @default(false) @map("creator_terms_accepted")
+  creatorTermsAcceptedAt         DateTime? @map("creator_terms_accepted_at") @db.Timestamptz(6)
+  creatorTermsVersion            String?   @map("creator_terms_version")
+  isVerified                     Boolean   @default(false) @map("is_verified")
+  payoutCurrency                 String    @default("aud") @map("payout_currency")
+  stripeAccountId                String?   @map("stripe_account_id")
+  stripeChargesEnabled           Boolean   @default(false) @map("stripe_charges_enabled")
+  stripeCustomerId               String?   @map("stripe_customer_id")
+  stripeOnboardingStatus         String    @default("not_started") @map("stripe_onboarding_status")
+  stripePayoutsEnabled           Boolean   @default(false) @map("stripe_payouts_enabled")
+  stripeSubscriptionId           String?   @unique(map: "creatorprofile_stripe_subscription_id_key") @map("stripe_subscription_id")
+  verificationCurrentPeriodEnd   DateTime? @map("verification_current_period_end") @db.Timestamptz(6)
+  verificationPriceId            String?   @map("verification_price_id")
+  verificationStatus             String    @default("inactive") @map("verification_status")
+  verifiedSince                  DateTime? @map("verified_since") @db.Timestamptz(6)
+  scheduledLiveAt                DateTime? @map("scheduled_live_at") @db.Timestamptz(6)
+
+  // ── RING VERIFICATION SYSTEM ──
+  ringTier         RingTier  @default(NONE) @map("ring_tier")
+  ringActivatedAt  DateTime? @map("ring_activated_at") @db.Timestamptz(6)
+  ringExpiresAt    DateTime? @map("ring_expires_at") @db.Timestamptz(6)
+  voltageQualified Boolean   @default(false) @map("voltage_qualified")
 
   @@index([blue_tick_sub_id], map: "creatorprofile_blue_tick_sub_id_idx")
   @@map("CreatorProfile")
+  @@schema("public")
+}
+
+model CreatorVoltageEvent {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creatorEmail String
+  actorEmail   String?
+  eventType    VoltageEventType
+  points       Int
+  targetType   VoltageTargetType?
+  targetId     String?
+  dedupeKey    String?            @unique
+  metadata     Json?
+  createdAt    DateTime           @default(now()) @db.Timestamptz(6)
+
+  creator CreatorProfile @relation(fields: [creatorEmail], references: [email], onDelete: Cascade)
+
+  @@index([creatorEmail, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@map("creator_voltage_events")
+  @@schema("public")
+}
+
+enum VoltageEventType {
+  POST_CREATED
+  COMMENT_RECEIVED
+  FOLLOW_RECEIVED
+  GIFT_RECEIVED
+  SHARE_RECEIVED
+  LIVE_STARTED
+  LIVE_GIFT_RECEIVED
+  COMMENT_VOLTED
+
+  @@schema("public")
+}
+
+enum VoltageTargetType {
+  POST
+  COMMENT
+  FOLLOW
+  LIVE_SESSION
+  CHECKOUT_SESSION
+  SHARE
+  TRANCHE_EVENT
+
   @@schema("public")
 }
 
@@ -453,12 +869,34 @@ enum CreatorStatus {
   @@schema("public")
 }
 
+model LiveBattle {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  battleType     String    @default("circuit") @map("battle_type")
+  status         String    @default("pending")
+  streamIdA      String    @map("stream_id_a")
+  streamIdB      String?   @map("stream_id_b")
+  creatorEmailA  String?   @map("creator_email_a")
+  creatorEmailB  String?   @map("creator_email_b")
+  voltageA       Int       @default(0) @map("voltage_a")
+  voltageB       Int       @default(0) @map("voltage_b")
+  winnerEmail    String?   @map("winner_email")
+  startedAt      DateTime? @map("started_at") @db.Timestamptz(6)
+  endedAt        DateTime? @map("ended_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  timerStartedAt DateTime? @map("timer_started_at") @db.Timestamptz(6)
+durationSeconds Int @default(90) @map("duration_seconds")
+
+  @@map("live_battles")
+  @@schema("public")
+}
 enum SupportKind {
   TIP
   BOOST
   SPIN
   REACTION
-  VOTE
+  GIFT
+  TRANCHE_SPONSOR
 
   @@schema("public")
 }
@@ -470,10 +908,294 @@ enum SupportSource {
   @@schema("public")
 }
 
+enum PostType {
+  FEED
+  SPARK
+  RAW
+  PODCAST
+  LIVE
+
+  @@schema("public")
+}
+
 enum creator_status {
   pending
   active
   suspended
+
+  @@schema("public")
+}
+model PostShare {
+  id        String   @id @default(uuid())
+  postId    String
+  userEmail String?
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model PostView {
+  id          String   @id @default(uuid())
+  postId      String
+  userEmail   String?
+  watchMs     Int      @default(0)
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([postId])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model UserStatus {
+  email     String   @id
+  status    String   @default("active")
+  reason    String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@schema("public")
+}
+
+model StudioConfig {
+  id               String   @id @default("singleton")
+  voltageWeight    Float    @default(1.0)
+  interactionWeight Float   @default(7.0)
+  clusterWeight    Float    @default(4.0)
+  momentumWeight   Float    @default(5.0)
+  momentumEnabled  Boolean  @default(true)
+  clusteringEnabled Boolean @default(true)
+  feedPaused       Boolean  @default(false)
+  updatedAt        DateTime @updatedAt
+  updatedBy        String?
+
+  @@schema("public")
+}
+
+model Broadcast {
+  id          String   @id @default(uuid())
+  subject     String
+  body        String
+  sentBy      String
+  targetType  String   @default("all")
+  targetValue String?
+  sentAt      DateTime @default(now())
+
+  @@schema("public")
+}
+// ── STUDIO ACCESS CONTROL ──
+model StudioUser {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  role      StudioRole  @default(SUPPORT)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  createdBy String?
+  lastLogin DateTime?
+
+  auditLogs StudioAuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@schema("public")
+}
+
+model StudioAuditLog {
+  id          String     @id @default(uuid())
+  studioUser  StudioUser @relation(fields: [actorEmail], references: [email])
+  actorEmail  String
+  action      String
+  targetType  String?
+  targetId    String?
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+
+  @@index([actorEmail])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+// ── ANALYTICS EVENTS ──
+model AnalyticsEvent {
+  id          String   @id @default(uuid())
+  version     Int      @default(1)
+  surface     String   // "feed" | "profile" | "live" | "tranche" | "create"
+  eventName   String   // "post_view" | "post_like" | "post_share" | "comment" etc
+  userEmail   String?
+  sessionId   String?
+  postId      String?
+  creatorEmail String?
+  properties  Json?
+  createdAt   DateTime @default(now())
+
+  @@index([eventName, createdAt])
+  @@index([userEmail, createdAt])
+  @@index([postId, createdAt])
+  @@index([surface, createdAt])
+  @@schema("public")
+}
+
+// ── CREATOR HEALTH SCORE ──
+model CreatorHealthScore {
+  email              String   @id
+  postingConsistency Float    @default(0)
+  responseRate       Float    @default(0)
+  engagementVelocity Float    @default(0)
+  followerGrowthRate Float    @default(0)
+  churnRisk          Float    @default(0)
+  overallScore       Float    @default(0)
+  calculatedAt       DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@schema("public")
+}
+
+// ── USER SESSIONS ──
+model UserSession {
+  id          String   @id @default(uuid())
+  userEmail   String
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  durationMs  Int?
+  postsViewed Int      @default(0)
+  platform    String?  // "web" | "ios" | "android"
+  country     String?
+
+  @@index([userEmail])
+  @@index([startedAt])
+  @@schema("public")
+}
+
+enum StudioRole {
+  ADMIN
+  MODERATOR
+  SUPPORT
+
+  @@schema("public")
+}
+
+enum RingTier {
+  NONE
+  BLUE
+  GOLD
+  BUSINESS
+  CORPORATE
+  RED
+  GOVERNMENT
+
+  @@schema("public")
+}
+
+model MuxLiveStream {
+  id              String           @id @default(uuid())
+  muxLiveStreamId String           @unique
+  muxStreamKey    String
+  muxPlaybackId   String           @unique
+  status          LiveStreamStatus @default(IDLE)
+  creatorEmail    String
+  liveStartedAt   DateTime?
+  liveEndedAt     DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  posts Post[] @relation("LiveStreamPosts")
+
+  @@index([creatorEmail])
+  @@index([status])
+  @@schema("public")
+}
+
+enum LiveStreamStatus {
+  IDLE
+  ACTIVE
+  ENDED
+
+  @@schema("public")
+}
+
+model Gath {
+  id                  String        @id @default(uuid())
+  name                String
+  description         String?
+  type                GathType      @default(OPEN)
+  status              GathStatus    @default(ACTIVE)
+  creatorEmail        String
+  sparkCost           Int           @default(0)
+  launchDate          DateTime?
+  seededFromTrancheId String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  members             GathMember[]
+  messages            GathMessage[]
+  posts               GathPost[]
+
+  @@index([creatorEmail])
+  @@index([type])
+  @@index([status])
+  @@index([seededFromTrancheId])
+  @@schema("public")
+}
+
+model GathMember {
+  id        String   @id @default(uuid())
+  gathId    String
+  userEmail String
+  role      GathRole @default(MEMBER)
+  joinedAt  DateTime @default(now())
+  gath      Gath     @relation(fields: [gathId], references: [id], onDelete: Cascade)
+
+  @@unique([gathId, userEmail])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model GathMessage {
+  id        String   @id @default(uuid())
+  gathId    String
+  userEmail String
+  content   String
+  voltage   Int      @default(0)
+  createdAt DateTime @default(now())
+  gath      Gath     @relation(fields: [gathId], references: [id], onDelete: Cascade)
+
+  @@index([gathId])
+  @@schema("public")
+}
+
+model GathPost {
+  id       String   @id @default(uuid())
+  gathId   String
+  postId   String
+  seededAt DateTime @default(now())
+  gath     Gath     @relation(fields: [gathId], references: [id], onDelete: Cascade)
+
+  @@unique([gathId, postId])
+  @@schema("public")
+}
+
+enum GathType {
+  OPEN
+  PRIVATE
+  BUSINESS
+
+  @@schema("public")
+}
+
+enum GathStatus {
+  PRELAUNCHING
+  ACTIVE
+  ARCHIVED
+
+  @@schema("public")
+}
+
+enum GathRole {
+  IGNITER
+  HOST
+  MEMBER
 
   @@schema("public")
 }

@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
+import { isAdminEmail } from "@/lib/isAdmin";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const email = await getAuthedEmailOrNull();
+  if (!isAdminEmail(email)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const logs = await prisma.studioAuditLog.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      actorEmail: true,
+      action: true,
+      targetType: true,
+      targetId: true,
+      createdAt: true,
+    },
+  });
+
+  return NextResponse.json({ logs });
+}
+
+export async function POST(req: NextRequest) {
+  const email = await getAuthedEmailOrNull();
+  if (!isAdminEmail(email)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { action } = await req.json();
+  if (!action) {
+    return NextResponse.json({ error: "action required" }, { status: 400 });
+  }
+
+  await prisma.studioUser.upsert({
+    where: { email: email! },
+    update: {},
+    create: { email: email!, role: "ADMIN" },
+  });
+
+  await prisma.studioAuditLog.create({
+    data: { actorEmail: email!, action },
+  });
+
+  return NextResponse.json({ ok: true });
+}

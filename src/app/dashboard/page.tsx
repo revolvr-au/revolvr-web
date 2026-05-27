@@ -21,7 +21,7 @@ type UserCredits = {
 type Post = {
   id: string;
   userEmail: string;
-  imageUrl: string;
+  image_Url: string;
   caption: string;
   createdAt: string;
   is_boosted?: boolean | null;
@@ -154,8 +154,8 @@ export default function DashboardClient() {
   }, [ready, userEmail, loadPosts, loadSpins, loadCredits]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.replace("/creator");
+    await supabase.auth.signOut({ scope: "global" });
+    window.location.href = "/welcome";
   };
 
   // Stripe Connect button behaviour (frontend)
@@ -246,7 +246,7 @@ export default function DashboardClient() {
         .from(POSTS_TABLE)
         .insert({
           userEmail, // IMPORTANT: required for attribution
-          imageUrl: publicUrl,
+          image_Url: publicUrl,
           caption: caption.trim(),
         })
         .select()
@@ -363,7 +363,18 @@ export default function DashboardClient() {
   }
 
   // If not logged in, we’re redirecting—don’t render the dashboard
-  if (!userEmail) return null;
+  if (!ready) {
+  return (
+    <div className="min-h-screen bg-[#050816] text-white p-8">
+      Loading your session...
+    </div>
+  );
+}
+
+if (!userEmail) {
+  router.replace("/login");
+  return null;
+}
 
   return (
     <div className="min-h-screen bg-[#050816] text-white">
@@ -518,7 +529,7 @@ export default function DashboardClient() {
 
                     <div className="relative w-full max-h-[480px]">
                       <Image
-                        src={post.imageUrl}
+                        src={post.media_url || ""}
                         alt={post.caption || "Post media"}
                         width={1200}
                         height={800}

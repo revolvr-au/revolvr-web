@@ -3,15 +3,21 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
+function getStripe() {
+  const apiKey = process.env.STRIPE_SECRET_KEY;
+  if (!apiKey) throw new Error("Missing STRIPE_SECRET_KEY");
+
+  return new Stripe(apiKey, {
+    apiVersion: "2025-12-15.clover",
+  });
+}
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
 
-const stripe = new Stripe(stripeSecretKey);
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://revolvr-web.vercel.app";
 
 type CheckoutMode =
   | "tip"
@@ -20,8 +26,7 @@ type CheckoutMode =
   | "tip-pack"
   | "boost-pack"
   | "spin-pack"
-  | "reaction"
-  | "vote";
+  | "reaction";
 
 type SupportSource = "FEED" | "LIVE";
 
@@ -49,7 +54,7 @@ type Body = {
 function toKind(mode: string) {
   const m = String(mode || "").trim().toUpperCase();
   if (m.endsWith("-PACK")) return m.replace("-PACK", "_PACK");
-  if (m === "TIP" || m === "BOOST" || m === "SPIN" || m === "REACTION" || m === "VOTE") return m;
+  if (m === "TIP" || m === "BOOST" || m === "SPIN" || m === "REACTION") return m;
   if (m === "TIP-PACK" || m === "BOOST-PACK" || m === "SPIN-PACK") return m.replace("-PACK", "_PACK");
   return m.replace(/[^A-Z0-9_]/g, "_");
 }
@@ -121,7 +126,6 @@ function modeDefaults(mode: CheckoutMode, currency: string) {
   const boostUnit = 500; // 5.00
   const spinUnit = 100; // 1.00
   const reactionUnit = 100; // 1.00
-  const voteUnit = 100; // 1.00
 
   // Pack quantities (Option A: no discounts)
   const TIP_PACK_QTY = 10;
@@ -140,9 +144,6 @@ function modeDefaults(mode: CheckoutMode, currency: string) {
 
     case "reaction":
       return { name: "Reaction", defaultCents: reactionUnit, min: 100, max: 200_000 };
-
-    case "vote":
-      return { name: "Vote", defaultCents: voteUnit, min: 100, max: 200_000 };
 
     case "tip-pack":
       return {
@@ -175,6 +176,7 @@ function modeDefaults(mode: CheckoutMode, currency: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const stripe = getStripe();
     const debug = req.nextUrl.searchParams.get("debug") === "1";
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
 

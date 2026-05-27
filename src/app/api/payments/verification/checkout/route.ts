@@ -1,3 +1,5 @@
+// src/app/api/payments/checkout/route.ts
+
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
@@ -5,12 +7,8 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) throw new Error("Missing STRIPE_SECRET_KEY");
-
-const stripe = new Stripe(stripeSecretKey);
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3001";
 
 type Body = {
   tier: "blue" | "gold";
@@ -20,6 +18,19 @@ type Body = {
 
 export async function POST(req: NextRequest) {
   try {
+    // ✅ SAFE Stripe init (runtime only)
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!stripeKey) {
+      console.warn("Missing STRIPE_SECRET_KEY");
+      return NextResponse.json(
+        { error: "Stripe not configured" },
+        { status: 500 }
+      );
+    }
+
+    const stripe = new Stripe(stripeKey);
+
     const body = (await req.json().catch(() => ({}))) as Partial<Body>;
     const tier: "blue" | "gold" = body.tier === "gold" ? "gold" : "blue";
 
@@ -35,8 +46,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Resolve creator profile (prefer ID; fallback to email)
-    let creator: null | { id: string; email: string | null; verificationStatus: string | null } = null;
+    // Resolve creator
+    let creator:
+      | null
+      | { id: string; email: string | null; verificationStatus: string | null } =
+      null;
 
     if (body.creatorProfileId) {
       creator = await prisma.creatorProfile.findUnique({
@@ -44,34 +58,34 @@ export async function POST(req: NextRequest) {
         select: { id: true, email: true, verificationStatus: true },
       });
     } else if (body.creatorEmail) {
-      const email = String(body.creatorEmail || "").trim().toLowerCase();
+      const email = String(body.creatorEmail).trim().toLowerCase();
+
       creator = await prisma.creatorProfile.findFirst({
         where: { email: { equals: email, mode: "insensitive" } },
         select: { id: true, email: true, verificationStatus: true },
       });
 
-      // If creator doesn't exist yet, create it (only when an email is provided)
+      // Create if missing
       if (!creator) {
-        const created = await prisma.creatorProfile.create({
+        creator = await prisma.creatorProfile.create({
           data: {
-            displayName: (email.split("@")[0] || "creator"),
+            displayName: email.split("@")[0] || "creator",
             email,
             status: "ACTIVE",
           },
           select: { id: true, email: true, verificationStatus: true },
         });
-        creator = created;
       }
     }
 
     if (!creator) {
       return NextResponse.json(
-        { error: "Creator not found (provide creatorProfileId or creatorEmail)" },
+        { error: "Creator not found" },
         { status: 404 }
       );
     }
 
-    // Prevent Gold -> Blue downgrade
+    // Prevent downgrade
     const current = String(creator.verificationStatus || "").toLowerCase();
     if (current === "gold" && tier === "blue") {
       return NextResponse.json(
@@ -80,8 +94,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const successUrl = new URL(`/creator?verified=success&tier=${tier}`, SITE_URL);
-    const cancelUrl = new URL("/creator?verified=cancel", SITE_URL);
+    const successUrl = new URL(
+      `/creator?verified=success&tier=${tier}`,
+      SITE_URL
+    );
+
+    const cancelUrl = new URL(
+      "/creator?verified=cancel",
+      SITE_URL
+    );
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -92,30 +113,17 @@ export async function POST(req: NextRequest) {
       metadata: {
         purpose: "verification",
         tier,
-        userId: creator.id, // webhook expects this
+        userId: creator.id,
         priceId,
       },
     });
 
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (err: any) {
-    const detail =
-      err?.raw?.message ??
-      err?.message ??
-      (typeof err === "string" ? err : JSON.stringify(err));
-
-    console.error("[payments/verification/checkout]", detail, {
-      type: err?.type,
-      code: err?.code,
-    });
+    console.error("[payments/checkout]", err);
 
     return NextResponse.json(
-      {
-        error: "Stripe verification checkout failed",
-        detail,
-        type: err?.type ?? null,
-        code: err?.code ?? null,
-      },
+      { error: "Stripe checkout failed" },
       { status: 500 }
     );
   }

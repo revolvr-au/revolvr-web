@@ -22,6 +22,7 @@ export async function GET(req: Request) {
         handle: true,
         avatarUrl: true,
         bio: true,
+        voltage: true,
       },
     });
 
@@ -33,20 +34,38 @@ export async function GET(req: Request) {
     }
 
     // Fetch posts using email (because Post model uses userEmail)
-    const posts = await prisma.post.findMany({
-      where: { userEmail: user.email },
-      orderBy: { createdAt: "desc" },
-      select: {
-        id: true,
-        imageUrl: true,
-        caption: true,
-        createdAt: true,
-      },
-      take: 60,
-    });
+    const [posts, recentVoltageEvents] = await Promise.all([
+      prisma.post.findMany({
+        where: { userEmail: user.email },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          image_Url: true,
+          caption: true,
+          createdAt: true,
+        },
+        take: 60,
+      }),
+      prisma.creatorVoltageEvent.findMany({
+        where: { creatorEmail: user.email },
+        orderBy: { createdAt: "desc" },
+        select: { points: true },
+        take: 5,
+      }),
+    ]);
+
+    const recentVoltage = recentVoltageEvents.reduce(
+      (sum, event) => sum + (event.points || 0),
+      0
+    );
 
     return NextResponse.json({
-      profile: user,
+      profile: {
+        ...user,
+        totalVoltage: user.voltage ?? 0,
+        recentVoltage,
+        postCount: posts.length,
+      },
       posts,
     });
   } catch (error) {

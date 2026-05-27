@@ -1,154 +1,82 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { displayNameFromEmail, isValidImageUrl } from "@/utils/imageUtils";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-export type PersonRailItem = {
-  id: string;
-  email: string;
+type Person = {
   handle: string;
-  imageUrl?: string | null;
-  displayName?: string | null;
-  tick?: "blue" | "gold" | null;
-  isLive?: boolean | null;
+  avatarUrl?: string;
+  isLive: boolean;
 };
 
-type Props = {
-  items: PersonRailItem[];
-  size?: number;
-  onToggleFollow?: (email: string) => void;
-  followMap?: Record<string, boolean>;
-  followBusy?: Record<string, boolean>;
-};
+export default function PeopleRail() {
+  const [people, setPeople] = useState<Person[]>([]);
+  const router = useRouter();
 
-function LivePill() {
-  return (
-    <span className="absolute -left-2 -top-2 z-20 h-5 px-2 rounded-full bg-red-500 text-white text-[10px] font-bold shadow ring-2 ring-black/30">
-      LIVE
-    </span>
-  );
-}
+  useEffect(() => {
+    fetch("/api/people-rail")
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data.people)) setPeople(data.people); })
+      .catch(() => {});
+  }, []);
 
-function Tick({ tick }: { tick: "blue" | "gold" }) {
-  const bg = tick === "gold" ? "bg-amber-400" : "bg-blue-500";
+  if (people.length === 0) return null;
+
   return (
-    <span
-      className={`absolute -right-2 -top-2 z-20 h-[18px] w-[18px] flex items-center justify-center rounded-full ${bg} text-[10px] font-bold text-black shadow ring-2 ring-black/30`}
+    <div
+      style={{
+        height: 70,
+        overflowX: "auto",
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "8px 12px",
+        scrollbarWidth: "none",
+        msOverflowStyle: "none",
+      } as React.CSSProperties}
+      className="no-scrollbar"
     >
-      ✓
-    </span>
-  );
-}
-
-export default function PeopleRail({
-  items,
-  size = 72,
-  onToggleFollow,
-  followMap = {},
-  followBusy = {},
-}: Props) {
-  const normalized = useMemo(() => {
-    return items
-      .map((p) => {
-        const email = String(p.email || "").trim().toLowerCase();
-        if (!email) return null;
-
-        return {
-          ...p,
-          email,
-          displayName: p.displayName || displayNameFromEmail(email),
-          imageUrl: isValidImageUrl(p.imageUrl) ? p.imageUrl : null,
-          isLive: Boolean(p.isLive),
-        };
-      })
-      .filter(Boolean) as Array<
-      PersonRailItem & { displayName: string; isLive: boolean }
-    >;
-  }, [items]);
-
-  const [broken, setBroken] = useState<Record<string, true>>({});
-
-  if (!normalized.length) return null;
-
-  return (
-    <div className="px-4">
-      <div className="flex items-center overflow-x-auto no-scrollbar">
-        <div className="flex gap-4 py-2">
-          {normalized.map((p) => {
-            const id = p.id;
-            const name = p.displayName;
-            const showImage = Boolean(p.imageUrl) && !broken[id];
-            const isFollowing = followMap[p.email];
-
-            return (
-              <div key={id} className="flex-none flex flex-col items-center gap-2">
-                <Link
-                  href={`/u/${encodeURIComponent(p.handle)}`}
-                  aria-label={`View ${name}`}
-                >
-                  <div
-                    className="relative overflow-visible"
-                    style={{ width: size, height: size }}
-                  >
-                    {p.isLive && <LivePill />}
-                    {p.tick && <Tick tick={p.tick} />}
-
-                    <div
-  className={`
-    relative w-full h-full rounded-full overflow-hidden
-    ${p.isLive ? "ring-2 ring-red-500" : "bg-white/5"}
-  `}
->
-  {p.isLive && (
-    <>
-      {/* Outer glow */}
-      <div className="absolute inset-0 rounded-full shadow-[0_0_35px_rgba(255,0,85,0.8)] pointer-events-none" />
-
-      {/* Breathing halo */}
-      <div className="absolute inset-0 rounded-full ring-4 ring-red-500/30 animate-ping pointer-events-none" />
-    </>
-  )}
-                      {showImage ? (
-                        <Image
-                          src={p.imageUrl as string}
-                          alt={name}
-                          fill
-                          unoptimized
-                          className="object-cover"
-                          onError={() =>
-                            setBroken((prev) => ({ ...prev, [id]: true }))
-                          }
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs text-white/60">
-                          {name.slice(0, 1).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-
-                <div className="text-[13px] font-medium text-white/80 max-w-[96px] truncate">
-                  {name}
-                </div>
-
-                {onToggleFollow && (
-                  <button
-                    type="button"
-                    disabled={followBusy[p.email]}
-                    onClick={() => onToggleFollow(p.email)}
-                    className="text-xs px-2 py-1 rounded bg-white/10 hover:bg-white/20 disabled:opacity-50"
-                  >
-                    {isFollowing ? "Following" : "Follow"}
-                  </button>
-                )}
-              </div>
-            );
-          })}
+      {people.map((person) => (
+        <div
+          key={person.handle}
+          onClick={() => router.push(`/u/${person.handle}`)}
+          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", flexShrink: 0 }}
+        >
+          <div style={{ position: "relative" }}>
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              background: person.avatarUrl
+                ? `url(${person.avatarUrl}) center/cover`
+                : "linear-gradient(135deg, #1a1a2e, #16213e)",
+              border: "2px solid #00e5ff",
+            }} />
+            {person.isLive && (
+              <div style={{
+                position: "absolute",
+                top: 0,
+                right: 0,
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "#ff2d55",
+                border: "1.5px solid #050814",
+                animation: "livePulse 1.5s ease-in-out infinite",
+              }} />
+            )}
+          </div>
+          <span style={{ fontSize: 9, fontFamily: "monospace", color: "rgba(255,255,255,0.7)", letterSpacing: "0.5px" }}>
+            @{person.handle}
+          </span>
         </div>
-      </div>
+      ))}
+      <style>{`
+        @keyframes livePulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.4); }
+        }
+      `}</style>
     </div>
   );
 }

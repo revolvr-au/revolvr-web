@@ -2,56 +2,42 @@ export const dynamic = "force-dynamic";
 
 // src/app/api/credits/spend/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-
-type SpendKind = "boost" | "tip" | "spin" | "reaction" | "vote";
+import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
+import {
+  InsufficientCreditsError,
+  spendCredits,
+  type SpendKind,
+} from "@/lib/serverCredits";
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, kind } = (await req.json()) as {
-      email?: string;
+    const { kind } = (await req.json()) as {
       kind?: SpendKind;
       postId?: string | null; // optional, for future use
     };
 
-    if (!email || !kind) {
-      return NextResponse.json({ error: "Missing email or kind" }, { status: 400 });
+    const email = await getAuthedEmailOrNull();
+
+    if (!email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!["boost", "tip", "spin", "reaction", "vote"].includes(kind)) {
+    if (!kind) {
+      return NextResponse.json({ error: "Missing kind" }, { status: 400 });
+    }
+
+    if (!["boost", "tip", "spin", "reaction"].includes(kind)) {
       return NextResponse.json({ error: "Invalid kind" }, { status: 400 });
     }
 
-    // Map kind to a decrement bucket (launch-safe: reaction/vote use tips)
-    const updateData =
-      kind === "boost"
-        ? { boosts: { decrement: 1 } }
-        : kind === "spin"
-        ? { spins: { decrement: 1 } }
-        : { tips: { decrement: 1 } }; // tip, reaction, vote
-
-    const where =
-      kind === "boost"
-        ? { email, boosts: { gt: 0 } }
-        : kind === "spin"
-        ? { email, spins: { gt: 0 } }
-        : { email, tips: { gt: 0 } };
-
-    const result = await prisma.userCredits.updateMany({
-      where,
-      data: updateData,
-    });
-
-    if (result.count === 0) {
-      return NextResponse.json({ error: "Not enough credits" }, { status: 400 });
-    }
-
-    const credits = await prisma.userCredits.findUnique({
-      where: { email },
-    });
+    const credits = await spendCredits(email, kind);
 
     return NextResponse.json({ success: true, credits }, { status: 200 });
   } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
+
     console.error("[credits/spend] error", err);
     return NextResponse.json({ error: "Failed to spend credit" }, { status: 500 });
   }

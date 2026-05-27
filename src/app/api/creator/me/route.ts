@@ -42,6 +42,10 @@ export async function GET() {
           loggedIn: false,
           accessToken: null,
           creator: {
+            email: null,
+            displayName: null,
+            avatarUrl: null,
+            bio: null,
             isActive: false,
             handle: null,
             isVerified: false,
@@ -109,6 +113,11 @@ export async function GET() {
         accessToken: session?.access_token ?? null,
         user: { id: user.id, email: email || null },
         creator: {
+          email: profile?.email ?? email,
+          displayName: profile?.displayName ?? null,
+          avatarUrl: profile?.avatarUrl ?? null,
+          avatarLiveUrl: profile?.avatarLiveUrl ?? null,
+          bio: profile?.bio ?? null,
           isActive: profile?.status === "ACTIVE",
           handle: profile?.handle ?? null,
           isVerified,
@@ -137,6 +146,10 @@ export async function GET() {
       {
         loggedIn: false,
         creator: {
+          email: null,
+          displayName: null,
+          avatarUrl: null,
+          bio: null,
           isActive: false,
           handle: null,
           isVerified: false,

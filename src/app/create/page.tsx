@@ -1,195 +1,282 @@
 "use client";
 
-import * as React from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClients";
-
-type MediaOut = { type: "image" | "video"; url: string; order: number };
+import { ChevronLeft, Zap } from "lucide-react";
+import { resetFeedCache } from "@/app/public-feed/PublicFeedClient";
 
 export default function CreatePage() {
   const router = useRouter();
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [files, setFiles] = React.useState<File[]>([]);
-  const [previewUrls, setPreviewUrls] = React.useState<string[]>([]);
-  const [caption, setCaption] = React.useState("");
-  const [isPosting, setIsPosting] = React.useState(false);
-  const [err, setErr] = React.useState<string | null>(null);
+  // Core Application States
+  const [mode, setMode] = useState<"UPLOAD" | "LIVE">("UPLOAD");
+  const [isTranche, setIsTranche] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+  
+  // Pipeline Tracking States
+  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  React.useEffect(() => {
-    // build previews
-    const urls = files.map((f) => URL.createObjectURL(f));
-    setPreviewUrls(urls);
-    return () => urls.forEach((u) => URL.revokeObjectURL(u));
-  }, [files]);
+  // 1. HARDWARE LIFECYCLE CONTROLLER
+  useEffect(() => {
+    let activeStream: MediaStream | null = null;
 
-  const canPost = files.length > 0 && !isPosting;
+    async function enableCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1920 } },
+          audio: true
+        });
+        activeStream = stream;
+        setMediaStream(stream);
+      } catch (err) {
+        console.error("Camera hardware access denied:", err);
+      }
+    }
 
-  function guessMediaType(f: File): "image" | "video" {
-    return f.type.startsWith("video/") ? "video" : "image";
-  }
+    // Only ignite camera if user hasn't snapped a file preview yet
+    if (previews.length === 0) {
+      enableCamera();
+    }
 
-  async function handlePost() {
-    if (!files.length) return;
+    return () => {
+      if (activeStream) {
+        activeStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [previews.length]);
 
-    setIsPosting(true);
-    setErr(null);
+  // Bind stream context dynamically to viewport element
+  useEffect(() => {
+    if (videoRef.current && mediaStream && previews.length === 0) {
+      videoRef.current.srcObject = mediaStream;
+      videoRef.current.play().catch(err => console.error("iOS Auto-render catch:", err));
+    }
+  }, [mediaStream, previews.length]);
+
+  // 2. INSTANT RAW CANVAS SNAPSHOT INGESTION ENGINE
+  const handleInstantCapture = () => {
+    if (videoRef.current && mediaStream) {
+      const video = videoRef.current;
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth || 1080;
+      canvas.height = video.videoHeight || 1920;
+
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        // Correct composition mirroring for natural selfie layout snapshot
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
+
+        // Direct structural conversion from base64 to clean binary byte data
+        const byteString = atob(dataUrl.split(',')[1]);
+        const mimeString = dataUrl.split(',')[0].split(':')[1].split(';')[0];
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+
+        const blob = new Blob([ab], { type: mimeString });
+        const capturedFile = new File([blob], `capture-${Date.now()}.jpg`, { type: "image/jpeg" });
+
+        setFiles([capturedFile]);
+        setPreviews([dataUrl]);
+        setActiveIndex(0);
+        
+        // Clean up running hardware instantly upon snapshot freezing
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(track => track.stop());
+          setMediaStream(null);
+        }
+      }
+    }
+  };
+
+  // 3. STORAGE & PRISMA DISPATCH DEPLOYMENT PIPELINE
+  const handleSubmit = async () => {
+    if (loading) return;
+    setLoading(true);
+    setStatusMsg("Initializing database record...");
 
     try {
-      const { data: authData, error: authErr } = await supabase.auth.getUser();
-      if (authErr) throw authErr;
-
-      const userEmail = String(authData.user?.email ?? "").trim().toLowerCase();
-      if (!userEmail) {
-        setErr("Please sign in before posting.");
-        return;
-      }
-
-      const uploads: MediaOut[] = [];
-
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const mediaType = guessMediaType(file);
-
-        const ext =
-          file.name.split(".").pop() ||
-          (mediaType === "video" ? "mp4" : "jpg");
-
-        const safeExt =
-          ext.toLowerCase().replace(/[^a-z0-9]/g, "") ||
-          (mediaType === "video" ? "mp4" : "jpg");
-
-        const filePath = `${userEmail}/${Date.now()}-${Math.random()
-          .toString(16)
-          .slice(2)}.${safeExt}`;
-
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from("posts")
-          .upload(filePath, file, {
-            upsert: false,
-            contentType: file.type || undefined,
-          });
-
-        if (uploadError || !uploadData) {
-          console.error("[create] upload error", uploadError);
-          setErr("Upload failed. Check the posts bucket policy + public access.");
-          return;
-        }
-
-        const { data: publicData } = supabase.storage
-          .from("posts")
-          .getPublicUrl(uploadData.path);
-
-        const publicUrl = publicData?.publicUrl;
-        if (!publicUrl) {
-          setErr("Upload succeeded but public URL could not be created.");
-          return;
-        }
-
-        uploads.push({ type: mediaType, url: publicUrl, order: i });
-      }
-
-      // Create post in DB via API (Prisma)
-      const res = await fetch("/api/posts", {
+      // Create initial platform placeholder shell
+      const finalCaption = caption.trim() || "Transmission finalized via Autonomous Command";
+      const initialRes = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userEmail,
-          caption,
-          media: uploads,
-          // legacy (safe)
-          imageUrl: uploads[0]?.url ?? null,
-          mediaType: uploads[0]?.type ?? "image",
-        }),
+          caption: finalCaption,
+          isTranche,
+          userEmail: "revolvrassist@gmail.com"
+        })
       });
 
-      const json = await res.json().catch(() => null);
+      if (!initialRes.ok) throw new Error("Failed to secure core record reference.");
+      const postData = await initialRes.json();
 
-      if (!res.ok) {
-        console.error("[create] /api/posts failed", res.status, json);
-        setErr(`Post failed (${res.status}).`);
-        return;
+      // Safely pull the ID variable path regardless of flat or nested backend payload structures
+      const targetPostId = postData.id || postData.post?.id || postData.data?.id;
+
+      if (!targetPostId) {
+        throw new Error("Unable to parse a valid record assignment ID from server response.");
       }
 
+      if (files.length > 0) {
+        setStatusMsg("Ingesting binary assets directly to storage...");
+        const formData = new FormData();
+        formData.append("file", files[0]);
+
+        // Route to the validated target database identifier row cleanly
+        const mediaRes = await fetch(`/api/posts/${targetPostId}/media`, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!mediaRes.ok) throw new Error("Binary payload allocation handshake failed.");
+      }
+
+      setStatusMsg("Deployment complete.");
+      resetFeedCache();
       router.push("/public-feed");
-    } catch (e: any) {
-      console.error("[create] unhandled error", e);
-      setErr(e?.message ?? "Something went wrong posting.");
-    } finally {
-      setIsPosting(false);
+    } catch (err: any) {
+      console.error("Pipeline failure:", err);
+      setStatusMsg(`Handshake error: ${err.message}`);
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <main className="mx-auto w-full max-w-screen-sm p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <button type="button" onClick={() => router.back()} className="text-white/80 hover:text-white">
-          ← Back
-        </button>
+    <div style={{ position: "relative", width: "100vw", height: "100dvh", overflow: "hidden", background: "#000", fontFamily: "monospace" }}>
+      <style>{`
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes scanner { 0% { top: 0; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+        @keyframes pulse-target { 0%, 100% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 0.3; } }
+      `}</style>
 
-        <h1 className="text-lg font-semibold">Create</h1>
-
-        <button type="button" onClick={() => router.push("/public-feed")} className="text-white/80 hover:text-white">
-          Cancel
-        </button>
-      </div>
-
-      {err ? (
-        <div className="mb-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-          {err}
-        </div>
-      ) : null}
-
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-        <label className="block text-sm font-medium text-white/80">Upload video or images</label>
-
-        <input
-          className="mt-2 w-full text-sm text-white/80 file:mr-4 file:rounded-lg file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-white hover:file:bg-white/15"
-          type="file"
-          accept="video/*,image/*"
-          multiple
-          onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
-        />
-
-        {previewUrls.length ? (
-          <div className="mt-4 overflow-hidden rounded-xl border border-white/10 bg-black/20">
-            {files[0]?.type.startsWith("video/") ? (
-              <video src={previewUrls[0]} controls playsInline className="h-[360px] w-full object-contain" />
-            ) : (
-              <img src={previewUrls[0]} alt="Preview" className="h-[360px] w-full object-contain" />
+      {/* VIEWPORT GRAPHICS SYSTEM */}
+      {previews.length === 0 ? (
+        <>
+          {/* CAMERA RUNTIME VISUALIZER */}
+          <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "#000" }}>
+            <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
+            {!mediaStream && mode === "LIVE" && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(255,255,255,0.4)", letterSpacing: 2 }}>
+                [ AWS WEBRTC FEED OFFLINE ]
+              </div>
             )}
-            {previewUrls.length > 1 ? (
-              <div className="px-3 py-2 text-xs text-white/60">+ {previewUrls.length - 1} more</div>
-            ) : null}
           </div>
-        ) : null}
 
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-white/80">Caption</label>
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Say something..."
-            className="mt-2 w-full rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-white/20"
-            rows={3}
-          />
+          {/* TELEMETRY HEADS-UP OVERLAYS */}
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
+            <div style={{ position: "absolute", top: 140, left: 20, color: "#00e5ff", fontSize: 10, animation: "blink 1s infinite" }}>SYSTEM: ANALYZING TENSORS...</div>
+            <div style={{ position: "absolute", left: 0, right: 0, height: 2, background: "rgba(0, 229, 255, 0.4)", boxShadow: "0 0 10px rgba(0, 229, 255, 0.7)", animation: "scanner 4s linear infinite" }} />
+            <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div style={{ width: 44, height: 44, border: "1px solid rgba(0,229,255,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse-target 2s infinite" }}>
+                <div style={{ width: 6, height: 6, background: "#00e5ff", borderRadius: "50%" }} />
+              </div>
+              <div style={{ fontSize: 11, color: "#00e5ff", letterSpacing: 2, marginTop: 10, textShadow: "0 2px 4px rgba(0,0,0,0.9)" }}>[ SENSOR ARRAY ACTIVE ]</div>
+            </div>
+          </div>
+        </>
+      ) : (
+        /* INSTANT POST-CAPTURE DISPLAY LAYER */
+        <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "#000" }}>
+          <img src={previews[0]} alt="Captured transmission snapshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        </div>
+      )}
+
+      {/* SYSTEM CONTROLS CHROME (STACKED TRANSPARENTLY ABOVE VIEWPORTS) */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 160, background: "linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%)", zIndex: 10, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 380, background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)", zIndex: 10, pointerEvents: "none" }} />
+
+      {/* TOP NAVIGATION MANAGEMENT */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 20, display: "flex", flexDirection: "column", padding: "16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <button onClick={() => router.back()} style={{ background: "none", border: "none", color: "white", cursor: "pointer", padding: 0 }}>
+            <ChevronLeft size={28} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }} />
+          </button>
+          <div style={{ fontSize: 12, letterSpacing: 2, color: "#fff", textShadow: "0 2px 4px rgba(0,0,0,0.8)" }}>
+            {previews.length === 0 ? "[ AUTONOMOUS COMMAND ]" : "[ ASSET DEPLOYMENT REVIEW ]"}
+          </div>
+          <div style={{ width: 28, display: "flex", justifyContent: "flex-end" }}>
+            {previews.length > 0 && (
+              <button onClick={() => { setFiles([]); setPreviews([]); setCaption(""); }} style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", width: 28, height: 28, color: "white", fontSize: 12, cursor: "pointer" }}>✕</button>
+            )}
+          </div>
         </div>
 
-        <button
-          type="button"
-          disabled={!canPost}
-          onClick={handlePost}
-          className={[
-            "mt-4 w-full rounded-xl px-4 py-3 text-sm font-semibold",
-            canPost ? "bg-[#ff0055] text-white hover:opacity-95" : "bg-white/10 text-white/40",
-          ].join(" ")}
-        >
-          {isPosting ? "Posting..." : "Post"}
-        </button>
-
-        <p className="mt-3 text-xs text-white/50">
-          Tip: to select multiple files, hold <b>Ctrl</b> (Windows) or <b>Cmd</b> (Mac) while clicking, or use <b>Shift</b>.
-        </p>
+        {previews.length === 0 && (
+          <div style={{ display: "flex", gap: 10 }}>
+            <button onClick={() => setMode("UPLOAD")} style={{ flex: 1, padding: "10px", fontSize: 11, letterSpacing: 1, fontFamily: "inherit", cursor: "pointer", background: mode === "UPLOAD" ? "rgba(0,229,255,0.15)" : "rgba(0,0,0,0.5)", border: `1px solid ${mode === "UPLOAD" ? "#00e5ff" : "rgba(255,255,255,0.2)"}`, color: mode === "UPLOAD" ? "#00e5ff" : "rgba(255,255,255,0.6)", borderRadius: 8, backdropFilter: "blur(8px)", transition: "all 0.2s" }}>[ SECURE UPLOAD ]</button>
+            <button onClick={() => setMode("LIVE")} style={{ flex: 1, padding: "10px", fontSize: 11, letterSpacing: 1, fontFamily: "inherit", cursor: "pointer", background: mode === "LIVE" ? "rgba(255,45,85,0.15)" : "rgba(0,0,0,0.5)", border: `1px solid ${mode === "LIVE" ? "#ff2d55" : "rgba(255,255,255,0.2)"}`, color: mode === "LIVE" ? "#ff2d55" : "rgba(255,255,255,0.6)", borderRadius: 8, backdropFilter: "blur(8px)", transition: "all 0.2s" }}>[ GO LIVE ]</button>
+          </div>
+        )}
       </div>
-    </main>
+
+      {/* BOTTOM CONSOLE OVERLAYS */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 20, display: "flex", flexDirection: "column", padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}>
+        
+        {/* HUD TELEMETRY DATA FORM BLOCK */}
+        <div style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(0, 229, 255, 0.15)", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ fontSize: 10, color: "rgba(0, 229, 255, 0.7)", marginBottom: 6 }}>[ TRANSMISSION METADATA ]</span>
+            <textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder={previews.length === 0 ? "[ Awaiting automated matrix snapshot... ]" : "Type caption overrides..."}
+              rows={2}
+              style={{ width: "100%", color: "white", caretColor: "#00e5ff", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "8px", outline: "none", resize: "none", fontSize: "16px", fontFamily: "inherit" }}
+            />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "rgba(0,229,255,0.6)" }}>
+            <span>CLUSTER: <span style={{ color: "#fff" }}>[ AUTO_DETECTION ]</span></span>
+            <span>VOLTAGE: <span style={{ color: "#fff" }}>[ READY ]</span></span>
+          </div>
+          <div onClick={() => setIsTranche(!isTranche)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", border: `1px solid ${isTranche ? "#F5C518" : "rgba(255,255,255,0.1)"}`, background: isTranche ? "rgba(245,197,24,0.15)" : "rgba(255,255,255,0.02)", borderRadius: 6, padding: "8px 12px", transition: "all 0.15s" }}>
+            <Zap size={14} color={isTranche ? "#F5C518" : "rgba(255,255,255,0.4)"} />
+            <span style={{ fontSize: 11, color: isTranche ? "#F5C518" : "rgba(255,255,255,0.5)" }}>[ NEURAL TRANCHE IGNITION ]</span>
+          </div>
+        </div>
+
+        {/* UNIVERSAL CONCENTRIC SHUTTER TRIGGER */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 80 }}>
+          <button
+            onClick={previews.length === 0 ? (mode === "UPLOAD" ? handleInstantCapture : handleSubmit) : handleSubmit}
+            disabled={loading}
+            style={{ width: 76, height: 76, borderRadius: "50%", border: "4px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", background: "transparent", cursor: loading ? "not-allowed" : "pointer", padding: 0, boxShadow: "0 4px 16px rgba(0,0,0,0.6)" }}
+          >
+            <div style={{ 
+              width: 56, height: 56, borderRadius: "50%", 
+              background: previews.length > 0 ? "#F5C518" : (mode === "LIVE" ? "#ff2d55" : "#00e5ff"),
+              boxShadow: `0 0 20px ${previews.length > 0 ? "#F5C518" : (mode === "LIVE" ? "#ff2d55" : "#00e5ff")}`,
+              display: "flex", alignItems: "center", justifyContent: "center"
+            }}>
+              {loading ? (
+                <div style={{ fontSize: 10, color: "#fff", fontWeight: "bold" }}>...</div>
+              ) : previews.length > 0 ? (
+                <div style={{ fontSize: 11, color: "#000", fontWeight: "bold", letterSpacing: 1 }}>DEPL</div>
+              ) : null}
+            </div>
+          </button>
+        </div>
+
+        {loading && statusMsg && (
+          <div style={{ textAlign: "center", fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 10, letterSpacing: 1 }}>
+            {statusMsg.toUpperCase()}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

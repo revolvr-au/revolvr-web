@@ -9,14 +9,6 @@ export default function TopBar() {
           REVOLVR LIVE
         </span>
       </div>
-
-      <div className="flex items-center gap-2">
-        <div className="flex -space-x-2">
-          <div className="w-6 h-6 rounded-full bg-gray-400 border border-white" />
-          <div className="w-6 h-6 rounded-full bg-gray-500 border border-white" />
-        </div>
-        <span className="text-sm font-medium">1.2K</span>
-      </div>
     </div>
   );
 }

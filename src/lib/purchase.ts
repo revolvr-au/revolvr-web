@@ -8,8 +8,7 @@ export type CheckoutMode =
   | "tip-pack"
   | "boost-pack"
   | "spin-pack"
-  | "reaction"
-  | "vote";
+  | "reaction";
 
 export type SupportSource = "FEED" | "LIVE";
 

@@ -40,6 +40,7 @@ export async function GET(req: Request) {
             handle: true,
             bio: true,
             avatarUrl: true,
+            voltage: true,
             isVerified: true,
             verificationStatus: true,
             verificationCurrentPeriodEnd: true,
@@ -48,6 +49,26 @@ export async function GET(req: Request) {
           },
         })
         .catch(() => null)) ?? null;
+
+    const [posts, recentVoltageEvents] = await Promise.all([
+      (await prisma.post
+        .findMany({
+          where: { userEmail: email },
+          orderBy: { createdAt: "desc" },
+          take: 60,
+        })
+        .catch(() => [])) ?? [],
+      cp
+        ? (await prisma.creatorVoltageEvent
+            .findMany({
+              where: { creatorEmail: email },
+              orderBy: { createdAt: "desc" },
+              select: { points: true },
+              take: 5,
+            })
+            .catch(() => [])) ?? []
+        : [],
+    ]);
 
     const profile = {
       email,
@@ -59,16 +80,13 @@ export async function GET(req: Request) {
       verificationStatus: cp?.verificationStatus ?? null,
       blue_tick_status: cp?.blue_tick_status ?? null,
       isVerified: Boolean(cp?.isVerified),
+      totalVoltage: cp?.voltage ?? 0,
+      recentVoltage: recentVoltageEvents.reduce(
+        (sum, event) => sum + (event.points || 0),
+        0
+      ),
+      postCount: posts.length,
     };
-
-    const posts =
-      (await prisma.post
-        .findMany({
-          where: { userEmail: email },
-          orderBy: { createdAt: "desc" },
-          take: 60,
-        })
-        .catch(() => [])) ?? [];
 
     return NextResponse.json({ ok: true, profile, posts });
   } catch (e: any) {

@@ -74,7 +74,7 @@ export default function CommandClient() {
   // Not authed state
   if (!loading && needsAuth) {
     return (
-      <div className="mx-auto max-w-3xl px-6 py-10">
+      <div className="mx-auto max-w-4xl px-6 py-10">
         <div className="flex items-center justify-between">
           <a href="/public-feed" className="text-sm text-white/70 hover:text-white">
             ← Back
@@ -115,7 +115,7 @@ export default function CommandClient() {
 
   // Authed state
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-6 py-10">
       {/* Top bar */}
       <div className="flex items-center justify-between">
         <a href="/public-feed" className="text-sm text-white/70 hover:text-white">

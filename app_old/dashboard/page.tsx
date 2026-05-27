@@ -50,7 +50,8 @@ export default function DashboardPage() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        height: "100vh",
+        overflow: "hidden"
         background: "#050816",
         color: "white",
         display: "flex",

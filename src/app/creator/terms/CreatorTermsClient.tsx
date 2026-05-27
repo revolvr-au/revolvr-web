@@ -97,7 +97,7 @@ export default function CreatorTermsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-10">
+    <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="flex items-center justify-between">
         <a href="/feed" className="text-sm text-white/70 hover:text-white">
           ← Back to feed
@@ -159,7 +159,7 @@ export default function CreatorTermsPage() {
         <section className="space-y-2">
           <h2 className="text-base font-semibold">3. Revenue Share</h2>
           <p className="text-white/75">
-            You receive <span className="font-semibold text-white">45%</span> of eligible monetisation revenue. Stripe fees and
+            You receive <span className="font-semibold text-white">50%</span> of eligible monetisation revenue. Stripe fees and
             payout fees are deducted from your share.
           </p>
         </section>

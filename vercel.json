@@ -1,0 +1,21 @@
+{
+  "functions": {
+    "src/app/api/avatar/process/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/public-feed",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/people-rail",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/spark",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

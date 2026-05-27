@@ -6,7 +6,7 @@ export function displayNameFromEmail(email: string): string {
   return cleaned || "User";
 }
 
-export function isValidImageUrl(url: unknown): url is string {
+export function isValidImage_Url(url: unknown): url is string {
   if (typeof url !== "string") return false;
   const u = url.trim();
   if (!u) return false;

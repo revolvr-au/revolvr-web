@@ -6,50 +6,101 @@ export default function AboutPage() {
   const router = useRouter();
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 relative">
+    <div style={{
+      minHeight: "100vh",
+      background: "#0a0806",
+      color: "white",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      maxWidth: 480,
+      margin: "0 auto",
+      padding: "24px 20px 60px",
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+      `}</style>
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 48 }}>
         <button
-          type="button"
           onClick={() => router.back()}
-          className="absolute right-4 top-4 text-white/50 hover:text-white/80 text-sm"
-          aria-label="Close"
-          title="Close"
-        >
-          ✕
-        </button>
-
-        <h1 className="text-2xl font-semibold">About Revolvr</h1>
-        <p className="mt-2 text-sm text-white/70 leading-6">
-          Revolvr is a platform that helps Brands and Creators discover, connect, and engage with each other.
-        </p>
-
-        <div className="mt-6 rounded-xl border border-white/10 bg-black/20 p-4">
-          <div className="text-sm font-semibold text-white/90">Business</div>
-          <div className="mt-1 text-sm text-white/80">Revolvr Pty Ltd (Australia)</div>
-          <div className="mt-3 text-sm font-semibold text-white/90">Contact</div>
-          <a
-            href={`mailto:revolvrassist@gmail.com?subject=${encodeURIComponent("Revolvr Enquiry")}`}
-            className="mt-1 inline-block text-sm text-white/80 underline hover:text-white/90"
-          >
-            revolvrassist@gmail.com
-          </a>
+          style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "4px 2px" }}
+        >←</button>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "#333", textTransform: "uppercase" }}>
+          About
         </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <a
-            href="/terms"
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 hover:bg-white/10"
-          >
-            Terms & Conditions
-          </a>
-          <a
-            href="/privacy"
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 hover:bg-white/10"
-          >
-            Privacy Policy
-          </a>
-        </div>
+        <div style={{ width: 30 }} />
       </div>
-    </main>
+
+      {/* Title */}
+      <h1 style={{
+        fontFamily: "'Bebas Neue', sans-serif",
+        fontSize: 64,
+        letterSpacing: 3,
+        color: "white",
+        margin: "0 0 10px",
+        lineHeight: 1,
+      }}>
+        REVOLVR
+      </h1>
+
+      {/* Subtitle */}
+      <p style={{ fontSize: 13, color: "#888", margin: "0 0 36px", lineHeight: 1.6 }}>
+        A new kind of social platform. Built in Australia.
+      </p>
+
+      <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />
+
+      {/* WHAT WE ARE */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#555", textTransform: "uppercase", marginBottom: 12 }}>
+          What We Are
+        </div>
+        <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, margin: 0 }}>
+          Revolvr is a short-form video platform built around live battles, creator-first monetisation,
+          and real connection. We believe creators deserve more — which is why we pay out
+          75% of all earnings directly to the people who make the content.
+          No middlemen. No algorithm games. Just creators and their audience.
+        </p>
+      </div>
+
+      <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />
+
+      {/* OUR MISSION */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#555", textTransform: "uppercase", marginBottom: 12 }}>
+          Our Mission
+        </div>
+        <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, margin: 0 }}>
+          We exist to build a fair platform where creators earn what they truly deserve.
+          Revolvr is Australian owned and operated — built with transparency,
+          community, and long-term creator success at its core.
+        </p>
+      </div>
+
+      <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />
+
+      {/* CONTACT */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#555", textTransform: "uppercase", marginBottom: 12 }}>
+          Contact
+        </div>
+        <a
+          href="mailto:revolvrassist@gmail.com"
+          style={{ fontSize: 13, color: "#00e5ff", textDecoration: "none", letterSpacing: 0.3 }}
+        >
+          revolvrassist@gmail.com
+        </a>
+      </div>
+
+      <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />
+
+      {/* Business */}
+      <div>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#333", textTransform: "uppercase", marginBottom: 8 }}>
+          Business
+        </div>
+        <p style={{ fontSize: 12, color: "#444", margin: 0 }}>Revolvr Pty Ltd (Australia)</p>
+      </div>
+    </div>
   );
 }

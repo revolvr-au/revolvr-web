@@ -21,7 +21,6 @@ export function useGoLive(onAllowed: () => void) {
       return;
     }
 
-    // If authenticated creator → trigger overlay
     onAllowed();
   };
 

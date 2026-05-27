@@ -1,17 +1,19 @@
-// src/lib/prisma.ts
 import { PrismaClient } from "@prisma/client";
 
-declare global {
-  // eslint-disable-next-line no-var
-  var __prisma: PrismaClient | undefined;
-}
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+const baseUrl = process.env.DATABASE_URL ?? "";
+const pooledUrl = /pool_timeout=\d+/.test(baseUrl)
+  ? baseUrl.replace(/pool_timeout=\d+/, "pool_timeout=30")
+  : baseUrl + (baseUrl.includes("?") ? "&" : "?") + "pool_timeout=30";
 
 export const prisma =
-  global.__prisma ??
+  globalForPrisma.prisma ??
   new PrismaClient({
-    log: ["error", "warn"],
+    datasources: { db: { url: pooledUrl } },
+    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
   });
 
-if (process.env.NODE_ENV !== "production") {
-  global.__prisma = prisma;
-}
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
