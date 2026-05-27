@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
 import TrancheCard, { TrancheFeedItem } from "@/components/tranche/TrancheCard";
+import HotTrancheCard, { HotEvent } from "@/components/tranche/HotTrancheCard";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 const GOLD = "#F5C518";
@@ -23,8 +24,40 @@ export function TrancheContent() {
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+  const [hotEvent, setHotEvent] = useState<HotEvent | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
+
+  // ── Hot TRANCHE — fetch on mount, then every 60s ─────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadHot = async () => {
+      try {
+        const res = await fetch("/api/tranche/hot", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const next: HotEvent | null = data?.ok && data.event ? data.event : null;
+        setHotEvent((prev) => {
+          if (!next) return null;
+          if (prev && prev.id === next.id && prev.voltsPerHour === next.voltsPerHour) {
+            return prev;
+          }
+          return next;
+        });
+      } catch {
+        /* swallow — keep the previous card visible if the poll fails */
+      }
+    };
+
+    loadHot();
+    const id = window.setInterval(loadHot, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, []);
 
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
@@ -128,6 +161,21 @@ export function TrancheContent() {
         >
           Comments that broke out.
         </p>
+
+        {hotEvent && (
+          <HotTrancheCard
+            key={hotEvent.id}
+            event={hotEvent}
+            viewerEmail={viewerEmail}
+            onVolted={(v) =>
+              setHotEvent((prev) =>
+                prev
+                  ? { ...prev, stats: { ...prev.stats, currentVoltage: v } }
+                  : prev,
+              )
+            }
+          />
+        )}
 
         {/* SUB-TABS */}
         <div
