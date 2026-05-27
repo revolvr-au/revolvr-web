@@ -900,7 +900,7 @@ export default function PeopleCard({
             position: "relative",
           }}
         >
-          {["TRANCHE", "SHOP", "MUSIC", "BRAND"].map((label, i) => (
+          {["TRANCHE", "SHOP", "MUSIC", "BRAND", "PODCAST"].map((label, i, arr) => (
             <div
               key={label}
               style={{
@@ -910,7 +910,7 @@ export default function PeopleCard({
                 justifyContent: "center",
                 gap: 6,
                 padding: "10px 0",
-                borderRight: i < 3 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
               }}
             >
               <span
