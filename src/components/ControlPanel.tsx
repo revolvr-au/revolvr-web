@@ -44,6 +44,27 @@ export default function ControlPanel({
   const [logoutPending, setLogoutPending] = useState(false);
   const [sparkBalance, setSparkBalance] = useState<number | null>(null);
   const [myGaths, setMyGaths] = useState<MyGath[] | null>(null);
+  const [canApplyTfc, setCanApplyTfc] = useState(false);
+
+  useEffect(() => {
+    if (!userId) {
+      setCanApplyTfc(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/tfc/status?email=${encodeURIComponent(userId)}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setCanApplyTfc(Boolean(data?.ok && data.status === "none"));
+      })
+      .catch(() => {
+        if (!cancelled) setCanApplyTfc(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -495,6 +516,16 @@ export default function ControlPanel({
             <>
               <MenuSection label="CREATOR">
                 <MenuItem onClick={() => navigate("/creator/onboard")}>Become a Creator</MenuItem>
+              </MenuSection>
+              <MenuDivider />
+            </>
+          )}
+
+          {/* TRANCHE */}
+          {canApplyTfc && (
+            <>
+              <MenuSection label="TRANCHE">
+                <MenuItem onClick={() => navigate("/tfc/apply")}>Apply for TFC Crew</MenuItem>
               </MenuSection>
               <MenuDivider />
             </>
