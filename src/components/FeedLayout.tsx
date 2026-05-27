@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import TopBar from "./TopBar";
 
 type Props = {
@@ -7,12 +8,16 @@ type Props = {
 };
 
 export default function FeedLayout({ children }: Props) {
+  const pathname = usePathname();
+  const isTranche = pathname?.startsWith("/tranche") ?? false;
+  const background = isTranche ? "#E8E4DC" : "#020617";
+
   return (
     <div
       style={{
         display: "flex",
         justifyContent: "center",
-        background: "#020617",
+        background,
         minHeight: "100vh"
       }}
     >

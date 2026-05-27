@@ -144,7 +144,7 @@ export function TrancheContent() {
             fontFamily: "'Bebas Neue', sans-serif",
             fontSize: 56,
             letterSpacing: 3,
-            color: "white",
+            color: "#0a0a0a",
             margin: "0 0 4px",
             lineHeight: 1,
           }}
@@ -155,7 +155,7 @@ export function TrancheContent() {
           style={{
             fontFamily: "'DM Sans', system-ui, sans-serif",
             fontSize: 13,
-            color: "rgba(255,255,255,0.45)",
+            color: "rgba(0,0,0,0.55)",
             margin: "0 0 22px",
           }}
         >
@@ -182,7 +182,7 @@ export function TrancheContent() {
           style={{
             display: "flex",
             gap: 24,
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            borderBottom: "1px solid rgba(0,0,0,0.1)",
             marginBottom: 18,
           }}
         >
@@ -197,7 +197,7 @@ export function TrancheContent() {
                   border: "none",
                   padding: "10px 0",
                   borderBottom: active ? `2px solid ${GOLD}` : "2px solid transparent",
-                  color: active ? "white" : "rgba(255,255,255,0.4)",
+                  color: active ? "#0a0a0a" : "rgba(0,0,0,0.45)",
                   fontFamily: "'Space Grotesk', system-ui, sans-serif",
                   fontSize: 11,
                   letterSpacing: "0.18em",
@@ -251,7 +251,7 @@ export function TrancheContent() {
                   fontFamily: "'Space Grotesk', monospace",
                   fontSize: 10,
                   letterSpacing: "0.2em",
-                  color: "rgba(255,255,255,0.3)",
+                  color: "rgba(0,0,0,0.35)",
                   textAlign: "center",
                   padding: "8px 0 16px",
                 }}
@@ -265,7 +265,7 @@ export function TrancheContent() {
                   fontFamily: "'Space Grotesk', monospace",
                   fontSize: 9,
                   letterSpacing: "0.22em",
-                  color: "rgba(255,255,255,0.2)",
+                  color: "rgba(0,0,0,0.25)",
                   textAlign: "center",
                   padding: "4px 0 16px",
                 }}
@@ -297,7 +297,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
           fontFamily: "'Bebas Neue', sans-serif",
           fontSize: 28,
           letterSpacing: 3,
-          color: "rgba(255,255,255,0.18)",
+          color: "rgba(0,0,0,0.22)",
         }}
       >
         {title}
@@ -306,7 +306,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
         style={{
           fontFamily: "'DM Sans', system-ui, sans-serif",
           fontSize: 12,
-          color: "rgba(255,255,255,0.4)",
+          color: "rgba(0,0,0,0.5)",
           maxWidth: 280,
         }}
       >
