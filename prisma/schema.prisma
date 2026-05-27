@@ -259,7 +259,7 @@ model TrancheWitness {
 
 model TrancheNotification {
   id             String                  @id @default(uuid())
-  trancheEventId String
+  trancheEventId String?
   recipientEmail String
   type           TrancheNotificationType
   isRead         Boolean                 @default(false)
@@ -267,7 +267,7 @@ model TrancheNotification {
   metadata       Json?
   sentAt         DateTime                @default(now())
 
-  trancheEvent TrancheEvent @relation(fields: [trancheEventId], references: [id], onDelete: Cascade)
+  trancheEvent TrancheEvent? @relation(fields: [trancheEventId], references: [id], onDelete: Cascade)
 
   @@index([recipientEmail, isRead])
   @@index([trancheEventId])
@@ -287,6 +287,8 @@ enum TrancheNotificationType {
   SPONSORED
   TFC_FILED
   TFC_CLEARED
+  TFC_APPROVED
+  TFC_REJECTED
   ORIGINATOR_PAYOUT
 
   @@schema("public")
@@ -295,14 +297,15 @@ enum TrancheNotificationType {
 model TFCMember {
   id             String    @id @default(uuid())
   userEmail      String    @unique
-  status         TFCStatus @default(ACTIVE)
+  status         TFCStatus @default(PENDING)
   languages      String[]  @default(["en"])
   domains        String[]  @default([])
+  motivation     String?
   accuracyScore  Float     @default(1.0)
   totalChecks    Int       @default(0)
   correctChecks  Int       @default(0)
-  termStartedAt  DateTime  @default(now())
-  termEndsAt     DateTime
+  termStartedAt  DateTime?
+  termEndsAt     DateTime?
   isProfessional Boolean   @default(false)
   orgName        String?
   createdAt      DateTime  @default(now())
@@ -319,6 +322,7 @@ model TFCMember {
 }
 
 enum TFCStatus {
+  PENDING
   ACTIVE
   EXPIRED
   SUSPENDED
