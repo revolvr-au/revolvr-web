@@ -198,6 +198,8 @@ export default function StudioDashboard({
   const [modalSending, setModalSending] = useState(false);
   const [modalMsg, setModalMsg] = useState("");
 
+  const [tfcPending, setTfcPending] = useState<number | null>(null);
+
   // ─── Data loaders ───────────────────────────────────────────────────────────
 
   const loadPulse = useCallback(async () => {
@@ -223,12 +225,25 @@ export default function StudioDashboard({
     if (res.ok) setAuditLogs((await res.json()).logs);
   }, []);
 
+  const loadTfcPending = useCallback(async () => {
+    const res = await fetch(
+      `/api/tfc/applications?reviewerEmail=${encodeURIComponent(email)}`,
+    );
+    if (res.ok) {
+      const data = await res.json();
+      setTfcPending(Array.isArray(data?.applications) ? data.applications.length : 0);
+    } else {
+      setTfcPending(0);
+    }
+  }, [email]);
+
   useEffect(() => {
     loadPulse();
     loadTopPosts();
     loadConfig();
     loadAudit();
-  }, [loadPulse, loadTopPosts, loadConfig, loadAudit]);
+    loadTfcPending();
+  }, [loadPulse, loadTopPosts, loadConfig, loadAudit, loadTfcPending]);
 
   // ─── Actions ────────────────────────────────────────────────────────────────
 
@@ -439,6 +454,58 @@ export default function StudioDashboard({
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* ── TFC Applications ── */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={sectionTitle}>TFC Applications</div>
+        <div
+          style={{
+            ...cyanCard,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "18px 20px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+            <div
+              style={{
+                fontFamily: '"Bebas Neue", cursive',
+                fontSize: 40,
+                color: tfcPending && tfcPending > 0 ? CYAN : "rgba(255,255,255,0.5)",
+                letterSpacing: "0.02em",
+                lineHeight: 1,
+                textShadow:
+                  tfcPending && tfcPending > 0 ? `0 0 20px rgba(0,229,255,0.4)` : "none",
+              }}
+            >
+              {tfcPending ?? "—"}
+            </div>
+            <div>
+              <div
+                style={{
+                  fontSize: 10,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  color: "rgba(255,255,255,0.35)",
+                  marginBottom: 4,
+                }}
+              >
+                Pending Review
+              </div>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)" }}>
+                Fact-checker applications awaiting decision
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => (window.location.href = "/studio/tfc")}
+            style={btnStyle("cyan")}
+          >
+            Review Queue →
+          </button>
         </div>
       </div>
 

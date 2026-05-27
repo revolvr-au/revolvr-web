@@ -15,9 +15,35 @@ type Props = {
 export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile, handle }: Props) {
   const router = useRouter();
   const [logoutPending, setLogoutPending] = useState(false);
+  const [canApplyTfc, setCanApplyTfc] = useState(false);
 
   useEffect(() => {
     if (!isOpen) setLogoutPending(false);
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    const sb = createSupabaseBrowserClient();
+    sb.auth.getUser().then(async ({ data }) => {
+      const email = data.user?.email;
+      if (!email) {
+        if (!cancelled) setCanApplyTfc(false);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/tfc/status?email=${encodeURIComponent(email)}`, {
+          cache: "no-store",
+        });
+        const json = await res.json();
+        if (!cancelled) setCanApplyTfc(json?.ok && json.status === "none");
+      } catch {
+        if (!cancelled) setCanApplyTfc(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen]);
 
   const navigate = (path: string) => {
@@ -153,6 +179,16 @@ export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile
           <>
             <MenuSection label="CREATOR">
               <MenuItem onClick={() => navigate("/creator/onboard")}>Become a Creator</MenuItem>
+            </MenuSection>
+            <MenuDivider />
+          </>
+        )}
+
+        {/* TRANCHE */}
+        {canApplyTfc && (
+          <>
+            <MenuSection label="TRANCHE">
+              <MenuItem onClick={() => navigate("/tfc/apply")}>Apply for TFC Crew</MenuItem>
             </MenuSection>
             <MenuDivider />
           </>
