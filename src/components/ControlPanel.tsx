@@ -430,7 +430,7 @@ export default function ControlPanel({
               <MenuItem onClick={() => navigate(`/u/${handle}`)}>Edit Profile</MenuItem>
             )}
             <MenuItem onClick={() => navigate("/settings")}>Settings</MenuItem>
-            <MenuItem onClick={() => {}} badge="Coming Soon">Notifications</MenuItem>
+            <MenuItem onClick={() => navigate("/notifications")}>Notifications</MenuItem>
             {logoutPending ? (
               <div style={{ padding: "10px 20px" }}>
                 <div style={{ fontSize: 12, color: "#888", marginBottom: 10 }}>Confirm log out?</div>

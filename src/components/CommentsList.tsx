@@ -1,6 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
+
+function BoltIcon({ size = 12, color = "currentColor" }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden>
+      <path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z" />
+    </svg>
+  );
+}
 
 function formatAge(createdAt: string | undefined): string {
   if (!createdAt) return "[ --:--:-- ]";
@@ -21,15 +30,19 @@ function CommentCard({
   isReply = false,
   onReply,
   isActiveReply,
+  viewerEmail,
 }: {
   comment: any;
   isReply?: boolean;
   onReply?: () => void;
   isActiveReply?: boolean;
+  viewerEmail: string | null;
 }) {
   const [showSubPanel, setShowSubPanel] = useState(false);
+  const [voltage, setVoltage] = useState<number>(comment.voltage || 0);
+  const [volted, setVolted] = useState(false);
+  const [volting, setVolting] = useState(false);
 
-  const voltage = comment.voltage || 0;
   const isHot = voltage >= 100;
 
   const displayName =
@@ -199,6 +212,56 @@ function CommentCard({
                   Reply
                 </button>
               )}
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!viewerEmail || volted || volting) return;
+                  setVolting(true);
+                  setVoltage((v) => v + 1);
+                  try {
+                    const res = await fetch("/api/tranche/volt-comment", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        actorEmail: viewerEmail,
+                        commentId: comment.id,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (data?.ok) {
+                      setVolted(true);
+                      if (typeof data.newVoltage === "number") setVoltage(data.newVoltage);
+                    } else {
+                      setVoltage((v) => Math.max(0, v - 1));
+                    }
+                  } catch {
+                    setVoltage((v) => Math.max(0, v - 1));
+                  } finally {
+                    setVolting(false);
+                  }
+                }}
+                disabled={!viewerEmail || volted || volting}
+                aria-label={volted ? "Volted" : "Volt this comment"}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: !viewerEmail || volted ? "default" : "pointer",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: volted ? "#FFB800" : "#00e5ff",
+                  fontFamily: "inherit",
+                  opacity: !viewerEmail ? 0.5 : 1,
+                }}
+              >
+                <BoltIcon size={11} color={volted ? "#FFB800" : "#00e5ff"} />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+                  {voltage.toLocaleString()}
+                </span>
+              </button>
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>·</span>
               <span style={{
                 fontSize: 10,
@@ -342,6 +405,14 @@ export default function CommentsList({
   replyTo: { id: string; userEmail: string } | null;
 }) {
   const [comments, setComments] = useState<any[]>([]);
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sb = createSupabaseBrowserClient();
+    sb.auth.getUser().then(({ data }) => {
+      setViewerEmail(data.user?.email ?? null);
+    });
+  }, []);
 
   useEffect(() => {
     if (!postId) return;
@@ -406,6 +477,7 @@ export default function CommentsList({
               comment={c}
               onReply={() => setReplyTo({ id: c.id, userEmail: c.userEmail })}
               isActiveReply={replyTo?.id === c.id}
+              viewerEmail={viewerEmail}
             />
 
             {repliesMap[c.id]?.length ? (
@@ -439,6 +511,7 @@ export default function CommentsList({
                         comment={r}
                         isReply
                         onReply={() => setReplyTo({ id: c.id, userEmail: c.userEmail })}
+                        viewerEmail={viewerEmail}
                       />
                     </div>
                   </div>

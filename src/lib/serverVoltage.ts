@@ -9,6 +9,7 @@ export const VOLTAGE_WEIGHTS = {
   share_received: 5,
   live_started: 10,
   live_gift_received: 25,
+  comment_volted: 2,
 } as const;
 
 export type VoltageEventType = keyof typeof VOLTAGE_WEIGHTS;

@@ -14,6 +14,7 @@ export async function POST(req: Request) {
       launchDate,
       creatorEmail,
       postId,
+      trancheEventId,
     } = body ?? {};
 
     if (!name || !creatorEmail) {
@@ -33,6 +34,20 @@ export async function POST(req: Request) {
 
     const status = launchDate ? "PRELAUNCHING" : "ACTIVE";
 
+    let trancheEvent: { id: string; commentAuthorEmail: string; postCreatorEmail: string } | null = null;
+    if (trancheEventId && typeof trancheEventId === "string") {
+      trancheEvent = await prisma.trancheEvent.findUnique({
+        where: { id: trancheEventId },
+        select: { id: true, commentAuthorEmail: true, postCreatorEmail: true },
+      });
+      if (!trancheEvent) {
+        return NextResponse.json(
+          { ok: false, error: "trancheEvent not found" },
+          { status: 404 },
+        );
+      }
+    }
+
     const gath = await prisma.gath.create({
       data: {
         name: String(name).slice(0, 120),
@@ -42,6 +57,7 @@ export async function POST(req: Request) {
         creatorEmail,
         sparkCost: cost,
         launchDate: launchDate ? new Date(launchDate) : null,
+        seededFromTrancheId: trancheEvent?.id ?? null,
       },
     });
 
@@ -52,6 +68,32 @@ export async function POST(req: Request) {
         role: "IGNITER",
       },
     });
+
+    if (trancheEvent) {
+      const coHostEmails = Array.from(
+        new Set(
+          [trancheEvent.commentAuthorEmail, trancheEvent.postCreatorEmail]
+            .filter((e): e is string => typeof e === "string" && e.length > 0)
+            .filter((e) => e !== creatorEmail),
+        ),
+      );
+
+      if (coHostEmails.length > 0) {
+        await prisma.gathMember.createMany({
+          data: coHostEmails.map((userEmail) => ({
+            gathId: gath.id,
+            userEmail,
+            role: "IGNITER" as const,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      await prisma.trancheEvent.update({
+        where: { id: trancheEvent.id },
+        data: { gathId: gath.id },
+      });
+    }
 
     if (postId) {
       await prisma.gathPost.create({

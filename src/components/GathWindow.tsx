@@ -19,7 +19,9 @@ export type GathWindowProps = {
   onClose: () => void;
   userEmail: string | null;
   seedPostId?: string | null;
+  prefillName?: string;
   prefillDescription?: string;
+  seedTrancheEventId?: string | null;
   /** "simple" hides BUSINESS row — used from PeopleCard */
   mode?: "full" | "simple";
 };
@@ -37,7 +39,9 @@ export default function GathWindow({
   onClose,
   userEmail,
   seedPostId,
+  prefillName,
   prefillDescription,
+  seedTrancheEventId,
   mode = "full",
 }: GathWindowProps) {
   const [sheetType, setSheetType] = useState<GathType | null>(null);
@@ -153,7 +157,9 @@ export default function GathWindow({
             onCreated={onClose}
             userEmail={userEmail}
             seedPostId={seedPostId ?? null}
+            prefillName={prefillName}
             prefillDescription={prefillDescription}
+            seedTrancheEventId={seedTrancheEventId ?? null}
           />
         )}
       </div>
@@ -234,17 +240,21 @@ function GathCreateSheet({
   onCreated,
   userEmail,
   seedPostId,
+  prefillName,
   prefillDescription,
+  seedTrancheEventId,
 }: {
   type: GathType;
   onClose: () => void;
   onCreated: () => void;
   userEmail: string | null;
   seedPostId: string | null;
+  prefillName?: string;
   prefillDescription?: string;
+  seedTrancheEventId?: string | null;
 }) {
   const router = useRouter();
-  const [name, setName] = useState("");
+  const [name, setName] = useState(prefillName ?? "");
   const [description, setDescription] = useState(prefillDescription ?? "");
   const [preLaunch, setPreLaunch] = useState(false);
   const [launchDate, setLaunchDate] = useState("");
@@ -284,6 +294,7 @@ function GathCreateSheet({
           launchDate: preLaunch && launchDate ? launchDate : null,
           creatorEmail: userEmail,
           postId: seedPostId ?? null,
+          trancheEventId: seedTrancheEventId ?? null,
         }),
       });
       const data = await res.json().catch(() => ({}));

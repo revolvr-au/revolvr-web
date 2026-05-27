@@ -1,152 +1,230 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
-import { useRingStatus } from "@/hooks/useRingStatus";
-import { hasRing } from "@/lib/ringGates";
+import TrancheCard, { TrancheFeedItem } from "@/components/tranche/TrancheCard";
+import { createSupabaseBrowserClient } from "@/supabase-browser";
+
+const GOLD = "#F5C518";
+const PAGE_SIZE = 20;
+
+type Tab = "trending" | "network" | "new";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "trending", label: "TRENDING" },
+  { key: "network", label: "NETWORK" },
+  { key: "new", label: "NEW" },
+];
 
 export function TrancheContent() {
-  const router = useRouter();
-  const { ringTier, loading } = useRingStatus();
-  const isGold = !loading && hasRing(ringTier, "GOLD");
-  const showLock = !loading && !isGold;
+  const [tab, setTab] = useState<Tab>("trending");
+  const [items, setItems] = useState<TrancheFeedItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [viewerEmail, setViewerEmail] = useState<string | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    const sb = createSupabaseBrowserClient();
+    sb.auth.getUser().then(({ data }) => {
+      setViewerEmail(data.user?.email ?? null);
+    });
+  }, []);
+
+  const loadPage = useCallback(
+    async (opts: { reset: boolean }) => {
+      if (loading) return;
+      const reqId = ++requestIdRef.current;
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          tab,
+          limit: String(PAGE_SIZE),
+        });
+        if (!opts.reset && cursor) params.set("cursor", cursor);
+        if (tab === "network" && viewerEmail) {
+          params.set("viewerEmail", viewerEmail);
+        }
+        const res = await fetch(`/api/tranche/feed?${params.toString()}`);
+        const data = await res.json();
+        if (reqId !== requestIdRef.current) return;
+        const newItems: TrancheFeedItem[] = data?.items ?? [];
+        setItems((prev) => (opts.reset ? newItems : [...prev, ...newItems]));
+        setCursor(data?.nextCursor ?? null);
+        setHasMore(Boolean(data?.nextCursor));
+      } catch {
+        if (reqId === requestIdRef.current) {
+          setHasMore(false);
+        }
+      } finally {
+        if (reqId === requestIdRef.current) setLoading(false);
+      }
+    },
+    [tab, cursor, loading, viewerEmail],
+  );
+
+  useEffect(() => {
+    if (tab === "network" && !viewerEmail) return;
+    setItems([]);
+    setCursor(null);
+    setHasMore(true);
+    requestIdRef.current++;
+    loadPage({ reset: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, viewerEmail]);
+
+  useEffect(() => {
+    if (!sentinelRef.current || !hasMore) return;
+    const el = sentinelRef.current;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadPage({ reset: false });
+        }
+      },
+      { rootMargin: "400px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, loading, loadPage]);
 
   return (
     <FeedLayout>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Bebas+Neue&display=swap');
       `}</style>
-      <div style={{
-        height: "100dvh",
-        overflowY: "auto",
-        paddingTop: 72,
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
-        paddingLeft: 20,
-        paddingRight: 20,
-        scrollbarWidth: "none",
-      }}>
-        {/* Title */}
-        <h1 style={{
-          fontFamily: "'Bebas Neue', sans-serif",
-          fontSize: 64,
-          letterSpacing: 3,
-          color: "white",
-          margin: "0 0 8px",
-          lineHeight: 1,
-        }}>
+      <div
+        style={{
+          height: "100dvh",
+          overflowY: "auto",
+          paddingTop: 72,
+          paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
+          paddingLeft: 16,
+          paddingRight: 16,
+          scrollbarWidth: "none",
+        }}
+      >
+        <h1
+          style={{
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 56,
+            letterSpacing: 3,
+            color: "white",
+            margin: "0 0 4px",
+            lineHeight: 1,
+          }}
+        >
           TRANCHE
         </h1>
-
-        <p style={{ fontSize: 13, color: "#555", margin: "0 0 32px", lineHeight: 1.6 }}>
-          Structured discussion.
+        <p
+          style={{
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontSize: 13,
+            color: "rgba(255,255,255,0.45)",
+            margin: "0 0 22px",
+          }}
+        >
+          Comments that broke out.
         </p>
 
-        <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />
-
-        {loading ? null : showLock ? (
-          /* ── LOCKED ── */
-          <div style={{
+        {/* SUB-TABS */}
+        <div
+          style={{
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 20,
-            paddingTop: 40,
-            textAlign: "center",
-          }}>
-            <div style={{ fontSize: 40 }}>🔒</div>
+            gap: 24,
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            marginBottom: 18,
+          }}
+        >
+          {TABS.map((t) => {
+            const active = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: "10px 0",
+                  borderBottom: active ? `2px solid ${GOLD}` : "2px solid transparent",
+                  color: active ? "white" : "rgba(255,255,255,0.4)",
+                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  fontSize: 11,
+                  letterSpacing: "0.18em",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  marginBottom: -1,
+                }}
+              >
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
 
-            <div>
-              <div style={{
-                fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: 28,
-                letterSpacing: 2,
-                color: "#F59E0B",
-                marginBottom: 6,
-              }}>
-                GOLD RING REQUIRED
-              </div>
-              <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, maxWidth: 280, margin: "0 auto" }}>
-                TRANCHE is exclusive to Gold Ring members. Upgrade to get early access when it launches.
-              </p>
-            </div>
-
-            {/* Blurred preview */}
-            <div style={{
-              width: "100%",
-              maxWidth: 340,
-              borderRadius: 12,
-              border: "1px solid rgba(245,158,11,0.15)",
-              background: "rgba(245,158,11,0.04)",
-              padding: "16px 18px",
-              filter: "blur(4px)",
-              pointerEvents: "none",
-              userSelect: "none",
-            }}>
-              <p style={{ fontSize: 13, color: "#666", lineHeight: 1.8, margin: 0 }}>
-                TRANCHE converts comments into threaded topic conversations — giving every voice
-                a place to go deeper. Instead of a flat stream of replies, TRANCHE organises
-                discussion around ideas, so the best conversations rise to the surface.
-              </p>
-            </div>
-
-            <button
-              onClick={() => router.push("/rings")}
-              style={{
-                background: "#F59E0B",
-                border: "none",
-                borderRadius: 999,
-                padding: "12px 32px",
-                fontSize: 13,
-                fontWeight: 700,
-                fontFamily: "monospace",
-                letterSpacing: "1px",
-                color: "#0a0806",
-                cursor: "pointer",
-                marginTop: 8,
-              }}
-            >
-              GET GOLD RING
-            </button>
-          </div>
+        {tab === "network" && !viewerEmail ? (
+          <EmptyState
+            title="SIGN IN TO SEE YOUR NETWORK"
+            hint="The NETWORK tab needs your account."
+          />
+        ) : items.length === 0 && !loading ? (
+          <EmptyState
+            title={tab === "network" ? "NO TRANCHES FROM YOUR NETWORK" : "NO TRANCHES YET"}
+            hint={
+              tab === "network"
+                ? "Link with creators to see their breakouts here."
+                : "Comments cross the threshold and show up here."
+            }
+          />
         ) : (
-          /* ── UNLOCKED (Gold+) ── */
-          <div>
-            <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, margin: "0 0 32px" }}>
-              TRANCHE converts comments into threaded topic conversations — giving every voice
-              a place to go deeper. Instead of a flat stream of replies, TRANCHE organises
-              discussion around ideas, so the best conversations rise to the surface.
-            </p>
-
-            <div style={{ borderTop: "1px solid #1a1510", marginBottom: 32 }} />
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <span style={{
-                fontFamily: "monospace",
-                fontSize: 10,
-                letterSpacing: 2,
-                color: "#F59E0B",
-                border: "1px solid rgba(245,158,11,0.3)",
-                borderRadius: 4,
-                padding: "4px 10px",
-                textTransform: "uppercase",
-                alignSelf: "flex-start",
-              }}>
-                Gold Early Access
-              </span>
-              <span style={{
-                fontFamily: "monospace",
-                fontSize: 10,
-                letterSpacing: 2,
-                color: "#00e5ff",
-                border: "1px solid rgba(0,229,255,0.3)",
-                borderRadius: 4,
-                padding: "4px 10px",
-                textTransform: "uppercase",
-                alignSelf: "flex-start",
-              }}>
-                Coming Soon
-              </span>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {items.map((item) => (
+              <TrancheCard
+                key={item.id}
+                item={item}
+                viewerEmail={viewerEmail}
+                onVolted={(v) => {
+                  setItems((prev) =>
+                    prev.map((p) =>
+                      p.id === item.id
+                        ? { ...p, stats: { ...p.stats, currentVoltage: v } }
+                        : p,
+                    ),
+                  );
+                }}
+              />
+            ))}
+            <div ref={sentinelRef} style={{ height: 24 }} />
+            {loading && (
+              <div
+                style={{
+                  fontFamily: "'Space Grotesk', monospace",
+                  fontSize: 10,
+                  letterSpacing: "0.2em",
+                  color: "rgba(255,255,255,0.3)",
+                  textAlign: "center",
+                  padding: "8px 0 16px",
+                }}
+              >
+                LOADING…
+              </div>
+            )}
+            {!hasMore && items.length > 0 && (
+              <div
+                style={{
+                  fontFamily: "'Space Grotesk', monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.22em",
+                  color: "rgba(255,255,255,0.2)",
+                  textAlign: "center",
+                  padding: "4px 0 16px",
+                }}
+              >
+                END OF FEED
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -154,5 +232,43 @@ export function TrancheContent() {
   );
 }
 
+function EmptyState({ title, hint }: { title: string; hint: string }) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 8,
+        paddingTop: 64,
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: 28,
+          letterSpacing: 3,
+          color: "rgba(255,255,255,0.18)",
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontSize: 12,
+          color: "rgba(255,255,255,0.4)",
+          maxWidth: 280,
+        }}
+      >
+        {hint}
+      </div>
+    </div>
+  );
+}
+
 // Route stub — content rendered in TabShell
-export default function TranchePage() { return null; }
+export default function TranchePage() {
+  return null;
+}
