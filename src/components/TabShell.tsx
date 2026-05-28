@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import PublicFeedClient from "@/app/public-feed/PublicFeedClient";
 import { PeoplePageContent } from "@/app/people/page";
 import { SparkContent } from "@/app/spark/page";
-import { TrancheContent } from "@/app/tranche/page";
+import { TrancheContent } from "@/app/tranche/TrancheContent";
 
 const TAB_PATHS = new Set(["/public-feed", "/people", "/spark", "/tranche"]);
 
