@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TrancheFeedItem } from "./TrancheCard";
+import TrancheReplyComposer, { type PostedReply } from "./TrancheReplyComposer";
+import TrancheReplyList, { type ReplyItem } from "./TrancheReplyList";
+import TrancheFactCheckSheet from "./TrancheFactCheckSheet";
 
 const ROSE = "#B85C5C";
 const ROSE_DIM = "rgba(184,92,92,0.32)";
@@ -33,8 +36,10 @@ export default function HotTrancheCard({
   const [quietUntil, setQuietUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [replyOpen, setReplyOpen] = useState(false);
-  const [replyBody, setReplyBody] = useState("");
-  const [replying, setReplying] = useState(false);
+  const [replies, setReplies] = useState<ReplyItem[]>([]);
+  const [replyCount, setReplyCount] = useState(event.stats.totalReplies);
+  const [factCheckOpen, setFactCheckOpen] = useState(false);
+  const [tfcActive, setTfcActive] = useState(false);
 
   // Reset transient state when the underlying event changes (poll swap).
   useEffect(() => {
@@ -44,8 +49,27 @@ export default function HotTrancheCard({
     setWitnessed(false);
     setQuietUntil(null);
     setReplyOpen(false);
-    setReplyBody("");
-  }, [event.id, event.stats.currentVoltage, event.stats.totalWitnesses]);
+    setReplies([]);
+    setReplyCount(event.stats.totalReplies);
+    setFactCheckOpen(false);
+  }, [event.id, event.stats.currentVoltage, event.stats.totalWitnesses, event.stats.totalReplies]);
+
+  useEffect(() => {
+    if (!viewerEmail) {
+      setTfcActive(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/tfc/status?email=${encodeURIComponent(viewerEmail)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setTfcActive(d?.ok && d.status === "active");
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+    };
+  }, [viewerEmail]);
 
   useEffect(() => {
     if (!quietUntil) return;
@@ -136,30 +160,17 @@ export default function HotTrancheCard({
     router.push(`/gath/create?seed=${event.id}`);
   };
 
-  const handleReplySubmit = async () => {
-    if (!viewerEmail || !replyBody.trim() || replying) return;
-    setReplying(true);
-    try {
-      const res = await fetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postId: event.post.id,
-          userEmail: viewerEmail,
-          body: replyBody.trim(),
-          parentId: event.comment.id,
-        }),
-      });
-      const data = await res.json();
-      if (data?.ok) {
-        setReplyBody("");
-        setReplyOpen(false);
-      }
-    } catch {
-      /* swallow */
-    } finally {
-      setReplying(false);
-    }
+  const handleReplyPosted = (reply: PostedReply) => {
+    setReplies((prev) => [
+      ...prev,
+      {
+        id: reply.id,
+        userEmail: reply.userEmail,
+        body: reply.body,
+        createdAt: reply.createdAt,
+      },
+    ]);
+    setReplyCount((c) => c + 1);
   };
 
   const handle =
@@ -347,9 +358,9 @@ export default function HotTrancheCard({
             }}
           >
             <ActionButton
-              onClick={() => setReplyOpen((r) => !r)}
+              onClick={() => setReplyOpen(true)}
               ariaLabel="Reply"
-              count={event.stats.totalReplies}
+              count={replyCount}
               active={replyOpen}
             >
               <ReplyIcon />
@@ -385,95 +396,47 @@ export default function HotTrancheCard({
               <ShareIcon />
             </ActionButton>
 
+            {tfcActive && (
+              <ActionButton
+                onClick={() => setFactCheckOpen(true)}
+                ariaLabel="File TFC fact check"
+              >
+                <TfcIcon />
+              </ActionButton>
+            )}
+
             <ActionButton onClick={handleSeedGath} ariaLabel="Seed GATH">
               <SparkIcon />
             </ActionButton>
           </div>
 
-          {/* Inline reply composer */}
-          {replyOpen && (
-            <div
-              style={{
-                marginTop: 14,
-                background: HOT_BG_INNER,
-                border: `1px solid rgba(245,242,236,0.08)`,
-                borderRadius: 8,
-                padding: 10,
-              }}
-            >
-              <textarea
-                value={replyBody}
-                onChange={(e) => setReplyBody(e.target.value)}
-                placeholder={viewerEmail ? "Reply…" : "Sign in to reply"}
-                disabled={!viewerEmail}
-                rows={2}
-                style={{
-                  width: "100%",
-                  resize: "none",
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  color: HOT_INK,
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                }}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 8,
-                  marginTop: 6,
-                }}
-              >
-                <button
-                  onClick={() => {
-                    setReplyOpen(false);
-                    setReplyBody("");
-                  }}
-                  style={{
-                    background: "transparent",
-                    border: "1px solid rgba(245,242,236,0.16)",
-                    color: HOT_INK_SOFT,
-                    borderRadius: 6,
-                    padding: "5px 12px",
-                    fontFamily: "'Space Grotesk', monospace",
-                    fontSize: 10,
-                    letterSpacing: "0.16em",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  CANCEL
-                </button>
-                <button
-                  onClick={handleReplySubmit}
-                  disabled={!replyBody.trim() || !viewerEmail || replying}
-                  style={{
-                    background: ROSE,
-                    border: "none",
-                    color: HOT_INK,
-                    borderRadius: 6,
-                    padding: "5px 14px",
-                    fontFamily: "'Space Grotesk', monospace",
-                    fontSize: 10,
-                    letterSpacing: "0.16em",
-                    fontWeight: 700,
-                    cursor:
-                      !replyBody.trim() || !viewerEmail || replying
-                        ? "default"
-                        : "pointer",
-                    opacity: !replyBody.trim() || !viewerEmail ? 0.45 : 1,
-                  }}
-                >
-                  {replying ? "SENDING…" : "REPLY"}
-                </button>
-              </div>
-            </div>
+          {replies.length > 0 && (
+            <TrancheReplyList replies={replies} theme="dark" />
           )}
         </div>
       </div>
+
+      <TrancheReplyComposer
+        postId={event.post.id}
+        parentId={event.comment.id}
+        viewerEmail={viewerEmail}
+        theme="dark"
+        open={replyOpen}
+        onClose={() => setReplyOpen(false)}
+        onPosted={handleReplyPosted}
+      />
+
+      {tfcActive && viewerEmail && (
+        <TrancheFactCheckSheet
+          open={factCheckOpen}
+          onClose={() => setFactCheckOpen(false)}
+          theme="dark"
+          trancheEventId={event.id}
+          commentId={event.comment.id}
+          commentBody={event.comment.body}
+          viewerEmail={viewerEmail}
+        />
+      )}
     </>
   );
 }
@@ -586,6 +549,25 @@ function ShareIcon({ size = 14, color = HOT_INK_SOFT }: { size?: number; color?:
       <circle cx="18" cy="19" r="3" />
       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
       <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  );
+}
+
+function TfcIcon({ size = 14, color = HOT_INK_SOFT }: { size?: number; color?: string }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3z" />
+      <polyline points="9 12 11 14 15 10" />
     </svg>
   );
 }

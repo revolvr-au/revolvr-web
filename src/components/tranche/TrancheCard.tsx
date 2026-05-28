@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import TrancheReplyComposer, { type PostedReply } from "./TrancheReplyComposer";
+import TrancheReplyList, { type ReplyItem } from "./TrancheReplyList";
+import TrancheFactCheckSheet from "./TrancheFactCheckSheet";
 
 const ROSE = "#B85C5C";
 const SLATE = "#2C3E50";
@@ -121,32 +124,11 @@ function EyeIcon({ size = 16, color = INK_SOFT }: { size?: number; color?: strin
   );
 }
 
-function GifIcon({ size = 14, color = INK_SOFT }: { size?: number; color?: string }) {
+function TfcIcon({ size = 16, color = INK_SOFT }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="5" width="18" height="14" rx="2" />
-      <path d="M7 9v6M7 12h2.5" />
-      <path d="M12 9v6" />
-      <path d="M17 9h-2v6M17 12h-2" />
-    </svg>
-  );
-}
-
-function ImageIcon({ size = 14, color = INK_SOFT }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <polyline points="21 15 16 10 5 21" />
-    </svg>
-  );
-}
-
-function VideoIcon({ size = 14, color = INK_SOFT }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <polygon points="23 7 16 12 23 17 23 7" />
-      <rect x="1" y="5" width="15" height="14" rx="2" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M12 2 4 5v6c0 5 3.4 9.3 8 11 4.6-1.7 8-6 8-11V5l-8-3z" />
+      <polyline points="9 12 11 14 15 10" />
     </svg>
   );
 }
@@ -215,12 +197,13 @@ export default function TrancheCard({
   const router = useRouter();
   const [statsOpen, setStatsOpen] = useState(false);
   const [replyOpen, setReplyOpen] = useState(false);
+  const [factCheckOpen, setFactCheckOpen] = useState(false);
+  const [tfcActive, setTfcActive] = useState(false);
   const [voltage, setVoltage] = useState(item.stats.currentVoltage);
   const [volted, setVolted] = useState(false);
   const [volting, setVolting] = useState(false);
-  const [replyBody, setReplyBody] = useState("");
-  const [replying, setReplying] = useState(false);
-  const [replyDone, setReplyDone] = useState(false);
+  const [replies, setReplies] = useState<ReplyItem[]>([]);
+  const [replyCount, setReplyCount] = useState(item.stats.totalReplies);
   const [witnesses, setWitnesses] = useState(item.stats.totalWitnesses);
   const [witnessed, setWitnessed] = useState(false);
   const [witnessing, setWitnessing] = useState(false);
@@ -228,8 +211,6 @@ export default function TrancheCard({
   const [now, setNow] = useState(() => Date.now());
   const [stats, setStats] = useState<StatsPayload["event"] | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const isFresh = useMemo(
     () => Date.now() - new Date(item.createdAt).getTime() < FIVE_MIN_MS,
@@ -238,6 +219,23 @@ export default function TrancheCard({
   const bg = pascalBg(item.stats.breakoutVoltage);
   const fontWeight = item.stats.breakoutVoltage >= 500 ? 500 : 400;
   const sharePct = Math.round(item.stats.voltageSharePct * 100);
+
+  useEffect(() => {
+    if (!viewerEmail) {
+      setTfcActive(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/tfc/status?email=${encodeURIComponent(viewerEmail)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled) setTfcActive(d?.ok && d.status === "active");
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+    };
+  }, [viewerEmail]);
 
   useEffect(() => {
     if (!statsOpen || stats) return;
@@ -336,38 +334,21 @@ export default function TrancheCard({
     }
   };
 
-  const handleReplySubmit = async () => {
-    if (!viewerEmail || !replyBody.trim() || replying) return;
-    setReplying(true);
-    try {
-      const res = await fetch("/api/comments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postId: item.post.id,
-          userEmail: viewerEmail,
-          body: replyBody.trim(),
-          parentId: item.comment.id,
-        }),
-      });
-      const data = await res.json();
-      if (data?.ok) {
-        setReplyBody("");
-        setReplyDone(true);
-        setTimeout(() => {
-          setReplyDone(false);
-          setReplyOpen(false);
-        }, 900);
-      }
-    } catch {
-      /* swallow */
-    } finally {
-      setReplying(false);
-    }
+  const handleReplyPosted = (reply: PostedReply) => {
+    setReplies((prev) => [
+      ...prev,
+      {
+        id: reply.id,
+        userEmail: reply.userEmail,
+        body: reply.body,
+        createdAt: reply.createdAt,
+      },
+    ]);
+    setReplyCount((c) => c + 1);
   };
 
   const handleSeedGath = () => {
-    router.push(`/gath?seed=${item.id}`);
+    router.push(`/gath/create?seed=${item.id}`);
   };
 
   const goToPost = () => router.push(`/feed?post=${item.post.id}`);
@@ -538,14 +519,12 @@ export default function TrancheCard({
           }}
         >
           <button
-            onClick={() => setReplyOpen((r) => !r)}
+            onClick={() => setReplyOpen(true)}
             aria-label="Reply"
-            style={iconButtonStyle(replyOpen)}
+            style={iconButtonStyle(false)}
           >
             <ReplyIcon />
-            {item.stats.totalReplies > 0 && (
-              <span style={iconCountStyle}>{item.stats.totalReplies}</span>
-            )}
+            {replyCount > 0 && <span style={iconCountStyle}>{replyCount}</span>}
           </button>
 
           <button
@@ -593,6 +572,18 @@ export default function TrancheCard({
             <ShareIcon />
           </button>
 
+          {tfcActive && (
+            <button
+              onClick={() => setFactCheckOpen(true)}
+              aria-label="File TFC fact check"
+              title="File TFC fact check"
+              style={iconButtonStyle(false)}
+            >
+              <TfcIcon />
+              <span style={iconCountStyle}>TFC</span>
+            </button>
+          )}
+
           <button
             onClick={handleSeedGath}
             style={{
@@ -612,6 +603,10 @@ export default function TrancheCard({
             SEED GATH
           </button>
         </div>
+
+        {replies.length > 0 && (
+          <TrancheReplyList replies={replies} theme="light" />
+        )}
       </div>
 
       {/* STATS PANEL */}
@@ -639,7 +634,7 @@ export default function TrancheCard({
               label="TIME TO 🚀"
               value={stats ? formatMs(stats.timeToThresholdMs) : statsLoading ? "…" : "–"}
             />
-            <StatTile label="REPLIES" value={item.stats.totalReplies.toLocaleString()} />
+            <StatTile label="REPLIES" value={replyCount.toLocaleString()} />
           </div>
 
           <div style={{ fontSize: 9, letterSpacing: "0.18em", color: INK_MUTE, marginBottom: 6 }}>
@@ -758,114 +753,34 @@ export default function TrancheCard({
         </div>
       </div>
 
-      {/* REPLY COMPOSER */}
-      <div
-        style={{
-          maxHeight: replyOpen ? 320 : 0,
-          overflow: "hidden",
-          transition: "max-height 320ms ease",
-          background: "rgba(15,17,21,0.03)",
-          borderTop: replyOpen ? "1px solid rgba(15,17,21,0.06)" : "none",
-        }}
-      >
-        <div style={{ padding: "12px 14px 14px" }}>
-          <textarea
-            value={replyBody}
-            onChange={(e) => setReplyBody(e.target.value)}
-            placeholder="Reply with intent…"
-            rows={2}
-            style={{
-              width: "100%",
-              resize: "none",
-              fontFamily: "inherit",
-              fontSize: 14,
-              padding: "10px 12px",
-              border: "1px solid rgba(15,17,21,0.12)",
-              borderRadius: 6,
-              background: "#fff",
-              color: INK,
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-
-          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => alert("GIF picker coming soon")}
-              aria-label="Add GIF"
-              style={composerIconStyle}
-            >
-              <GifIcon /> <span style={composerIconLabel}>GIF</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => imageInputRef.current?.click()}
-              aria-label="Add image"
-              style={composerIconStyle}
-            >
-              <ImageIcon />
-            </button>
-            <button
-              type="button"
-              onClick={() => videoInputRef.current?.click()}
-              aria-label="Add 30s video"
-              style={composerIconStyle}
-            >
-              <VideoIcon /> <span style={composerIconLabel}>30s</span>
-            </button>
-
-            <input
-              ref={imageInputRef}
-              type="file"
-              accept="image/*"
-              style={{ display: "none" }}
-              onChange={(e) => {
-                if (e.target.files?.[0]) alert(`Image selected: ${e.target.files[0].name}`);
-              }}
-            />
-            <input
-              ref={videoInputRef}
-              type="file"
-              accept="video/*"
-              style={{ display: "none" }}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                alert(`Video selected: ${f.name} — will enforce ≤30s on upload`);
-              }}
-            />
-
-            <button
-              onClick={handleReplySubmit}
-              disabled={!replyBody.trim() || replying || !viewerEmail}
-              style={{
-                marginLeft: "auto",
-                background: replyDone ? "#1F8E4A" : INK,
-                color: "#fff",
-                border: "none",
-                borderRadius: 6,
-                padding: "8px 16px",
-                fontSize: 11,
-                fontWeight: 700,
-                letterSpacing: "0.16em",
-                fontFamily: "'Space Grotesk', system-ui, sans-serif",
-                cursor: !replyBody.trim() || replying || !viewerEmail ? "default" : "pointer",
-                opacity: !replyBody.trim() || !viewerEmail ? 0.5 : 1,
-              }}
-            >
-              {replyDone ? "SENT" : replying ? "…" : "REPLY"}
-            </button>
-          </div>
-        </div>
-      </div>
-
       <style>{`
         @keyframes trancheLivePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.45; transform: scale(0.85); }
         }
       `}</style>
+
+      <TrancheReplyComposer
+        postId={item.post.id}
+        parentId={item.comment.id}
+        viewerEmail={viewerEmail}
+        theme="light"
+        open={replyOpen}
+        onClose={() => setReplyOpen(false)}
+        onPosted={handleReplyPosted}
+      />
+
+      {tfcActive && viewerEmail && (
+        <TrancheFactCheckSheet
+          open={factCheckOpen}
+          onClose={() => setFactCheckOpen(false)}
+          theme="light"
+          trancheEventId={item.id}
+          commentId={item.comment.id}
+          commentBody={item.comment.body}
+          viewerEmail={viewerEmail}
+        />
+      )}
     </div>
   );
 }
@@ -888,25 +803,6 @@ const iconCountStyle: React.CSSProperties = {
   fontFamily: "'Space Grotesk', monospace",
   fontSize: 11,
   fontWeight: 600,
-};
-
-const composerIconStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 4,
-  background: "#fff",
-  border: "1px solid rgba(15,17,21,0.12)",
-  borderRadius: 6,
-  padding: "6px 8px",
-  cursor: "pointer",
-  fontFamily: "inherit",
-  color: INK_SOFT,
-};
-
-const composerIconLabel: React.CSSProperties = {
-  fontSize: 10,
-  fontWeight: 700,
-  letterSpacing: "0.1em",
 };
 
 function StatTile({ label, value }: { label: string; value: string }) {
