@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import FeedLayout from "@/components/FeedLayout";
 import TrancheCard, { TrancheFeedItem } from "@/components/tranche/TrancheCard";
 import HotTrancheCard, { HotEvent } from "@/components/tranche/HotTrancheCard";
+import TMenuSheet from "@/components/tranche/TMenuSheet";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 const GOLD = "#F5C518";
@@ -25,6 +26,7 @@ export function TrancheContent() {
   const [loading, setLoading] = useState(false);
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
   const [hotEvent, setHotEvent] = useState<HotEvent | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
@@ -128,6 +130,34 @@ export function TrancheContent() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Bebas+Neue&display=swap');
       `}</style>
+      <button
+        type="button"
+        onClick={() => setMenuOpen(true)}
+        aria-label="Open TRANCHE menu"
+        style={{
+          position: "absolute",
+          top: "calc(env(safe-area-inset-top, 0px) + 52px)",
+          right: 14,
+          zIndex: 81,
+          background: "transparent",
+          border: "none",
+          padding: "4px 6px",
+          color: "#0A0A0A",
+          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontSize: 24,
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          cursor: "pointer",
+          lineHeight: 1,
+        }}
+      >
+        T
+      </button>
+      <TMenuSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        viewerEmail={viewerEmail}
+      />
       <div
         style={{
           height: "100dvh",

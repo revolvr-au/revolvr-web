@@ -1203,3 +1203,20 @@ enum GathRole {
 
   @@schema("public")
 }
+
+model TrancheSupportRequest {
+  id          String   @id @default(uuid())
+  name        String
+  company     String?
+  email       String
+  message     String
+  type        String   @default("general")
+  delivered   Boolean  @default(false)
+  deliveryError String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([email])
+  @@map("tranche_support_requests")
+  @@schema("public")
+}
