@@ -6,6 +6,7 @@ import type { TrancheFeedItem } from "./TrancheCard";
 import TrancheReplyComposer, { type PostedReply } from "./TrancheReplyComposer";
 import TrancheReplyList, { type ReplyItem } from "./TrancheReplyList";
 import TrancheFactCheckSheet from "./TrancheFactCheckSheet";
+import WitnessPanel, { type WitnessProfile } from "./WitnessPanel";
 
 const ROSE = "#B85C5C";
 const ROSE_DIM = "rgba(184,92,92,0.32)";
@@ -40,6 +41,7 @@ export default function HotTrancheCard({
   const [replyCount, setReplyCount] = useState(event.stats.totalReplies);
   const [factCheckOpen, setFactCheckOpen] = useState(false);
   const [tfcActive, setTfcActive] = useState(false);
+  const [topWitnesses, setTopWitnesses] = useState<WitnessProfile[]>([]);
 
   // Reset transient state when the underlying event changes (poll swap).
   useEffect(() => {
@@ -52,7 +54,24 @@ export default function HotTrancheCard({
     setReplies([]);
     setReplyCount(event.stats.totalReplies);
     setFactCheckOpen(false);
+    setTopWitnesses([]);
   }, [event.id, event.stats.currentVoltage, event.stats.totalWitnesses, event.stats.totalReplies]);
+
+  useEffect(() => {
+    if (witnesses <= 0) return;
+    let cancelled = false;
+    fetch(`/api/tranche/event/${event.id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d?.ok && d.event?.topWitnesses) {
+          setTopWitnesses(d.event.topWitnesses as WitnessProfile[]);
+        }
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+    };
+  }, [event.id, witnesses]);
 
   useEffect(() => {
     if (!viewerEmail) {
@@ -264,40 +283,57 @@ export default function HotTrancheCard({
 
         {/* BODY */}
         <div style={{ padding: "18px 18px 14px" }}>
-          {/* Author row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-            <div
-              style={{
-                width: 30,
-                height: 30,
-                borderRadius: "50%",
-                overflow: "hidden",
-                background: event.author.avatarUrl
-                  ? `url(${event.author.avatarUrl}) center/cover`
-                  : "rgba(245,242,236,0.1)",
-                border: `1px solid rgba(245,242,236,0.18)`,
-                flexShrink: 0,
-              }}
-              aria-hidden
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+              gap: 12,
+              marginBottom: 14,
+            }}
+          >
+            {/* Author row */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div
+                style={{
+                  width: 30,
+                  height: 30,
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  background: event.author.avatarUrl
+                    ? `url(${event.author.avatarUrl}) center/cover`
+                    : "rgba(245,242,236,0.1)",
+                  border: `1px solid rgba(245,242,236,0.18)`,
+                  flexShrink: 0,
+                }}
+                aria-hidden
+              />
+              <button
+                onClick={() => event.author.handle && router.push(`/u/${event.author.handle}`)}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  color: HOT_INK,
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                {event.author.displayName ?? `@${handle}`}
+              </button>
+              {event.author.handle && (
+                <span style={{ fontSize: 11, color: HOT_INK_MUTE }}>@{event.author.handle}</span>
+              )}
+            </div>
+            <WitnessPanel
+              author={event.author}
+              witnessCount={witnesses}
+              topWitnesses={topWitnesses}
+              dominantSize={52}
+              theme="dark"
             />
-            <button
-              onClick={() => event.author.handle && router.push(`/u/${event.author.handle}`)}
-              style={{
-                background: "transparent",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                color: HOT_INK,
-                fontSize: 13,
-                fontWeight: 600,
-              }}
-            >
-              {event.author.displayName ?? `@${handle}`}
-            </button>
-            {event.author.handle && (
-              <span style={{ fontSize: 11, color: HOT_INK_MUTE }}>@{event.author.handle}</span>
-            )}
           </div>
 
           {/* Hero comment */}

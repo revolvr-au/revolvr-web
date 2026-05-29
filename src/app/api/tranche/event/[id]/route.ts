@@ -53,7 +53,7 @@ export async function GET(
       );
     }
 
-    const [contributors, authorProfile, post] = await Promise.all([
+    const [contributors, authorProfile, post, recentWitnesses] = await Promise.all([
       prisma.commentVoltageEvent.groupBy({
         by: ["actorEmail"],
         where: { commentId: event.commentId },
@@ -81,7 +81,38 @@ export async function GET(
           voltage: true,
         },
       }),
+      prisma.trancheWitness.findMany({
+        where: { trancheEventId: id },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: { witnessEmail: true },
+      }),
     ]);
+
+    const witnessEmails = recentWitnesses.map((w) => w.witnessEmail);
+    const witnessProfiles = witnessEmails.length
+      ? await prisma.creatorProfile.findMany({
+          where: { email: { in: witnessEmails } },
+          select: {
+            email: true,
+            displayName: true,
+            handle: true,
+            avatarUrl: true,
+          },
+        })
+      : [];
+    const witnessProfileByEmail = new Map(
+      witnessProfiles.map((p) => [p.email, p]),
+    );
+    const topWitnesses = witnessEmails.map((email) => {
+      const profile = witnessProfileByEmail.get(email) ?? null;
+      return {
+        email,
+        displayName: profile?.displayName ?? null,
+        handle: profile?.handle ?? null,
+        avatarUrl: profile?.avatarUrl ?? null,
+      };
+    });
 
     const contributorEmails = contributors.map((c) => c.actorEmail);
     const contributorProfiles = contributorEmails.length
@@ -142,6 +173,7 @@ export async function GET(
           profile: profileByEmail.get(c.actorEmail) ?? null,
         })),
         factChecks: event.factChecks,
+        topWitnesses,
         counts: {
           witnesses: event._count.witnesses,
           factChecks: event._count.factChecks,
