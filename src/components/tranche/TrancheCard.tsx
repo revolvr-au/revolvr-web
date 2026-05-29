@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import TrancheReplyComposer, { type PostedReply } from "./TrancheReplyComposer";
 import TrancheReplyList, { type ReplyItem } from "./TrancheReplyList";
 import TrancheFactCheckSheet from "./TrancheFactCheckSheet";
+import WitnessPanel, { type WitnessProfile } from "./WitnessPanel";
 
 const ROSE = "#B85C5C";
 const SLATE = "#2C3E50";
@@ -64,6 +65,7 @@ type StatsPayload = {
   event?: {
     timeToThresholdMs: number;
     topContributors: TopContributor[];
+    topWitnesses?: WitnessProfile[];
     counts: { witnesses: number; factChecks: number };
     sinBin: { active: boolean; level: number; expiresAt: string | null };
     post: { caption: string; userEmail: string; imageUrl: string | null } | null;
@@ -211,6 +213,7 @@ export default function TrancheCard({
   const [now, setNow] = useState(() => Date.now());
   const [stats, setStats] = useState<StatsPayload["event"] | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [topWitnesses, setTopWitnesses] = useState<WitnessProfile[]>([]);
 
   const isFresh = useMemo(
     () => Date.now() - new Date(item.createdAt).getTime() < FIVE_MIN_MS,
@@ -243,11 +246,30 @@ export default function TrancheCard({
     fetch(`/api/tranche/event/${item.id}`)
       .then((r) => r.json() as Promise<StatsPayload>)
       .then((d) => {
-        if (d?.ok && d.event) setStats(d.event);
+        if (d?.ok && d.event) {
+          setStats(d.event);
+          if (d.event.topWitnesses) setTopWitnesses(d.event.topWitnesses);
+        }
       })
       .catch(() => null)
       .finally(() => setStatsLoading(false));
   }, [statsOpen, stats, item.id]);
+
+  useEffect(() => {
+    if (witnesses <= 0) return;
+    let cancelled = false;
+    fetch(`/api/tranche/event/${item.id}`)
+      .then((r) => r.json() as Promise<StatsPayload>)
+      .then((d) => {
+        if (!cancelled && d?.ok && d.event?.topWitnesses) {
+          setTopWitnesses(d.event.topWitnesses);
+        }
+      })
+      .catch(() => null);
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id, witnesses]);
 
   const handleVolt = async () => {
     if (volted || volting || !viewerEmail) return;
@@ -444,7 +466,23 @@ export default function TrancheCard({
 
       {/* BODY */}
       <div style={{ padding: "14px 14px 12px" }}>
-        <AuthorChip author={item.author} onClick={() => item.author.handle && router.push(`/u/${item.author.handle}`)} />
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <AuthorChip author={item.author} onClick={() => item.author.handle && router.push(`/u/${item.author.handle}`)} />
+          <WitnessPanel
+            author={item.author}
+            witnessCount={witnesses}
+            topWitnesses={topWitnesses}
+            dominantSize={44}
+            theme="light"
+          />
+        </div>
 
         {/* QUOTE */}
         <div
