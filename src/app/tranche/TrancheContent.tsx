@@ -136,7 +136,7 @@ export function TrancheContent() {
         aria-label="Open TRANCHE menu"
         style={{
           position: "absolute",
-          top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+          top: "calc(env(safe-area-inset-top, 0px) + 52px)",
           right: 14,
           zIndex: 81,
           background: "transparent",
@@ -144,7 +144,7 @@ export function TrancheContent() {
           padding: "4px 6px",
           color: "#0A0A0A",
           fontFamily: "'Space Grotesk', system-ui, sans-serif",
-          fontSize: 18,
+          fontSize: 24,
           fontWeight: 700,
           letterSpacing: "0.04em",
           cursor: "pointer",
