@@ -886,13 +886,7 @@ const Post = memo(function Post({
   // DM the creator in context: resolve-or-create the 1:1 thread, then route to it.
   const handleMessage = useCallback(async () => {
     const target = post.userEmail;
-    // [DM debug] TEMP instrumentation — remove after diagnosis. Covers suspect #3
-    // (does the tap reach here?) and #1 (guard values).
-    console.log("[DM debug] handleMessage tap", { target, currentUserId, isOwner });
-    if (!target || isOwner) {
-      console.log("[DM debug] early return via guard", { hasTarget: !!target, isOwner });
-      return; // can't DM yourself
-    }
+    if (!target || isOwner) return; // can't DM yourself
     try {
       const res = await fetch("/api/messages/conversations", {
         method: "POST",
@@ -900,14 +894,12 @@ const Post = memo(function Post({
         body: JSON.stringify({ targetEmail: target }),
       });
       const data = await res.json().catch(() => ({}));
-      // [DM debug] TEMP — suspect #2: what does the resolve-or-create actually return?
-      console.log("[DM debug] conversations response", res.status, data);
       if (!res.ok || !data?.conversationId) return;
       router.push(`/messages?c=${data.conversationId}`);
-    } catch (e) {
-      console.log("[DM debug] fetch threw", e); // [DM debug] TEMP
+    } catch {
+      /* best-effort */
     }
-  }, [post.userEmail, isOwner, currentUserId, router]);
+  }, [post.userEmail, isOwner, router]);
 
   return (
     <div
