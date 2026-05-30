@@ -155,12 +155,25 @@ export default function Thread({
     }
   }, [conversationId, meEmail, markRead, onActivity, setAndCursor, scrollToBottom]);
 
-  // Initial load + mark read.
+  // Hold the latest callbacks in refs so the per-conversation effects below depend ONLY
+  // on conversationId — they must run once per conversation, not re-fire on every render
+  // when a callback identity changes. (No dep array: refresh on each render.)
+  const loadInitialRef = useRef(loadInitial);
+  const markReadRef = useRef(markRead);
+  const fetchSinceRef = useRef(fetchSince);
   useEffect(() => {
-    loadInitial().then(markRead);
-  }, [loadInitial, markRead]);
+    loadInitialRef.current = loadInitial;
+    markReadRef.current = markRead;
+    fetchSinceRef.current = fetchSince;
+  });
 
-  // Realtime subscription to the conversation's private channel.
+  // Initial load + mark read — once per conversation.
+  useEffect(() => {
+    loadInitialRef.current().then(() => markReadRef.current());
+  }, [conversationId]);
+
+  // Realtime subscription to the conversation's private channel — subscribe ONCE per
+  // conversation. Callbacks are read from refs so a re-render never tears down the socket.
   useEffect(() => {
     let cancelled = false;
     let cleanup: (() => void) | null = null;
@@ -175,11 +188,11 @@ export default function Thread({
         .channel(`conversation:${conversationId}`, { config: { private: true } })
         .on("broadcast", { event: "new_message" }, () => {
           // Best-effort signal → reconcile from the DB by cursor.
-          fetchSince();
+          fetchSinceRef.current();
         })
         .subscribe((status) => {
           // On (re)connect, catch up on anything missed while disconnected.
-          if (status === "SUBSCRIBED") fetchSince();
+          if (status === "SUBSCRIBED") fetchSinceRef.current();
         });
 
       if (cancelled) {
@@ -193,7 +206,7 @@ export default function Thread({
       cancelled = true;
       cleanup?.();
     };
-  }, [conversationId, fetchSince]);
+  }, [conversationId]);
 
   const send = useCallback(
     async (text: string) => {

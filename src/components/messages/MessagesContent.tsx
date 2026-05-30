@@ -69,6 +69,14 @@ export default function MessagesContent({ meEmail }: { meEmail: string }) {
     [markReadLocally]
   );
 
+  // Stable per-thread read handler. An inline `() => markReadLocally(selectedId)` was a
+  // fresh identity every render, which cascaded into Thread's markRead/fetchSince and
+  // re-fired its effects in a hot loop. selectedId only changes when switching threads
+  // (Thread remounts via key), so this is stable within a thread.
+  const handleThreadRead = useCallback(() => {
+    if (selectedId) markReadLocally(selectedId);
+  }, [selectedId, markReadLocally]);
+
   const startConversation = useCallback(async () => {
     const target = startEmail.trim().toLowerCase();
     setStartError(null);
@@ -214,7 +222,7 @@ export default function MessagesContent({ meEmail }: { meEmail: string }) {
                 key={selectedId}
                 conversationId={selectedId}
                 meEmail={meEmail}
-                onRead={() => markReadLocally(selectedId)}
+                onRead={handleThreadRead}
                 onActivity={loadConversations}
               />
             ) : (
