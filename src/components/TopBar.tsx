@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useUnreadCount } from "@/hooks/useUnreadCount";
 
 const GOLD = "#F5C518";
 
@@ -12,13 +13,29 @@ function VoltageSpark({ size = 8, color = GOLD }: { size?: number; color?: strin
   );
 }
 
+function InboxIcon({ size = 22, color }: { size?: number; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M3.5 6.5 12 12.5l8.5-6" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export default function TopBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const unread = useUnreadCount();
 
   const onTranche = pathname?.startsWith("/tranche") ?? false;
   const label = onTranche ? "TRANCHE" : "REVOLVR";
   const target = onTranche ? "/public-feed" : "/tranche";
+  const iconColor = onTranche ? "#0A0A0A" : "rgba(255,255,255,0.95)";
 
   return (
     <>
@@ -62,6 +79,49 @@ export default function TopBar() {
         >
           {label}
         </span>
+      </button>
+
+      <button
+        onClick={() => router.push("/messages")}
+        aria-label={unread > 0 ? `Messages, ${unread} unread` : "Messages"}
+        style={{
+          position: "absolute",
+          top: "calc(env(safe-area-inset-top, 0px) + 14px)",
+          right: 14,
+          zIndex: 80,
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+          display: "inline-flex",
+          alignItems: "center",
+          lineHeight: 0,
+        }}
+      >
+        <InboxIcon color={iconColor} />
+        {unread > 0 && (
+          <span
+            style={{
+              position: "absolute",
+              top: -6,
+              right: -6,
+              minWidth: 16,
+              height: 16,
+              padding: "0 4px",
+              borderRadius: 8,
+              background: GOLD,
+              color: "#0A0A0A",
+              fontSize: 10,
+              fontWeight: 700,
+              fontFamily: "system-ui, sans-serif",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {unread > 99 ? "99+" : unread}
+          </span>
+        )}
       </button>
       <style>{`
         @keyframes voltPulse {

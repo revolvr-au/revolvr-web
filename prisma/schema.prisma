@@ -743,6 +743,7 @@ model profiles {
   avatar_live_url     String?
   stripe_customer_id  String?
   subscription_status String?  @default("inactive")
+  isMinor             Boolean  @default(false) // age-gate source of truth for the DM minor block
 
   @@schema("public")
 }
@@ -1218,5 +1219,66 @@ model TrancheSupportRequest {
   @@index([createdAt])
   @@index([email])
   @@map("tranche_support_requests")
+  @@schema("public")
+}
+
+// ── DIRECT MESSAGES (v1) ──
+// One-to-one only at launch; schema is group-ready (GROUP type + participant rows)
+// but no group UI is built. Identity is email throughout, matching the rest of the
+// app. Postgres is the source of truth; Supabase Realtime broadcast (DB trigger) is
+// best-effort delivery — clients reconcile by cursor on reconnect.
+model Conversation {
+  id            String   @id @default(cuid())
+  type          ConvType @default(DIRECT)
+  directKey     String?  @unique // sorted "emailA:emailB" — dedupe 1:1 threads
+  lastMessageAt DateTime @default(now()) // denormalized for inbox sort
+  createdAt     DateTime @default(now())
+  participants  ConversationParticipant[]
+  messages      Message[]
+
+  @@index([lastMessageAt])
+  @@schema("public")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  userEmail      String // email identity
+  lastReadAt     DateTime? // unread = messages with createdAt > lastReadAt
+  muted          Boolean      @default(false)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userEmail])
+  @@index([userEmail])
+  @@schema("public")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderEmail    String // email identity
+  body           String
+  type           MsgType      @default(TEXT)
+  createdAt      DateTime     @default(now())
+  editedAt       DateTime?
+  deletedAt      DateTime? // soft delete (no UI in v1)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt]) // cursor pagination
+  @@schema("public")
+}
+
+enum ConvType {
+  DIRECT
+  GROUP
+
+  @@schema("public")
+}
+
+enum MsgType {
+  TEXT
+  SYSTEM
+  GIFT
+
   @@schema("public")
 }
