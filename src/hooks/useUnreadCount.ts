@@ -9,8 +9,14 @@ export function useUnreadCount(pollMs = 30000) {
   const { user, ready } = useAuthedUser();
   const [count, setCount] = useState(0);
 
+  // Key the poll on a stable primitive, not the `user` object. useAuthedUser returns a
+  // fresh { id, email } literal on every auth event (INITIAL_SESSION, SIGNED_IN, token
+  // refresh, tab focus), so depending on `user` re-ran this effect — and its immediate
+  // fetch — repeatedly within a second. The email is what actually identifies the poller.
+  const email = user?.email ?? null;
+
   useEffect(() => {
-    if (!ready || !user) {
+    if (!ready || !email) {
       setCount(0);
       return;
     }
@@ -37,7 +43,7 @@ export function useUnreadCount(pollMs = 30000) {
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
     };
-  }, [ready, user, pollMs]);
+  }, [ready, email, pollMs]);
 
   return count;
 }
