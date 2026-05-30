@@ -5,6 +5,7 @@ import {
   Heart,
   ThumbsUp,
   MessageCircle,
+  Send,
   Gift,
   Plus,
   Repeat2,
@@ -25,7 +26,7 @@ import GathWindow from "@/components/GathWindow";
 import TopBar from "@/components/TopBar";
 
 const GOLD = "#F5C518";
-const ACTION_KEYS = ["LIKE", "COMMENT", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
+const ACTION_KEYS = ["LIKE", "COMMENT", "MESSAGE", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
 type ActionKey = (typeof ACTION_KEYS)[number];
 
 const ACTION_ICONS: Record<
@@ -34,6 +35,7 @@ const ACTION_ICONS: Record<
 > = {
   LIKE: { Icon: ThumbsUp, glow: "#ff4d6d" },
   COMMENT: { Icon: MessageCircle, glow: "#5ec5ff" },
+  MESSAGE: { Icon: Send, glow: "#fb923c" },
   GIFT: { Icon: Gift, glow: GOLD },
   CREATE: { Icon: Plus, glow: "#ffffff" },
   REPOST: { Icon: Repeat2, glow: "#3ddc97" },
@@ -881,6 +883,24 @@ const Post = memo(function Post({
 
   const isOwner = post.userEmail === currentUserId;
 
+  // DM the creator in context: resolve-or-create the 1:1 thread, then route to it.
+  const handleMessage = useCallback(async () => {
+    const target = post.userEmail;
+    if (!target || isOwner) return; // can't DM yourself
+    try {
+      const res = await fetch("/api/messages/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetEmail: target }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.conversationId) return;
+      router.push(`/messages?c=${data.conversationId}`);
+    } catch {
+      /* best-effort */
+    }
+  }, [post.userEmail, isOwner, router]);
+
   return (
     <div
       className={`relative h-full w-full flex-shrink-0 transition-transform transition-shadow duration-300 ease-out active:scale-[0.995] ${voltageScale} ${voltageGlow} ${voltagePulse} ${activeBoost}`}
@@ -1078,6 +1098,7 @@ const Post = memo(function Post({
           onSelectPerson={onSelectPerson}
           onLike={handleInteract}
           onComment={handleOpenComments}
+          onMessage={handleMessage}
           onShare={handleShare}
           onReward={handleReward}
           onCreate={handleCreate}
@@ -1110,6 +1131,7 @@ function FeedOverlay({
   onSelectPerson,
   onLike,
   onComment,
+  onMessage,
   onShare: _onShare,
   onReward,
   onCreate,
@@ -1128,6 +1150,7 @@ function FeedOverlay({
   onSelectPerson: (p: PeopleCardUser) => void;
   onLike: () => void;
   onComment: () => void;
+  onMessage: () => void;
   onShare: () => void;
   onReward: () => void;
   onCreate: () => void;
@@ -1184,6 +1207,9 @@ function FeedOverlay({
         case "COMMENT":
           onComment();
           break;
+        case "MESSAGE":
+          onMessage();
+          break;
         case "GIFT":
           if (giftPending) break;
           if (post.isLive && post.liveStreamId) {
@@ -1229,7 +1255,7 @@ function FeedOverlay({
           break;
       }
     },
-    [onLike, onComment, onReward, onCreate, onSave, onRepost, onGath, liked, saved, reposted, showFlash, post, giftPending],
+    [onLike, onComment, onMessage, onReward, onCreate, onSave, onRepost, onGath, liked, saved, reposted, showFlash, post, giftPending],
   );
 
   return (

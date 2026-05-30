@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import InboxList, { type ConversationSummary } from "./InboxList";
 import Thread from "./Thread";
 
@@ -11,9 +11,12 @@ const BORDER = "rgba(255,255,255,0.08)";
 
 export default function MessagesContent({ meEmail }: { meEmail: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    () => searchParams.get("c"),
+  );
   const [isDesktop, setIsDesktop] = useState(false);
 
   // New-conversation composer state
