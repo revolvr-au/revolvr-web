@@ -23,6 +23,8 @@ model Post {
   sparkEligible     Boolean        @default(false)
   voltage           Int            @default(0)
   expiresAt         DateTime?
+  originalVariants  String[]       @map("original_variants")
+  liveViewerCount   Int            @default(0) @map("live_viewer_count")
   liveStreamId  String?   @map("live_stream_id")
   liveStartedAt  DateTime? @map("live_started_at") @db.Timestamptz(6)
 liveEndedAt    DateTime? @map("live_ended_at") @db.Timestamptz(6)
@@ -919,6 +921,7 @@ enum PostType {
   RAW
   PODCAST
   LIVE
+  TRANCHE_ORIGINAL
 
   @@schema("public")
 }
