@@ -37,7 +37,7 @@ export type PostedReply = {
 
 type Props = {
   postId: string;
-  parentId: string;
+  parentId: string | null;
   viewerEmail: string | null;
   theme: Theme;
   open: boolean;

@@ -5,28 +5,34 @@ import FeedLayout from "@/components/FeedLayout";
 import TrancheCard, { TrancheFeedItem } from "@/components/tranche/TrancheCard";
 import HotTrancheCard, { HotEvent } from "@/components/tranche/HotTrancheCard";
 import TMenuSheet from "@/components/tranche/TMenuSheet";
+import OriginalCard, { OriginalItem } from "@/components/tranche/OriginalCard";
+import OriginalComposer from "@/components/tranche/OriginalComposer";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 const GOLD = "#F5C518";
+const SLATE = "#2C3E50";
 const PAGE_SIZE = 20;
 
-type Tab = "trending" | "network" | "new";
+type Tab = "originals" | "trending" | "network" | "new";
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: "originals", label: "ORIGINALS" },
   { key: "trending", label: "TRENDING" },
   { key: "network", label: "NETWORK" },
   { key: "new", label: "NEW" },
 ];
 
 export function TrancheContent() {
-  const [tab, setTab] = useState<Tab>("trending");
+  const [tab, setTab] = useState<Tab>("originals");
   const [items, setItems] = useState<TrancheFeedItem[]>([]);
+  const [originalItems, setOriginalItems] = useState<OriginalItem[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
   const [hotEvent, setHotEvent] = useState<HotEvent | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const requestIdRef = useRef(0);
 
@@ -74,6 +80,23 @@ export function TrancheContent() {
       const reqId = ++requestIdRef.current;
       setLoading(true);
       try {
+        if (tab === "originals") {
+          const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+          if (!opts.reset && cursor) params.set("cursor", cursor);
+          const res = await fetch(
+            `/api/tranche/originals/feed?${params.toString()}`,
+          );
+          const data = await res.json();
+          if (reqId !== requestIdRef.current) return;
+          const newItems: OriginalItem[] = data?.items ?? [];
+          setOriginalItems((prev) =>
+            opts.reset ? newItems : [...prev, ...newItems],
+          );
+          setCursor(data?.nextCursor ?? null);
+          setHasMore(Boolean(data?.nextCursor));
+          return;
+        }
+
         const params = new URLSearchParams({
           tab,
           limit: String(PAGE_SIZE),
@@ -103,6 +126,7 @@ export function TrancheContent() {
   useEffect(() => {
     if (tab === "network" && !viewerEmail) return;
     setItems([]);
+    setOriginalItems([]);
     setCursor(null);
     setHasMore(true);
     requestIdRef.current++;
@@ -125,8 +149,10 @@ export function TrancheContent() {
     return () => io.disconnect();
   }, [hasMore, loading, loadPage]);
 
+  const isOriginals = tab === "originals";
+
   return (
-    <FeedLayout>
+    <FeedLayout background={isOriginals ? "#F7F7F7" : undefined}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Bebas+Neue&display=swap');
       `}</style>
@@ -153,10 +179,41 @@ export function TrancheContent() {
       >
         T
       </button>
+      {isOriginals && (
+        <button
+          type="button"
+          onClick={() => setComposerOpen(true)}
+          aria-label="New Original"
+          style={{
+            position: "absolute",
+            top: "calc(env(safe-area-inset-top, 0px) + 48px)",
+            right: 54,
+            zIndex: 81,
+            width: 32,
+            height: 32,
+            borderRadius: 999,
+            background: "transparent",
+            border: `1px solid ${SLATE}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        >
+          <PencilIcon color={SLATE} />
+        </button>
+      )}
       <TMenuSheet
         open={menuOpen}
         onClose={() => setMenuOpen(false)}
         viewerEmail={viewerEmail}
+      />
+      <OriginalComposer
+        viewerEmail={viewerEmail}
+        open={composerOpen}
+        onClose={() => setComposerOpen(false)}
+        onCreated={(item) => setOriginalItems((prev) => [item, ...prev])}
       />
       <div
         style={{
@@ -192,7 +249,7 @@ export function TrancheContent() {
           Comments that broke out.
         </p>
 
-        {hotEvent && (
+        {!isOriginals && hotEvent && (
           <HotTrancheCard
             key={hotEvent.id}
             event={hotEvent}
@@ -242,7 +299,34 @@ export function TrancheContent() {
           })}
         </div>
 
-        {tab === "network" && !viewerEmail ? (
+        {isOriginals ? (
+          originalItems.length === 0 && !loading ? (
+            <EmptyState
+              title="NO ORIGINALS YET"
+              hint="Tap the pencil to post the first take."
+            />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {originalItems.map((item) => (
+                <OriginalCard
+                  key={item.id}
+                  item={item}
+                  viewerEmail={viewerEmail}
+                  onVolted={(postId, v) => {
+                    setOriginalItems((prev) =>
+                      prev.map((p) =>
+                        p.id === postId ? { ...p, voltage: v } : p,
+                      ),
+                    );
+                  }}
+                />
+              ))}
+              <div ref={sentinelRef} style={{ height: 24 }} />
+              {loading && <LoadingRow />}
+              {!hasMore && originalItems.length > 0 && <EndRow />}
+            </div>
+          )
+        ) : tab === "network" && !viewerEmail ? (
           <EmptyState
             title="SIGN IN TO SEE YOUR NETWORK"
             hint="The NETWORK tab needs your account."
@@ -275,38 +359,65 @@ export function TrancheContent() {
               />
             ))}
             <div ref={sentinelRef} style={{ height: 24 }} />
-            {loading && (
-              <div
-                style={{
-                  fontFamily: "'Space Grotesk', monospace",
-                  fontSize: 10,
-                  letterSpacing: "0.2em",
-                  color: "rgba(0,0,0,0.35)",
-                  textAlign: "center",
-                  padding: "8px 0 16px",
-                }}
-              >
-                LOADING…
-              </div>
-            )}
-            {!hasMore && items.length > 0 && (
-              <div
-                style={{
-                  fontFamily: "'Space Grotesk', monospace",
-                  fontSize: 9,
-                  letterSpacing: "0.22em",
-                  color: "rgba(0,0,0,0.25)",
-                  textAlign: "center",
-                  padding: "4px 0 16px",
-                }}
-              >
-                END OF FEED
-              </div>
-            )}
+            {loading && <LoadingRow />}
+            {!hasMore && items.length > 0 && <EndRow />}
           </div>
         )}
       </div>
     </FeedLayout>
+  );
+}
+
+function LoadingRow() {
+  return (
+    <div
+      style={{
+        fontFamily: "'Space Grotesk', monospace",
+        fontSize: 10,
+        letterSpacing: "0.2em",
+        color: "rgba(0,0,0,0.35)",
+        textAlign: "center",
+        padding: "8px 0 16px",
+      }}
+    >
+      LOADING…
+    </div>
+  );
+}
+
+function EndRow() {
+  return (
+    <div
+      style={{
+        fontFamily: "'Space Grotesk', monospace",
+        fontSize: 9,
+        letterSpacing: "0.22em",
+        color: "rgba(0,0,0,0.25)",
+        textAlign: "center",
+        padding: "4px 0 16px",
+      }}
+    >
+      END OF FEED
+    </div>
+  );
+}
+
+function PencilIcon({ color }: { color: string }) {
+  return (
+    <svg
+      width={15}
+      height={15}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+    </svg>
   );
 }
 
@@ -345,4 +456,3 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
     </div>
   );
 }
-

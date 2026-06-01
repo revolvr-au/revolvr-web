@@ -63,6 +63,7 @@ export default function TopBar() {
           {label}
         </span>
       </button>
+
       <style>{`
         @keyframes voltPulse {
           0%, 100% { opacity: 1; transform: scale(1); }
