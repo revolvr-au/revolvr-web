@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import TrancheReplyComposer, { PostedReply } from "./TrancheReplyComposer";
 
 // ── Identity colours (ORIGINAL = slate) ──────────────────────────────────────
 const SLATE = "#2C3E50";
@@ -38,6 +39,8 @@ export type OriginalItem = {
   createdAt: string;
   voltage: number;
   replyCount: number;
+  /** Active TRANCHE breakout for this post, if any comment has broken out. */
+  trancheEventId?: string | null;
   author: {
     displayName: string | null;
     handle: string | null;
@@ -131,14 +134,84 @@ export default function OriginalCard({
     };
   }, [item.id]);
 
-  // ── Voltage (optimistic) ────────────────────────────────────────────────────
+  // ── Voltage (optimistic w/ rollback) ────────────────────────────────────────
   const [voltage, setVoltage] = useState(item.voltage);
+  const [volting, setVolting] = useState(false);
   useEffect(() => setVoltage(item.voltage), [item.voltage]);
 
-  const handleVolt = () => {
-    const next = voltage + 1;
-    setVoltage(next);
-    onVolted?.(item.id, next);
+  const handleVolt = async () => {
+    if (!viewerEmail || volting) return;
+    const prev = voltage;
+    const optimistic = prev + 1;
+    setVolting(true);
+    setVoltage(optimistic);
+    onVolted?.(item.id, optimistic);
+    try {
+      const res = await fetch("/api/tranche/originals/volt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId: item.id, userEmail: viewerEmail }),
+      });
+      const data = await res.json();
+      if (data?.ok) {
+        // Reconcile with the server's canonical voltage (handles dupes).
+        const confirmed = typeof data.newVoltage === "number" ? data.newVoltage : optimistic;
+        setVoltage(confirmed);
+        onVolted?.(item.id, confirmed);
+      } else {
+        setVoltage(prev);
+        onVolted?.(item.id, prev);
+      }
+    } catch {
+      setVoltage(prev);
+      onVolted?.(item.id, prev);
+    } finally {
+      setVolting(false);
+    }
+  };
+
+  // ── Replies (composer + optimistic count) ───────────────────────────────────
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [replyCount, setReplyCount] = useState(item.replyCount);
+  useEffect(() => setReplyCount(item.replyCount), [item.replyCount]);
+
+  const handlePosted = (_reply: PostedReply) => {
+    setReplyCount((c) => c + 1);
+    onComment?.(item);
+  };
+
+  // ── Witness ─────────────────────────────────────────────────────────────────
+  const [toast, setToast] = useState<string | null>(null);
+  const showToast = (msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 2400);
+  };
+
+  const handleWitness = async () => {
+    if (!viewerEmail) {
+      showToast("Sign in to witness");
+      return;
+    }
+    if (!item.trancheEventId) {
+      showToast("No breakout yet to witness");
+      return;
+    }
+    try {
+      const res = await fetch("/api/tranche/witness", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          witnessEmail: viewerEmail,
+          trancheEventId: item.trancheEventId,
+        }),
+      });
+      const data = await res.json();
+      if (data?.ok) showToast("Witnessed");
+      else if (data?.error === "quiet_period_active") showToast("Quiet period — try again soon");
+      else showToast("Could not witness");
+    } catch {
+      showToast("Could not witness");
+    }
   };
 
   // Dots track the leading comment's journey to breakout (replies sorted desc).
@@ -155,6 +228,7 @@ export default function OriginalCard({
   return (
     <div
       style={{
+        position: "relative",
         background: CARD_BG,
         border: `1px solid ${HAIRLINE}`,
         borderLeft: `4px solid ${SLATE}`,
@@ -358,10 +432,10 @@ export default function OriginalCard({
               </span>
             </div>
           ))}
-          {item.replyCount > 0 && (
+          {replyCount > 0 && (
             <button
               type="button"
-              onClick={() => onComment?.(item)}
+              onClick={() => setReplyOpen(true)}
               style={{
                 alignSelf: "flex-start",
                 background: "transparent",
@@ -374,7 +448,7 @@ export default function OriginalCard({
                 opacity: 0.7,
               }}
             >
-              View all {item.replyCount} {item.replyCount === 1 ? "reply" : "replies"} →
+              View all {replyCount} {replyCount === 1 ? "reply" : "replies"} →
             </button>
           )}
         </div>
@@ -418,7 +492,7 @@ export default function OriginalCard({
         <button
           type="button"
           onClick={handleVolt}
-          disabled={!viewerEmail}
+          disabled={!viewerEmail || volting}
           aria-label="Volt"
           style={{
             display: "inline-flex",
@@ -428,7 +502,7 @@ export default function OriginalCard({
             border: "none",
             borderRadius: 8,
             padding: "6px 9px",
-            cursor: viewerEmail ? "pointer" : "default",
+            cursor: viewerEmail && !volting ? "pointer" : "default",
             opacity: viewerEmail ? 1 : 0.5,
           }}
         >
@@ -438,7 +512,7 @@ export default function OriginalCard({
         {/* Comment */}
         <button
           type="button"
-          onClick={() => onComment?.(item)}
+          onClick={() => setReplyOpen(true)}
           aria-label="Replies"
           style={{
             display: "inline-flex",
@@ -459,13 +533,14 @@ export default function OriginalCard({
               fontWeight: 600,
             }}
           >
-            {item.replyCount}
+            {replyCount}
           </span>
         </button>
 
         {/* Witness / Eye */}
         <button
           type="button"
+          onClick={handleWitness}
           aria-label="Witness"
           style={{
             display: "inline-flex",
@@ -501,6 +576,40 @@ export default function OriginalCard({
           SEED GATH
         </button>
       </div>
+
+      {/* TOAST */}
+      {toast && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 12,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "#0F1115",
+            color: "#fff",
+            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            padding: "7px 12px",
+            borderRadius: 999,
+            whiteSpace: "nowrap",
+            pointerEvents: "none",
+            zIndex: 5,
+          }}
+        >
+          {toast}
+        </div>
+      )}
+
+      <TrancheReplyComposer
+        postId={item.id}
+        parentId={null}
+        viewerEmail={viewerEmail}
+        theme="light"
+        open={replyOpen}
+        onClose={() => setReplyOpen(false)}
+        onPosted={handlePosted}
+      />
 
       <style>{`
         @keyframes originalLivePulse {

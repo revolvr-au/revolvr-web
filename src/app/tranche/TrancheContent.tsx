@@ -152,7 +152,7 @@ export function TrancheContent() {
   const isOriginals = tab === "originals";
 
   return (
-    <FeedLayout>
+    <FeedLayout background={isOriginals ? "#F7F7F7" : undefined}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Bebas+Neue&display=swap');
       `}</style>

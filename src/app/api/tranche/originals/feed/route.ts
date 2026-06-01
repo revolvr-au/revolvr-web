@@ -58,18 +58,33 @@ export async function GET(req: Request) {
       ),
     );
 
-    const profiles = emails.length
-      ? await prisma.creatorProfile.findMany({
-          where: { email: { in: emails } },
-          select: {
-            email: true,
-            displayName: true,
-            handle: true,
-            avatarUrl: true,
-          },
-        })
-      : [];
+    const postIds = items.map((p) => p.id);
+
+    const [profiles, breakouts] = await Promise.all([
+      emails.length
+        ? prisma.creatorProfile.findMany({
+            where: { email: { in: emails } },
+            select: {
+              email: true,
+              displayName: true,
+              handle: true,
+              avatarUrl: true,
+            },
+          })
+        : Promise.resolve([]),
+      postIds.length
+        ? prisma.trancheEvent.findMany({
+            where: { postId: { in: postIds }, status: "ACTIVE" },
+            select: { id: true, postId: true },
+          })
+        : Promise.resolve([]),
+    ]);
     const profileByEmail = new Map(profiles.map((p) => [p.email, p]));
+    // First active breakout per post (a post can have at most one trending moment shown).
+    const trancheEventByPost = new Map<string, string>();
+    for (const b of breakouts) {
+      if (!trancheEventByPost.has(b.postId)) trancheEventByPost.set(b.postId, b.id);
+    }
 
     const formatted = items.map((p) => {
       const author = profileByEmail.get(p.userEmail);
@@ -81,6 +96,7 @@ export async function GET(req: Request) {
         createdAt: p.createdAt,
         voltage: p.voltage,
         replyCount: p._count.comments,
+        trancheEventId: trancheEventByPost.get(p.id) ?? null,
         author: {
           displayName: author?.displayName ?? null,
           handle: author?.handle ?? null,

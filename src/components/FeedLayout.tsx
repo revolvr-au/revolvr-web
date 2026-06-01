@@ -5,12 +5,14 @@ import TopBar from "./TopBar";
 
 type Props = {
   children: React.ReactNode;
+  /** Optional override for the page background. Falls back to the route default. */
+  background?: string;
 };
 
-export default function FeedLayout({ children }: Props) {
+export default function FeedLayout({ children, background: backgroundOverride }: Props) {
   const pathname = usePathname();
   const isTranche = pathname?.startsWith("/tranche") ?? false;
-  const background = isTranche ? "#E8E4DC" : "#020617";
+  const background = backgroundOverride ?? (isTranche ? "#E8E4DC" : "#020617");
 
   return (
     <div
