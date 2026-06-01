@@ -63,6 +63,7 @@ LiveKit powers video (`livekit-client` + `@livekit/components-react`). The `useG
 - Prisma singleton is in `src/lib/prisma.ts` — always import from there.
 - The schema has two overlapping creator profile models (`CreatorProfile` and `creator_profiles`/`creators`) — check which one a feature uses before writing queries.
 - `SupportKind` enum: `TIP | BOOST | SPIN | REACTION | VOTE`. `SupportSource` enum: `FEED | LIVE`.
+- **NEVER use `DATABASE_URL`, `DIRECT_URL`, or any production database URL as `--shadow-database-url` in any `prisma migrate diff` or `migrate dev` command. The shadow database must always be a separate throwaway database. Using a production URL as shadow will RESET AND WIPE the database.**
 
 ### Styling
 
