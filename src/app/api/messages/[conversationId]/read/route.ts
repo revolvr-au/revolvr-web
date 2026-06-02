@@ -3,13 +3,14 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
-import { assertParticipant, normalizeEmail, NotParticipantError } from "@/lib/dm";
+import { assertParticipant, normalizeEmail, isDmEnabled, NotParticipantError } from "@/lib/dm";
 
 type RouteContext = { params: Promise<{ conversationId: string }> };
 
 // POST /api/messages/[conversationId]/read
 // Mark the conversation read up to now for the current user (clears unread badge).
 export async function POST(_req: Request, ctx: RouteContext) {
+  if (!isDmEnabled()) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const meRaw = await getAuthedEmailOrNull();
   if (!meRaw) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const me = normalizeEmail(meRaw);
