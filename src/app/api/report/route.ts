@@ -90,13 +90,21 @@ async function sendReportEmail(args: EmailArgs): Promise<boolean> {
 
   try {
     const resend = new Resend(apiKey);
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: fromAddress,
       to: SAFETY_INBOX,
       subject,
       text,
       ...(args.reporterEmail ? { replyTo: args.reporterEmail } : {}),
     });
+    // Resend resolves (does not throw) on API-level rejections — e.g. an
+    // unverified `from` domain or sandbox restriction. The failure arrives in
+    // `error`, so a successful resolution alone does NOT mean it was delivered.
+    if (error) {
+      console.error("[report] email send rejected by Resend:", error.message ?? error);
+      return false;
+    }
+    console.info("[report] email sent:", data?.id ?? "(no id)");
     return true;
   } catch (err) {
     console.error("[report] email send failed:", err instanceof Error ? err.message : err);
