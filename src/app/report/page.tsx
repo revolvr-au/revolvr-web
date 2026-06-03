@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 const SUPPORT_EMAIL = "revolvrassist@gmail.com";
 
 type Category =
+  | "CHILD_SAFETY"
   | "HARASSMENT"
   | "SCAM_FRAUD"
   | "IMPERSONATION"
@@ -13,6 +14,7 @@ type Category =
   | "OTHER";
 
 const CATEGORIES: Array<{ key: Category; label: string }> = [
+  { key: "CHILD_SAFETY", label: "Child safety (a minor is in danger, or sexual content involving a minor)" },
   { key: "HARASSMENT", label: "Harassment" },
   { key: "SCAM_FRAUD", label: "Scam / Fraud" },
   { key: "IMPERSONATION", label: "Impersonation" },
