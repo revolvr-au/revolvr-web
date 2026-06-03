@@ -136,7 +136,7 @@ function PostSkeleton() {
   );
 }
 
-export default function PublicFeedClient() {
+export default function PublicFeedClient({ dmEnabled }: { dmEnabled: boolean }) {
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
   const [loading, setLoading] = useState(feedCache === null);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
@@ -652,6 +652,7 @@ useEffect(() => {
         onCreate={handleCreate}
         onGoLive={handleGoLive}
         onInteract={handleInteract}
+        dmEnabled={dmEnabled}
         currentUserId={userEmail}
         interactionCount={interactionMap[String(post.id)] || 0}
         momentumStrength={momentum.strength}
@@ -710,6 +711,7 @@ const Post = memo(function Post({
   onCreate,
   onGoLive,
   onInteract,
+  dmEnabled,
   currentUserId,
   interactionCount,
   momentumStrength,
@@ -736,6 +738,7 @@ const Post = memo(function Post({
   onCreate: () => void;
   onGoLive: () => void;
   onInteract: (postId: string) => void;
+  dmEnabled: boolean;
   currentUserId: string | null;
   interactionCount: number;
   momentumStrength: number;
@@ -885,6 +888,7 @@ const Post = memo(function Post({
 
   // DM the creator in context: resolve-or-create the 1:1 thread, then route to it.
   const handleMessage = useCallback(async () => {
+    if (!dmEnabled) return; // DMs are dark until age assurance is real
     const target = post.userEmail;
     if (!target || isOwner) return; // can't DM yourself
     try {
@@ -899,7 +903,7 @@ const Post = memo(function Post({
     } catch {
       /* best-effort */
     }
-  }, [post.userEmail, isOwner, router]);
+  }, [dmEnabled, post.userEmail, isOwner, router]);
 
   return (
     <div
@@ -1094,6 +1098,7 @@ const Post = memo(function Post({
         <FeedOverlay
           post={post}
           voltage={voltage}
+          dmEnabled={dmEnabled}
           people={people}
           onSelectPerson={onSelectPerson}
           onLike={handleInteract}
@@ -1127,6 +1132,7 @@ function VoltageSpark({ size = 11, color = GOLD }: { size?: number; color?: stri
 function FeedOverlay({
   post,
   voltage,
+  dmEnabled,
   people,
   onSelectPerson,
   onLike,
@@ -1146,6 +1152,7 @@ function FeedOverlay({
 }: {
   post: any;
   voltage: number;
+  dmEnabled: boolean;
   people: PeopleCardUser[];
   onSelectPerson: (p: PeopleCardUser) => void;
   onLike: () => void;
@@ -1467,6 +1474,7 @@ function FeedOverlay({
             }}
           />
           <ActionCylinder
+            keys={dmEnabled ? ACTION_KEYS : ACTION_KEYS.filter((k) => k !== "MESSAGE")}
             onAction={handleAction}
             liked={liked}
             giftPending={giftPending}
@@ -1699,17 +1707,24 @@ function PeopleCylinder({
 }
 
 function ActionCylinder({
+  keys,
   onAction,
   liked,
   giftPending,
 }: {
+  keys: readonly ActionKey[];
   onAction: (k: ActionKey) => void;
   liked: boolean;
   giftPending: boolean;
 }) {
   const [index, setIndex] = useState(0);
-  const total = ACTION_KEYS.length;
+  const total = keys.length;
   const touchStartRef = useRef<number | null>(null);
+
+  // Keep the active index in range if the key set shrinks (e.g. DMs go dark).
+  useEffect(() => {
+    setIndex((i) => (i >= keys.length ? 0 : i));
+  }, [keys.length]);
 
   const rotateBy = (dir: 1 | -1) => {
     setIndex((i) => (i + dir + total) % total);
@@ -1729,10 +1744,10 @@ function ActionCylinder({
     rotateBy(dx < 0 ? 1 : -1);
   };
 
-  const activeKey = ACTION_KEYS[index];
+  const activeKey = keys[index];
   const { Icon: ActiveIcon, glow: activeGlow } = ACTION_ICONS[activeKey];
-  const prevKey = ACTION_KEYS[(index - 1 + total) % total];
-  const nextKey = ACTION_KEYS[(index + 1) % total];
+  const prevKey = keys[(index - 1 + total) % total];
+  const nextKey = keys[(index + 1) % total];
   const { Icon: PrevIcon } = ACTION_ICONS[prevKey];
   const { Icon: NextIcon } = ACTION_ICONS[nextKey];
 

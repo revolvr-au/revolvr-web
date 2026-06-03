@@ -7,6 +7,18 @@
 // server-side write MUST authorize in code using these guards before touching the DB.
 import { prisma } from "@/lib/prisma";
 
+/**
+ * Master switch for Direct Messages. Default OFF — DMs stay dark until age
+ * assurance is real. The only child-safety guard (assertNotMinor) is currently
+ * inert because nothing ever sets profiles.isMinor = true, so a reachable,
+ * unmoderated private surface cannot be live. Server-side only (reads process.env);
+ * the value is passed to client components as a prop, never imported there.
+ * Enabled only when DM_ENABLED is exactly "true".
+ */
+export function isDmEnabled(): boolean {
+  return process.env.DM_ENABLED === "true";
+}
+
 /** Thrown when a minor would become party to a DIRECT conversation. */
 export class MinorBlockedError extends Error {
   code = "DM_MINOR_BLOCKED" as const;

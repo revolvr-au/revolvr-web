@@ -7,6 +7,7 @@ import {
   assertNotMinor,
   directKeyFor,
   normalizeEmail,
+  isDmEnabled,
   MinorBlockedError,
 } from "@/lib/dm";
 
@@ -14,6 +15,7 @@ import {
 // Inbox: my conversations ordered by lastMessageAt desc, each with the other
 // participant, the last (non-deleted) message preview, and my unread count.
 export async function GET() {
+  if (!isDmEnabled()) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const meRaw = await getAuthedEmailOrNull();
   if (!meRaw) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const me = normalizeEmail(meRaw);
@@ -99,6 +101,7 @@ export async function GET() {
 // POST /api/messages/conversations  { targetEmail }
 // Resolve-or-create the 1:1 conversation between me and targetEmail.
 export async function POST(req: Request) {
+  if (!isDmEnabled()) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const meRaw = await getAuthedEmailOrNull();
   if (!meRaw) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const me = normalizeEmail(meRaw);

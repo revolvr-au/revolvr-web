@@ -7,6 +7,7 @@ import {
   assertParticipant,
   assertNotMinor,
   normalizeEmail,
+  isDmEnabled,
   MinorBlockedError,
   NotParticipantError,
 } from "@/lib/dm";
@@ -21,6 +22,7 @@ const MAX_BODY_LEN = 4000;
 //   ?after=<ISO createdAt>   → newer messages since a cursor (reconnect reconcile)
 // Always returns `messages` chronological (oldest-first).
 export async function GET(req: Request, ctx: RouteContext) {
+  if (!isDmEnabled()) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const meRaw = await getAuthedEmailOrNull();
   if (!meRaw) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const me = normalizeEmail(meRaw);
@@ -64,6 +66,7 @@ export async function GET(req: Request, ctx: RouteContext) {
 
 // POST /api/messages/[conversationId]/messages  { body }
 export async function POST(req: Request, ctx: RouteContext) {
+  if (!isDmEnabled()) return NextResponse.json({ error: "not_found" }, { status: 404 });
   const meRaw = await getAuthedEmailOrNull();
   if (!meRaw) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const me = normalizeEmail(meRaw);
