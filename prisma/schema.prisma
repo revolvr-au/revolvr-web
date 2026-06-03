@@ -1302,3 +1302,36 @@ enum MsgType {
 
   @@schema("public")
 }
+
+// ── CONTENT / SAFETY REPORTS (Phase 0.2) ──
+// Abuse/safety reports for any reportable surface. reporterEmail is NULLABLE because
+// /report is reachable unauthenticated today (e.g. the deactivate-account flow) and
+// the form collects no identity; the route may attach a logged-in email later.
+// targetType and reason are free strings (validated at the route layer) to stay
+// flexible across surfaces; status is the moderation-workflow enum.
+model Report {
+  id            String       @id @default(uuid())
+  reporterEmail String?      // nullable — reports may be anonymous
+  targetType    String       // post | comment | user | live | tranche | message
+  targetId      String
+  reason        String       // csam | harassment | violence | spam | self_harm | other
+  note          String?
+  status        ReportStatus @default(OPEN)
+  reviewedBy    String?
+  reviewedAt    DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+  @@index([reporterEmail])
+  @@schema("public")
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWING
+  ACTIONED
+  DISMISSED
+
+  @@schema("public")
+}
