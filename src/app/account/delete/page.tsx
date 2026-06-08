@@ -57,7 +57,7 @@ export default function DeleteAccountPage() {
       minHeight: "100vh",
       background: "#0a0806",
       color: "white",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       maxWidth: 480,
       margin: "0 auto",
       padding: "24px 20px 60px",
@@ -143,7 +143,7 @@ export default function DeleteAccountPage() {
           border: `1px solid ${focusEmail ? "#00e5ff" : "#1e1a14"}`,
           color: "white",
           fontSize: 13,
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           marginBottom: 16,
           transition: "border-color 0.15s",
         }}
@@ -189,7 +189,7 @@ export default function DeleteAccountPage() {
           color: "#333",
           fontSize: 13,
           cursor: "pointer",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           letterSpacing: 0.5,
           marginTop: 10,
         }}

@@ -266,7 +266,7 @@ function MenuItem({
         display: "flex",
         alignItems: "center",
         gap: 8,
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
       onMouseLeave={(e) => (e.currentTarget.style.color = "#aaa")}

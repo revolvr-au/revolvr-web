@@ -134,7 +134,7 @@ export default function ProfileClient({
       minHeight: "100vh",
       background: "#0a0806",
       color: "white",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       maxWidth: 480,
       margin: "0 auto",
     }}>

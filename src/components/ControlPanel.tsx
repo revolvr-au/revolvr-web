@@ -140,7 +140,7 @@ export default function ControlPanel({
           height: "75dvh",
           overflow: "hidden",
           boxShadow: "0 0 60px rgba(0,229,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           position: "relative",
         }}
       >
@@ -231,7 +231,7 @@ export default function ControlPanel({
               }}
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-              <span style={{ color: "#fff", fontSize: 16, fontWeight: 700, fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", letterSpacing: "0.02em" }}>
+              <span style={{ color: "#fff", fontSize: 16, fontWeight: 700, fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", letterSpacing: "0.02em" }}>
                 {handle ? `@${handle}` : "View Profile"}
               </span>
               <span style={{ color: "rgba(0, 229, 255, 0.8)", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.05em" }}>
@@ -274,7 +274,7 @@ export default function ControlPanel({
               <Zap size={16} color="#F5C518" fill="#F5C518" />
             </div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, flex: 1 }}>
-              <span style={{ color: "#F5C518", fontSize: 18, fontWeight: 700, fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif", letterSpacing: "0.02em" }}>
+              <span style={{ color: "#F5C518", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", letterSpacing: "0.02em" }}>
                 {sparkBalance === null ? "—" : sparkBalance.toLocaleString()}
               </span>
               <span style={{ color: "rgba(245, 197, 24, 0.7)", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em", textTransform: "uppercase" }}>
@@ -604,7 +604,7 @@ function MenuItem({
         display: "flex",
         alignItems: "center",
         gap: 8,
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
       onMouseLeave={(e) => (e.currentTarget.style.color = "#aaa")}

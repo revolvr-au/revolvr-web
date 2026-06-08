@@ -132,7 +132,7 @@ function RingsPageInner() {
       minHeight: "100vh",
       background: "#050814",
       color: "white",
-      fontFamily: "Inter, -apple-system, BlinkMacSystemFont, sans-serif",
+      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');

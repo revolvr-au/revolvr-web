@@ -130,7 +130,7 @@ function Avatar({
             fontSize: size * 0.35,
             fontWeight: 700,
             color: "rgba(255,255,255,0.7)",
-            fontFamily: "Inter, system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             overflow: "hidden",
           }}
         >
@@ -188,7 +188,7 @@ function LiveCard({ person, onClick }: { person: LivePerson; onClick: () => void
           fontSize: 13,
           fontWeight: 700,
           color: "rgba(255,255,255,0.5)",
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           marginBottom: 2,
         }}>
           {person.displayName}
@@ -197,7 +197,7 @@ function LiveCard({ person, onClick }: { person: LivePerson; onClick: () => void
           fontSize: 16,
           fontWeight: 600,
           color: "white",
-          fontFamily: "Inter, system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
@@ -216,7 +216,7 @@ function LiveCard({ person, onClick }: { person: LivePerson; onClick: () => void
         borderRadius: 24,
         padding: "7px 18px",
         flexShrink: 0,
-        fontFamily: "Inter, system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         letterSpacing: "0.5px",
       }}>
         JOIN
@@ -252,7 +252,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         fontSize: 12,
         fontWeight: 700,
         color: "white",
-        fontFamily: "Inter, system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
@@ -264,7 +264,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
       <div style={{
         fontSize: 10,
         color: "rgba(255,255,255,0.4)",
-        fontFamily: "Inter, system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
@@ -281,7 +281,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         flexWrap: "wrap",
         justifyContent: "center",
         fontSize: 10,
-        fontFamily: "Inter, system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
           <span style={{ fontSize: 10 }}>⚡</span>
@@ -368,7 +368,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
             fontSize: 10,
             color: "rgba(255,255,255,0.5)",
             whiteSpace: "nowrap",
-            fontFamily: "Inter, system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             animation: "marquee 12s linear infinite",
           }}>
             💬 {person.latestComment}
@@ -402,7 +402,7 @@ function NewCard({ person, onClick }: { person: NewPerson; onClick: () => void }
         fontSize: 12,
         fontWeight: 600,
         color: "white",
-        fontFamily: "Inter, system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: "hidden",
         textOverflow: "ellipsis",
         whiteSpace: "nowrap",
@@ -495,7 +495,7 @@ function GathCard({
               fontSize: 14,
               fontWeight: 700,
               color: "white",
-              fontFamily: "Inter, system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",

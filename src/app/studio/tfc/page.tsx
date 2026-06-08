@@ -195,7 +195,7 @@ export default function StudioTfcPage() {
         background: BG,
         color: "#fff",
         padding: "28px 24px 60px",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         maxWidth: 1200,
         margin: "0 auto",
       }}

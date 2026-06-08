@@ -89,7 +89,7 @@ export default function CommentsPanel({
           borderTopRightRadius: 24,
           overflow: "hidden",
           boxShadow: "0 0 60px rgba(0,229,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           height: "75dvh",
         }}
       >
