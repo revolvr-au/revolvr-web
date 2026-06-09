@@ -25,7 +25,7 @@ export default function AboutPage() {
           onClick={() => router.back()}
           style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "4px 2px" }}
         >←</button>
-        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "#333", textTransform: "uppercase" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>
           About
         </div>
         <div style={{ width: 30 }} />
@@ -52,7 +52,7 @@ export default function AboutPage() {
 
       {/* WHAT WE ARE */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#555", textTransform: "uppercase", marginBottom: 12 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", marginBottom: 12 }}>
           What We Are
         </div>
         <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, margin: 0 }}>
@@ -67,7 +67,7 @@ export default function AboutPage() {
 
       {/* OUR MISSION */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#555", textTransform: "uppercase", marginBottom: 12 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", marginBottom: 12 }}>
           Our Mission
         </div>
         <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, margin: 0 }}>
@@ -81,7 +81,7 @@ export default function AboutPage() {
 
       {/* CONTACT */}
       <div style={{ marginBottom: 32 }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#555", textTransform: "uppercase", marginBottom: 12 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", marginBottom: 12 }}>
           Contact
         </div>
         <a
@@ -96,10 +96,10 @@ export default function AboutPage() {
 
       {/* Business */}
       <div>
-        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "#333", textTransform: "uppercase", marginBottom: 8 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 2, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", marginBottom: 8 }}>
           Business
         </div>
-        <p style={{ fontSize: 12, color: "#444", margin: 0 }}>Revolvr Pty Ltd (Australia)</p>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", margin: 0 }}>Revolvr Pty Ltd (Australia)</p>
       </div>
     </div>
   );

@@ -232,7 +232,7 @@ export default function MessagesContent({ meEmail }: { meEmail: string }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "rgba(255,255,255,0.4)",
+                  color: "rgba(255,255,255,0.6)",
                   fontSize: 14,
                 }}
               >

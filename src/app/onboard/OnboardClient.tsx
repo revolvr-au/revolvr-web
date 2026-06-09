@@ -98,7 +98,7 @@ export default function OnboardClient() {
           WELCOME TO REVOLVR
         </div>
 
-        <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center" }}>
           Set up your profile to get started.
         </div>
 
@@ -116,7 +116,7 @@ export default function OnboardClient() {
           {avatarPreview ? (
             <img src={avatarPreview} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "#444" }}>
+            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "rgba(255,255,255,0.6)" }}>
               {displayName.trim() ? initial : "+"}
             </span>
           )}
@@ -124,12 +124,12 @@ export default function OnboardClient() {
         <input ref={fileInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={onFileChange} />
 
         {uploading && (
-          <div style={{ fontFamily: "monospace", fontSize: 11, color: "#555" }}>uploading…</div>
+          <div style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.6)" }}>uploading…</div>
         )}
 
         {/* Handle */}
         <div style={{ width: "100%", position: "relative" }}>
-          <span style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", fontFamily: "monospace", fontSize: 14, color: "#555", pointerEvents: "none" }}>@</span>
+          <span style={{ position: "absolute", left: 18, top: "50%", transform: "translateY(-50%)", fontFamily: "monospace", fontSize: 14, color: "rgba(255,255,255,0.6)", pointerEvents: "none" }}>@</span>
           <input
             value={handle}
             onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
@@ -155,7 +155,7 @@ export default function OnboardClient() {
         )}
 
         {/* Required note */}
-        <div style={{ fontFamily: "monospace", fontSize: 11, color: "#333", textAlign: "center" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.6)", textAlign: "center" }}>
           Handle and display name are required to continue.
         </div>
 
@@ -167,7 +167,7 @@ export default function OnboardClient() {
             width: "100%", padding: "14px 0", borderRadius: 50,
             background: "transparent",
             border: `1px solid ${canSubmit ? "#00e5ff" : "#2a2520"}`,
-            color: canSubmit ? "#00e5ff" : "#333",
+            color: canSubmit ? "#00e5ff" : "rgba(255,255,255,0.6)",
             fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3,
             cursor: canSubmit ? "pointer" : "not-allowed",
             transition: "border-color 0.2s, color 0.2s",

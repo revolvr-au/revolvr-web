@@ -594,7 +594,7 @@ if (document.activeElement instanceof HTMLElement) {
               </div>
               <div style={{ animation: "giftNameFlash 1.2s ease-out forwards", textAlign: "center" }}>
                 <div style={{ color: "#00e5ff", fontSize: 14, fontWeight: 700, fontFamily: "monospace", textShadow: "0 0 20px rgba(0,229,255,0.6)" }}>{activeGiftEffect.senderName}</div>
-                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace", marginTop: 2 }}>sent PULSE</div>
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginTop: 2 }}>sent PULSE</div>
               </div>
             </div>
           )}
@@ -820,7 +820,7 @@ if (document.activeElement instanceof HTMLElement) {
                   <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#fff", animation: "livePulse 1.4s ease-in-out infinite" }} />
                   <span style={{ color: "#fff", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em" }}>LIVE</span>
                 </div>
-                <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontFamily: "monospace" }}>{viewerCount}</span>
+                <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, fontFamily: "monospace" }}>{viewerCount}</span>
               </>
             )}
           </div>
@@ -958,7 +958,7 @@ if (document.activeElement instanceof HTMLElement) {
               <span style={{ fontSize: 12, color: "#D4AF37" }}>{b.price}</span>
             </button>
           ))}
-          <button onClick={() => setTopUpOpen(false)} style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 4 }}>Cancel</button>
+          <button onClick={() => setTopUpOpen(false)} style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 4 }}>Cancel</button>
         </div>
       )}
 

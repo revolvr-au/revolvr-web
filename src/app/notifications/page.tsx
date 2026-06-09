@@ -123,7 +123,7 @@ export default function NotificationsPage() {
           style={{
             fontFamily: "'DM Sans', system-ui, sans-serif",
             fontSize: 13,
-            color: "rgba(255,255,255,0.45)",
+            color: "rgba(255,255,255,0.6)",
             margin: "0 0 22px",
           }}
         >
@@ -136,7 +136,7 @@ export default function NotificationsPage() {
               fontFamily: "'Space Grotesk', monospace",
               fontSize: 10,
               letterSpacing: "0.2em",
-              color: "rgba(255,255,255,0.3)",
+              color: "rgba(255,255,255,0.6)",
               textAlign: "center",
               padding: 40,
             }}
@@ -203,7 +203,7 @@ export default function NotificationsPage() {
                       fontFamily: "'Space Grotesk', monospace",
                       fontSize: 10,
                       letterSpacing: "0.16em",
-                      color: n.isRead ? "rgba(255,255,255,0.3)" : GOLD,
+                      color: n.isRead ? "rgba(255,255,255,0.6)" : GOLD,
                     }}
                   >
                     {n.type.replace(/_/g, " ")} · {formatAge(n.sentAt)}
@@ -235,7 +235,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
           fontFamily: "'Bebas Neue', sans-serif",
           fontSize: 28,
           letterSpacing: 3,
-          color: "rgba(255,255,255,0.18)",
+          color: "rgba(255,255,255,0.6)",
         }}
       >
         {title}
@@ -244,7 +244,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
         style={{
           fontFamily: "'DM Sans', system-ui, sans-serif",
           fontSize: 12,
-          color: "rgba(255,255,255,0.4)",
+          color: "rgba(255,255,255,0.6)",
           maxWidth: 320,
         }}
       >

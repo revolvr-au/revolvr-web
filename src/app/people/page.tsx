@@ -187,7 +187,7 @@ function LiveCard({ person, onClick }: { person: LivePerson; onClick: () => void
         <div style={{
           fontSize: 13,
           fontWeight: 700,
-          color: "rgba(255,255,255,0.5)",
+          color: "rgba(255,255,255,0.6)",
           fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           marginBottom: 2,
         }}>
@@ -263,7 +263,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
       </div>
       <div style={{
         fontSize: 10,
-        color: "rgba(255,255,255,0.4)",
+        color: "rgba(255,255,255,0.6)",
         fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: "hidden",
         textOverflow: "ellipsis",
@@ -320,7 +320,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
       <div style={{
         fontSize: 9,
         fontFamily: "monospace",
-        color: "rgba(255,255,255,0.4)",
+        color: "rgba(255,255,255,0.6)",
         letterSpacing: "0.5px",
       }}>
         {person.postCount} POSTS
@@ -366,7 +366,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         <div style={{ overflow: "hidden", height: 16, width: "100%" }}>
           <div style={{
             fontSize: 10,
-            color: "rgba(255,255,255,0.5)",
+            color: "rgba(255,255,255,0.6)",
             whiteSpace: "nowrap",
             fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             animation: "marquee 12s linear infinite",
@@ -547,7 +547,7 @@ function GathCard({
         >
           {gath.type}
         </span>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.55)" }}>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>
           {gath.memberCount} {gath.memberCount === 1 ? "member" : "members"}
         </span>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 10, color: "rgba(255,255,255,0.7)" }}>
@@ -748,7 +748,7 @@ export function PeoplePageContent() {
               fontSize: 11,
               fontFamily: "monospace",
               letterSpacing: "2px",
-              color: "rgba(255,255,255,0.25)",
+              color: "rgba(255,255,255,0.6)",
               textTransform: "uppercase",
             }}>
               Loading…
@@ -777,7 +777,7 @@ export function PeoplePageContent() {
                 fontSize: 11,
                 fontFamily: "monospace",
                 letterSpacing: "2px",
-                color: "rgba(255,255,255,0.25)",
+                color: "rgba(255,255,255,0.6)",
                 textTransform: "uppercase",
               }}>
                 No gaths yet — start one in the feed
@@ -805,7 +805,7 @@ export function PeoplePageContent() {
             fontSize: 11,
             fontFamily: "monospace",
             letterSpacing: "2px",
-            color: "rgba(255,255,255,0.25)",
+            color: "rgba(255,255,255,0.6)",
             textTransform: "uppercase",
           }}>
             Loading…
@@ -928,7 +928,7 @@ export function PeoplePageContent() {
                   </div>
                   <p style={{
                     fontSize: 13,
-                    color: "rgba(255,255,255,0.5)",
+                    color: "rgba(255,255,255,0.6)",
                     lineHeight: 1.7,
                     margin: 0,
                     maxWidth: 260,

@@ -99,7 +99,7 @@ export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile
             style={{
               background: "transparent",
               border: "none",
-              color: "#555",
+              color: "rgba(255,255,255,0.6)",
               fontSize: 20,
               cursor: "pointer",
               lineHeight: 1,
@@ -145,7 +145,7 @@ export default function HamburgerMenu({ isOpen, onClose, isCreator, isOwnProfile
                     borderRadius: 50,
                     background: "transparent",
                     border: "1px solid #333",
-                    color: "#555",
+                    color: "rgba(255,255,255,0.6)",
                     fontSize: 11,
                     fontFamily: "monospace",
                     letterSpacing: 1,
@@ -227,7 +227,7 @@ function MenuSection({ label, children }: { label: string; children: React.React
         fontSize: 9,
         fontFamily: "monospace",
         letterSpacing: 2,
-        color: "#333",
+        color: "rgba(255,255,255,0.6)",
         textTransform: "uppercase",
         padding: "0 20px 8px",
       }}>

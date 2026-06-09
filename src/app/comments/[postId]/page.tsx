@@ -121,7 +121,7 @@ export default function CommentsPage({ params }: { params: Promise<{ postId: str
         paddingBottom: "max(8px, env(safe-area-inset-bottom, 8px))",
       }}>
         {replyTo && (
-          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginBottom: 6, paddingLeft: 4 }}>
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginBottom: 6, paddingLeft: 4 }}>
             Replying to @{replyTo.userEmail}
             <span onClick={() => setReplyTo(null)} style={{ marginLeft: 8, cursor: "pointer" }}>✕</span>
           </div>

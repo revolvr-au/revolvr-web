@@ -20,27 +20,27 @@ export default function ProfileHeader({ name, totalVoltage, recentVoltage, postC
       <div style={{ display: "flex", justifyContent: "center", gap: 28, marginTop: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{Math.round(totalVoltage)}</div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>VOLTAGE</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", letterSpacing: 1 }}>VOLTAGE</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{postCount}</div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>POSTS</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", letterSpacing: 1 }}>POSTS</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
             <Bookmark size={14} strokeWidth={2.25} />
             {savedCount}
           </div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>SAVED</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", letterSpacing: 1 }}>SAVED</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ fontSize: 16, fontWeight: 700 }}>{momentumState}</div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontFamily: "monospace", letterSpacing: 1 }}>MOMENTUM</div>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", letterSpacing: 1 }}>MOMENTUM</div>
         </div>
       </div>
 
       {momentumState === "Rising" && (
-        <div style={{ marginTop: 6, fontSize: 10, color: "rgba(255,255,255,0.4)", fontFamily: "monospace" }}>
+        <div style={{ marginTop: 6, fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace" }}>
           gaining attention
         </div>
       )}

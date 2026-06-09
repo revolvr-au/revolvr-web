@@ -520,11 +520,11 @@ export default function BattlePage() {
             <div style={{ color: "#00e5ff", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(0,229,255,0.4)", marginBottom: 4 }}>
               {streamA?.displayName ?? "Creator A"}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 14, fontWeight: 800, marginBottom: 4 }}>VS</div>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, fontWeight: 800, marginBottom: 4 }}>VS</div>
             <div style={{ color: "#D4AF37", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(212,175,55,0.4)", marginBottom: 16 }}>
               {streamB?.displayName ?? "Challenger"}
             </div>
-            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.05em" }}>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.05em" }}>
               Send sparks to tip the balance ⚡
             </div>
           </div>
@@ -542,15 +542,15 @@ export default function BattlePage() {
           <div style={{ width: "100%", maxWidth: 320, marginTop: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 20px", animation: "winnerPop 0.5s ease-out 0.4s both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div style={{ textAlign: "center", flex: 1 }}>
-                <div style={{ color: winner === battle?.creatorEmailA ? "#D4AF37" : "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamA?.displayName ?? "A"}</div>
+                <div style={{ color: winner === battle?.creatorEmailA ? "#D4AF37" : "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamA?.displayName ?? "A"}</div>
                 <div style={{ color: winner === battle?.creatorEmailA ? "#D4AF37" : "#00e5ff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageA ?? 0}</div>
-                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
               </div>
               <div style={{ color: "rgba(255,255,255,0.12)", fontSize: 14, fontWeight: 800, padding: "0 12px" }}>VS</div>
               <div style={{ textAlign: "center", flex: 1 }}>
-                <div style={{ color: winner === battle?.creatorEmailB ? "#D4AF37" : "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamB?.displayName ?? "B"}</div>
+                <div style={{ color: winner === battle?.creatorEmailB ? "#D4AF37" : "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamB?.displayName ?? "B"}</div>
                 <div style={{ color: winner === battle?.creatorEmailB ? "#D4AF37" : "#00e5ff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageB ?? 0}</div>
-                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
               </div>
             </div>
             <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 16 }}>
@@ -559,17 +559,17 @@ export default function BattlePage() {
             <div style={{ display: "flex", justifyContent: "space-around" }}>
               <div style={{ textAlign: "center" }}>
                 <div style={{ color: "#D4AF37", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{(battle?.voltageA ?? 0) + (battle?.voltageB ?? 0)}</div>
-                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>TOTAL SPARKS</div>
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>TOTAL SPARKS</div>
               </div>
               <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
               <div style={{ textAlign: "center" }}>
                 <div style={{ color: "#fff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{battle?.durationSeconds ?? 90}s</div>
-                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>DURATION</div>
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>DURATION</div>
               </div>
               <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
               <div style={{ textAlign: "center" }}>
                 <div style={{ color: "#00e5ff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{Math.abs((battle?.voltageA ?? 0) - (battle?.voltageB ?? 0))}</div>
-                <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>MARGIN</div>
+                <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>MARGIN</div>
               </div>
             </div>
           </div>
@@ -653,10 +653,10 @@ export default function BattlePage() {
             {giftOpen && (
               <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-                  <button onClick={() => setGiftSide("A")} style={{ background: giftSide === "A" ? "rgba(0,229,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
+                  <button onClick={() => setGiftSide("A")} style={{ background: giftSide === "A" ? "rgba(0,229,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
                     {streamA?.displayName?.split(" ")[0] ?? "A"}
                   </button>
-                  <button onClick={() => setGiftSide("B")} style={{ background: giftSide === "B" ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.3)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
+                  <button onClick={() => setGiftSide("B")} style={{ background: giftSide === "B" ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
                     {streamB?.displayName?.split(" ")[0] ?? "B"}
                   </button>
                 </div>
@@ -706,7 +706,7 @@ export default function BattlePage() {
               <span style={{ fontSize: 11, color: "#D4AF37" }}>{b.price}</span>
             </button>
           ))}
-          <button onClick={() => setTopUpOpen(false)} style={{ color: "rgba(255,255,255,0.3)", fontSize: 10, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 4 }}>Cancel</button>
+          <button onClick={() => setTopUpOpen(false)} style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 4 }}>Cancel</button>
         </div>
       )}
 

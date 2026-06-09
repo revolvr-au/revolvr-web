@@ -202,7 +202,7 @@ function SparkCard({
                   alignItems: "center",
                   justifyContent: "center",
                   fontSize: 12,
-                  color: "#555",
+                  color: "rgba(255,255,255,0.6)",
                 }}>
                   {post.handle[0]?.toUpperCase()}
                 </div>
@@ -318,7 +318,7 @@ function FullScreenCard({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#555",
+                color: "rgba(255,255,255,0.6)",
                 fontSize: 16,
               }}>
                 {post.handle[0]?.toUpperCase()}
@@ -592,7 +592,7 @@ export function SparkContent() {
               </button>
             )}
           </div>
-          <p style={{ fontSize: 13, color: "#555", margin: "0 0 20px", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", margin: "0 0 20px", lineHeight: 1.6 }}>
             High-voltage posts. Sorted by energy.
           </p>
 
@@ -654,7 +654,7 @@ export function SparkContent() {
         {/* Loading */}
         {loadingPosts && (
           <div style={{ padding: "48px 20px", textAlign: "center" }}>
-            <span style={{ fontSize: 11, color: "#333", fontFamily: "monospace", letterSpacing: 2 }}>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", letterSpacing: 2 }}>
               LOADING SPARK…
             </span>
           </div>
@@ -664,7 +664,7 @@ export function SparkContent() {
         {!loadingPosts && posts.length === 0 && (
           <div style={{ padding: "60px 20px", textAlign: "center" }}>
             <div style={{ fontSize: 28, marginBottom: 12 }}>⚡</div>
-            <p style={{ fontSize: 11, color: "#333", fontFamily: "monospace", letterSpacing: 1.5 }}>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", fontFamily: "monospace", letterSpacing: 1.5 }}>
               NO HIGH-VOLTAGE POSTS YET
             </p>
           </div>

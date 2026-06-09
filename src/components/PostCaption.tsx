@@ -81,7 +81,7 @@ export default function PostCaption({ username, caption, avatarUrl, postId, late
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {latestComment.body.length > 40 ? latestComment.body.slice(0, 40) + "…" : latestComment.body}
             </span>
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", flexShrink: 0 }}>
               — @{latestComment.userEmail.split("@")[0]}
             </span>
           </div>

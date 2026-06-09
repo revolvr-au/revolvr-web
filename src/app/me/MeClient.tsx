@@ -42,7 +42,7 @@ const fieldLabel: React.CSSProperties = {
   fontSize: 11,
   fontFamily: "monospace",
   letterSpacing: "0.08em",
-  color: "rgba(255,255,255,0.45)",
+  color: "rgba(255,255,255,0.6)",
   marginBottom: 6,
 };
 
@@ -252,7 +252,7 @@ export default function MeClient() {
       }}>
         <button
           onClick={() => router.push("/public-feed")}
-          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.55)", cursor: "pointer", fontSize: 22, padding: "0 12px 0 0", lineHeight: 1, flexShrink: 0 }}
+          style={{ background: "none", border: "none", color: "rgba(255,255,255,0.6)", cursor: "pointer", fontSize: 22, padding: "0 12px 0 0", lineHeight: 1, flexShrink: 0 }}
           aria-label="Back"
         >
           ←
@@ -338,7 +338,7 @@ export default function MeClient() {
                       +
                     </div>
                   </div>
-                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em" }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.6)", letterSpacing: "0.1em" }}>
                     PROFILE
                   </span>
                 </div>
@@ -430,7 +430,7 @@ export default function MeClient() {
                   <span style={{
                     position: "absolute", left: 14, top: "50%",
                     transform: "translateY(-50%)",
-                    color: "rgba(255,255,255,0.3)", fontSize: 14,
+                    color: "rgba(255,255,255,0.6)", fontSize: 14,
                     pointerEvents: "none",
                   }}>
                     @
@@ -526,7 +526,7 @@ export default function MeClient() {
                 </div>
               ) : (
                 <>
-                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", margin: "0 0 14px", lineHeight: 1.7 }}>
+                  <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", margin: "0 0 14px", lineHeight: 1.7 }}>
                     Get a Ring to unlock creator tools, monetisation, and exclusive features.
                   </p>
                   <button
@@ -589,7 +589,7 @@ export default function MeClient() {
                     </span>
                   </div>
                   {(balance?.totalEarnedCents ?? 0) > 0 && (
-                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginBottom: 4 }}>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>
                       Total earned:{" "}
                       <span style={{ color: "white", fontWeight: 600 }}>
                         {formatCents(balance.totalEarnedCents)}
@@ -598,7 +598,7 @@ export default function MeClient() {
                   )}
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: "0 0 14px", lineHeight: 1.7 }}>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", margin: "0 0 14px", lineHeight: 1.7 }}>
                   Connect Stripe to receive gifts and tips from your viewers.
                 </p>
               )}
@@ -631,7 +631,7 @@ export default function MeClient() {
                     borderRadius: 10,
                     background: "rgba(255,255,255,0.03)",
                     border: "1px solid rgba(255,255,255,0.08)",
-                    color: "rgba(255,255,255,0.55)",
+                    color: "rgba(255,255,255,0.6)",
                     fontSize: 11,
                     fontFamily: "monospace",
                     letterSpacing: "0.1em",
@@ -670,7 +670,7 @@ export default function MeClient() {
                 border: "1px solid rgba(255,255,255,0.06)",
                 marginBottom: 14,
               }}>
-                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 4 }}>
                   Safety &amp; preferences
                 </div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.28)", lineHeight: 1.6 }}>

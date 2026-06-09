@@ -224,7 +224,7 @@ export default function StudioPage() {
               <button
                 type="button"
                 onClick={() => { setLoginStep("email"); setCodeInput(""); setLoginError(null); }}
-                style={{ background: "transparent", color: "rgba(255,255,255,0.3)", border: "none", fontSize: 12, cursor: "pointer", padding: "4px 0" }}
+                style={{ background: "transparent", color: "rgba(255,255,255,0.6)", border: "none", fontSize: 12, cursor: "pointer", padding: "4px 0" }}
               >
                 ← Use a different email
               </button>
@@ -243,7 +243,7 @@ export default function StudioPage() {
               </p>
               <button
                 onClick={() => { setLoginStep("email"); setCodeInput(""); setEmailInput(""); setLoginError(null); }}
-                style={{ background: "transparent", color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, fontSize: 13, padding: "10px 20px", cursor: "pointer" }}
+                style={{ background: "transparent", color: "rgba(255,255,255,0.6)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, fontSize: 13, padding: "10px 20px", cursor: "pointer" }}
               >
                 Try again
               </button>

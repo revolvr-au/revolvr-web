@@ -158,7 +158,7 @@ function RingsPageInner() {
           style={{
             background: "transparent",
             border: "none",
-            color: "rgba(255,255,255,0.5)",
+            color: "rgba(255,255,255,0.6)",
             fontSize: 20,
             cursor: "pointer",
             lineHeight: 1,
@@ -187,7 +187,7 @@ function RingsPageInner() {
             background: banner.type === "success" ? "rgba(16,185,129,0.1)" : "rgba(255,255,255,0.05)",
             border: `1px solid ${banner.type === "success" ? "rgba(16,185,129,0.3)" : "rgba(255,255,255,0.1)"}`,
             fontSize: 13,
-            color: banner.type === "success" ? "#10B981" : "rgba(255,255,255,0.5)",
+            color: banner.type === "success" ? "#10B981" : "rgba(255,255,255,0.6)",
             display: "flex",
             alignItems: "center",
             gap: 8,
@@ -240,7 +240,7 @@ function RingsPageInner() {
                 flexShrink: 0,
               }} />
             )}
-            <span style={{ color: "rgba(255,255,255,0.4)", letterSpacing: "1px", textTransform: "uppercase" }}>
+            <span style={{ color: "rgba(255,255,255,0.6)", letterSpacing: "1px", textTransform: "uppercase" }}>
               Current plan:
             </span>
             <span style={{ color: ringTier !== "NONE" ? (RING_COLORS[ringTier] ?? "white") : "rgba(255,255,255,0.6)" }}>
@@ -332,7 +332,7 @@ function RingsPageInner() {
                       <span style={{
                         fontFamily: "'Bebas Neue', sans-serif",
                         fontSize: 22,
-                        color: t.tier === "NONE" ? "rgba(255,255,255,0.4)" : "white",
+                        color: t.tier === "NONE" ? "rgba(255,255,255,0.6)" : "white",
                         letterSpacing: 0.5,
                       }}>
                         {t.price}
