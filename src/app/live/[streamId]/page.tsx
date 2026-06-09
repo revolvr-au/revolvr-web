@@ -572,7 +572,7 @@ if (document.activeElement instanceof HTMLElement) {
 
       {/* REVOLVR watermark — subtle top center */}
       <div style={{ position: "absolute", top: 18, left: "50%", transform: "translateX(-50%)", zIndex: 5, pointerEvents: "none" }}>
-        <span style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "4px", color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>REVOLVR</span>
+        <span style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "4px", color: "rgba(255,255,255,0.12)", fontWeight: 600 }}>REVOLVR</span>
       </div>
 
       {/* Eclipse overlay */}
