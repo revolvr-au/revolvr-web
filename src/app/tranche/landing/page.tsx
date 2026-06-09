@@ -15,17 +15,16 @@ export default function TrancheLandingPage() {
         justifyContent: "center",
         padding:
           "calc(env(safe-area-inset-top, 0px) + 24px) 20px calc(env(safe-area-inset-bottom, 0px) + 20px)",
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Bebas+Neue&display=swap');
       `}</style>
 
       <div style={{ maxWidth: 460, width: "100%", textAlign: "center" }}>
         <h1
           style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
             fontSize: "clamp(72px, 18vw, 128px)",
             letterSpacing: "0.06em",
             color: "#0A0A0A",
@@ -85,7 +84,7 @@ export default function TrancheLandingPage() {
               textDecoration: "none",
               borderRadius: 8,
               padding: "14px 18px",
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: "0.2em",
@@ -103,7 +102,7 @@ export default function TrancheLandingPage() {
               textDecoration: "none",
               borderRadius: 8,
               padding: "14px 18px",
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: "0.2em",

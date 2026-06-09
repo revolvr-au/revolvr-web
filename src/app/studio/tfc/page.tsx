@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 
-const CYAN = "#00e5ff";
+const CYAN = "#ffffff";
 const BG = "#050814";
 
 const card: CSSProperties = {
@@ -15,7 +15,7 @@ const card: CSSProperties = {
 };
 
 const sectionTitle: CSSProperties = {
-  fontFamily: '"Bebas Neue", cursive',
+  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
   fontSize: 22,
   letterSpacing: "0.06em",
   color: CYAN,
@@ -57,9 +57,9 @@ function btnStyle(variant: "cyan" | "danger" | "ghost"): CSSProperties {
     };
   return {
     ...base,
-    background: "rgba(0,229,255,0.15)",
+    background: "rgba(255,255,255,0.15)",
     color: CYAN,
-    border: `1px solid rgba(0,229,255,0.3)`,
+    border: `1px solid rgba(255,255,255,0.3)`,
   };
 }
 
@@ -69,9 +69,9 @@ const chip: CSSProperties = {
   borderRadius: 999,
   fontSize: 10,
   letterSpacing: "0.06em",
-  background: "rgba(0,229,255,0.08)",
+  background: "rgba(255,255,255,0.08)",
   color: "rgba(255,255,255,0.7)",
-  border: "1px solid rgba(0,229,255,0.18)",
+  border: "1px solid rgba(255,255,255,0.18)",
   marginRight: 6,
   marginBottom: 4,
   fontFamily: "monospace",
@@ -200,7 +200,6 @@ export default function StudioTfcPage() {
         margin: "0 auto",
       }}
     >
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');`}</style>
 
       {/* Header */}
       <div
@@ -209,14 +208,14 @@ export default function StudioTfcPage() {
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 36,
-          borderBottom: "1px solid rgba(0,229,255,0.15)",
+          borderBottom: "1px solid rgba(255,255,255,0.15)",
           paddingBottom: 20,
         }}
       >
         <div>
           <div
             style={{
-              fontFamily: '"Bebas Neue", cursive',
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
               fontSize: 42,
               letterSpacing: "0.1em",
               color: "#ffffff",
@@ -275,7 +274,7 @@ export default function StudioTfcPage() {
                         borderRadius: "50%",
                         objectFit: "cover",
                         flexShrink: 0,
-                        border: "1px solid rgba(0,229,255,0.25)",
+                        border: "1px solid rgba(255,255,255,0.25)",
                       }}
                     />
                   ) : (
@@ -284,12 +283,12 @@ export default function StudioTfcPage() {
                         width: 44,
                         height: 44,
                         borderRadius: "50%",
-                        background: "rgba(0,229,255,0.12)",
-                        border: "1px solid rgba(0,229,255,0.3)",
+                        background: "rgba(255,255,255,0.12)",
+                        border: "1px solid rgba(255,255,255,0.3)",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontFamily: '"Bebas Neue", cursive',
+                        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                         fontSize: 20,
                         color: CYAN,
                         flexShrink: 0,

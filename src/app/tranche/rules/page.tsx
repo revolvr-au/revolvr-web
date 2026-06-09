@@ -11,11 +11,10 @@ export default function TrancheRulesPage() {
         color: "#0A0A0A",
         padding:
           "calc(env(safe-area-inset-top, 0px) + 28px) 22px calc(env(safe-area-inset-bottom, 0px) + 28px)",
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Bebas+Neue&family=Space+Grotesk:wght@500;600;700&display=swap');
       `}</style>
 
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
@@ -35,7 +34,7 @@ export default function TrancheRulesPage() {
 
         <h1
           style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
             fontSize: "clamp(48px, 10vw, 84px)",
             letterSpacing: "0.04em",
             margin: 0,
@@ -219,7 +218,7 @@ function Section({
     <section style={{ marginTop: 30 }}>
       <h2
         style={{
-          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 13,
           letterSpacing: "0.18em",
           margin: "0 0 10px",
@@ -259,7 +258,7 @@ function Level({
       <div
         style={{
           display: "inline-block",
-          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 11,
           letterSpacing: "0.22em",
           fontWeight: 700,
@@ -274,7 +273,7 @@ function Level({
       </div>
       <h2
         style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 22,
           fontWeight: 700,
           margin: "0 0 8px",

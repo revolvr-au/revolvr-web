@@ -63,11 +63,10 @@ export default function DeleteAccountPage() {
       padding: "24px 20px 60px",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         .delete-email-input::placeholder { color: rgba(255,255,255,0.6); }
         .delete-email-input:focus {
           outline: none;
-          border-color: #00e5ff !important;
+          border-color: #ffffff !important;
         }
         .delete-btn-active:hover {
           background: rgba(255,59,48,0.08) !important;
@@ -94,7 +93,7 @@ export default function DeleteAccountPage() {
 
       {/* Title */}
       <h1 style={{
-        fontFamily: "'Bebas Neue', sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
         fontSize: 52,
         letterSpacing: 2,
         color: "#ff3b30",
@@ -140,7 +139,7 @@ export default function DeleteAccountPage() {
           padding: "13px 16px",
           borderRadius: 50,
           background: "#0f0d0a",
-          border: `1px solid ${focusEmail ? "#00e5ff" : "#1e1a14"}`,
+          border: `1px solid ${focusEmail ? "#ffffff" : "#1e1a14"}`,
           color: "white",
           fontSize: 13,
           fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
@@ -167,7 +166,7 @@ export default function DeleteAccountPage() {
           border: `1px solid ${emailMatches ? "#ff3b30" : "#333"}`,
           color: emailMatches ? "white" : "rgba(255,255,255,0.6)",
           fontSize: 18,
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           letterSpacing: 2,
           textTransform: "uppercase",
           cursor: emailMatches && !loading ? "pointer" : "not-allowed",

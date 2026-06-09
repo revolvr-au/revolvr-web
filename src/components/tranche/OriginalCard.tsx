@@ -12,8 +12,8 @@ const STATEMENT_INK = "#1E1C19";
 const MUTE = "rgba(15,17,21,0.35)";
 const MUTE_SOFT = "rgba(15,17,21,0.5)";
 const LIVE_RED = "#C92B2B";
-const AMBER_VOLT = "#C07800";
-const GOLD_DOT = "#E8A000";
+const AMBER_VOLT = "#ffffff";
+const GOLD_DOT = "#ffffff";
 const DOT_EMPTY = "rgba(15,17,21,0.1)";
 
 // Voltage at which the leading comment breaks out into its own TRANCHE moment.
@@ -234,7 +234,7 @@ export default function OriginalCard({
         borderLeft: `4px solid ${SLATE}`,
         borderRadius: 12,
         padding: "12px 14px",
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       {/* TOP BAR */}
@@ -248,7 +248,7 @@ export default function OriginalCard({
       >
         <span
           style={{
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 9,
             fontWeight: 600,
             letterSpacing: "0.18em",
@@ -346,7 +346,7 @@ export default function OriginalCard({
           />
           <span
             style={{
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 9,
               fontWeight: 700,
               letterSpacing: "0.12em",
@@ -406,7 +406,7 @@ export default function OriginalCard({
             >
               <span
                 style={{
-                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                   fontSize: 10,
                   fontWeight: 600,
                   color: AMBER_VOLT,
@@ -476,7 +476,7 @@ export default function OriginalCard({
           </div>
           <span
             style={{
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 9,
               color: MUTE,
             }}
@@ -498,7 +498,7 @@ export default function OriginalCard({
             display: "inline-flex",
             alignItems: "center",
             gap: 4,
-            background: "rgba(232,160,0,0.12)",
+            background: "rgba(255,255,255,0.12)",
             border: "none",
             borderRadius: 8,
             padding: "6px 9px",
@@ -528,7 +528,7 @@ export default function OriginalCard({
           <CommentIcon color={MUTE_SOFT} />
           <span
             style={{
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 10,
               fontWeight: 600,
             }}
@@ -566,7 +566,7 @@ export default function OriginalCard({
             border: "none",
             borderRadius: 8,
             padding: "7px 11px",
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 9,
             fontWeight: 700,
             letterSpacing: "0.14em",
@@ -587,7 +587,7 @@ export default function OriginalCard({
             transform: "translateX(-50%)",
             background: "#0F1115",
             color: "#fff",
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 11,
             letterSpacing: "0.06em",
             padding: "7px 12px",

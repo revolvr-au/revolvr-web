@@ -228,9 +228,9 @@ await clientRef.current.startBroadcast(data.streamKey);
         <div style={{ fontFamily: "monospace", fontSize: 13, letterSpacing: "4px", color: "rgba(255,255,255,0.8)", fontWeight: 600 }}>REVOLVR</div>
         <button onClick={toggleMute} style={{
           width: 40, height: 40, borderRadius: "50%",
-          background: muted ? "rgba(0,229,255,0.2)" : "rgba(0,0,0,0.5)",
-          border: `1px solid ${muted ? "rgba(0,229,255,0.5)" : "rgba(255,255,255,0.15)"}`,
-          color: muted ? "#00e5ff" : "#fff", fontSize: 16, cursor: "pointer",
+          background: muted ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.5)",
+          border: `1px solid ${muted ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.15)"}`,
+          color: muted ? "#ffffff" : "#fff", fontSize: 16, cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>{muted ? "🔇" : "🎙️"}</button>
       </div>
@@ -249,7 +249,7 @@ await clientRef.current.startBroadcast(data.streamKey);
           display: "flex", alignItems: "center", justifyContent: "center",
           background: "rgba(0,0,0,0.3)",
         }}>
-          <div style={{ fontSize: 120, fontWeight: 800, color: "#fff", fontFamily: "monospace", textShadow: "0 0 40px rgba(0,229,255,0.8)" }}>{countdown}</div>
+          <div style={{ fontSize: 120, fontWeight: 800, color: "#fff", fontFamily: "monospace", textShadow: "0 0 40px rgba(255,255,255,0.8)" }}>{countdown}</div>
         </div>
       )}
 
@@ -286,7 +286,7 @@ await clientRef.current.startBroadcast(data.streamKey);
           }}>
             <div style={{
               width: 6, height: 6, borderRadius: "50%",
-              background: "#00e5ff", boxShadow: "0 0 8px #00e5ff",
+              background: "#ffffff", boxShadow: "0 0 8px #ffffff",
               animation: "livePulse 2s ease-in-out infinite",
             }} />
             Camera ready

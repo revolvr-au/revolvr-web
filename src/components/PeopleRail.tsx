@@ -50,7 +50,7 @@ export default function PeopleRail() {
               background: person.avatarUrl
                 ? `url(${person.avatarUrl}) center/cover`
                 : "linear-gradient(135deg, #1a1a2e, #16213e)",
-              border: "2px solid #00e5ff",
+              border: "2px solid #ffffff",
             }} />
             {person.isLive && (
               <div style={{

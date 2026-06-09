@@ -92,7 +92,7 @@ export default function InboxList({
                   height: 20,
                   padding: "0 6px",
                   borderRadius: 10,
-                  background: "#F5C518",
+                  background: "#ffffff",
                   color: "#0A0A0A",
                   fontSize: 11,
                   fontWeight: 700,

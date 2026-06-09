@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { X, Zap } from "lucide-react";
+import { X } from "lucide-react";
 import SlideUpSheet from "@/components/SlideUpSheet";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
@@ -23,7 +23,7 @@ type MyGath = {
   role: "IGNITER" | "HOST" | "MEMBER";
 };
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 
 function SparkGoldIcon({ size = 12 }: { size?: number }) {
   return (
@@ -42,7 +42,6 @@ export default function ControlPanel({
 }: ControlPanelProps) {
   const router = useRouter();
   const [logoutPending, setLogoutPending] = useState(false);
-  const [sparkBalance, setSparkBalance] = useState<number | null>(null);
   const [myGaths, setMyGaths] = useState<MyGath[] | null>(null);
   const [canApplyTfc, setCanApplyTfc] = useState(false);
 
@@ -60,23 +59,6 @@ export default function ControlPanel({
       })
       .catch(() => {
         if (!cancelled) setCanApplyTfc(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [userId]);
-
-  useEffect(() => {
-    if (!userId) return;
-    let cancelled = false;
-    fetch(`/api/credits?email=${encodeURIComponent(userId)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled) return;
-        setSparkBalance(typeof data?.sparks === "number" ? data.sparks : 0);
-      })
-      .catch(() => {
-        if (!cancelled) setSparkBalance(0);
       });
     return () => {
       cancelled = true;
@@ -139,7 +121,7 @@ export default function ControlPanel({
           gap: 16,
           height: "75dvh",
           overflow: "hidden",
-          boxShadow: "0 0 60px rgba(0,229,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
+          boxShadow: "0 0 60px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
           fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           position: "relative",
         }}
@@ -193,7 +175,7 @@ export default function ControlPanel({
 
         <div style={{
           height: 1,
-          background: "linear-gradient(90deg, #00e5ff, transparent)",
+          background: "linear-gradient(90deg, #ffffff, transparent)",
           marginBottom: 4,
           opacity: 0.3,
           position: "relative",
@@ -225,7 +207,7 @@ export default function ControlPanel({
                 width: 50,
                 height: 50,
                 borderRadius: "50%",
-                border: "1.5px solid rgba(0, 229, 255, 0.4)",
+                border: "1.5px solid rgba(255, 255, 255, 0.4)",
                 background: "linear-gradient(135deg, #1a2030, #0a0e18)",
                 flexShrink: 0,
               }}
@@ -234,51 +216,8 @@ export default function ControlPanel({
               <span style={{ color: "#fff", fontSize: 16, fontWeight: 700, fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", letterSpacing: "0.02em" }}>
                 {handle ? `@${handle}` : "View Profile"}
               </span>
-              <span style={{ color: "rgba(0, 229, 255, 0.8)", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.05em" }}>
+              <span style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.05em" }}>
                 {userId}
-              </span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => navigate("/spark/buy")}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              padding: "14px 20px",
-              background: "rgba(245, 197, 24, 0.06)",
-              border: "none",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
-              width: "100%",
-              textAlign: "left",
-              cursor: "pointer",
-              transition: "background 0.2s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(245, 197, 24, 0.12)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(245, 197, 24, 0.06)")}
-          >
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                border: "1px solid rgba(245, 197, 24, 0.4)",
-                background: "rgba(245, 197, 24, 0.08)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <Zap size={16} color="#F5C518" fill="#F5C518" />
-            </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, flex: 1 }}>
-              <span style={{ color: "#F5C518", fontSize: 18, fontWeight: 700, fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", letterSpacing: "0.02em" }}>
-                {sparkBalance === null ? "—" : sparkBalance.toLocaleString()}
-              </span>
-              <span style={{ color: "rgba(245, 197, 24, 0.7)", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em", textTransform: "uppercase" }}>
-                Sparks
               </span>
             </div>
           </button>
@@ -347,8 +286,8 @@ export default function ControlPanel({
                         width: 28,
                         height: 28,
                         borderRadius: "50%",
-                        background: "rgba(245,197,24,0.08)",
-                        border: `1px solid rgba(245,197,24,0.4)`,
+                        background: "rgba(255,255,255,0.08)",
+                        border: `1px solid rgba(255,255,255,0.4)`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -406,7 +345,7 @@ export default function ControlPanel({
                           padding: "2px 6px",
                           border: `1px solid ${GOLD}`,
                           borderRadius: 999,
-                          background: "rgba(245,197,24,0.06)",
+                          background: "rgba(255,255,255,0.06)",
                           fontFamily: "monospace",
                           fontSize: 8,
                           fontWeight: 700,
@@ -615,8 +554,8 @@ function MenuItem({
           fontSize: 8,
           fontFamily: "monospace",
           letterSpacing: 1,
-          color: "#00e5ff",
-          border: "1px solid rgba(0,229,255,0.3)",
+          color: "#ffffff",
+          border: "1px solid rgba(255,255,255,0.3)",
           borderRadius: 4,
           padding: "1px 5px",
           textTransform: "uppercase",

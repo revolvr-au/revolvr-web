@@ -33,7 +33,7 @@ type LinkState = "LINK" | "WATCHING" | "CONSIDERING" | "LINKED";
 
 const LINK_STATES: LinkState[] = ["LINK", "WATCHING", "CONSIDERING", "LINKED"];
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 
 const ORBIT_RADIUS = 115;
 const ROTATION_DEG_PER_SEC = 8;
@@ -116,7 +116,7 @@ function CloseIcon({ size = 14 }: { size?: number }) {
 
 function PostSlotIcon({ type }: { type: PeopleCardPost["type"] }) {
   if (type === "video") return <PlayIcon size={16} />;
-  if (type === "tranche") return <SparkIcon size={14} color="rgba(245,197,24,0.85)" />;
+  if (type === "tranche") return <SparkIcon size={14} color="rgba(255,255,255,0.85)" />;
   if (type === "timed") return <ClockIcon size={14} />;
   return <SquareIcon size={14} />;
 }
@@ -183,8 +183,8 @@ function VoltageFlow({ from, to }: { from: number; to: number }) {
         marginTop: 6,
         padding: "3px 10px",
         borderRadius: 999,
-        border: `1px solid rgba(245,197,24,0.25)`,
-        background: "rgba(245,197,24,0.06)",
+        border: `1px solid rgba(255,255,255,0.25)`,
+        background: "rgba(255,255,255,0.06)",
       }}
     >
       <SparkIcon size={10} color={GOLD} />
@@ -193,7 +193,7 @@ function VoltageFlow({ from, to }: { from: number; to: number }) {
           fontFamily: "monospace",
           fontSize: 8,
           letterSpacing: "0.18em",
-          color: "rgba(245,197,24,0.85)",
+          color: "rgba(255,255,255,0.85)",
         }}
       >
         LINK VOLTAGE
@@ -275,7 +275,7 @@ export default function PeopleCard({
   );
 
   const avatarBorder = isLinked
-    ? "rgba(245,197,24,0.4)"
+    ? "rgba(255,255,255,0.4)"
     : "rgba(255,255,255,0.08)";
 
   const linkStyles = useMemo(() => {
@@ -285,7 +285,7 @@ export default function PeopleCard({
           background: GOLD,
           color: "#0a0e16",
           border: `1px solid ${GOLD}`,
-          boxShadow: "0 4px 20px rgba(245,197,24,0.28)",
+          boxShadow: "0 4px 20px rgba(255,255,255,0.28)",
           avatarBorder: GOLD,
         };
       case "WATCHING":
@@ -475,7 +475,7 @@ export default function PeopleCard({
               y1={spoke.from.y}
               x2={spoke.to.x}
               y2={spoke.to.y}
-              stroke="rgba(245,197,24,0.9)"
+              stroke="rgba(255,255,255,0.9)"
               strokeWidth="1.8"
               strokeDasharray="4 4"
               strokeLinecap="round"
@@ -483,7 +483,7 @@ export default function PeopleCard({
                 animation: "peopleCardDashMove 0.9s linear infinite",
               }}
             />
-            <circle r="3" fill="#F5C518" opacity="0.8">
+            <circle r="3" fill="#ffffff" opacity="0.8">
               <animateMotion dur="0.8s" repeatCount="indefinite">
                 <mpath href="#peopleCardSpokePath" />
               </animateMotion>
@@ -510,7 +510,7 @@ export default function PeopleCard({
               left: `calc(50% - ${ORBIT_RADIUS}px)`,
               top: `calc(50% - ${ORBIT_RADIUS}px)`,
               borderRadius: "50%",
-              border: "1px solid rgba(245,197,24,0.12)",
+              border: "1px solid rgba(255,255,255,0.12)",
               pointerEvents: "none",
             }}
           />
@@ -523,7 +523,7 @@ export default function PeopleCard({
               left: `calc(50% - ${ORBIT_RADIUS - 2}px)`,
               top: `calc(50% - ${ORBIT_RADIUS - 2}px)`,
               borderRadius: "50%",
-              border: "1px solid rgba(245,197,24,0.05)",
+              border: "1px solid rgba(255,255,255,0.05)",
               pointerEvents: "none",
             }}
           />
@@ -539,7 +539,7 @@ export default function PeopleCard({
               top: "calc(50% - 70px)",
               borderRadius: "50%",
               background:
-                "radial-gradient(circle, rgba(245,197,24,0.12) 0%, rgba(245,197,24,0.04) 50%, transparent 70%)",
+                "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, transparent 70%)",
               pointerEvents: "none",
               animation: "avatarPulse 3s ease-in-out infinite",
             }}
@@ -595,12 +595,12 @@ export default function PeopleCard({
                 gap: 4,
                 padding: "3px 8px",
                 borderRadius: 999,
-                background: "linear-gradient(135deg, #f5c518 0%, #d9a700 100%)",
+                background: "linear-gradient(135deg, #ffffff 0%, #d9a700 100%)",
                 color: "#0a0e16",
                 fontSize: 9,
                 fontWeight: 800,
                 letterSpacing: "0.05em",
-                boxShadow: "0 4px 10px rgba(245,197,24,0.32)",
+                boxShadow: "0 4px 10px rgba(255,255,255,0.32)",
               }}
             >
               <SparkIcon size={9} color="#0a0e16" />
@@ -693,12 +693,12 @@ export default function PeopleCard({
                     borderRadius: 10,
                     background: SLOT_TINTS[i % 6],
                     border: isActive
-                      ? `1.5px solid rgba(245,197,24,0.9)`
+                      ? `1.5px solid rgba(255,255,255,0.9)`
                       : isTimed
-                      ? `1px solid rgba(245,197,24,0.55)`
+                      ? `1px solid rgba(255,255,255,0.55)`
                       : "1px solid rgba(255,255,255,0.06)",
                     boxShadow: isActive
-                      ? "0 0 20px rgba(245,197,24,0.4), 0 0 40px rgba(245,197,24,0.15)"
+                      ? "0 0 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.15)"
                       : "none",
                     display: "flex",
                     alignItems: "center",
@@ -948,8 +948,8 @@ export default function PeopleCard({
             100% { transform: scale(1); }
           }
           @keyframes peopleCardTimedGlow {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(245,197,24,0.0); border-color: rgba(245,197,24,0.55); }
-            50% { box-shadow: 0 0 14px 1px rgba(245,197,24,0.22); border-color: rgba(245,197,24,0.85); }
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); border-color: rgba(255,255,255,0.55); }
+            50% { box-shadow: 0 0 14px 1px rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.85); }
           }
           @keyframes peopleCardDashMove {
             0% { stroke-dashoffset: 0; }

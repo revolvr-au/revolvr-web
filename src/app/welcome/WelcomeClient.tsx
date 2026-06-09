@@ -121,10 +121,10 @@ export default function WelcomeClient() {
     marginTop: 12,
     width: "100%",
     background: "transparent",
-    border: "1px solid #00e5ff",
-    color: "#00e5ff",
+    border: "1px solid #ffffff",
+    color: "#ffffff",
     borderRadius: 50,
-    fontFamily: "'Bebas Neue', sans-serif",
+    fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
     fontSize: 16,
     letterSpacing: 2,
     padding: "14px",
@@ -146,8 +146,7 @@ export default function WelcomeClient() {
   return (
     <div style={{ position: "relative", minHeight: "100dvh", overflow: "hidden", background: "#060606" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        .rvlr-input:focus { border-color: #00e5ff !important; }
+        .rvlr-input:focus { border-color: #ffffff !important; }
         @keyframes arcSpin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
@@ -191,7 +190,7 @@ export default function WelcomeClient() {
         top: 28,
         left: "50%",
         transform: "translateX(-50%)",
-        fontFamily: "'Bebas Neue', sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
         fontSize: 28,
         letterSpacing: 10,
         color: "white",
@@ -212,8 +211,8 @@ export default function WelcomeClient() {
               inset: -4,
               borderRadius: "50%",
               border: "2px solid transparent",
-              borderTopColor: "#00e5ff",
-              borderRightColor: "#00e5ff",
+              borderTopColor: "#ffffff",
+              borderRightColor: "#ffffff",
               animation: "arcSpin 3s linear infinite",
             }} />
             <img
@@ -230,7 +229,7 @@ export default function WelcomeClient() {
               src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150"
               alt=""
               aria-hidden="true"
-              style={{ width: 76, height: 76, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #00e5ff" }}
+              style={{ width: 76, height: 76, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #ffffff" }}
             />
           </div>
 
@@ -267,8 +266,8 @@ export default function WelcomeClient() {
               inset: -4,
               borderRadius: "50%",
               border: "2px solid transparent",
-              borderTopColor: "#00e5ff",
-              borderRightColor: "#00e5ff",
+              borderTopColor: "#ffffff",
+              borderRightColor: "#ffffff",
               animation: "arcSpin 3s linear infinite",
             }} />
             <img
@@ -282,7 +281,7 @@ export default function WelcomeClient() {
         </div>
 
         {/* Headline */}
-        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 44, color: "white", lineHeight: 1.05, margin: "12px 0 0", letterSpacing: 1 }}>
+        <h1 style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 44, color: "white", lineHeight: 1.05, margin: "12px 0 0", letterSpacing: 1 }}>
           THE STAGE IS YOURS.
         </h1>
 
@@ -313,7 +312,7 @@ export default function WelcomeClient() {
               </button>
 
               {status === "sent" && (
-                <p style={{ marginTop: 12, fontFamily: "monospace", fontSize: 13, color: "#00e5ff" }}>
+                <p style={{ marginTop: 12, fontFamily: "monospace", fontSize: 13, color: "#ffffff" }}>
                   Check your inbox — we&apos;ve sent you a code.
                 </p>
               )}

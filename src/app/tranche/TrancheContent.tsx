@@ -9,7 +9,7 @@ import OriginalCard, { OriginalItem } from "@/components/tranche/OriginalCard";
 import OriginalComposer from "@/components/tranche/OriginalComposer";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 const SLATE = "#2C3E50";
 const PAGE_SIZE = 20;
 
@@ -154,7 +154,6 @@ export function TrancheContent() {
   return (
     <FeedLayout background={isOriginals ? "#F7F7F7" : undefined}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Bebas+Neue&display=swap');
       `}</style>
       <button
         type="button"
@@ -169,7 +168,7 @@ export function TrancheContent() {
           border: "none",
           padding: "4px 6px",
           color: "#0A0A0A",
-          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 24,
           fontWeight: 700,
           letterSpacing: "0.04em",
@@ -228,7 +227,7 @@ export function TrancheContent() {
       >
         <h1
           style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
             fontSize: 56,
             letterSpacing: 3,
             color: "#0a0a0a",
@@ -240,7 +239,7 @@ export function TrancheContent() {
         </h1>
         <p
           style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 13,
             color: "rgba(0,0,0,0.55)",
             margin: "0 0 22px",
@@ -285,7 +284,7 @@ export function TrancheContent() {
                   padding: "10px 0",
                   borderBottom: active ? `2px solid ${GOLD}` : "2px solid transparent",
                   color: active ? "#0a0a0a" : "rgba(0,0,0,0.45)",
-                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                   fontSize: 11,
                   letterSpacing: "0.18em",
                   fontWeight: 700,
@@ -372,7 +371,7 @@ function LoadingRow() {
   return (
     <div
       style={{
-        fontFamily: "'Space Grotesk', monospace",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 10,
         letterSpacing: "0.2em",
         color: "rgba(0,0,0,0.35)",
@@ -389,7 +388,7 @@ function EndRow() {
   return (
     <div
       style={{
-        fontFamily: "'Space Grotesk', monospace",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 9,
         letterSpacing: "0.22em",
         color: "rgba(0,0,0,0.25)",
@@ -435,7 +434,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
     >
       <div
         style={{
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           fontSize: 28,
           letterSpacing: 3,
           color: "rgba(0,0,0,0.22)",
@@ -445,7 +444,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
       </div>
       <div
         style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 12,
           color: "rgba(0,0,0,0.5)",
           maxWidth: 280,

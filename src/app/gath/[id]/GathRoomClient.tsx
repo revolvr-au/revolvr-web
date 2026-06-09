@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import SlideUpSheet from "@/components/SlideUpSheet";
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 
 type GathRole = "IGNITER" | "HOST" | "MEMBER";
 type GathType = "OPEN" | "PRIVATE" | "BUSINESS";
@@ -95,7 +95,7 @@ function MemberAvatar({
           fontFamily: "monospace",
           fontSize: Math.max(10, size * 0.4),
           fontWeight: 700,
-          boxShadow: isIgniter ? "0 0 8px rgba(245,197,24,0.45)" : "none",
+          boxShadow: isIgniter ? "0 0 8px rgba(255,255,255,0.45)" : "none",
         }}
       >
         {initialFromEmail(email)}
@@ -574,7 +574,7 @@ export default function GathRoomClient({ id }: { id: string }) {
                 gap: 5,
                 padding: "5px 9px",
                 borderRadius: 999,
-                background: "rgba(245,197,24,0.06)",
+                background: "rgba(255,255,255,0.06)",
                 border: `1px solid ${GOLD}`,
                 color: GOLD,
                 fontFamily: "monospace",
@@ -638,7 +638,7 @@ export default function GathRoomClient({ id }: { id: string }) {
               padding: "6px 10px",
               borderRadius: 8,
               border: `1px solid ${GOLD}`,
-              background: "rgba(245,197,24,0.1)",
+              background: "rgba(255,255,255,0.1)",
               fontFamily: "monospace",
               fontSize: 10,
               color: GOLD,
@@ -661,7 +661,7 @@ export default function GathRoomClient({ id }: { id: string }) {
               padding: "3px 8px",
               border: `1px solid ${GOLD}`,
               borderRadius: 999,
-              background: "rgba(245,197,24,0.06)",
+              background: "rgba(255,255,255,0.06)",
               fontSize: 8,
               letterSpacing: "0.22em",
               color: GOLD,
@@ -936,7 +936,7 @@ export default function GathRoomClient({ id }: { id: string }) {
                 width: 44,
                 height: 44,
                 borderRadius: 12,
-                background: draft.trim() ? GOLD : "rgba(245,197,24,0.25)",
+                background: draft.trim() ? GOLD : "rgba(255,255,255,0.25)",
                 border: "none",
                 color: "#0a0e16",
                 display: "flex",
@@ -945,7 +945,7 @@ export default function GathRoomClient({ id }: { id: string }) {
                 cursor: draft.trim() && !sending ? "pointer" : "not-allowed",
                 flexShrink: 0,
                 boxShadow: draft.trim()
-                  ? "0 4px 16px rgba(245,197,24,0.3)"
+                  ? "0 4px 16px rgba(255,255,255,0.3)"
                   : "none",
               }}
             >
@@ -1202,7 +1202,7 @@ export default function GathRoomClient({ id }: { id: string }) {
                     border: `1px solid ${m.role === "IGNITER" ? GOLD : "rgba(255,255,255,0.15)"}`,
                     color: m.role === "IGNITER" ? GOLD : "rgba(255,255,255,0.75)",
                     background:
-                      m.role === "IGNITER" ? "rgba(245,197,24,0.06)" : "transparent",
+                      m.role === "IGNITER" ? "rgba(255,255,255,0.06)" : "transparent",
                   }}
                 >
                   {m.role}

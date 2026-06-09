@@ -86,15 +86,14 @@ export default function OnboardClient() {
       justifyContent: "center",
       padding: "32px 20px",
     }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');`}</style>
 
-      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white", marginBottom: 32 }}>
+      <div style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 28, letterSpacing: 8, color: "white", marginBottom: 32 }}>
         REVOLVR
       </div>
 
       <div style={{ width: "100%", maxWidth: 380, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
 
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
+        <div style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
           WELCOME TO REVOLVR
         </div>
 
@@ -116,7 +115,7 @@ export default function OnboardClient() {
           {avatarPreview ? (
             <img src={avatarPreview} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <span style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "rgba(255,255,255,0.6)" }}>
+            <span style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 36, color: "rgba(255,255,255,0.6)" }}>
               {displayName.trim() ? initial : "+"}
             </span>
           )}
@@ -135,7 +134,7 @@ export default function OnboardClient() {
             onChange={(e) => setHandle(e.target.value.replace(/[^a-zA-Z0-9_]/g, ""))}
             placeholder="yourhandle"
             style={{ width: "100%", boxSizing: "border-box", background: "#110e0b", border: "1px solid #2a2520", borderRadius: 50, padding: "13px 18px 13px 34px", fontFamily: "monospace", fontSize: 14, color: "white", outline: "none" }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+            onFocus={(e) => (e.currentTarget.style.borderColor = "#ffffff")}
             onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
           />
         </div>
@@ -146,7 +145,7 @@ export default function OnboardClient() {
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Display name"
           style={{ width: "100%", boxSizing: "border-box", background: "#110e0b", border: "1px solid #2a2520", borderRadius: 50, padding: "13px 18px", fontFamily: "monospace", fontSize: 14, color: "white", outline: "none" }}
-          onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "#ffffff")}
           onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
         />
 
@@ -166,9 +165,9 @@ export default function OnboardClient() {
           style={{
             width: "100%", padding: "14px 0", borderRadius: 50,
             background: "transparent",
-            border: `1px solid ${canSubmit ? "#00e5ff" : "#2a2520"}`,
-            color: canSubmit ? "#00e5ff" : "rgba(255,255,255,0.6)",
-            fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3,
+            border: `1px solid ${canSubmit ? "#ffffff" : "#2a2520"}`,
+            color: canSubmit ? "#ffffff" : "rgba(255,255,255,0.6)",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: 3,
             cursor: canSubmit ? "pointer" : "not-allowed",
             transition: "border-color 0.2s, color 0.2s",
           }}

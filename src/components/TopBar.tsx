@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 
 function VoltageSpark({ size = 8, color = GOLD }: { size?: number; color?: string }) {
   return (
@@ -44,7 +44,7 @@ export default function TopBar() {
           gap: 6,
           transition: "color 220ms ease, text-shadow 220ms ease",
           textShadow: onTranche
-            ? `0 0 10px ${GOLD}, 0 0 18px rgba(245,197,24,0.55)`
+            ? `0 0 10px ${GOLD}, 0 0 18px rgba(255,255,255,0.55)`
             : "none",
         }}
       >

@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export const RING_COLORS: Record<string, string> = {
   BLUE: "#3B82F6",
-  GOLD: "#F59E0B",
+  GOLD: "#ffffff",
 };
 
 export function getRingColor(tier?: string | null): string | null {

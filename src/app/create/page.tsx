@@ -179,13 +179,13 @@ export default function CreatePage() {
 
           {/* TELEMETRY HEADS-UP OVERLAYS */}
           <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 2 }}>
-            <div style={{ position: "absolute", top: 140, left: 20, color: "#00e5ff", fontSize: 10, animation: "blink 1s infinite" }}>SYSTEM: ANALYZING TENSORS...</div>
-            <div style={{ position: "absolute", left: 0, right: 0, height: 2, background: "rgba(0, 229, 255, 0.4)", boxShadow: "0 0 10px rgba(0, 229, 255, 0.7)", animation: "scanner 4s linear infinite" }} />
+            <div style={{ position: "absolute", top: 140, left: 20, color: "#ffffff", fontSize: 10, animation: "blink 1s infinite" }}>SYSTEM: ANALYZING TENSORS...</div>
+            <div style={{ position: "absolute", left: 0, right: 0, height: 2, background: "rgba(255, 255, 255, 0.4)", boxShadow: "0 0 10px rgba(255, 255, 255, 0.7)", animation: "scanner 4s linear infinite" }} />
             <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%, -50%)", display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ width: 44, height: 44, border: "1px solid rgba(0,229,255,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse-target 2s infinite" }}>
-                <div style={{ width: 6, height: 6, background: "#00e5ff", borderRadius: "50%" }} />
+              <div style={{ width: 44, height: 44, border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", animation: "pulse-target 2s infinite" }}>
+                <div style={{ width: 6, height: 6, background: "#ffffff", borderRadius: "50%" }} />
               </div>
-              <div style={{ fontSize: 11, color: "#00e5ff", letterSpacing: 2, marginTop: 10, textShadow: "0 2px 4px rgba(0,0,0,0.9)" }}>[ SENSOR ARRAY ACTIVE ]</div>
+              <div style={{ fontSize: 11, color: "#ffffff", letterSpacing: 2, marginTop: 10, textShadow: "0 2px 4px rgba(0,0,0,0.9)" }}>[ SENSOR ARRAY ACTIVE ]</div>
             </div>
           </div>
         </>
@@ -218,7 +218,7 @@ export default function CreatePage() {
 
         {previews.length === 0 && (
           <div style={{ display: "flex", gap: 10 }}>
-            <button onClick={() => setMode("UPLOAD")} style={{ flex: 1, padding: "10px", fontSize: 11, letterSpacing: 1, fontFamily: "inherit", cursor: "pointer", background: mode === "UPLOAD" ? "rgba(0,229,255,0.15)" : "rgba(0,0,0,0.5)", border: `1px solid ${mode === "UPLOAD" ? "#00e5ff" : "rgba(255,255,255,0.2)"}`, color: mode === "UPLOAD" ? "#00e5ff" : "rgba(255,255,255,0.6)", borderRadius: 8, backdropFilter: "blur(8px)", transition: "all 0.2s" }}>[ SECURE UPLOAD ]</button>
+            <button onClick={() => setMode("UPLOAD")} style={{ flex: 1, padding: "10px", fontSize: 11, letterSpacing: 1, fontFamily: "inherit", cursor: "pointer", background: mode === "UPLOAD" ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.5)", border: `1px solid ${mode === "UPLOAD" ? "#ffffff" : "rgba(255,255,255,0.2)"}`, color: mode === "UPLOAD" ? "#ffffff" : "rgba(255,255,255,0.6)", borderRadius: 8, backdropFilter: "blur(8px)", transition: "all 0.2s" }}>[ SECURE UPLOAD ]</button>
             <button onClick={() => setMode("LIVE")} style={{ flex: 1, padding: "10px", fontSize: 11, letterSpacing: 1, fontFamily: "inherit", cursor: "pointer", background: mode === "LIVE" ? "rgba(255,45,85,0.15)" : "rgba(0,0,0,0.5)", border: `1px solid ${mode === "LIVE" ? "#ff2d55" : "rgba(255,255,255,0.2)"}`, color: mode === "LIVE" ? "#ff2d55" : "rgba(255,255,255,0.6)", borderRadius: 8, backdropFilter: "blur(8px)", transition: "all 0.2s" }}>[ GO LIVE ]</button>
           </div>
         )}
@@ -228,24 +228,24 @@ export default function CreatePage() {
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 20, display: "flex", flexDirection: "column", padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}>
         
         {/* HUD TELEMETRY DATA FORM BLOCK */}
-        <div style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(0, 229, 255, 0.15)", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+        <div style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255, 255, 255, 0.15)", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: 10, color: "rgba(0, 229, 255, 0.7)", marginBottom: 6 }}>[ TRANSMISSION METADATA ]</span>
+            <span style={{ fontSize: 10, color: "rgba(255, 255, 255, 0.7)", marginBottom: 6 }}>[ TRANSMISSION METADATA ]</span>
             <textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               placeholder={previews.length === 0 ? "[ Awaiting automated matrix snapshot... ]" : "Type caption overrides..."}
               rows={2}
-              style={{ width: "100%", color: "white", caretColor: "#00e5ff", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "8px", outline: "none", resize: "none", fontSize: "16px", fontFamily: "inherit" }}
+              style={{ width: "100%", color: "white", caretColor: "#ffffff", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "8px", outline: "none", resize: "none", fontSize: "16px", fontFamily: "inherit" }}
             />
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "rgba(0,229,255,0.6)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "rgba(255,255,255,0.6)" }}>
             <span>CLUSTER: <span style={{ color: "#fff" }}>[ AUTO_DETECTION ]</span></span>
             <span>VOLTAGE: <span style={{ color: "#fff" }}>[ READY ]</span></span>
           </div>
-          <div onClick={() => setIsTranche(!isTranche)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", border: `1px solid ${isTranche ? "#F5C518" : "rgba(255,255,255,0.1)"}`, background: isTranche ? "rgba(245,197,24,0.15)" : "rgba(255,255,255,0.02)", borderRadius: 6, padding: "8px 12px", transition: "all 0.15s" }}>
-            <Zap size={14} color={isTranche ? "#F5C518" : "rgba(255,255,255,0.6)"} />
-            <span style={{ fontSize: 11, color: isTranche ? "#F5C518" : "rgba(255,255,255,0.6)" }}>[ NEURAL TRANCHE IGNITION ]</span>
+          <div onClick={() => setIsTranche(!isTranche)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", border: `1px solid ${isTranche ? "#ffffff" : "rgba(255,255,255,0.1)"}`, background: isTranche ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.02)", borderRadius: 6, padding: "8px 12px", transition: "all 0.15s" }}>
+            <Zap size={14} color={isTranche ? "#ffffff" : "rgba(255,255,255,0.6)"} />
+            <span style={{ fontSize: 11, color: isTranche ? "#ffffff" : "rgba(255,255,255,0.6)" }}>[ NEURAL TRANCHE IGNITION ]</span>
           </div>
         </div>
 
@@ -258,8 +258,8 @@ export default function CreatePage() {
           >
             <div style={{ 
               width: 56, height: 56, borderRadius: "50%", 
-              background: previews.length > 0 ? "#F5C518" : (mode === "LIVE" ? "#ff2d55" : "#00e5ff"),
-              boxShadow: `0 0 20px ${previews.length > 0 ? "#F5C518" : (mode === "LIVE" ? "#ff2d55" : "#00e5ff")}`,
+              background: previews.length > 0 ? "#ffffff" : (mode === "LIVE" ? "#ff2d55" : "#ffffff"),
+              boxShadow: `0 0 20px ${previews.length > 0 ? "#ffffff" : (mode === "LIVE" ? "#ff2d55" : "#ffffff")}`,
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>
               {loading ? (

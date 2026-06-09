@@ -27,7 +27,7 @@ export default function PrivacyPage() {
         <div style={{ width: 22 }} />
       </div>
 
-      <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#00e5ff", textTransform: "uppercase", marginBottom: 8 }}>
+      <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#ffffff", textTransform: "uppercase", marginBottom: 8 }}>
         Privacy Policy
       </h1>
       <p style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.6)", marginBottom: 32 }}>

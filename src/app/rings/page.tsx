@@ -135,7 +135,6 @@ function RingsPageInner() {
       fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         * { box-sizing: border-box; }
       `}</style>
 
@@ -166,7 +165,7 @@ function RingsPageInner() {
           }}
         >←</button>
         <div style={{
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           fontSize: 18,
           letterSpacing: 5,
           color: "white",
@@ -306,7 +305,7 @@ function RingsPageInner() {
                       )}
                       <div>
                         <div style={{
-                          fontFamily: "'Bebas Neue', sans-serif",
+                          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                           fontSize: 20,
                           letterSpacing: 1.5,
                           color: isCurrent ? color : "white",
@@ -330,7 +329,7 @@ function RingsPageInner() {
                     </div>
                     <div style={{ textAlign: "right" }}>
                       <span style={{
-                        fontFamily: "'Bebas Neue', sans-serif",
+                        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                         fontSize: 22,
                         color: t.tier === "NONE" ? "rgba(255,255,255,0.6)" : "white",
                         letterSpacing: 0.5,

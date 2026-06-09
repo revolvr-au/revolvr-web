@@ -8,32 +8,32 @@ import { createSupabaseBrowserClient } from "@/supabase-browser";
 function GiftAsset({ id, size = 40 }: { id: string; size?: number }) {
   if (id === "pulse") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#00e5ff" filter="url(#glow-cyan)" />
+      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#ffffff" filter="url(#glow-cyan)" />
       <defs><filter id="glow-cyan"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
   if (id === "amp") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <circle cx="20" cy="20" r="16" fill="none" stroke="#00e5ff" strokeWidth="2" opacity="0.4"/>
-      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#00e5ff" filter="url(#glow-amp)"/>
-      <circle cx="20" cy="20" r="8" fill="none" stroke="#00e5ff" strokeWidth="1.5" opacity="0.6"/>
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.4"/>
+      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#ffffff" filter="url(#glow-amp)"/>
+      <circle cx="20" cy="20" r="8" fill="none" stroke="#ffffff" strokeWidth="1.5" opacity="0.6"/>
       <defs><filter id="glow-amp"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
   if (id === "override") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <polygon points="20,2 38,32 2,32" fill="none" stroke="#D4AF37" strokeWidth="2"/>
-      <polygon points="20,8 34,30 6,30" fill="#D4AF3730"/>
-      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#D4AF37" filter="url(#glow-gold)"/>
+      <polygon points="20,2 38,32 2,32" fill="none" stroke="#ffffff" strokeWidth="2"/>
+      <polygon points="20,8 34,30 6,30" fill="#ffffff30"/>
+      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#ffffff" filter="url(#glow-gold)"/>
       <defs><filter id="glow-gold"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
   if (id === "monolith") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <rect x="8" y="4" width="24" height="32" rx="3" fill="none" stroke="#D4AF37" strokeWidth="2"/>
-      <rect x="12" y="8" width="16" height="24" rx="2" fill="#D4AF3720"/>
-      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#D4AF37" filter="url(#glow-mono)"/>
-      <line x1="20" y1="4" x2="20" y2="2" stroke="#D4AF37" strokeWidth="2"/>
+      <rect x="8" y="4" width="24" height="32" rx="3" fill="none" stroke="#ffffff" strokeWidth="2"/>
+      <rect x="12" y="8" width="16" height="24" rx="2" fill="#ffffff20"/>
+      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#ffffff" filter="url(#glow-mono)"/>
+      <line x1="20" y1="4" x2="20" y2="2" stroke="#ffffff" strokeWidth="2"/>
       <defs><filter id="glow-mono"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
@@ -141,7 +141,7 @@ ivsPlayer.addEventListener(IVSPlayer.PlayerEventType.ERROR, () => {
     };
   }, [stream?.ivsPlaybackUrl, side]);
 
-  const color = side === "A" ? "#00e5ff" : "#D4AF37";
+  const color = side === "A" ? "#ffffff" : "#ffffff";
 
   return (
     <div
@@ -266,10 +266,10 @@ export default function BattlePage() {
   }, [showBattleWelcome, streamA]);
 
   const GIFTS = [
-    { id: "pulse",    name: "PULSE",    sparks: 10,   color: "#00e5ff", label: "10⚡" },
-    { id: "amp",      name: "AMP",      sparks: 50,   color: "#00e5ff", label: "50⚡" },
-    { id: "override", name: "OVERRIDE", sparks: 150,  color: "#D4AF37", label: "150⚡" },
-    { id: "monolith", name: "MONOLITH", sparks: 500,  color: "#D4AF37", label: "500⚡" },
+    { id: "pulse",    name: "PULSE",    sparks: 10,   color: "#ffffff", label: "10⚡" },
+    { id: "amp",      name: "AMP",      sparks: 50,   color: "#ffffff", label: "50⚡" },
+    { id: "override", name: "OVERRIDE", sparks: 150,  color: "#ffffff", label: "150⚡" },
+    { id: "monolith", name: "MONOLITH", sparks: 500,  color: "#ffffff", label: "500⚡" },
     { id: "eclipse",  name: "ECLIPSE",  sparks: 1500, color: "#fff",    label: "1500⚡" },
   ];
 
@@ -454,7 +454,7 @@ export default function BattlePage() {
         {/* Header outline */}
         <div style={{ height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px" }}>
           <div style={{ width: 30, height: 30, borderRadius: "50%", background: "rgba(255,255,255,0.05)" }} />
-          <div style={{ width: 120, height: 22, borderRadius: 11, background: "rgba(212,175,55,0.06)", border: "1px solid rgba(212,175,55,0.18)" }} />
+          <div style={{ width: 120, height: 22, borderRadius: 11, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.18)" }} />
           <div style={{ width: 60, height: 22, borderRadius: 11, background: "rgba(255,255,255,0.05)" }} />
         </div>
 
@@ -480,7 +480,7 @@ export default function BattlePage() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "rgba(0,0,0,0.85)" }}>
           <div style={{ padding: "8px 14px" }}>
             <div style={{ height: 4, borderRadius: 2,
-              background: "linear-gradient(90deg, rgba(0,229,255,0.08) 0%, rgba(255,255,255,0.06) 50%, rgba(212,175,55,0.08) 100%)",
+              background: "linear-gradient(90deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.08) 100%)",
               backgroundSize: "200% 100%",
               animation: "skeletonShimmer 1.6s ease-in-out infinite",
             }} />
@@ -495,7 +495,7 @@ export default function BattlePage() {
 
       <style>{`
         @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
-        @keyframes tensionPulse { 0%,100%{box-shadow:0 0 8px #D4AF37} 50%{box-shadow:0 0 32px #D4AF37,0 0 64px #D4AF3740} }
+        @keyframes tensionPulse { 0%,100%{box-shadow:0 0 8px #ffffff} 50%{box-shadow:0 0 32px #ffffff,0 0 64px #ffffff40} }
         @keyframes commentDrift { from{transform:translateY(-8px);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes giftSlideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
         @keyframes giftFloat { 0%{transform:translateY(0) scale(1);opacity:1} 70%{opacity:1} 100%{transform:translateY(-140px) scale(1.3);opacity:0} }
@@ -516,12 +516,12 @@ export default function BattlePage() {
           pointerEvents: "none",
         }}>
           <div style={{ textAlign: "center", padding: "0 30px" }}>
-            <div style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.25em", marginBottom: 12 }}>THE CIRCUIT</div>
-            <div style={{ color: "#00e5ff", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(0,229,255,0.4)", marginBottom: 4 }}>
+            <div style={{ color: "#ffffff", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.25em", marginBottom: 12 }}>THE CIRCUIT</div>
+            <div style={{ color: "#ffffff", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(255,255,255,0.4)", marginBottom: 4 }}>
               {streamA?.displayName ?? "Creator A"}
             </div>
             <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, fontWeight: 800, marginBottom: 4 }}>VS</div>
-            <div style={{ color: "#D4AF37", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(212,175,55,0.4)", marginBottom: 16 }}>
+            <div style={{ color: "#ffffff", fontSize: 20, fontWeight: 800, textShadow: "0 0 20px rgba(255,255,255,0.4)", marginBottom: 16 }}>
               {streamB?.displayName ?? "Challenger"}
             </div>
             <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontFamily: "monospace", letterSpacing: "0.05em" }}>
@@ -536,29 +536,29 @@ export default function BattlePage() {
         <div style={{ position: "absolute", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.98)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "0 24px" }}>
           <div style={{ fontSize: 48, animation: "winnerPop 0.6s ease-out" }}>🏆</div>
           <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.3em", color: "rgba(255,255,255,0.35)", textTransform: "uppercase" }}>The Circuit — Battle Complete</div>
-          <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 800, color: "#D4AF37", letterSpacing: "0.06em", textAlign: "center", animation: "winnerPop 0.6s ease-out 0.2s both", textShadow: "0 0 30px rgba(212,175,55,0.4)" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 22, fontWeight: 800, color: "#ffffff", letterSpacing: "0.06em", textAlign: "center", animation: "winnerPop 0.6s ease-out 0.2s both", textShadow: "0 0 30px rgba(255,255,255,0.4)" }}>
             {winner === battle?.creatorEmailA ? (streamA?.displayName ?? "Creator A") : (streamB?.displayName ?? "Creator B")} WINS
           </div>
           <div style={{ width: "100%", maxWidth: 320, marginTop: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "16px 20px", animation: "winnerPop 0.5s ease-out 0.4s both" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <div style={{ textAlign: "center", flex: 1 }}>
-                <div style={{ color: winner === battle?.creatorEmailA ? "#D4AF37" : "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamA?.displayName ?? "A"}</div>
-                <div style={{ color: winner === battle?.creatorEmailA ? "#D4AF37" : "#00e5ff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageA ?? 0}</div>
+                <div style={{ color: winner === battle?.creatorEmailA ? "#ffffff" : "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamA?.displayName ?? "A"}</div>
+                <div style={{ color: winner === battle?.creatorEmailA ? "#ffffff" : "#ffffff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageA ?? 0}</div>
                 <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
               </div>
               <div style={{ color: "rgba(255,255,255,0.12)", fontSize: 14, fontWeight: 800, padding: "0 12px" }}>VS</div>
               <div style={{ textAlign: "center", flex: 1 }}>
-                <div style={{ color: winner === battle?.creatorEmailB ? "#D4AF37" : "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamB?.displayName ?? "B"}</div>
-                <div style={{ color: winner === battle?.creatorEmailB ? "#D4AF37" : "#00e5ff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageB ?? 0}</div>
+                <div style={{ color: winner === battle?.creatorEmailB ? "#ffffff" : "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginBottom: 4, letterSpacing: "0.08em", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", margin: "0 auto 4px" }}>{streamB?.displayName ?? "B"}</div>
+                <div style={{ color: winner === battle?.creatorEmailB ? "#ffffff" : "#ffffff", fontSize: 32, fontFamily: "monospace", fontWeight: 800 }}>{battle?.voltageB ?? 0}</div>
                 <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace" }}>VOLTAGE</div>
               </div>
             </div>
             <div style={{ height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden", marginBottom: 16 }}>
-              <div style={{ height: "100%", borderRadius: 2, background: "linear-gradient(90deg, #00e5ff, #D4AF37)", width: `${totalVoltage === 0 ? 50 : Math.round(((battle?.voltageA ?? 0) / totalVoltage) * 100)}%`, transition: "width 1s ease-out" }} />
+              <div style={{ height: "100%", borderRadius: 2, background: "linear-gradient(90deg, #ffffff, #ffffff)", width: `${totalVoltage === 0 ? 50 : Math.round(((battle?.voltageA ?? 0) / totalVoltage) * 100)}%`, transition: "width 1s ease-out" }} />
             </div>
             <div style={{ display: "flex", justifyContent: "space-around" }}>
               <div style={{ textAlign: "center" }}>
-                <div style={{ color: "#D4AF37", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{(battle?.voltageA ?? 0) + (battle?.voltageB ?? 0)}</div>
+                <div style={{ color: "#ffffff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{(battle?.voltageA ?? 0) + (battle?.voltageB ?? 0)}</div>
                 <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>TOTAL SPARKS</div>
               </div>
               <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
@@ -568,7 +568,7 @@ export default function BattlePage() {
               </div>
               <div style={{ width: 1, background: "rgba(255,255,255,0.06)" }} />
               <div style={{ textAlign: "center" }}>
-                <div style={{ color: "#00e5ff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{Math.abs((battle?.voltageA ?? 0) - (battle?.voltageB ?? 0))}</div>
+                <div style={{ color: "#ffffff", fontSize: 18, fontWeight: 800, fontFamily: "monospace" }}>{Math.abs((battle?.voltageA ?? 0) - (battle?.voltageB ?? 0))}</div>
                 <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 8, fontFamily: "monospace", letterSpacing: "0.1em", marginTop: 2 }}>MARGIN</div>
               </div>
             </div>
@@ -580,9 +580,9 @@ export default function BattlePage() {
       {/* ══════════ TOP: HEADER BAR ══════════ */}
       <div style={{ height: 44, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 12px", position: "relative", zIndex: 30 }}>
         <button onClick={() => router.back()} style={{ background: "rgba(0,0,0,0.5)", border: "none", color: "#fff", fontSize: 20, width: 30, height: 30, borderRadius: "50%", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
-        <div style={{ background: "rgba(0,0,0,0.7)", border: "1px solid rgba(212,175,55,0.4)", borderRadius: 20, padding: "4px 14px", display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#D4AF37", animation: "livePulse 1.2s ease-in-out infinite" }} />
-          <span style={{ color: "#D4AF37", fontSize: 10, fontFamily: "monospace", fontWeight: 800, letterSpacing: "0.15em" }}>THE CIRCUIT</span>
+        <div style={{ background: "rgba(0,0,0,0.7)", border: "1px solid rgba(255,255,255,0.4)", borderRadius: 20, padding: "4px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#ffffff", animation: "livePulse 1.2s ease-in-out infinite" }} />
+          <span style={{ color: "#ffffff", fontSize: 10, fontFamily: "monospace", fontWeight: 800, letterSpacing: "0.15em" }}>THE CIRCUIT</span>
         </div>
         {timeLeft !== null && !battleEnded ? (
           <div style={{
@@ -627,13 +627,13 @@ export default function BattlePage() {
 
         {/* Tension bar */}
         <div style={{ display: "flex", alignItems: "center", padding: "8px 14px", gap: 8, flexShrink: 0 }}>
-          <span style={{ color: "#00e5ff", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 20, textAlign: "left" }}>{battle?.voltageA ?? 0}</span>
+          <span style={{ color: "#ffffff", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 20, textAlign: "left" }}>{battle?.voltageA ?? 0}</span>
           <div style={{ flex: 1, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 2, position: "relative" }}>
-            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #00e5ff, #00e5ff50)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
-            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: `${tensionPos}%`, background: "linear-gradient(to left, #D4AF37, #D4AF3750)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
-            <div style={{ position: "absolute", top: "50%", left: `${100 - tensionPos}%`, transform: "translate(-50%, -50%)", width: 14, height: 14, borderRadius: "50%", background: "#fff", boxShadow: "0 0 14px #D4AF37, 0 0 28px #D4AF3780", animation: "tensionPulse 1.5s ease-in-out infinite", transition: "left 0.5s cubic-bezier(0.34,1.56,0.64,1)", zIndex: 2 }} />
+            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${100 - tensionPos}%`, background: "linear-gradient(to right, #ffffff, #ffffff50)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
+            <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: `${tensionPos}%`, background: "linear-gradient(to left, #ffffff, #ffffff50)", borderRadius: 2, transition: "width 0.5s cubic-bezier(0.34,1.56,0.64,1)" }} />
+            <div style={{ position: "absolute", top: "50%", left: `${100 - tensionPos}%`, transform: "translate(-50%, -50%)", width: 14, height: 14, borderRadius: "50%", background: "#fff", boxShadow: "0 0 14px #ffffff, 0 0 28px #ffffff80", animation: "tensionPulse 1.5s ease-in-out infinite", transition: "left 0.5s cubic-bezier(0.34,1.56,0.64,1)", zIndex: 2 }} />
           </div>
-          <span style={{ color: "#D4AF37", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 20, textAlign: "right" }}>{battle?.voltageB ?? 0}</span>
+          <span style={{ color: "#ffffff", fontSize: 9, fontFamily: "monospace", fontWeight: 800, minWidth: 20, textAlign: "right" }}>{battle?.voltageB ?? 0}</span>
         </div>
 
         {/* Comments */}
@@ -641,7 +641,7 @@ export default function BattlePage() {
           <div style={{ position: "absolute", bottom: 0, left: 12, right: 60, display: "flex", flexDirection: "column", gap: 4 }}>
             {messages.slice(-5).map((msg, i) => (
               <div key={msg.id ?? i} style={{ display: "flex", gap: 5, alignItems: "baseline", animation: "commentDrift 0.3s ease-out both" }}>
-                <span style={{ fontSize: 10, fontWeight: 700, color: "#00e5ff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: "#ffffff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
                 <span style={{ fontSize: 11, color: "rgba(255,255,255,0.75)" }}>{msg.message}</span>
               </div>
             ))}
@@ -653,10 +653,10 @@ export default function BattlePage() {
             {giftOpen && (
               <div style={{ display: "flex", flexDirection: "column", gap: 5, alignItems: "flex-end" }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-                  <button onClick={() => setGiftSide("A")} style={{ background: giftSide === "A" ? "rgba(0,229,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "A" ? "#00e5ff" : "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
+                  <button onClick={() => setGiftSide("A")} style={{ background: giftSide === "A" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "A" ? "#ffffff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "A" ? "#ffffff" : "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
                     {streamA?.displayName?.split(" ")[0] ?? "A"}
                   </button>
-                  <button onClick={() => setGiftSide("B")} style={{ background: giftSide === "B" ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "B" ? "#D4AF37" : "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
+                  <button onClick={() => setGiftSide("B")} style={{ background: giftSide === "B" ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.7)", border: `1px solid ${giftSide === "B" ? "#ffffff" : "rgba(255,255,255,0.1)"}`, borderRadius: 12, padding: "4px 10px", color: giftSide === "B" ? "#ffffff" : "rgba(255,255,255,0.6)", fontSize: 9, fontFamily: "monospace", cursor: "pointer", fontWeight: 700 }}>
                     {streamB?.displayName?.split(" ")[0] ?? "B"}
                   </button>
                 </div>
@@ -671,8 +671,8 @@ export default function BattlePage() {
                 ))}
               </div>
             )}
-            <button onClick={() => { setGiftOpen(prev => !prev); setTopUpOpen(false); }} style={{ width: 44, height: 44, borderRadius: "50%", background: giftOpen ? "rgba(212,175,55,0.2)" : "rgba(0,0,0,0.6)", border: `1px solid ${giftOpen ? "#D4AF37" : "rgba(212,175,55,0.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(6px)" }}>
-              <svg width={20} height={20} viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#D4AF37"/></svg>
+            <button onClick={() => { setGiftOpen(prev => !prev); setTopUpOpen(false); }} style={{ width: 44, height: 44, borderRadius: "50%", background: giftOpen ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.6)", border: `1px solid ${giftOpen ? "#ffffff" : "rgba(255,255,255,0.4)"}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", backdropFilter: "blur(6px)" }}>
+              <svg width={20} height={20} viewBox="0 0 24 24"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill="#ffffff"/></svg>
             </button>
           </div>
         </div>
@@ -692,18 +692,18 @@ export default function BattlePage() {
             data-placeholder="Say something..."
             style={{ flex: 1, background: "rgba(255,255,255,0.07)", border: "none", borderRadius: 24, color: "#fff", fontSize: 16, padding: "9px 16px", outline: "none", minHeight: 20, maxHeight: 60, overflow: "hidden", WebkitUserSelect: "text", userSelect: "text", wordBreak: "break-word" }}
           />
-          <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#D4AF37", fontSize: 18, cursor: "pointer" }}>➤</button>
+          <button onClick={sendMessage} style={{ background: "transparent", border: "none", color: "#ffffff", fontSize: 18, cursor: "pointer" }}>➤</button>
         </div>
       </div>
 
       {/* Top-up modal */}
       {topUpOpen && (
-        <div style={{ position: "absolute", right: 70, bottom: 70, zIndex: 40, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(0,229,255,0.3)", borderRadius: 16, padding: "14px 16px", backdropFilter: "blur(12px)", minWidth: 190 }}>
-          <div style={{ color: "#00e5ff", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 10 }}>TOP UP SPARKS</div>
+        <div style={{ position: "absolute", right: 70, bottom: 70, zIndex: 40, background: "rgba(0,0,0,0.95)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 16, padding: "14px 16px", backdropFilter: "blur(12px)", minWidth: 190 }}>
+          <div style={{ color: "#ffffff", fontSize: 10, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 10 }}>TOP UP SPARKS</div>
           {[{ sparks: 100, price: "$2.99" }, { sparks: 300, price: "$7.99" }, { sparks: 750, price: "$17.99" }, { sparks: 2000, price: "$39.99" }].map(b => (
             <button key={b.sparks} onClick={() => { setTopUpOpen(false); router.push("/spark/buy"); }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", marginBottom: 6, color: "#fff" }}>
               <span style={{ fontSize: 12, fontWeight: 600 }}>{b.sparks} ⚡</span>
-              <span style={{ fontSize: 11, color: "#D4AF37" }}>{b.price}</span>
+              <span style={{ fontSize: 11, color: "#ffffff" }}>{b.price}</span>
             </button>
           ))}
           <button onClick={() => setTopUpOpen(false)} style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 4 }}>Cancel</button>

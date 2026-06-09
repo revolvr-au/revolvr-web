@@ -389,7 +389,7 @@ export default function TrancheCard({
         borderRadius: 10,
         overflow: "hidden",
         boxShadow: "0 1px 0 rgba(0,0,0,0.04), 0 8px 24px rgba(15,17,21,0.08)",
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         color: INK,
       }}
     >
@@ -419,7 +419,7 @@ export default function TrancheCard({
         <BoltIcon size={11} color={INK} />
         <span
           style={{
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontWeight: 700,
             fontSize: 11,
             letterSpacing: "0.16em",
@@ -456,7 +456,7 @@ export default function TrancheCard({
             fontSize: 9,
             fontWeight: 700,
             letterSpacing: "0.16em",
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             cursor: "pointer",
           }}
         >
@@ -536,7 +536,7 @@ export default function TrancheCard({
             <span style={{ textTransform: "lowercase" }}>voltage</span>
             <span
               style={{
-                fontFamily: "'Space Grotesk', monospace",
+                fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                 fontWeight: 700,
                 fontSize: 14,
                 color: INK,
@@ -634,7 +634,7 @@ export default function TrancheCard({
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: "0.16em",
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               cursor: "pointer",
             }}
           >
@@ -720,7 +720,7 @@ export default function TrancheCard({
                   </span>
                   <span
                     style={{
-                      fontFamily: "'Space Grotesk', monospace",
+                      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                       fontSize: 11,
                       color: INK_SOFT,
                     }}
@@ -838,7 +838,7 @@ const iconButtonStyle = (active: boolean): React.CSSProperties => ({
 });
 
 const iconCountStyle: React.CSSProperties = {
-  fontFamily: "'Space Grotesk', monospace",
+  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   fontSize: 11,
   fontWeight: 600,
 };
@@ -858,7 +858,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
       </div>
       <div
         style={{
-          fontFamily: "'Space Grotesk', monospace",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 18,
           fontWeight: 700,
           color: INK,

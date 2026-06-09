@@ -153,7 +153,7 @@ export default function CommentsPage({ params }: { params: Promise<{ postId: str
               height: 40,
               minWidth: 40,
               borderRadius: "50%",
-              background: "#00e5ff",
+              background: "#ffffff",
               border: "none",
               display: "flex",
               alignItems: "center",

@@ -16,7 +16,6 @@ export default function CreatorPayoutPage() {
       padding: "24px 20px 60px",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
       `}</style>
 
       {/* Header */}
@@ -33,7 +32,7 @@ export default function CreatorPayoutPage() {
 
       {/* Title */}
       <h1 style={{
-        fontFamily: "'Bebas Neue', sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
         fontSize: 52,
         letterSpacing: 2,
         color: "white",
@@ -55,8 +54,8 @@ export default function CreatorPayoutPage() {
         fontFamily: "monospace",
         fontSize: 10,
         letterSpacing: 2,
-        color: "#00e5ff",
-        border: "1px solid rgba(0,229,255,0.3)",
+        color: "#ffffff",
+        border: "1px solid rgba(255,255,255,0.3)",
         borderRadius: 4,
         padding: "4px 10px",
         textTransform: "uppercase",

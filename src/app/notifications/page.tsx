@@ -6,8 +6,8 @@ import FeedLayout from "@/components/FeedLayout";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import type { TrancheNotificationType } from "@prisma/client";
 
-const GOLD = "#F5C518";
-const AMBER = "#FBBF24";
+const GOLD = "#ffffff";
+const AMBER = "#ffffff";
 
 type NotificationRow = {
   id: string;
@@ -109,7 +109,7 @@ export default function NotificationsPage() {
       >
         <h1
           style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
             fontSize: 48,
             letterSpacing: 3,
             color: "white",
@@ -121,7 +121,7 @@ export default function NotificationsPage() {
         </h1>
         <p
           style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 13,
             color: "rgba(255,255,255,0.6)",
             margin: "0 0 22px",
@@ -133,7 +133,7 @@ export default function NotificationsPage() {
         {!authResolved || loading ? (
           <div
             style={{
-              fontFamily: "'Space Grotesk', monospace",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 10,
               letterSpacing: "0.2em",
               color: "rgba(255,255,255,0.6)",
@@ -164,13 +164,13 @@ export default function NotificationsPage() {
                   padding: "14px 14px",
                   background: n.isRead
                     ? "rgba(255,255,255,0.02)"
-                    : "rgba(245,197,24,0.06)",
-                  border: `1px solid ${n.isRead ? "rgba(255,255,255,0.06)" : "rgba(245,197,24,0.25)"}`,
+                    : "rgba(255,255,255,0.06)",
+                  border: `1px solid ${n.isRead ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.25)"}`,
                   borderRadius: 12,
                   color: "white",
                   textAlign: "left",
                   cursor: "pointer",
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                 }}
               >
                 {!n.isRead && (
@@ -200,7 +200,7 @@ export default function NotificationsPage() {
                   </div>
                   <div
                     style={{
-                      fontFamily: "'Space Grotesk', monospace",
+                      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                       fontSize: 10,
                       letterSpacing: "0.16em",
                       color: n.isRead ? "rgba(255,255,255,0.6)" : GOLD,
@@ -232,7 +232,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
     >
       <div
         style={{
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           fontSize: 28,
           letterSpacing: 3,
           color: "rgba(255,255,255,0.6)",
@@ -242,7 +242,7 @@ function EmptyState({ title, hint }: { title: string; hint: string }) {
       </div>
       <div
         style={{
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 12,
           color: "rgba(255,255,255,0.6)",
           maxWidth: 320,

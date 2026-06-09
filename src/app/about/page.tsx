@@ -16,7 +16,6 @@ export default function AboutPage() {
       padding: "24px 20px 60px",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
       `}</style>
 
       {/* Header */}
@@ -33,7 +32,7 @@ export default function AboutPage() {
 
       {/* Title */}
       <h1 style={{
-        fontFamily: "'Bebas Neue', sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
         fontSize: 64,
         letterSpacing: 3,
         color: "white",
@@ -86,7 +85,7 @@ export default function AboutPage() {
         </div>
         <a
           href="mailto:revolvrassist@gmail.com"
-          style={{ fontSize: 13, color: "#00e5ff", textDecoration: "none", letterSpacing: 0.3 }}
+          style={{ fontSize: 13, color: "#ffffff", textDecoration: "none", letterSpacing: 0.3 }}
         >
           revolvrassist@gmail.com
         </a>

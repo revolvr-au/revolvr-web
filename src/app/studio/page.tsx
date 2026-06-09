@@ -148,23 +148,22 @@ export default function StudioPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         * { box-sizing: border-box; }
         ::placeholder { color: rgba(255,255,255,0.25); }
-        input:focus { border-color: rgba(0,229,255,0.5) !important; outline: none; }
+        input:focus { border-color: rgba(255,255,255,0.5) !important; outline: none; }
       `}</style>
       <div style={{ minHeight: "100vh", background: "#050814", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", padding: "0 24px" }}>
         <div style={{ width: "100%", maxWidth: 380 }}>
 
-          <h1 style={{ fontFamily: '"Bebas Neue", cursive', fontSize: 56, color: "#ffffff", letterSpacing: "0.08em", textAlign: "center", margin: "0 0 4px", lineHeight: 1 }}>
+          <h1 style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 56, color: "#ffffff", letterSpacing: "0.08em", textAlign: "center", margin: "0 0 4px", lineHeight: 1 }}>
             REVOLVR STUDIO
           </h1>
-          <p style={{ textAlign: "center", color: "#00e5ff", fontFamily: "monospace", fontSize: 12, letterSpacing: "0.18em", margin: "0 0 40px" }}>
+          <p style={{ textAlign: "center", color: "#ffffff", fontFamily: "monospace", fontSize: 12, letterSpacing: "0.18em", margin: "0 0 40px" }}>
             COMMAND &amp; CONTROL
           </p>
 
           {lockMessage && (
-            <div style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: 8, padding: "10px 14px", marginBottom: 20, color: "#fbbf24", fontSize: 13, textAlign: "center" }}>
+            <div style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "10px 14px", marginBottom: 20, color: "#ffffff", fontSize: 13, textAlign: "center" }}>
               {lockMessage}
             </div>
           )}
@@ -185,7 +184,7 @@ export default function StudioPage() {
               <button
                 type="submit"
                 disabled={loginStep === "submitting"}
-                style={{ background: loginStep === "submitting" ? "rgba(0,229,255,0.3)" : "#00e5ff", color: "#050814", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, padding: "14px 0", cursor: loginStep === "submitting" ? "not-allowed" : "pointer", letterSpacing: "0.12em", textTransform: "uppercase" as const }}
+                style={{ background: loginStep === "submitting" ? "rgba(255,255,255,0.3)" : "#ffffff", color: "#050814", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, padding: "14px 0", cursor: loginStep === "submitting" ? "not-allowed" : "pointer", letterSpacing: "0.12em", textTransform: "uppercase" as const }}
               >
                 {loginStep === "submitting" ? "Sending…" : "Request Access"}
               </button>
@@ -198,7 +197,7 @@ export default function StudioPage() {
           {/* Code entry */}
           {(loginStep === "code" || loginStep === "verifying") && (
             <form onSubmit={handleVerifyCode} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <p style={{ color: "#00e5ff", fontSize: 14, margin: "0 0 4px", textAlign: "center" }}>
+              <p style={{ color: "#ffffff", fontSize: 14, margin: "0 0 4px", textAlign: "center" }}>
                 Access code sent. Check your email.
               </p>
               <input
@@ -217,7 +216,7 @@ export default function StudioPage() {
               <button
                 type="submit"
                 disabled={loginStep === "verifying" || codeInput.length < 6}
-                style={{ background: loginStep === "verifying" || codeInput.length < 6 ? "rgba(0,229,255,0.3)" : "#00e5ff", color: "#050814", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, padding: "14px 0", cursor: loginStep === "verifying" || codeInput.length < 6 ? "not-allowed" : "pointer", letterSpacing: "0.12em", textTransform: "uppercase" as const }}
+                style={{ background: loginStep === "verifying" || codeInput.length < 6 ? "rgba(255,255,255,0.3)" : "#ffffff", color: "#050814", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, padding: "14px 0", cursor: loginStep === "verifying" || codeInput.length < 6 ? "not-allowed" : "pointer", letterSpacing: "0.12em", textTransform: "uppercase" as const }}
               >
                 {loginStep === "verifying" ? "Verifying…" : "Verify Code"}
               </button>

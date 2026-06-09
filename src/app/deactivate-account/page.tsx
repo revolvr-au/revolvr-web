@@ -109,8 +109,8 @@ export default function DeactivateAccountPage() {
         </div>
 
         {showSafetyPrompt ? (
-          <div className="mt-6 rounded-xl border border-yellow-300/20 bg-yellow-400/10 p-4">
-            <div className="text-sm font-semibold text-yellow-200">If you feel unsafe</div>
+          <div className="mt-6 rounded-xl border border-white/20 bg-white/10 p-4">
+            <div className="text-sm font-semibold text-white">If you feel unsafe</div>
             <div className="mt-1 text-sm text-white/70">
               You can report an issue before you go.
             </div>

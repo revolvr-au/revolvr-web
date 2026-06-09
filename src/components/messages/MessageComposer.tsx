@@ -60,7 +60,7 @@ export default function MessageComposer({ onSend }: { onSend: (text: string) => 
         aria-label="Send message"
         style={{
           flexShrink: 0,
-          background: text.trim() ? "#F5C518" : "rgba(255,255,255,0.1)",
+          background: text.trim() ? "#ffffff" : "rgba(255,255,255,0.1)",
           color: text.trim() ? "#0A0A0A" : "rgba(255,255,255,0.6)",
           border: "none",
           borderRadius: 18,

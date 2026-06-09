@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 
 type GathType = "OPEN" | "PRIVATE" | "BUSINESS";
 
@@ -410,8 +410,8 @@ function GathCreateSheet({
               alignItems: "center",
               gap: 8,
               padding: "10px 12px",
-              border: `1px solid rgba(245,197,24,0.35)`,
-              background: "rgba(245,197,24,0.06)",
+              border: `1px solid rgba(255,255,255,0.35)`,
+              background: "rgba(255,255,255,0.06)",
               borderRadius: 12,
               marginBottom: 12,
             }}
@@ -515,7 +515,7 @@ function GathCreateSheet({
             width: "100%",
             padding: "14px",
             borderRadius: 12,
-            background: name.trim() ? GOLD : "rgba(245,197,24,0.25)",
+            background: name.trim() ? GOLD : "rgba(255,255,255,0.25)",
             color: "#0a0e16",
             border: "none",
             fontFamily: "monospace",
@@ -524,7 +524,7 @@ function GathCreateSheet({
             letterSpacing: "0.28em",
             cursor: name.trim() && !submitting ? "pointer" : "not-allowed",
             boxShadow: name.trim()
-              ? "0 6px 24px rgba(245,197,24,0.32)"
+              ? "0 6px 24px rgba(255,255,255,0.32)"
               : "none",
             transition: "all 200ms ease",
           }}

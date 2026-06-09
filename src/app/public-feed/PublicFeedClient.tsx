@@ -25,7 +25,7 @@ import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
 import GathWindow from "@/components/GathWindow";
 import TopBar from "@/components/TopBar";
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 const ACTION_KEYS = ["LIKE", "COMMENT", "MESSAGE", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
 type ActionKey = (typeof ACTION_KEYS)[number];
 
@@ -934,7 +934,7 @@ const Post = memo(function Post({
     <div style={{
       position: "absolute", inset: 0,
       background: "linear-gradient(135deg, #080808 0%, #0d0d0d 60%, #0a0a14 100%)",
-      boxShadow: "inset 0 0 80px rgba(255,215,0,0.03)",
+      boxShadow: "inset 0 0 80px rgba(255,255,255,0.03)",
     }} />
 
     {/* Pulsing ring + avatar */}
@@ -948,13 +948,13 @@ const Post = memo(function Post({
         <div style={{
           position: "absolute", inset: -6,
           borderRadius: "50%",
-          border: "3px solid #FFD700",
+          border: "3px solid #ffffff",
           animation: "livePulseRing 1.5s ease-in-out infinite",
         }} />
         <div style={{
           position: "absolute", inset: -12,
           borderRadius: "50%",
-          border: "2px solid rgba(255,215,0,0.2)",
+          border: "2px solid rgba(255,255,255,0.2)",
           animation: "livePulseRing 1.5s ease-in-out infinite 0.3s",
         }} />
         {liveAvatarSrc ? (
@@ -989,8 +989,8 @@ const Post = memo(function Post({
       }}>
         <div style={{
           width: 8, height: 8, borderRadius: "50%",
-          background: "#FFD700",
-          boxShadow: "0 0 8px #FFD700",
+          background: "#ffffff",
+          boxShadow: "0 0 8px #ffffff",
           animation: "livePulse 1s ease-in-out infinite",
         }} />
         <span style={{
@@ -1012,11 +1012,11 @@ const Post = memo(function Post({
         }}
         style={{
           marginTop: 20,
-          background: "rgba(255,215,0,0.15)",
-          border: "1px solid rgba(255,215,0,0.5)",
+          background: "rgba(255,255,255,0.15)",
+          border: "1px solid rgba(255,255,255,0.5)",
           borderRadius: 50,
           padding: "10px 32px",
-          color: "#FFD700",
+          color: "#ffffff",
           fontSize: 13,
           fontFamily: "monospace",
           fontWeight: 700,
@@ -1042,8 +1042,8 @@ const Post = memo(function Post({
 
     <style>{`
       @keyframes livePulseRing {
-        0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
-        50% { opacity: 0.7; transform: scale(1.04); box-shadow: 0 0 20px 4px rgba(255,215,0,0.15); }
+        0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(255,255,255,0.4); }
+        50% { opacity: 0.7; transform: scale(1.04); box-shadow: 0 0 20px 4px rgba(255,255,255,0.15); }
       }
     `}</style>
   </div>
@@ -1331,7 +1331,7 @@ function FeedOverlay({
               width: 50,
               height: 50,
               borderRadius: "50%",
-              border: "1.5px solid rgba(245,197,24,0.45)",
+              border: "1.5px solid rgba(255,255,255,0.45)",
               background: post.avatarUrl
                 ? `url(${post.avatarUrl}) center/cover`
                 : "linear-gradient(135deg, #1a2030, #0a0e18)",
@@ -1517,8 +1517,8 @@ function TrancheCard({
         border: `1px solid ${GOLD}`,
         borderRadius: 12,
         padding: "8px 28px 8px 10px",
-        background: "rgba(245,197,24,0.06)",
-        boxShadow: "0 6px 24px rgba(245,197,24,0.18)",
+        background: "rgba(255,255,255,0.06)",
+        boxShadow: "0 6px 24px rgba(255,255,255,0.18)",
         fontFamily: "monospace",
         animation: "trancheFade 240ms ease-out",
       }}
@@ -1693,7 +1693,7 @@ function PeopleCylinder({
                 ? `url(${p.avatarUrl}) center/cover`
                 : "linear-gradient(135deg, #1a2030, #0a0e18)",
               opacity,
-              boxShadow: isCentre ? "0 0 12px rgba(245,197,24,0.55)" : "none",
+              boxShadow: isCentre ? "0 0 12px rgba(255,255,255,0.55)" : "none",
               transition: "all 240ms ease",
               cursor: isCentre ? "pointer" : "default",
               flexShrink: 0,
