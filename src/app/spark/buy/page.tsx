@@ -34,7 +34,7 @@ export default function BuySparksPage() {
       minHeight: "100dvh",
       background: "#0a0806",
       color: "white",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       maxWidth: 480,
       margin: "0 auto",
       padding: "24px 20px 60px",

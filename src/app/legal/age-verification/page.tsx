@@ -10,7 +10,7 @@ export default function AgeVerificationPage() {
       minHeight: "100vh",
       background: "#0a0806",
       color: "white",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       maxWidth: 680,
       margin: "0 auto",
       padding: "24px 20px 60px",

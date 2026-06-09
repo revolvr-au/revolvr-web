@@ -127,7 +127,7 @@ export default function MessagesContent({ meEmail }: { meEmail: string }) {
         color: "rgba(255,255,255,0.92)",
         display: "flex",
         flexDirection: "column",
-        fontFamily: "system-ui, -apple-system, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       {/* Header */}

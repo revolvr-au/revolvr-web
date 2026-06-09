@@ -153,7 +153,7 @@ export default function StudioPage() {
         ::placeholder { color: rgba(255,255,255,0.25); }
         input:focus { border-color: rgba(0,229,255,0.5) !important; outline: none; }
       `}</style>
-      <div style={{ minHeight: "100vh", background: "#050814", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", padding: "0 24px" }}>
+      <div style={{ minHeight: "100vh", background: "#050814", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", padding: "0 24px" }}>
         <div style={{ width: "100%", maxWidth: 380 }}>
 
           <h1 style={{ fontFamily: '"Bebas Neue", cursive', fontSize: 56, color: "#ffffff", letterSpacing: "0.08em", textAlign: "center", margin: "0 0 4px", lineHeight: 1 }}>
