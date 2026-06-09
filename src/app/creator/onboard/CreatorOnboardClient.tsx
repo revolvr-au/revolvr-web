@@ -172,7 +172,7 @@ export default function CreatorOnboardClient() {
         <div style={{ fontFamily: "monospace", fontSize: 13, color: "#00e5ff", letterSpacing: 2 }}>
           REDIRECTING TO STRIPE…
         </div>
-        <div style={{ fontFamily: "monospace", fontSize: 11, color: "#333" }}>Please wait.</div>
+        <div style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Please wait.</div>
       </div>
     );
   }
@@ -196,7 +196,7 @@ export default function CreatorOnboardClient() {
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
               BECOME A CREATOR
             </div>
-            <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center" }}>
               Choose your handle and display name to enable payouts.
             </div>
 
@@ -242,7 +242,7 @@ export default function CreatorOnboardClient() {
                 width: "100%", padding: "14px 0", borderRadius: 50,
                 background: "transparent",
                 border: `1px solid ${canSubmitStep1 ? "#00e5ff" : "#2a2520"}`,
-                color: canSubmitStep1 ? "#00e5ff" : "#333",
+                color: canSubmitStep1 ? "#00e5ff" : "rgba(255,255,255,0.6)",
                 fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3,
                 cursor: canSubmitStep1 ? "pointer" : "not-allowed",
                 transition: "border-color 0.2s, color 0.2s",
@@ -259,7 +259,7 @@ export default function CreatorOnboardClient() {
             <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
               PICK YOUR CHARACTER
             </div>
-            <div style={{ fontFamily: "monospace", fontSize: 13, color: "#555", textAlign: "center" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center" }}>
               This character will appear on your live streams.
             </div>
 
@@ -305,7 +305,7 @@ export default function CreatorOnboardClient() {
                 style={{
                   flex: 1, padding: "14px 0", borderRadius: 50,
                   background: "transparent", border: "1px solid #2a2520",
-                  color: "#555", fontFamily: "'Bebas Neue', sans-serif",
+                  color: "rgba(255,255,255,0.6)", fontFamily: "'Bebas Neue', sans-serif",
                   fontSize: 18, letterSpacing: 3, cursor: "pointer",
                 }}
               >

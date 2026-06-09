@@ -574,7 +574,7 @@ export default function PeopleCard({
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize: 34,
-                color: "rgba(255,255,255,0.5)",
+                color: "rgba(255,255,255,0.6)",
                 fontWeight: 700,
                 transition: "border 220ms ease",
                 boxSizing: "border-box",
@@ -655,7 +655,7 @@ export default function PeopleCard({
                   ))}
                 </span>
               ) : (
-                <span style={{ fontSize: 8, color: "rgba(255,255,255,0.55)" }}>{bioCount}</span>
+                <span style={{ fontSize: 8, color: "rgba(255,255,255,0.6)" }}>{bioCount}</span>
               )}
             </button>
           </div>
@@ -743,7 +743,7 @@ export default function PeopleCard({
           >
             {user.displayName ?? user.handle}
           </div>
-          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>
+          <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>
             @{user.handle}
           </div>
 
@@ -794,7 +794,7 @@ export default function PeopleCard({
               )}
             </div>
           ) : (
-            <span style={{ fontSize: 8, letterSpacing: "0.2em", color: "rgba(255,255,255,0.18)" }}>
+            <span style={{ fontSize: 8, letterSpacing: "0.2em", color: "rgba(255,255,255,0.6)" }}>
               TAP A POST
             </span>
           )}
@@ -921,7 +921,7 @@ export default function PeopleCard({
                   background: "rgba(255,255,255,0.2)",
                 }}
               />
-              <span style={{ fontSize: 7, letterSpacing: "0.22em", color: "rgba(255,255,255,0.25)" }}>
+              <span style={{ fontSize: 7, letterSpacing: "0.22em", color: "rgba(255,255,255,0.6)" }}>
                 {label}
               </span>
             </div>

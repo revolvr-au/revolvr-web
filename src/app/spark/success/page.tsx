@@ -22,7 +22,7 @@ function SuccessContent() {
       }}>
         {sparks} SPARKS LOADED
       </div>
-      <p style={{ fontSize: 13, color: "#555", marginBottom: 32 }}>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginBottom: 32 }}>
         Your sparks are ready. Go gift a creator.
       </p>
       <button

@@ -232,7 +232,7 @@ export default function CommentsPanel({
                 style={{
                   background: "none",
                   border: "none",
-                  color: "rgba(255,255,255,0.4)",
+                  color: "rgba(255,255,255,0.6)",
                   cursor: "pointer",
                   padding: 0,
                   fontSize: 11,

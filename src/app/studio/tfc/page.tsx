@@ -52,7 +52,7 @@ function btnStyle(variant: "cyan" | "danger" | "ghost"): CSSProperties {
     return {
       ...base,
       background: "transparent",
-      color: "rgba(255,255,255,0.5)",
+      color: "rgba(255,255,255,0.6)",
       border: "1px solid rgba(255,255,255,0.15)",
     };
   return {
@@ -179,7 +179,7 @@ export default function StudioTfcPage() {
   if (!authChecked) {
     return (
       <div style={{ minHeight: "100vh", background: BG, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em", color: "rgba(255,255,255,0.4)" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 12, letterSpacing: "0.2em", color: "rgba(255,255,255,0.6)" }}>
           AUTHENTICATING…
         </div>
       </div>
@@ -228,7 +228,7 @@ export default function StudioTfcPage() {
           <div
             style={{
               fontSize: 12,
-              color: "rgba(255,255,255,0.3)",
+              color: "rgba(255,255,255,0.6)",
               marginTop: 4,
               letterSpacing: "0.12em",
               fontFamily: "monospace",
@@ -316,7 +316,7 @@ export default function StudioTfcPage() {
                     <div
                       style={{
                         fontSize: 11,
-                        color: "rgba(255,255,255,0.45)",
+                        color: "rgba(255,255,255,0.6)",
                         fontFamily: "monospace",
                         marginBottom: 6,
                       }}
@@ -368,7 +368,7 @@ export default function StudioTfcPage() {
                           style={{
                             fontSize: 9,
                             letterSpacing: "0.18em",
-                            color: "rgba(255,255,255,0.3)",
+                            color: "rgba(255,255,255,0.6)",
                             fontFamily: "monospace",
                             marginRight: 8,
                           }}
@@ -388,7 +388,7 @@ export default function StudioTfcPage() {
                           style={{
                             fontSize: 9,
                             letterSpacing: "0.18em",
-                            color: "rgba(255,255,255,0.3)",
+                            color: "rgba(255,255,255,0.6)",
                             fontFamily: "monospace",
                             marginRight: 8,
                           }}
@@ -420,7 +420,7 @@ export default function StudioTfcPage() {
                   }}
                 >
                   {app.motivation || (
-                    <span style={{ color: "rgba(255,255,255,0.3)", fontStyle: "italic" }}>
+                    <span style={{ color: "rgba(255,255,255,0.6)", fontStyle: "italic" }}>
                       No motivation provided
                     </span>
                   )}

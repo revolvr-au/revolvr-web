@@ -138,14 +138,14 @@ export default function GathWindow({
         <GathRow
           title="PRIVATE GATH"
           subtitle="Invite only · 50 sparks to create"
-          icon={<Lock size={14} color="rgba(255,255,255,0.55)" />}
+          icon={<Lock size={14} color="rgba(255,255,255,0.6)" />}
           onTap={() => handleRowTap("PRIVATE")}
         />
         {mode === "full" && (
           <GathRow
             title="BUSINESS GATH"
             subtitle="Verified brand community"
-            icon={<Briefcase size={14} color="rgba(255,255,255,0.55)" />}
+            icon={<Briefcase size={14} color="rgba(255,255,255,0.6)" />}
             onTap={() => handleRowTap("BUSINESS")}
           />
         )}
@@ -219,7 +219,7 @@ function GathRow({
         <div
           style={{
             fontSize: 10,
-            color: "rgba(255,255,255,0.55)",
+            color: "rgba(255,255,255,0.6)",
             letterSpacing: "0.04em",
           }}
         >
@@ -440,7 +440,7 @@ function GathCreateSheet({
               marginBottom: 12,
               fontSize: 10,
               letterSpacing: "0.16em",
-              color: "rgba(255,255,255,0.55)",
+              color: "rgba(255,255,255,0.6)",
             }}
           >
             VERIFICATION REQUIRED
@@ -595,7 +595,7 @@ function SheetInput({
         style={{
           fontSize: 9,
           letterSpacing: "0.24em",
-          color: "rgba(255,255,255,0.4)",
+          color: "rgba(255,255,255,0.6)",
           marginBottom: 6,
         }}
       >

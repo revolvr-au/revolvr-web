@@ -170,7 +170,7 @@ export default function ProfileClient({
           style={{
             background: "transparent",
             border: "none",
-            color: "#555",
+            color: "rgba(255,255,255,0.6)",
             fontSize: 22,
             cursor: "pointer",
             lineHeight: 1,
@@ -326,9 +326,9 @@ export default function ProfileClient({
           }}>
             <span style={{ fontSize: 16 }}>🎙️</span>
             <span style={{ fontSize: 11, color: "#00e5ff", fontFamily: "monospace", letterSpacing: 2 }}>Intro</span>
-            <span style={{ fontSize: 10, color: "#333" }}>▶</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>▶</span>
             <div style={{ flex: 1, height: 1, background: "#1a1510" }} />
-            <span style={{ fontSize: 10, color: "#333", fontFamily: "monospace" }}>0:30</span>
+            <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace" }}>0:30</span>
           </div>
         ) : isOwnProfile ? (
           <a href="/rings" style={{
@@ -381,7 +381,7 @@ export default function ProfileClient({
             borderRadius: 50,
             background: "transparent",
             border: "1px solid #1a1a1a",
-            color: "#555",
+            color: "rgba(255,255,255,0.6)",
             fontSize: 13, fontWeight: 600,
             cursor: "pointer",
             letterSpacing: 0.5,
@@ -423,7 +423,7 @@ export default function ProfileClient({
         {/* Bio */}
         {profile.bio?.trim() && (
           <div style={{
-            fontSize: 14, color: "#444",
+            fontSize: 14, color: "rgba(255,255,255,0.6)",
             textAlign: "center",
             lineHeight: 1.7,
             marginTop: 16,

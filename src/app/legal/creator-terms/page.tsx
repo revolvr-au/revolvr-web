@@ -20,7 +20,7 @@ export default function CreatorTermsPage() {
           onClick={() => router.back()}
           style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1 }}
         >←</button>
-        <div style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: 3, color: "#333", textTransform: "uppercase" }}>
+        <div style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: 3, color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>
           Legal
         </div>
         <div style={{ width: 22 }} />
@@ -30,7 +30,7 @@ export default function CreatorTermsPage() {
         Creator Terms
       </h1>
 
-      <div style={{ fontSize: 11, fontFamily: "monospace", letterSpacing: 2, color: "#333", textTransform: "uppercase", padding: "32px 0", textAlign: "center" }}>
+      <div style={{ fontSize: 11, fontFamily: "monospace", letterSpacing: 2, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", padding: "32px 0", textAlign: "center" }}>
         Coming Soon
       </div>
     </div>

@@ -64,7 +64,7 @@ export default function DeleteAccountPage() {
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        .delete-email-input::placeholder { color: #555; }
+        .delete-email-input::placeholder { color: rgba(255,255,255,0.6); }
         .delete-email-input:focus {
           outline: none;
           border-color: #00e5ff !important;
@@ -84,7 +84,7 @@ export default function DeleteAccountPage() {
           fontFamily: "monospace",
           fontSize: 9,
           letterSpacing: 3,
-          color: "#333",
+          color: "rgba(255,255,255,0.6)",
           textTransform: "uppercase",
         }}>
           Account
@@ -165,7 +165,7 @@ export default function DeleteAccountPage() {
           borderRadius: 50,
           background: "transparent",
           border: `1px solid ${emailMatches ? "#ff3b30" : "#333"}`,
-          color: emailMatches ? "white" : "#444",
+          color: emailMatches ? "white" : "rgba(255,255,255,0.6)",
           fontSize: 18,
           fontFamily: "'Bebas Neue', sans-serif",
           letterSpacing: 2,
@@ -186,7 +186,7 @@ export default function DeleteAccountPage() {
           borderRadius: 50,
           background: "transparent",
           border: "none",
-          color: "#333",
+          color: "rgba(255,255,255,0.6)",
           fontSize: 13,
           cursor: "pointer",
           fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",

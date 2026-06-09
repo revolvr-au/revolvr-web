@@ -136,7 +136,7 @@ export default function WelcomeClient() {
     display: "block",
     fontFamily: "monospace",
     fontSize: 10,
-    color: "#555",
+    color: "rgba(255,255,255,0.6)",
     letterSpacing: 2,
     textTransform: "uppercase",
     textAlign: "left",
@@ -287,7 +287,7 @@ export default function WelcomeClient() {
         </h1>
 
         {/* Subline */}
-        <p style={{ fontFamily: "monospace", fontSize: 13, color: "#555", letterSpacing: 2, margin: "8px 0 0" }}>
+        <p style={{ fontFamily: "monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", letterSpacing: 2, margin: "8px 0 0" }}>
           Live. Create. Earn.
         </p>
 
@@ -343,7 +343,7 @@ export default function WelcomeClient() {
                   margin: "12px auto 0",
                   background: "transparent",
                   border: "none",
-                  color: "#444",
+                  color: "rgba(255,255,255,0.6)",
                   fontSize: 12,
                   fontFamily: "monospace",
                   cursor: "pointer",
@@ -371,7 +371,7 @@ export default function WelcomeClient() {
             style={{
               background: "transparent",
               border: "none",
-              color: "#333",
+              color: "rgba(255,255,255,0.6)",
               fontSize: 11,
               fontFamily: "monospace",
               letterSpacing: 2,

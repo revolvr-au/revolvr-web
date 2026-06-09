@@ -94,7 +94,7 @@ const thStyle: CSSProperties = {
   fontSize: 10,
   textTransform: "uppercase",
   letterSpacing: "0.08em",
-  color: "rgba(255,255,255,0.3)",
+  color: "rgba(255,255,255,0.6)",
   paddingBottom: 10,
   fontWeight: 600,
   paddingRight: 16,
@@ -119,7 +119,7 @@ function btnStyle(variant: string): CSSProperties {
     return {
       ...base,
       background: "transparent",
-      color: "rgba(255,255,255,0.5)",
+      color: "rgba(255,255,255,0.6)",
       border: "1px solid rgba(255,255,255,0.15)",
     };
   if (variant === "cyan")
@@ -152,7 +152,7 @@ function statusColor(status: string): string {
 
 function clearanceBadge(role: string): { label: string; color: string; bg: string } {
   if (role === "MODERATOR") return { label: "MODERATOR", color: "#fbbf24", bg: "rgba(251,191,36,0.12)" };
-  if (role === "SUPPORT") return { label: "SUPPORT", color: "rgba(255,255,255,0.4)", bg: "rgba(255,255,255,0.08)" };
+  if (role === "SUPPORT") return { label: "SUPPORT", color: "rgba(255,255,255,0.6)", bg: "rgba(255,255,255,0.08)" };
   return { label: "ADMIN", color: CYAN, bg: "rgba(0,229,255,0.12)" };
 }
 
@@ -370,7 +370,7 @@ export default function StudioDashboard({
           >
             REVOLVR STUDIO
           </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 4, letterSpacing: "0.12em", fontFamily: "monospace" }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginTop: 4, letterSpacing: "0.12em", fontFamily: "monospace" }}>
             COMMAND &amp; CONTROL
           </div>
         </div>
@@ -391,7 +391,7 @@ export default function StudioDashboard({
             }}>
               {email[0].toUpperCase()}
             </div>
-            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", textAlign: "center", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", textAlign: "center", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {email}
             </div>
             {(() => {
@@ -474,7 +474,7 @@ export default function StudioDashboard({
               style={{
                 fontFamily: '"Bebas Neue", cursive',
                 fontSize: 40,
-                color: tfcPending && tfcPending > 0 ? CYAN : "rgba(255,255,255,0.5)",
+                color: tfcPending && tfcPending > 0 ? CYAN : "rgba(255,255,255,0.6)",
                 letterSpacing: "0.02em",
                 lineHeight: 1,
                 textShadow:
@@ -522,9 +522,9 @@ export default function StudioDashboard({
         <div style={card}>
           <div style={sectionTitle}>Top Posts by Voltage</div>
           {topPosts === null ? (
-            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>Loading…</div>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>Loading…</div>
           ) : topPosts.length === 0 ? (
-            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 13 }}>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 13 }}>
               No voltage events yet
             </div>
           ) : (
@@ -540,7 +540,7 @@ export default function StudioDashboard({
               <tbody>
                 {topPosts.map((p, i) => (
                   <tr key={i} style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-                    <td style={{ padding: "10px 0", fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
+                    <td style={{ padding: "10px 0", fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
                       {i + 1}
                     </td>
                     <td
@@ -603,7 +603,7 @@ export default function StudioDashboard({
           ).map(({ key, label, min, max, step }) => (
             <div key={key} style={{ marginBottom: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>{label}</span>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{label}</span>
                 <span
                   style={{
                     fontFamily: '"Bebas Neue", cursive',
@@ -653,7 +653,7 @@ export default function StudioDashboard({
                     style={{
                       fontSize: 12,
                       color:
-                        danger && on ? "#ef4444" : "rgba(255,255,255,0.55)",
+                        danger && on ? "#ef4444" : "rgba(255,255,255,0.6)",
                     }}
                   >
                     {label}
@@ -740,11 +740,11 @@ export default function StudioDashboard({
         </div>
 
         {users === null ? (
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
             Enter an email to search
           </div>
         ) : users.length === 0 ? (
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>No users found</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>No users found</div>
         ) : (
           <div>
             {users.map((u) => (
@@ -788,19 +788,19 @@ export default function StudioDashboard({
                         flexShrink: 0,
                       }}
                     />
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
                       {u.status}
                     </span>
                   </div>
                   {u.displayName && (
-                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 3 }}>
                       {u.email}
                     </div>
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
                   {actionMsgs[u.email] && (
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)" }}>
                       {actionMsgs[u.email]}
                     </span>
                   )}
@@ -908,9 +908,9 @@ export default function StudioDashboard({
         </div>
 
         {auditLogs === null ? (
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>Loading…</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>Loading…</div>
         ) : auditLogs.length === 0 ? (
-          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
             No audit entries yet
           </div>
         ) : (
@@ -955,7 +955,7 @@ export default function StudioDashboard({
                       style={{
                         padding: "9px 16px 9px 0",
                         fontSize: 12,
-                        color: "rgba(255,255,255,0.4)",
+                        color: "rgba(255,255,255,0.6)",
                       }}
                     >
                       {log.targetType ?? "—"}
@@ -977,7 +977,7 @@ export default function StudioDashboard({
                       style={{
                         padding: "9px 0",
                         fontSize: 11,
-                        color: "rgba(255,255,255,0.3)",
+                        color: "rgba(255,255,255,0.6)",
                         whiteSpace: "nowrap",
                       }}
                     >

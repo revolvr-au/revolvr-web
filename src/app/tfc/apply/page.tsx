@@ -142,7 +142,7 @@ export default function TFCApplyPage() {
           style={{
             fontFamily: "'DM Sans', system-ui, sans-serif",
             fontSize: 13,
-            color: "rgba(255,255,255,0.45)",
+            color: "rgba(255,255,255,0.6)",
             margin: "0 0 22px",
           }}
         >
@@ -372,7 +372,7 @@ function Stub({ children }: { children: React.ReactNode }) {
         fontFamily: "'Space Grotesk', monospace",
         fontSize: 10,
         letterSpacing: "0.2em",
-        color: "rgba(255,255,255,0.3)",
+        color: "rgba(255,255,255,0.6)",
         textAlign: "center",
         padding: 40,
       }}

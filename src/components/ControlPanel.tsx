@@ -290,7 +290,7 @@ export default function ControlPanel({
                 fontSize: 9,
                 fontFamily: "monospace",
                 letterSpacing: 2,
-                color: "#555",
+                color: "rgba(255,255,255,0.6)",
                 textTransform: "uppercase",
                 paddingBottom: 8,
               }}
@@ -303,7 +303,7 @@ export default function ControlPanel({
                 style={{
                   fontSize: 10,
                   fontFamily: "monospace",
-                  color: "rgba(255,255,255,0.25)",
+                  color: "rgba(255,255,255,0.6)",
                   letterSpacing: "0.18em",
                   padding: "8px 0",
                 }}
@@ -315,7 +315,7 @@ export default function ControlPanel({
                 style={{
                   fontSize: 10,
                   fontFamily: "monospace",
-                  color: "rgba(255,255,255,0.3)",
+                  color: "rgba(255,255,255,0.6)",
                   letterSpacing: "0.22em",
                   padding: "8px 0",
                 }}
@@ -381,7 +381,7 @@ export default function ControlPanel({
                           fontFamily: "monospace",
                           fontSize: 8,
                           letterSpacing: "0.18em",
-                          color: "rgba(255,255,255,0.45)",
+                          color: "rgba(255,255,255,0.6)",
                         }}
                       >
                         <span>{g.memberCount} MEMBERS</span>
@@ -565,7 +565,7 @@ function MenuSection({ label, children }: { label: string; children: React.React
         fontSize: 9,
         fontFamily: "monospace",
         letterSpacing: 2,
-        color: "#555",
+        color: "rgba(255,255,255,0.6)",
         textTransform: "uppercase",
         padding: "0 20px 8px",
       }}>

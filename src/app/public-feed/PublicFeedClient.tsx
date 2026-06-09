@@ -994,7 +994,7 @@ const Post = memo(function Post({
           animation: "livePulse 1s ease-in-out infinite",
         }} />
         <span style={{
-          color: "rgba(255,255,255,0.5)",
+          color: "rgba(255,255,255,0.6)",
           fontSize: 11, letterSpacing: "0.2em",
           fontFamily: "monospace", textTransform: "uppercase",
         }}>
@@ -1550,7 +1550,7 @@ function TrancheCard({
             : "Voltage threshold reached — this post is trending.";
         })()}
       </div>
-      <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 3 }}>
+      <div style={{ fontSize: 8, color: "rgba(255,255,255,0.6)", marginTop: 3 }}>
         @{post.handle ?? "user"}
       </div>
       <button
@@ -1565,7 +1565,7 @@ function TrancheCard({
           borderRadius: "50%",
           background: "transparent",
           border: "none",
-          color: "rgba(255,255,255,0.55)",
+          color: "rgba(255,255,255,0.6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1633,7 +1633,7 @@ function PeopleCylinder({
           justifyContent: "center",
           fontSize: 8,
           fontFamily: "monospace",
-          color: "rgba(255,255,255,0.25)",
+          color: "rgba(255,255,255,0.6)",
           letterSpacing: "0.2em",
         }}
       >
@@ -1786,7 +1786,7 @@ function ActionCylinder({
             background: "transparent",
             border: "none",
             padding: 2,
-            color: "rgba(255,255,255,0.4)",
+            color: "rgba(255,255,255,0.6)",
             cursor: "pointer",
             display: "flex",
           }}
@@ -1850,7 +1850,7 @@ function ActionCylinder({
             background: "transparent",
             border: "none",
             padding: 2,
-            color: "rgba(255,255,255,0.4)",
+            color: "rgba(255,255,255,0.6)",
             cursor: "pointer",
             display: "flex",
           }}

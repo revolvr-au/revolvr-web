@@ -25,7 +25,7 @@ export default function CreatorPayoutPage() {
           onClick={() => router.back()}
           style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1, padding: "4px 2px" }}
         >←</button>
-        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "#333", textTransform: "uppercase" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>
           Creator
         </div>
         <div style={{ width: 30 }} />

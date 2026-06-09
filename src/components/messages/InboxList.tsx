@@ -67,14 +67,14 @@ export default function InboxList({
                 >
                   {name}
                 </span>
-                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", flexShrink: 0 }}>
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.6)", flexShrink: 0 }}>
                   {timeAgo(c.lastMessageAt)}
                 </span>
               </div>
               <div
                 style={{
                   fontSize: 13,
-                  color: c.unreadCount > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.5)",
+                  color: c.unreadCount > 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.6)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -165,6 +165,6 @@ const emptyStyle: React.CSSProperties = {
   justifyContent: "center",
   padding: 24,
   textAlign: "center",
-  color: "rgba(255,255,255,0.4)",
+  color: "rgba(255,255,255,0.6)",
   fontSize: 14,
 };

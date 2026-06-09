@@ -20,7 +20,7 @@ export default function GuidelinesPage() {
           onClick={() => router.back()}
           style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1 }}
         >←</button>
-        <div style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: 3, color: "#333", textTransform: "uppercase" }}>
+        <div style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: 3, color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>
           Legal
         </div>
         <div style={{ width: 22 }} />
@@ -29,7 +29,7 @@ export default function GuidelinesPage() {
       <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#00e5ff", textTransform: "uppercase", marginBottom: 8 }}>
         Community Guidelines
       </h1>
-      <p style={{ fontSize: 13, color: "#555", lineHeight: 1.7, marginBottom: 32 }}>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, marginBottom: 32 }}>
         Revolvr is built for professional, safe engagement between Brands and Creators.
         By using the Platform you agree to follow these rules.
       </p>
@@ -51,7 +51,7 @@ export default function GuidelinesPage() {
       ].map((item, i) => (
         <div key={i} style={{ marginBottom: 24, borderTop: "1px solid #1a1510", paddingTop: 20 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "white", marginBottom: 6 }}>{item.heading}</div>
-          <div style={{ fontSize: 13, color: "#555", lineHeight: 1.7 }}>{item.body}</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7 }}>{item.body}</div>
         </div>
       ))}
     </div>

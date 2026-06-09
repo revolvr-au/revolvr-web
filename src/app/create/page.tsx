@@ -171,7 +171,7 @@ export default function CreatePage() {
           <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "#000" }}>
             <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
             {!mediaStream && mode === "LIVE" && (
-              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(255,255,255,0.4)", letterSpacing: 2 }}>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: 2 }}>
                 [ AWS WEBRTC FEED OFFLINE ]
               </div>
             )}
@@ -244,8 +244,8 @@ export default function CreatePage() {
             <span>VOLTAGE: <span style={{ color: "#fff" }}>[ READY ]</span></span>
           </div>
           <div onClick={() => setIsTranche(!isTranche)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, cursor: "pointer", border: `1px solid ${isTranche ? "#F5C518" : "rgba(255,255,255,0.1)"}`, background: isTranche ? "rgba(245,197,24,0.15)" : "rgba(255,255,255,0.02)", borderRadius: 6, padding: "8px 12px", transition: "all 0.15s" }}>
-            <Zap size={14} color={isTranche ? "#F5C518" : "rgba(255,255,255,0.4)"} />
-            <span style={{ fontSize: 11, color: isTranche ? "#F5C518" : "rgba(255,255,255,0.5)" }}>[ NEURAL TRANCHE IGNITION ]</span>
+            <Zap size={14} color={isTranche ? "#F5C518" : "rgba(255,255,255,0.6)"} />
+            <span style={{ fontSize: 11, color: isTranche ? "#F5C518" : "rgba(255,255,255,0.6)" }}>[ NEURAL TRANCHE IGNITION ]</span>
           </div>
         </div>
 

@@ -21,7 +21,7 @@ export default function TermsPage() {
           onClick={() => router.back()}
           style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer", lineHeight: 1 }}
         >←</button>
-        <div style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: 3, color: "#333", textTransform: "uppercase" }}>
+        <div style={{ fontSize: 9, fontFamily: "monospace", letterSpacing: 3, color: "rgba(255,255,255,0.6)", textTransform: "uppercase" }}>
           Legal
         </div>
         <div style={{ width: 22 }} />
@@ -30,7 +30,7 @@ export default function TermsPage() {
       <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#00e5ff", textTransform: "uppercase", marginBottom: 8 }}>
         Terms & Conditions
       </h1>
-      <p style={{ fontSize: 11, fontFamily: "monospace", color: "#333", marginBottom: 32 }}>
+      <p style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.6)", marginBottom: 32 }}>
         Last updated: {TERMS_LAST_UPDATED}
       </p>
 

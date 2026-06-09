@@ -53,7 +53,7 @@ export default function BuySparksPage() {
           onClick={() => router.back()}
           style={{ background: "transparent", border: "none", color: "#aaa", fontSize: 22, cursor: "pointer" }}
         >←</button>
-        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "#333" }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: 3, color: "rgba(255,255,255,0.6)" }}>
           SPARKS
         </div>
         <div style={{ width: 30 }} />
@@ -72,7 +72,7 @@ export default function BuySparksPage() {
         }}>
           BUY SPARKS
         </h1>
-        <p style={{ fontSize: 13, color: "#555", margin: 0 }}>
+        <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", margin: 0 }}>
           Gift creators. Fuel battles. Inject voltage.
         </p>
       </div>
@@ -104,7 +104,7 @@ export default function BuySparksPage() {
                 fontFamily: "monospace",
                 fontSize: 9,
                 letterSpacing: "0.2em",
-                color: selected === i ? "#D4AF37" : "#444",
+                color: selected === i ? "#D4AF37" : "rgba(255,255,255,0.6)",
                 marginBottom: 4,
               }}>
                 {bundle.label}
@@ -125,7 +125,7 @@ export default function BuySparksPage() {
               }}>
                 {bundle.price}
               </div>
-              <div style={{ fontSize: 10, color: "#444", fontFamily: "monospace" }}>AUD</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace" }}>AUD</div>
             </div>
 
             {selected === i && (
@@ -158,7 +158,7 @@ export default function BuySparksPage() {
           borderRadius: 50,
           background: selected !== null ? "#D4AF37" : "rgba(255,255,255,0.05)",
           border: "none",
-          color: selected !== null ? "#0a0806" : "#333",
+          color: selected !== null ? "#0a0806" : "rgba(255,255,255,0.6)",
           fontFamily: "'Bebas Neue', sans-serif",
           fontSize: 20,
           letterSpacing: 3,
@@ -169,7 +169,7 @@ export default function BuySparksPage() {
         {loading ? "REDIRECTING…" : selected !== null ? `BUY ${BUNDLES[selected].sparks.toLocaleString()} SPARKS` : "SELECT A BUNDLE"}
       </button>
 
-      <p style={{ textAlign: "center", fontSize: 11, color: "#333", marginTop: 16, lineHeight: 1.6 }}>
+      <p style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 16, lineHeight: 1.6 }}>
         Sparks are used to gift creators and fuel battles.<br />
         10% of all creator earnings are held as tax reserve.
       </p>

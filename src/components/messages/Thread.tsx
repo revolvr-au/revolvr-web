@@ -248,7 +248,7 @@ export default function Thread({
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
       <div ref={scrollRef} style={{ flex: "1 1 auto", overflowY: "auto", padding: "12px 14px" }}>
         {loading ? (
-          <div style={{ color: "rgba(255,255,255,0.4)", textAlign: "center", marginTop: 24 }}>
+          <div style={{ color: "rgba(255,255,255,0.6)", textAlign: "center", marginTop: 24 }}>
             Loading…
           </div>
         ) : (

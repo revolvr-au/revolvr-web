@@ -267,7 +267,7 @@ await clientRef.current.startBroadcast(data.streamKey);
           position: "absolute", inset: 0, zIndex: 5,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
-          <div style={{ color: "rgba(255,255,255,0.5)", fontFamily: "monospace", fontSize: 13, letterSpacing: "2px" }}>
+          <div style={{ color: "rgba(255,255,255,0.6)", fontFamily: "monospace", fontSize: 13, letterSpacing: "2px" }}>
             LOADING CAMERA…
           </div>
         </div>
@@ -282,7 +282,7 @@ await clientRef.current.startBroadcast(data.streamKey);
           <div style={{
             display: "flex", alignItems: "center", gap: 8,
             fontSize: 11, fontFamily: "monospace", letterSpacing: "2px",
-            color: "rgba(255,255,255,0.5)", textTransform: "uppercase",
+            color: "rgba(255,255,255,0.6)", textTransform: "uppercase",
           }}>
             <div style={{
               width: 6, height: 6, borderRadius: "50%",

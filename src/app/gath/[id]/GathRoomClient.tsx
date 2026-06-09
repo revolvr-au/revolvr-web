@@ -397,7 +397,7 @@ export default function GathRoomClient({ id }: { id: string }) {
         style={{
           minHeight: "100dvh",
           background: "#050814",
-          color: "rgba(255,255,255,0.45)",
+          color: "rgba(255,255,255,0.6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -417,7 +417,7 @@ export default function GathRoomClient({ id }: { id: string }) {
         style={{
           minHeight: "100dvh",
           background: "#050814",
-          color: "rgba(255,255,255,0.55)",
+          color: "rgba(255,255,255,0.6)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -519,7 +519,7 @@ export default function GathRoomClient({ id }: { id: string }) {
                 marginTop: 4,
                 fontSize: 9,
                 letterSpacing: "0.18em",
-                color: "rgba(255,255,255,0.45)",
+                color: "rgba(255,255,255,0.6)",
               }}
             >
               <span
@@ -749,7 +749,7 @@ export default function GathRoomClient({ id }: { id: string }) {
             <div
               style={{
                 fontSize: 9,
-                color: "rgba(255,255,255,0.4)",
+                color: "rgba(255,255,255,0.6)",
                 letterSpacing: "0.18em",
                 marginLeft: 4,
               }}
@@ -779,7 +779,7 @@ export default function GathRoomClient({ id }: { id: string }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "rgba(255,255,255,0.3)",
+              color: "rgba(255,255,255,0.6)",
               fontSize: 10,
               letterSpacing: "0.22em",
             }}
@@ -876,7 +876,7 @@ export default function GathRoomClient({ id }: { id: string }) {
               padding: 10,
               fontSize: 10,
               letterSpacing: "0.22em",
-              color: "rgba(255,255,255,0.4)",
+              color: "rgba(255,255,255,0.6)",
             }}
           >
             SIGN IN TO CHAT
@@ -1036,7 +1036,7 @@ export default function GathRoomClient({ id }: { id: string }) {
           <div
             style={{
               fontSize: 11,
-              color: "rgba(255,255,255,0.55)",
+              color: "rgba(255,255,255,0.6)",
               wordBreak: "break-all",
               padding: 10,
               borderRadius: 10,
@@ -1179,7 +1179,7 @@ export default function GathRoomClient({ id }: { id: string }) {
                   <div
                     style={{
                       fontSize: 9,
-                      color: "rgba(255,255,255,0.4)",
+                      color: "rgba(255,255,255,0.6)",
                       letterSpacing: "0.18em",
                       marginTop: 2,
                     }}
