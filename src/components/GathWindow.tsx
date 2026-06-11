@@ -82,7 +82,7 @@ export default function GathWindow({
           border: "1px solid rgba(255,255,255,0.07)",
           borderRadius: 20,
           padding: "20px 18px 18px",
-          fontFamily: "monospace",
+          fontFamily: "var(--font-stack)",
           color: "#fff",
           boxShadow: "0 20px 60px rgba(0,0,0,0.8)",
         }}
@@ -137,7 +137,7 @@ export default function GathWindow({
         />
         <GathRow
           title="PRIVATE GATH"
-          subtitle="Invite only · 50 sparks to create"
+          subtitle="Invite only"
           icon={<Lock size={14} color="rgba(255,255,255,0.6)" />}
           onTap={() => handleRowTap("PRIVATE")}
         />
@@ -201,7 +201,7 @@ function GathRow({
         color: "#fff",
         cursor: "pointer",
         textAlign: "left",
-        fontFamily: "monospace",
+        fontFamily: "var(--font-stack)",
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -338,7 +338,7 @@ function GathCreateSheet({
           borderTopRightRadius: 22,
           borderTop: "1px solid rgba(255,255,255,0.07)",
           padding: "18px 18px calc(env(safe-area-inset-bottom, 0px) + 22px)",
-          fontFamily: "monospace",
+          fontFamily: "var(--font-stack)",
           color: "#fff",
           animation: "gathSheetSlide 240ms cubic-bezier(0.2,0.8,0.2,1)",
         }}
@@ -403,33 +403,6 @@ function GathCreateSheet({
           multiline
         />
 
-        {type === "PRIVATE" && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "10px 12px",
-              border: `1px solid rgba(255,255,255,0.35)`,
-              background: "rgba(255,255,255,0.06)",
-              borderRadius: 12,
-              marginBottom: 12,
-            }}
-          >
-            <SparkIcon size={12} color={GOLD} />
-            <span
-              style={{
-                fontSize: 10,
-                letterSpacing: "0.2em",
-                color: GOLD,
-                fontWeight: 700,
-              }}
-            >
-              50 SPARKS TO CREATE
-            </span>
-          </div>
-        )}
-
         {type === "BUSINESS" && (
           <div
             style={{
@@ -462,7 +435,7 @@ function GathCreateSheet({
                 borderRadius: 12,
                 color: "#fff",
                 cursor: "pointer",
-                fontFamily: "monospace",
+                fontFamily: "var(--font-stack)",
                 textAlign: "left",
               }}
             >
@@ -500,7 +473,7 @@ function GathCreateSheet({
                   border: "1px solid rgba(255,255,255,0.08)",
                   borderRadius: 10,
                   color: "#fff",
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-stack)",
                   fontSize: 12,
                 }}
               />
@@ -518,7 +491,7 @@ function GathCreateSheet({
             background: name.trim() ? GOLD : "rgba(255,255,255,0.25)",
             color: "#0a0e16",
             border: "none",
-            fontFamily: "monospace",
+            fontFamily: "var(--font-stack)",
             fontSize: 12,
             fontWeight: 800,
             letterSpacing: "0.28em",
@@ -584,7 +557,7 @@ function SheetInput({
     border: `1px solid ${focused ? GOLD : "rgba(255,255,255,0.08)"}`,
     borderRadius: 10,
     color: "#fff",
-    fontFamily: "monospace",
+    fontFamily: "var(--font-stack)",
     fontSize: 12,
     outline: "none",
     transition: "border 180ms ease",

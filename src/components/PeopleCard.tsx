@@ -867,9 +867,13 @@ export default function PeopleCard({
             <MiniStack people={rightStack} side="right" borderColor={linkStyles.avatarBorder} />
           </button>
 
-          {/* BATTLE */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 44 }}>
+          {/* BATTLE — disabled for launch: no route/handler yet, parked product
+              decision. Inert affordance is intentional (a dead click is worse). */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 44, opacity: 0.4 }}>
             <button
+              disabled
+              aria-disabled="true"
+              title="Battle — coming soon"
               style={{
                 width: 34,
                 height: 34,
@@ -879,7 +883,7 @@ export default function PeopleCard({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                cursor: "pointer",
+                cursor: "default",
                 padding: 0,
               }}
             >
@@ -900,32 +904,52 @@ export default function PeopleCard({
             position: "relative",
           }}
         >
-          {["TRANCHE", "SHOP", "MUSIC", "BRAND", "PODCAST"].map((label, i, arr) => (
-            <div
-              key={label}
-              style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                padding: "10px 0",
-                borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
-              }}
-            >
-              <span
+          {/* TRANCHE links to /tranche; SHOP/MUSIC/BRAND/PODCAST have no launch
+              surface yet — rendered disabled/inert pending the first-visitor
+              review (no handler, no placeholder route). */}
+          {[
+            { label: "TRANCHE", href: "/tranche" },
+            { label: "SHOP", href: null },
+            { label: "MUSIC", href: null },
+            { label: "BRAND", href: null },
+            { label: "PODCAST", href: null },
+          ].map((item, i, arr) => {
+            const href = item.href;
+            return (
+              <button
+                key={item.label}
+                onClick={href ? () => router.push(href) : undefined}
+                disabled={!href}
+                aria-disabled={!href}
+                title={href ? undefined : `${item.label} — coming soon`}
                 style={{
-                  width: 4,
-                  height: 4,
-                  borderRadius: "50%",
-                  background: "rgba(255,255,255,0.2)",
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  padding: "10px 0",
+                  background: "transparent",
+                  border: "none",
+                  borderRight: i < arr.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none",
+                  cursor: href ? "pointer" : "default",
+                  opacity: href ? 1 : 0.4,
                 }}
-              />
-              <span style={{ fontSize: 7, letterSpacing: "0.22em", color: "rgba(255,255,255,0.6)" }}>
-                {label}
-              </span>
-            </div>
-          ))}
+              >
+                <span
+                  style={{
+                    width: 4,
+                    height: 4,
+                    borderRadius: "50%",
+                    background: "rgba(255,255,255,0.2)",
+                  }}
+                />
+                <span style={{ fontSize: 7, letterSpacing: "0.22em", color: "rgba(255,255,255,0.6)" }}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         <style>{`

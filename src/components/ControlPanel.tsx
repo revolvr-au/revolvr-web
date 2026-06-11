@@ -44,6 +44,7 @@ export default function ControlPanel({
   const [logoutPending, setLogoutPending] = useState(false);
   const [myGaths, setMyGaths] = useState<MyGath[] | null>(null);
   const [canApplyTfc, setCanApplyTfc] = useState(false);
+  const [resolvedHandle, setResolvedHandle] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -91,6 +92,32 @@ export default function ControlPanel({
       cancelled = true;
     };
   }, [userId]);
+
+  // Resolve the user's real handle from their creator profile. We must NOT
+  // guess it from the email local-part (e.g. "revolvr.au@…" -> "revolvr.au"),
+  // because the actual handle is set at onboarding and is usually different —
+  // guessing routes "View Profile" to /u/<wrong> and 404s the user's own page.
+  useEffect(() => {
+    if (handle || !userId) return;
+    let cancelled = false;
+    fetch(`/api/creator/me`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const h = data?.creator?.handle;
+        setResolvedHandle(typeof h === "string" && h.trim() ? h : null);
+      })
+      .catch(() => {
+        if (!cancelled) setResolvedHandle(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, handle]);
+
+  // The handle passed in by the caller wins; otherwise use the one we resolved
+  // from /api/creator/me. No email-derived fallback.
+  const profileHandle = handle ?? resolvedHandle;
 
   const navigate = (path: string) => {
     onClose();
@@ -185,7 +212,8 @@ export default function ControlPanel({
         {/* Scrollable content */}
         <div style={{ flex: 1, overflowY: "auto", position: "relative", zIndex: 1, paddingBottom: 24 }} className="no-scrollbar">
           <button
-            onClick={() => navigate(handle ? `/u/${handle}` : `/u/${userId?.split('@')[0] || 'user'}`)}
+            onClick={() => profileHandle && navigate(`/u/${profileHandle}`)}
+            disabled={!profileHandle}
             style={{
               display: "flex",
               alignItems: "center",
@@ -196,10 +224,13 @@ export default function ControlPanel({
               borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
               width: "100%",
               textAlign: "left",
-              cursor: "pointer",
+              cursor: profileHandle ? "pointer" : "default",
+              opacity: profileHandle ? 1 : 0.55,
               transition: "background 0.2s ease",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)")}
+            onMouseEnter={(e) => {
+              if (profileHandle) e.currentTarget.style.background = "rgba(255, 255, 255, 0.06)";
+            }}
             onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255, 255, 255, 0.03)")}
           >
             <div
@@ -214,7 +245,7 @@ export default function ControlPanel({
             />
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ color: "#fff", fontSize: 16, fontWeight: 700, fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", letterSpacing: "0.02em" }}>
-                {handle ? `@${handle}` : "View Profile"}
+                {profileHandle ? `@${profileHandle}` : "View Profile"}
               </span>
               <span style={{ color: "rgba(255, 255, 255, 0.8)", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.05em" }}>
                 {userId}
