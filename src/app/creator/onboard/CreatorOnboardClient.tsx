@@ -166,10 +166,10 @@ export default function CreatorOnboardClient() {
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", gap: 16,
       }}>
-        <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white" }}>
+        <div style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 28, letterSpacing: 8, color: "white" }}>
           REVOLVR
         </div>
-        <div style={{ fontFamily: "monospace", fontSize: 13, color: "#00e5ff", letterSpacing: 2 }}>
+        <div style={{ fontFamily: "monospace", fontSize: 13, color: "#ffffff", letterSpacing: 2 }}>
           REDIRECTING TO STRIPE…
         </div>
         <div style={{ fontFamily: "monospace", fontSize: 11, color: "rgba(255,255,255,0.6)" }}>Please wait.</div>
@@ -184,7 +184,7 @@ export default function CreatorOnboardClient() {
       alignItems: "center", justifyContent: "center",
       padding: "32px 20px",
     }}>
-      <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: 8, color: "white", marginBottom: 32 }}>
+      <div style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 28, letterSpacing: 8, color: "white", marginBottom: 32 }}>
         REVOLVR
       </div>
 
@@ -193,7 +193,7 @@ export default function CreatorOnboardClient() {
         {/* ── STEP 1: Handle + display name ── */}
         {step === 1 && (
           <>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
+            <div style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
               BECOME A CREATOR
             </div>
             <div style={{ fontFamily: "monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center" }}>
@@ -216,7 +216,7 @@ export default function CreatorOnboardClient() {
                 borderRadius: 50, padding: "13px 18px",
                 fontFamily: "monospace", fontSize: 14, color: "white", outline: "none",
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#ffffff")}
               onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
             />
 
@@ -230,7 +230,7 @@ export default function CreatorOnboardClient() {
                 borderRadius: 50, padding: "13px 18px",
                 fontFamily: "monospace", fontSize: 14, color: "white", outline: "none",
               }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "#00e5ff")}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#ffffff")}
               onBlur={(e) => (e.currentTarget.style.borderColor = "#2a2520")}
             />
 
@@ -241,9 +241,9 @@ export default function CreatorOnboardClient() {
               style={{
                 width: "100%", padding: "14px 0", borderRadius: 50,
                 background: "transparent",
-                border: `1px solid ${canSubmitStep1 ? "#00e5ff" : "#2a2520"}`,
-                color: canSubmitStep1 ? "#00e5ff" : "rgba(255,255,255,0.6)",
-                fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, letterSpacing: 3,
+                border: `1px solid ${canSubmitStep1 ? "#ffffff" : "#2a2520"}`,
+                color: canSubmitStep1 ? "#ffffff" : "rgba(255,255,255,0.6)",
+                fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 18, letterSpacing: 3,
                 cursor: canSubmitStep1 ? "pointer" : "not-allowed",
                 transition: "border-color 0.2s, color 0.2s",
               }}
@@ -256,7 +256,7 @@ export default function CreatorOnboardClient() {
         {/* ── STEP 2: Character picker ── */}
         {step === 2 && (
           <>
-            <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
+            <div style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 36, color: "white", textAlign: "center", lineHeight: 1 }}>
               PICK YOUR CHARACTER
             </div>
             <div style={{ fontFamily: "monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", textAlign: "center" }}>
@@ -273,8 +273,8 @@ export default function CreatorOnboardClient() {
                   type="button"
                   onClick={() => setCharacterId(id)}
                   style={{
-                    background: characterId === id ? "rgba(0,229,255,0.08)" : "#110e0b",
-                    border: `2px solid ${characterId === id ? "#00e5ff" : "#2a2520"}`,
+                    background: characterId === id ? "rgba(255,255,255,0.08)" : "#110e0b",
+                    border: `2px solid ${characterId === id ? "#ffffff" : "#2a2520"}`,
                     borderRadius: 12, padding: "6px 4px 0",
                     cursor: "pointer", display: "flex",
                     flexDirection: "column", alignItems: "center",
@@ -305,7 +305,7 @@ export default function CreatorOnboardClient() {
                 style={{
                   flex: 1, padding: "14px 0", borderRadius: 50,
                   background: "transparent", border: "1px solid #2a2520",
-                  color: "rgba(255,255,255,0.6)", fontFamily: "'Bebas Neue', sans-serif",
+                  color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                   fontSize: 18, letterSpacing: 3, cursor: "pointer",
                 }}
               >
@@ -317,8 +317,8 @@ export default function CreatorOnboardClient() {
                 onClick={onActivate}
                 style={{
                   flex: 2, padding: "14px 0", borderRadius: 50,
-                  background: "transparent", border: "1px solid #00e5ff",
-                  color: "#00e5ff", fontFamily: "'Bebas Neue', sans-serif",
+                  background: "transparent", border: "1px solid #ffffff",
+                  color: "#ffffff", fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                   fontSize: 18, letterSpacing: 3,
                   cursor: loading ? "not-allowed" : "pointer",
                   transition: "border-color 0.2s, color 0.2s",

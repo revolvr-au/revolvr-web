@@ -132,7 +132,7 @@ export default function TMenuSheet({
           zIndex: 1001,
           maxHeight: "88dvh",
           overflowY: "auto",
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           color: INK,
           boxShadow: "0 -12px 40px rgba(0,0,0,0.28)",
           animation: "tMenuSlideUp 260ms cubic-bezier(0.22, 1, 0.36, 1)",
@@ -230,7 +230,7 @@ export default function TMenuSheet({
             background: "transparent",
             border: "none",
             color: INK_MUTE,
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 11,
             letterSpacing: "0.22em",
             fontWeight: 700,
@@ -256,7 +256,7 @@ function Section({
     <div style={{ margin: "0 14px 14px" }}>
       <div
         style={{
-          fontFamily: "'Space Grotesk', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           fontSize: 10,
           letterSpacing: "0.24em",
           fontWeight: 700,
@@ -309,7 +309,7 @@ function Row({
       {meta && (
         <span
           style={{
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 12,
             fontWeight: 600,
             color: metaColor ?? INK_SOFT,

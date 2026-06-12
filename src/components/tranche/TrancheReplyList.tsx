@@ -65,7 +65,7 @@ export default function TrancheReplyList({
         display: "flex",
         flexDirection: "column",
         gap: 8,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         color: ink,
       }}
     >

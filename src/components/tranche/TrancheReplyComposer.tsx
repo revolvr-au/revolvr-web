@@ -305,7 +305,7 @@ export default function TrancheReplyComposer({
           zIndex: 1001,
           maxHeight: "85dvh",
           overflowY: "auto",
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           color: ink,
           boxShadow: "0 -8px 32px rgba(0,0,0,0.25)",
         }}
@@ -566,7 +566,7 @@ export default function TrancheReplyComposer({
                   fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: "0.16em",
-                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                   cursor: canPost ? "pointer" : "default",
                   opacity: canPost ? 1 : 0.45,
                 }}

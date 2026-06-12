@@ -139,7 +139,6 @@ export default function ProfileClient({
       margin: "0 auto",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         @keyframes arcSpin {
           to { transform: rotate(360deg); }
         }
@@ -160,7 +159,7 @@ export default function ProfileClient({
           padding: "4px 2px",
         }}>←</a>
         <div style={{
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           fontSize: 16,
           letterSpacing: 6,
           color: "white",
@@ -202,7 +201,7 @@ export default function ProfileClient({
             fontFamily: "monospace",
             fontSize: 9,
             letterSpacing: 3,
-            color: "#00e5ff",
+            color: "#ffffff",
             textTransform: "uppercase",
           }}>CREATOR</div>
         )}
@@ -213,17 +212,17 @@ export default function ProfileClient({
             position: "absolute",
             inset: -5,
             borderRadius: "50%",
-            border: "2.5px solid #00e5ff",
-            filter: "drop-shadow(0 0 6px #00e5ff)",
-            boxShadow: "0 0 12px rgba(0,229,255,0.4)",
+            border: "2.5px solid #ffffff",
+            filter: "drop-shadow(0 0 6px #ffffff)",
+            boxShadow: "0 0 12px rgba(255,255,255,0.4)",
           } : {
             position: "absolute",
             inset: -5,
             borderRadius: "50%",
             border: "2.5px solid transparent",
-            borderTopColor: "#00e5ff",
-            borderRightColor: "#00e5ff",
-            filter: "drop-shadow(0 0 6px #00e5ff)",
+            borderTopColor: "#ffffff",
+            borderRightColor: "#ffffff",
+            filter: "drop-shadow(0 0 6px #ffffff)",
             animation: "arcSpin 1.8s linear infinite",
           }} />
 
@@ -303,7 +302,7 @@ export default function ProfileClient({
 
           <div style={{ textAlign: "center", marginTop: 4 }}>
             <div style={{
-              fontSize: 11, color: "#00e5ff",
+              fontSize: 11, color: "#ffffff",
               fontFamily: "monospace", letterSpacing: 1,
             }}>
               @{profile.handle}
@@ -325,7 +324,7 @@ export default function ProfileClient({
             gap: 10,
           }}>
             <span style={{ fontSize: 16 }}>🎙️</span>
-            <span style={{ fontSize: 11, color: "#00e5ff", fontFamily: "monospace", letterSpacing: 2 }}>Intro</span>
+            <span style={{ fontSize: 11, color: "#ffffff", fontFamily: "monospace", letterSpacing: 2 }}>Intro</span>
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>▶</span>
             <div style={{ flex: 1, height: 1, background: "#1a1510" }} />
             <span style={{ fontSize: 10, color: "rgba(255,255,255,0.6)", fontFamily: "monospace" }}>0:30</span>
@@ -360,18 +359,18 @@ export default function ProfileClient({
               borderRadius: 50,
               background: followed
                 ? "rgba(22,28,40,0.95)"
-                : "#F5C518",
+                : "#ffffff",
               border: followed
-                ? "1px solid rgba(245,197,24,0.45)"
-                : "1px solid #F5C518",
-              color: followed ? "#F5C518" : "#0a0e16",
+                ? "1px solid rgba(255,255,255,0.45)"
+                : "1px solid #ffffff",
+              color: followed ? "#ffffff" : "#0a0e16",
               fontSize: 12, fontWeight: 800,
               cursor: (followPending || isOwnProfile || !currentUserEmail) ? "not-allowed" : "pointer",
               opacity: followPending ? 0.6 : 1,
               transition: "all 0.25s ease",
               letterSpacing: "0.22em",
               fontFamily: "monospace",
-              boxShadow: followed ? "none" : "0 4px 20px rgba(245,197,24,0.28)",
+              boxShadow: followed ? "none" : "0 4px 20px rgba(255,255,255,0.28)",
             }}
           >
             {followed ? "LINKED" : "LINK"}

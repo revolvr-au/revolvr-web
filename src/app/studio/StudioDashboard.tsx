@@ -54,7 +54,7 @@ interface MessageModal {
 
 // ─── Style helpers ─────────────────────────────────────────────────────────────
 
-const CYAN = "#00e5ff";
+const CYAN = "#ffffff";
 const BG = "#050814";
 
 const card: CSSProperties = {
@@ -66,11 +66,11 @@ const card: CSSProperties = {
 
 const cyanCard: CSSProperties = {
   ...card,
-  border: "1px solid rgba(0,229,255,0.15)",
+  border: "1px solid rgba(255,255,255,0.15)",
 };
 
 const sectionTitle: CSSProperties = {
-  fontFamily: '"Bebas Neue", cursive',
+  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
   fontSize: 22,
   letterSpacing: "0.06em",
   color: CYAN,
@@ -114,7 +114,7 @@ function btnStyle(variant: string): CSSProperties {
   if (variant === "danger")
     return { ...base, background: "rgba(239,68,68,0.2)", color: "#ef4444" };
   if (variant === "warn")
-    return { ...base, background: "rgba(251,191,36,0.2)", color: "#fbbf24" };
+    return { ...base, background: "rgba(255,255,255,0.2)", color: "#ffffff" };
   if (variant === "ghost")
     return {
       ...base,
@@ -125,9 +125,9 @@ function btnStyle(variant: string): CSSProperties {
   if (variant === "cyan")
     return {
       ...base,
-      background: "rgba(0,229,255,0.15)",
+      background: "rgba(255,255,255,0.15)",
       color: CYAN,
-      border: `1px solid rgba(0,229,255,0.3)`,
+      border: `1px solid rgba(255,255,255,0.3)`,
     };
   return { ...base, background: "rgba(255,255,255,0.12)", color: "#fff" };
 }
@@ -144,16 +144,16 @@ const DEFAULT_CONFIG: Config = {
 
 function statusColor(status: string): string {
   if (status === "banned") return "#ef4444";
-  if (status === "paused") return "#fbbf24";
+  if (status === "paused") return "#ffffff";
   return "#22c55e";
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function clearanceBadge(role: string): { label: string; color: string; bg: string } {
-  if (role === "MODERATOR") return { label: "MODERATOR", color: "#fbbf24", bg: "rgba(251,191,36,0.12)" };
+  if (role === "MODERATOR") return { label: "MODERATOR", color: "#ffffff", bg: "rgba(255,255,255,0.12)" };
   if (role === "SUPPORT") return { label: "SUPPORT", color: "rgba(255,255,255,0.6)", bg: "rgba(255,255,255,0.08)" };
-  return { label: "ADMIN", color: CYAN, bg: "rgba(0,229,255,0.12)" };
+  return { label: "ADMIN", color: CYAN, bg: "rgba(255,255,255,0.12)" };
 }
 
 function formatCountdown(secs: number): string {
@@ -345,7 +345,6 @@ export default function StudioDashboard({
         margin: "0 auto",
       }}
     >
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');`}</style>
 
       {/* ── Header ── */}
       <div
@@ -354,14 +353,14 @@ export default function StudioDashboard({
           justifyContent: "space-between",
           alignItems: "flex-start",
           marginBottom: 36,
-          borderBottom: "1px solid rgba(0,229,255,0.15)",
+          borderBottom: "1px solid rgba(255,255,255,0.15)",
           paddingBottom: 20,
         }}
       >
         <div>
           <div
             style={{
-              fontFamily: '"Bebas Neue", cursive',
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
               fontSize: 42,
               letterSpacing: "0.1em",
               color: "#ffffff",
@@ -376,17 +375,17 @@ export default function StudioDashboard({
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
           {lockCountdown !== null && (
-            <div style={{ fontSize: 11, color: "#fbbf24", letterSpacing: "0.06em", fontFamily: "monospace" }}>
+            <div style={{ fontSize: 11, color: "#ffffff", letterSpacing: "0.06em", fontFamily: "monospace" }}>
               Session locks in {formatCountdown(lockCountdown)}
             </div>
           )}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
             <div style={{
               width: 36, height: 36, borderRadius: "50%",
-              background: "rgba(0,229,255,0.12)",
-              border: "1px solid rgba(0,229,255,0.3)",
+              background: "rgba(255,255,255,0.12)",
+              border: "1px solid rgba(255,255,255,0.3)",
               display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: '"Bebas Neue", cursive',
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
               fontSize: 18, color: CYAN,
             }}>
               {email[0].toUpperCase()}
@@ -442,12 +441,12 @@ export default function StudioDashboard({
               </div>
               <div
                 style={{
-                  fontFamily: '"Bebas Neue", cursive',
+                  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                   fontSize: 40,
                   letterSpacing: "0.02em",
                   color: highlight ? CYAN : "#fff",
                   lineHeight: 1,
-                  textShadow: highlight ? `0 0 20px rgba(0,229,255,0.4)` : "none",
+                  textShadow: highlight ? `0 0 20px rgba(255,255,255,0.4)` : "none",
                 }}
               >
                 {value ?? "—"}
@@ -472,13 +471,13 @@ export default function StudioDashboard({
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             <div
               style={{
-                fontFamily: '"Bebas Neue", cursive',
+                fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                 fontSize: 40,
                 color: tfcPending && tfcPending > 0 ? CYAN : "rgba(255,255,255,0.6)",
                 letterSpacing: "0.02em",
                 lineHeight: 1,
                 textShadow:
-                  tfcPending && tfcPending > 0 ? `0 0 20px rgba(0,229,255,0.4)` : "none",
+                  tfcPending && tfcPending > 0 ? `0 0 20px rgba(255,255,255,0.4)` : "none",
               }}
             >
               {tfcPending ?? "—"}
@@ -573,7 +572,7 @@ export default function StudioDashboard({
                     <td
                       style={{
                         padding: "10px 0",
-                        fontFamily: '"Bebas Neue", cursive',
+                        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                         fontSize: 20,
                         color: CYAN,
                         letterSpacing: "0.04em",
@@ -606,7 +605,7 @@ export default function StudioDashboard({
                 <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{label}</span>
                 <span
                   style={{
-                    fontFamily: '"Bebas Neue", cursive',
+                    fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                     fontSize: 16,
                     color: CYAN,
                     letterSpacing: "0.04em",
@@ -768,7 +767,7 @@ export default function StudioDashboard({
                       <span
                         style={{
                           fontSize: 9,
-                          background: "rgba(0,229,255,0.12)",
+                          background: "rgba(255,255,255,0.12)",
                           color: CYAN,
                           borderRadius: 4,
                           padding: "2px 6px",
@@ -1012,13 +1011,13 @@ export default function StudioDashboard({
               width: "100%",
               maxWidth: 440,
               margin: "0 20px",
-              border: "1px solid rgba(0,229,255,0.2)",
+              border: "1px solid rgba(255,255,255,0.2)",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
               style={{
-                fontFamily: '"Bebas Neue", cursive',
+                fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                 fontSize: 22,
                 color: CYAN,
                 marginBottom: 4,

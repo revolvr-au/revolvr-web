@@ -40,7 +40,6 @@ export default function BuySparksPage() {
       padding: "24px 20px 60px",
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         @keyframes boltPulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.6; transform: scale(0.92); }
@@ -63,7 +62,7 @@ export default function BuySparksPage() {
       <div style={{ textAlign: "center", marginBottom: 8 }}>
         <div style={{ fontSize: 48, animation: "boltPulse 2s ease-in-out infinite" }}>⚡</div>
         <h1 style={{
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           fontSize: 52,
           letterSpacing: 3,
           color: "white",
@@ -90,8 +89,8 @@ export default function BuySparksPage() {
               alignItems: "center",
               justifyContent: "space-between",
               width: "100%",
-              background: selected === i ? "rgba(212,175,55,0.08)" : "rgba(255,255,255,0.03)",
-              border: `1px solid ${selected === i ? "rgba(212,175,55,0.5)" : "rgba(255,255,255,0.08)"}`,
+              background: selected === i ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
+              border: `1px solid ${selected === i ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.08)"}`,
               borderRadius: 14,
               padding: "18px 20px",
               cursor: "pointer",
@@ -104,7 +103,7 @@ export default function BuySparksPage() {
                 fontFamily: "monospace",
                 fontSize: 9,
                 letterSpacing: "0.2em",
-                color: selected === i ? "#D4AF37" : "rgba(255,255,255,0.6)",
+                color: selected === i ? "#ffffff" : "rgba(255,255,255,0.6)",
                 marginBottom: 4,
               }}>
                 {bundle.label}
@@ -113,7 +112,7 @@ export default function BuySparksPage() {
                 <span style={{ fontSize: 22, fontWeight: 700, color: "white" }}>
                   {bundle.sparks.toLocaleString()}
                 </span>
-                <span style={{ fontSize: 16, color: "#D4AF37" }}>⚡</span>
+                <span style={{ fontSize: 16, color: "#ffffff" }}>⚡</span>
               </div>
             </div>
 
@@ -121,7 +120,7 @@ export default function BuySparksPage() {
               <div style={{
                 fontSize: 22,
                 fontWeight: 700,
-                color: selected === i ? "#D4AF37" : "rgba(255,255,255,0.7)",
+                color: selected === i ? "#ffffff" : "rgba(255,255,255,0.7)",
               }}>
                 {bundle.price}
               </div>
@@ -135,7 +134,7 @@ export default function BuySparksPage() {
                 width: 20,
                 height: 20,
                 borderRadius: "50%",
-                background: "#D4AF37",
+                background: "#ffffff",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -156,10 +155,10 @@ export default function BuySparksPage() {
           width: "100%",
           padding: "16px 0",
           borderRadius: 50,
-          background: selected !== null ? "#D4AF37" : "rgba(255,255,255,0.05)",
+          background: selected !== null ? "#ffffff" : "rgba(255,255,255,0.05)",
           border: "none",
           color: selected !== null ? "#0a0806" : "rgba(255,255,255,0.6)",
-          fontFamily: "'Bebas Neue', sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           fontSize: 20,
           letterSpacing: 3,
           cursor: selected !== null ? "pointer" : "not-allowed",

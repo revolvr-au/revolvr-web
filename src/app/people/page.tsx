@@ -8,7 +8,7 @@ import RingRim from "@/components/RingRim";
 import { useRingStatus } from "@/hooks/useRingStatus";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
-const GOLD = "#F5C518";
+const GOLD = "#ffffff";
 
 type GathStatus = "ACTIVE" | "PRELAUNCHING" | string;
 type GathType = "OPEN" | "PRIVATE" | "BUSINESS";
@@ -107,9 +107,9 @@ function Avatar({
           />
           <defs>
             <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#00e5ff" stopOpacity="1" />
-              <stop offset="60%" stopColor="#00e5ff" stopOpacity="0.4" />
-              <stop offset="100%" stopColor="#00e5ff" stopOpacity="0" />
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="60%" stopColor="#ffffff" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
             </linearGradient>
           </defs>
         </svg>
@@ -123,7 +123,7 @@ function Avatar({
             background: avatarUrl
               ? `url(${avatarUrl}) center/cover`
               : "linear-gradient(135deg, #0d1b2e, #1a2744)",
-            border: showArc || hasRing ? "none" : "2px solid rgba(0,229,255,0.25)",
+            border: showArc || hasRing ? "none" : "2px solid rgba(255,255,255,0.25)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -145,7 +145,7 @@ function VoltageTag({ voltage }: { voltage: number }) {
   return (
     <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>
       <span style={{ fontSize: 10 }}>⚡</span>
-      <span style={{ fontSize: 11, color: "#00e5ff", fontWeight: 700, fontFamily: "monospace" }}>
+      <span style={{ fontSize: 11, color: "#ffffff", fontWeight: 700, fontFamily: "monospace" }}>
         {voltage.toLocaleString()}
       </span>
     </span>
@@ -242,7 +242,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
         padding: "12px 8px 10px",
         background: "rgba(255,255,255,0.04)",
         borderRadius: 12,
-        border: "1px solid rgba(0,229,255,0.1)",
+        border: "1px solid rgba(255,255,255,0.1)",
         cursor: "pointer",
         overflow: "hidden",
       }}
@@ -285,7 +285,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
       }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
           <span style={{ fontSize: 10 }}>⚡</span>
-          <span style={{ color: "#00e5ff", fontFamily: "monospace", fontWeight: 700 }}>
+          <span style={{ color: "#ffffff", fontFamily: "monospace", fontWeight: 700 }}>
             {person.voltage.toLocaleString()}
           </span>
         </span>
@@ -353,7 +353,7 @@ function RisingCard({ person, onClick }: { person: RisingPerson; onClick: () => 
           height: 28,
           fontFamily: "monospace",
           letterSpacing: "0.22em",
-          boxShadow: "0 4px 14px rgba(245,197,24,0.22)",
+          boxShadow: "0 4px 14px rgba(255,255,255,0.22)",
           cursor: "pointer",
         }}
         onClick={e => { e.stopPropagation(); }}
@@ -422,7 +422,7 @@ function NewCard({ person, onClick }: { person: NewPerson; onClick: () => void }
           padding: "3px 12px",
           fontFamily: "monospace",
           letterSpacing: "0.22em",
-          boxShadow: "0 4px 14px rgba(245,197,24,0.22)",
+          boxShadow: "0 4px 14px rgba(255,255,255,0.22)",
           cursor: "pointer",
           width: "100%",
         }}
@@ -438,8 +438,8 @@ function SectionHeader({ label }: { label: string }) {
   return (
     <div style={{
       fontSize: 24,
-      fontFamily: "'Bebas Neue', sans-serif",
-      color: "#00e5ff",
+      fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
+      color: "#ffffff",
       letterSpacing: "3px",
       marginBottom: 14,
     }}>
@@ -512,9 +512,9 @@ function GathCard({
             fontFamily: "monospace",
             letterSpacing: "0.22em",
             fontWeight: 700,
-            color: joined ? "rgba(245,197,24,0.55)" : isPreLaunch ? "rgba(255,255,255,0.25)" : GOLD,
+            color: joined ? "rgba(255,255,255,0.55)" : isPreLaunch ? "rgba(255,255,255,0.25)" : GOLD,
             background: "transparent",
-            border: `1px solid ${joined ? "rgba(245,197,24,0.35)" : isPreLaunch ? "rgba(255,255,255,0.12)" : GOLD}`,
+            border: `1px solid ${joined ? "rgba(255,255,255,0.35)" : isPreLaunch ? "rgba(255,255,255,0.12)" : GOLD}`,
             borderRadius: 20,
             padding: "4px 14px",
             cursor: joined || joining || isPreLaunch ? "default" : "pointer",
@@ -568,8 +568,8 @@ function GathCard({
             letterSpacing: "0.22em",
             fontWeight: 700,
             color: GOLD,
-            background: "rgba(245,197,24,0.08)",
-            border: "1px solid rgba(245,197,24,0.35)",
+            background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.35)",
             borderRadius: 6,
             padding: "3px 8px",
           }}
@@ -679,7 +679,6 @@ export function PeoplePageContent() {
   return (
     <FeedLayout>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         @keyframes livePulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.4; transform: scale(0.8); }
@@ -767,7 +766,7 @@ export function PeoplePageContent() {
             }}>
               <div style={{
                 fontSize: 36,
-                fontFamily: "'Bebas Neue', sans-serif",
+                fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                 color: "rgba(255,255,255,0.15)",
                 letterSpacing: "4px",
               }}>
@@ -821,7 +820,7 @@ export function PeoplePageContent() {
           }}>
             <div style={{
               fontSize: 36,
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
               color: "rgba(255,255,255,0.15)",
               letterSpacing: "4px",
             }}>
@@ -918,7 +917,7 @@ export function PeoplePageContent() {
                 <div style={{ fontSize: 36 }}>🔵</div>
                 <div>
                   <div style={{
-                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
                     fontSize: 26,
                     letterSpacing: 2,
                     color: "#3B82F6",

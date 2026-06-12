@@ -26,7 +26,7 @@ export default function AgeVerificationPage() {
         <div style={{ width: 22 }} />
       </div>
 
-      <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#00e5ff", textTransform: "uppercase", marginBottom: 24 }}>
+      <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#ffffff", textTransform: "uppercase", marginBottom: 24 }}>
         Age Verification Policy
       </h1>
 

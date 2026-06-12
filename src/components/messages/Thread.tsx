@@ -297,7 +297,7 @@ function Bubble({ msg, mine }: { msg: Msg; mine: boolean }) {
           maxWidth: "72%",
           padding: "8px 12px",
           borderRadius: 16,
-          background: mine ? "#F5C518" : "rgba(255,255,255,0.08)",
+          background: mine ? "#ffffff" : "rgba(255,255,255,0.08)",
           color: mine ? "#0A0A0A" : "rgba(255,255,255,0.92)",
           fontSize: 14,
           lineHeight: 1.4,

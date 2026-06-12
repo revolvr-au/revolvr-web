@@ -220,7 +220,7 @@ export default function HotTrancheCard({
           borderRadius: 12,
           overflow: "hidden",
           color: HOT_INK,
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           marginBottom: 16,
           animation:
             "hotFadeIn 320ms ease-out, hotBorderGlow 2.4s ease-in-out infinite",
@@ -234,7 +234,7 @@ export default function HotTrancheCard({
             display: "flex",
             alignItems: "center",
             gap: 10,
-            fontFamily: "'Space Grotesk', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           }}
         >
           <span
@@ -270,7 +270,7 @@ export default function HotTrancheCard({
           <span
             style={{
               marginLeft: "auto",
-              fontFamily: "'Space Grotesk', monospace",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 11,
               letterSpacing: "0.08em",
               color: HOT_INK,
@@ -360,7 +360,7 @@ export default function HotTrancheCard({
               display: "flex",
               alignItems: "baseline",
               gap: 10,
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             }}
           >
             <span
@@ -507,7 +507,7 @@ function ActionButton({
         padding: "6px 10px",
         cursor: disabled ? "default" : "pointer",
         color: HOT_INK_SOFT,
-        fontFamily: "'Space Grotesk', monospace",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 11,
         fontWeight: 700,
         opacity: disabled && !active ? 0.45 : 1,

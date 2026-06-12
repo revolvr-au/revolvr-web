@@ -142,7 +142,7 @@ export default function TrancheFactCheckSheet({
           zIndex: 1001,
           maxHeight: "90dvh",
           overflowY: "auto",
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           color: ink,
           boxShadow: "0 -8px 32px rgba(0,0,0,0.3)",
         }}
@@ -167,7 +167,7 @@ export default function TrancheFactCheckSheet({
         >
           <span
             style={{
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               fontSize: 12,
               fontWeight: 700,
               letterSpacing: "0.22em",
@@ -218,7 +218,7 @@ export default function TrancheFactCheckSheet({
                   fontSize: 11,
                   fontWeight: 700,
                   letterSpacing: "0.16em",
-                  fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                   cursor: "pointer",
                 }}
               >
@@ -293,7 +293,7 @@ export default function TrancheFactCheckSheet({
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: "0.16em",
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               cursor: "pointer",
             }}
           >
@@ -313,7 +313,7 @@ export default function TrancheFactCheckSheet({
               fontSize: 11,
               fontWeight: 700,
               letterSpacing: "0.16em",
-              fontFamily: "'Space Grotesk', system-ui, sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
               cursor: canSubmit ? "pointer" : "default",
               opacity: canSubmit ? 1 : 0.45,
             }}
@@ -333,7 +333,7 @@ function Label({ children }: { children: React.ReactNode }) {
         fontSize: 10,
         letterSpacing: "0.18em",
         fontWeight: 700,
-        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         marginBottom: 5,
         opacity: 0.7,
       }}

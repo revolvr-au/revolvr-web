@@ -99,14 +99,14 @@ export default function RightRail({
             background: avatarUrl
               ? `url(${avatarUrl}) center/cover`
               : "linear-gradient(135deg, #1a1a2e, #16213e)",
-            border: hasRing ? "none" : (followed ? "2px solid #00e5ff" : "2px solid rgba(0,229,255,0.4)"),
+            border: hasRing ? "none" : (followed ? "2px solid #ffffff" : "2px solid rgba(255,255,255,0.4)"),
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 14,
             fontWeight: 700,
             color: "white",
-            boxShadow: hasRing ? "none" : (followed ? "0 0 12px rgba(0,229,255,0.5)" : "0 0 6px rgba(0,229,255,0.2)"),
+            boxShadow: hasRing ? "none" : (followed ? "0 0 12px rgba(255,255,255,0.5)" : "0 0 6px rgba(255,255,255,0.2)"),
           }}>
             {!avatarUrl && (
               (username?.startsWith("@") ? username.slice(1) : username)?.[0]?.toUpperCase() ?? "?"
@@ -118,7 +118,7 @@ export default function RightRail({
           letterSpacing: "1.5px",
           fontFamily: "monospace",
           textTransform: "uppercase",
-          color: "#00e5ff",
+          color: "#ffffff",
           opacity: followed ? 0.7 : 0,
           transition: "opacity 0.4s ease",
         }}>
@@ -166,7 +166,7 @@ export default function RightRail({
             bottom: 12,
             left: "50%",
             transform: "translateX(-50%)",
-            color: "#FFD700",
+            color: "#ffffff",
             fontSize: 18,
             fontWeight: 800,
             animation: "rewardFloat 1s ease forwards",

@@ -17,8 +17,8 @@ function SuccessContent() {
     }}>
       <div style={{ fontSize: 56, marginBottom: 16 }}>⚡</div>
       <div style={{
-        fontFamily: "'Bebas Neue', sans-serif",
-        fontSize: 42, letterSpacing: 3, color: "#D4AF37", marginBottom: 8,
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
+        fontSize: 42, letterSpacing: 3, color: "#ffffff", marginBottom: 8,
       }}>
         {sparks} SPARKS LOADED
       </div>
@@ -28,8 +28,8 @@ function SuccessContent() {
       <button
         onClick={() => router.push("/public-feed")}
         style={{
-          background: "#D4AF37", border: "none", borderRadius: 50,
-          padding: "14px 40px", fontFamily: "'Bebas Neue', sans-serif",
+          background: "#ffffff", border: "none", borderRadius: 50,
+          padding: "14px 40px", fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
           fontSize: 18, letterSpacing: 3, color: "#0a0806", cursor: "pointer",
         }}
       >

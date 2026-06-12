@@ -128,7 +128,7 @@ export default function TFCApplyPage() {
       >
         <h1
           style={{
-            fontFamily: "'Bebas Neue', sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
             fontSize: 48,
             letterSpacing: 3,
             color: "white",
@@ -140,7 +140,7 @@ export default function TFCApplyPage() {
         </h1>
         <p
           style={{
-            fontFamily: "'DM Sans', system-ui, sans-serif",
+            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
             fontSize: 13,
             color: "rgba(255,255,255,0.6)",
             margin: "0 0 22px",
@@ -247,7 +247,7 @@ export default function TFCApplyPage() {
               <div
                 style={{
                   marginTop: 12,
-                  fontFamily: "'DM Sans', system-ui, sans-serif",
+                  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                   fontSize: 12,
                   color: ROSE,
                   textAlign: "center",
@@ -303,7 +303,7 @@ function Card({ children }: { children: React.ReactNode }) {
         background: PASCAL_MID,
         borderRadius: 14,
         padding: "22px 20px",
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         color: INK,
         boxShadow: "0 1px 0 rgba(0,0,0,0.04), 0 8px 28px rgba(0,0,0,0.18)",
       }}
@@ -317,7 +317,7 @@ function Heading({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 13,
         letterSpacing: "0.2em",
         fontWeight: 700,
@@ -346,7 +346,7 @@ function Label({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        fontFamily: "'Space Grotesk', monospace",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 10,
         letterSpacing: "0.24em",
         fontWeight: 700,
@@ -369,7 +369,7 @@ function Stub({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        fontFamily: "'Space Grotesk', monospace",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 10,
         letterSpacing: "0.2em",
         color: "rgba(255,255,255,0.6)",
@@ -405,7 +405,7 @@ function Chip({
         border: `1px solid ${active ? INK : "rgba(15,17,21,0.18)"}`,
         background: active ? INK : PASCAL_LOW,
         color: active ? PASCAL_MID : INK_SOFT,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 12,
         fontWeight: 600,
         cursor: "pointer",
@@ -422,7 +422,7 @@ function Counter({ count, ok }: { count: number; ok: boolean }) {
     <div
       style={{
         marginTop: 6,
-        fontFamily: "'Space Grotesk', monospace",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         fontSize: 10,
         letterSpacing: "0.15em",
         color: ok ? SLATE : ROSE,
@@ -440,7 +440,7 @@ const textareaStyle: React.CSSProperties = {
   border: `1px solid rgba(15,17,21,0.12)`,
   borderRadius: 10,
   color: INK,
-  fontFamily: "'DM Sans', system-ui, sans-serif",
+  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   fontSize: 14,
   lineHeight: 1.5,
   outline: "none",
@@ -455,7 +455,7 @@ const primaryButtonStyle: React.CSSProperties = {
   background: INK,
   color: PASCAL_MID,
   border: "none",
-  fontFamily: "'Space Grotesk', monospace",
+  fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   fontSize: 12,
   fontWeight: 800,
   letterSpacing: "0.24em",

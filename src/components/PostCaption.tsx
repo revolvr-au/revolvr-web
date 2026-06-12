@@ -46,7 +46,7 @@ export default function PostCaption({ username, caption, avatarUrl, postId, late
               background: avatarUrl
                 ? `url(${avatarUrl}) center/cover`
                 : "linear-gradient(135deg, #1a1a2e, #16213e)",
-              border: hasRing ? "none" : "2px solid rgba(0,229,255,0.4)",
+              border: hasRing ? "none" : "2px solid rgba(255,255,255,0.4)",
               flexShrink: 0,
               display: "flex",
               alignItems: "center",

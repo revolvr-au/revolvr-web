@@ -70,7 +70,7 @@ function CommentCard({
           background: isReply
             ? "transparent"
             : isActiveReply
-            ? "rgba(0,229,255,0.05)"
+            ? "rgba(255,255,255,0.05)"
             : "transparent",
           ...(isReply
             ? { border: "none" }
@@ -86,9 +86,9 @@ function CommentCard({
             background: isHot
               ? "linear-gradient(180deg, #FF6B00, transparent)"
               : voltage >= 50
-              ? "linear-gradient(180deg, #FFB800, transparent)"
+              ? "linear-gradient(180deg, #ffffff, transparent)"
               : voltage >= 10
-              ? "linear-gradient(180deg, #00e5ff, transparent)"
+              ? "linear-gradient(180deg, #ffffff, transparent)"
               : "linear-gradient(180deg, rgba(255,255,255,0.15), transparent)",
             animation: isHot ? "voltageHot 1.8s ease-in-out infinite" : undefined,
           }}
@@ -116,7 +116,7 @@ function CommentCard({
               background: "rgba(255,255,255,0.1)",
               flexShrink: 0,
               position: "relative",
-              boxShadow: "0 0 8px rgba(0,229,255,0.25)",
+              boxShadow: "0 0 8px rgba(255,255,255,0.25)",
             }}
           >
             <img
@@ -176,7 +176,7 @@ function CommentCard({
                   cursor: "pointer",
                   fontSize: 11,
                   fontWeight: 600,
-                  color: "#00e5ff",
+                  color: "#ffffff",
                   fontFamily: "inherit",
                   letterSpacing: "0.05em",
                 }}
@@ -205,7 +205,7 @@ function CommentCard({
                     cursor: "pointer",
                     fontSize: 11,
                     fontWeight: 500,
-                    color: "#00e5ff",
+                    color: "#ffffff",
                     fontFamily: "inherit",
                   }}
                 >
@@ -252,12 +252,12 @@ function CommentCard({
                   cursor: !viewerEmail || volted ? "default" : "pointer",
                   fontSize: 11,
                   fontWeight: 500,
-                  color: volted ? "#FFB800" : "#00e5ff",
+                  color: volted ? "#ffffff" : "#ffffff",
                   fontFamily: "inherit",
                   opacity: !viewerEmail ? 0.5 : 1,
                 }}
               >
-                <BoltIcon size={11} color={volted ? "#FFB800" : "#00e5ff"} />
+                <BoltIcon size={11} color={volted ? "#ffffff" : "#ffffff"} />
                 <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>
                   {voltage.toLocaleString()}
                 </span>
@@ -265,7 +265,7 @@ function CommentCard({
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>·</span>
               <span style={{
                 fontSize: 10,
-                color: "#00e5ff",
+                color: "#ffffff",
                 fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
                 letterSpacing: "0.05em",
                 opacity: 0.7,
@@ -299,8 +299,8 @@ function CommentCard({
               background: "rgba(5,8,20,0.92)",
               backdropFilter: "blur(30px)",
               borderRadius: 16,
-              border: "1px solid rgba(0,229,255,0.2)",
-              borderLeft: "3px solid #00e5ff",
+              border: "1px solid rgba(255,255,255,0.2)",
+              borderLeft: "3px solid #ffffff",
               padding: 20,
               position: "relative",
             }}
@@ -360,12 +360,12 @@ function CommentCard({
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                background: "rgba(0,229,255,0.1)",
-                border: "1px solid rgba(0,229,255,0.3)",
+                background: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.3)",
                 borderRadius: 20,
                 padding: "6px 14px",
                 cursor: "pointer",
-                color: "#00e5ff",
+                color: "#ffffff",
                 fontSize: 12,
                 fontWeight: 700,
                 fontFamily: "'JetBrains Mono', monospace",
@@ -376,7 +376,7 @@ function CommentCard({
                 width: 18,
                 height: 18,
                 borderRadius: "50%",
-                background: "#00e5ff",
+                background: "#ffffff",
                 color: "#050814",
                 display: "flex",
                 alignItems: "center",
@@ -464,9 +464,9 @@ export default function CommentsList({
     <>
       <style>{`
         @keyframes voltageHot {
-          0%   { background: linear-gradient(180deg, #FF6B00, #FFB800); }
-          50%  { background: linear-gradient(180deg, #FFB800, #FF6B00); }
-          100% { background: linear-gradient(180deg, #FF6B00, #FFB800); }
+          0%   { background: linear-gradient(180deg, #FF6B00, #ffffff); }
+          50%  { background: linear-gradient(180deg, #ffffff, #FF6B00); }
+          100% { background: linear-gradient(180deg, #FF6B00, #ffffff); }
         }
       `}</style>
 
@@ -498,7 +498,7 @@ export default function CommentsList({
                     <span
                       style={{
                         fontSize: 13,
-                        color: "rgba(0,229,255,0.4)",
+                        color: "rgba(255,255,255,0.4)",
                         marginTop: 12,
                         flexShrink: 0,
                         lineHeight: 1,

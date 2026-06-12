@@ -107,7 +107,7 @@ export default function WitnessPanel({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontFamily: "'Space Grotesk', system-ui, sans-serif",
+                        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                         fontWeight: 700,
                         fontSize: 9,
                         letterSpacing: "0.02em",

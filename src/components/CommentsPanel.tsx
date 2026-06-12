@@ -88,7 +88,7 @@ export default function CommentsPanel({
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           overflow: "hidden",
-          boxShadow: "0 0 60px rgba(0,229,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
+          boxShadow: "0 0 60px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
           fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
           height: "75dvh",
         }}
@@ -136,7 +136,7 @@ export default function CommentsPanel({
         </div>
         <div style={{
           height: 1,
-          background: "linear-gradient(90deg, #00e5ff, transparent)",
+          background: "linear-gradient(90deg, #ffffff, transparent)",
           marginBottom: 4,
           opacity: 0.3,
         }} />
@@ -167,7 +167,7 @@ export default function CommentsPanel({
           style={{
             flexShrink: 0,
             background: "rgba(0,0,0,0.4)",
-            borderTop: "1px solid rgba(0,229,255,0.1)",
+            borderTop: "1px solid rgba(255,255,255,0.1)",
             padding: "12px 16px",
             paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
             display: "flex",
@@ -217,7 +217,7 @@ export default function CommentsPanel({
               style={{
                 fontSize: 10,
                 fontFamily: "'JetBrains Mono', monospace",
-                color: "rgba(0,229,255,0.6)",
+                color: "rgba(255,255,255,0.6)",
                 letterSpacing: "0.08em",
                 paddingLeft: 4,
                 display: "flex",
@@ -248,7 +248,7 @@ export default function CommentsPanel({
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendComment(commentText)}
-              onFocus={(e) => { e.currentTarget.style.boxShadow = "0 0 0 1px rgba(0,229,255,0.3)"; }}
+              onFocus={(e) => { e.currentTarget.style.boxShadow = "0 0 0 1px rgba(255,255,255,0.3)"; }}
               onBlur={(e) => { e.currentTarget.style.boxShadow = "none"; }}
               placeholder={replyTo ? `Reply to @${replyTo.userEmail.split("@")[0]}...` : "Add to the conversation..."}
               style={{
@@ -273,7 +273,7 @@ export default function CommentsPanel({
                 height: 40,
                 minWidth: 40,
                 borderRadius: "50%",
-                background: "#00e5ff",
+                background: "#ffffff",
                 border: "none",
                 display: "flex",
                 alignItems: "center",

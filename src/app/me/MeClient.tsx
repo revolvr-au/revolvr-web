@@ -12,7 +12,7 @@ const supabase = createSupabaseBrowserClient();
 const RING_DISPLAY: Record<string, { color: string; label: string }> = {
   NONE:       { color: "rgba(255,255,255,0.25)", label: "No Ring" },
   BLUE:       { color: "#3B82F6",  label: "Blue Ring" },
-  GOLD:       { color: "#F59E0B",  label: "Gold Ring" },
+  GOLD:       { color: "#ffffff",  label: "Gold Ring" },
   BUSINESS:   { color: "#8B5CF6",  label: "Business Ring" },
   CORPORATE:  { color: "#6366F1",  label: "Corporate Ring" },
   RED:        { color: "#EF4444",  label: "Red Ring" },
@@ -278,7 +278,7 @@ export default function MeClient() {
           </div>
         )}
         {notice && (
-          <div style={{ background: "rgba(0,229,255,0.07)", border: "1px solid rgba(0,229,255,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#00e5ff", marginBottom: 14 }}>
+          <div style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 10, padding: "10px 14px", fontSize: 13, color: "#ffffff", marginBottom: 14 }}>
             {notice}
           </div>
         )}
@@ -329,7 +329,7 @@ export default function MeClient() {
                       style={{
                         position: "absolute", bottom: 2, right: 2,
                         width: 24, height: 24, borderRadius: "50%",
-                        background: "#00e5ff", color: "#050814",
+                        background: "#ffffff", color: "#050814",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: 16, fontWeight: 700, cursor: "pointer",
                         boxShadow: "0 2px 8px rgba(0,0,0,0.5)", lineHeight: 1,
@@ -347,9 +347,9 @@ export default function MeClient() {
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                   <div style={{
                     width: 88, height: 88,
-                    border: "1px solid rgba(0,229,255,0.2)",
+                    border: "1px solid rgba(255,255,255,0.2)",
                     borderRadius: 12,
-                    background: "rgba(0,229,255,0.04)",
+                    background: "rgba(255,255,255,0.04)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     overflow: "hidden", position: "relative",
                   }}>
@@ -360,13 +360,13 @@ export default function MeClient() {
                         alt="Live avatar"
                         style={{
                           width: "100%", height: "100%", objectFit: "contain",
-                          filter: "drop-shadow(0 0 8px rgba(0,229,255,0.4))",
+                          filter: "drop-shadow(0 0 8px rgba(255,255,255,0.4))",
                         }}
                       />
                     ) : (
                       <div style={{ textAlign: "center", padding: 8 }}>
                         {avatarBusy ? (
-                          <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(0,229,255,0.5)", letterSpacing: "0.08em" }}>
+                          <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: "0.08em" }}>
                             PROCESSING…
                           </div>
                         ) : (
@@ -377,7 +377,7 @@ export default function MeClient() {
                       </div>
                     )}
                   </div>
-                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(0,229,255,0.5)", letterSpacing: "0.1em" }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(255,255,255,0.5)", letterSpacing: "0.1em" }}>
                     LIVE
                   </span>
                 </div>
@@ -450,7 +450,7 @@ export default function MeClient() {
                   Bio
                   <span style={{
                     marginLeft: 8,
-                    color: bio.length > 140 ? (bio.length >= 160 ? "#ef4444" : "#F59E0B") : "rgba(255,255,255,0.2)",
+                    color: bio.length > 140 ? (bio.length >= 160 ? "#ef4444" : "#ffffff") : "rgba(255,255,255,0.2)",
                   }}>
                     {bio.length}/160
                   </span>
@@ -473,8 +473,8 @@ export default function MeClient() {
                   width: "100%",
                   height: 48,
                   borderRadius: 12,
-                  background: (saving || !displayName.trim()) ? "rgba(0,229,255,0.1)" : "#00e5ff",
-                  color: (saving || !displayName.trim()) ? "rgba(0,229,255,0.6)" : "#050814",
+                  background: (saving || !displayName.trim()) ? "rgba(255,255,255,0.1)" : "#ffffff",
+                  color: (saving || !displayName.trim()) ? "rgba(255,255,255,0.6)" : "#050814",
                   border: "none",
                   fontSize: 13,
                   fontWeight: 700,
@@ -561,7 +561,7 @@ export default function MeClient() {
                   <span style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", fontFamily: "monospace", letterSpacing: "0.06em" }}>
                     Voltage
                   </span>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#F59E0B", fontFamily: "monospace" }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#ffffff", fontFamily: "monospace" }}>
                     ⚡ {voltage ?? 0}
                   </span>
                 </div>

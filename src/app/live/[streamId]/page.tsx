@@ -5,14 +5,14 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
 const GIFTS = [
-  { id: "pulse",    name: "Pulse",    sparks: 10,   color: "#00e5ff" },
-  { id: "amp",      name: "Amp",      sparks: 50,   color: "#00e5ff" },
-  { id: "override", name: "Override", sparks: 150,  color: "#D4AF37" },
-  { id: "monolith", name: "Monolith", sparks: 500,  color: "#D4AF37" },
+  { id: "pulse",    name: "Pulse",    sparks: 10,   color: "#ffffff" },
+  { id: "amp",      name: "Amp",      sparks: 50,   color: "#ffffff" },
+  { id: "override", name: "Override", sparks: 150,  color: "#ffffff" },
+  { id: "monolith", name: "Monolith", sparks: 500,  color: "#ffffff" },
   { id: "eclipse",  name: "Eclipse",  sparks: 1500, color: "#fff" },
 ];
 
-function BoltIcon({ size = 22, color = "#D4AF37" }: { size?: number; color?: string }) {
+function BoltIcon({ size = 22, color = "#ffffff" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" fill={color} stroke={color} strokeWidth="1" strokeLinejoin="round" />
@@ -23,31 +23,31 @@ function BoltIcon({ size = 22, color = "#D4AF37" }: { size?: number; color?: str
 function GiftAsset({ id, size = 32 }: { id: string; size?: number }) {
   if (id === "pulse") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#00e5ff" filter="url(#gc)"/>
+      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#ffffff" filter="url(#gc)"/>
       <defs><filter id="gc"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
   if (id === "amp") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <circle cx="20" cy="20" r="16" fill="none" stroke="#00e5ff" strokeWidth="2" opacity="0.4"/>
-      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#00e5ff" filter="url(#ga)"/>
-      <circle cx="20" cy="20" r="8" fill="none" stroke="#00e5ff" strokeWidth="1.5" opacity="0.6"/>
+      <circle cx="20" cy="20" r="16" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.4"/>
+      <path d="M22 4L8 22h10l-2 14 16-20H22L24 4z" fill="#ffffff" filter="url(#ga)"/>
+      <circle cx="20" cy="20" r="8" fill="none" stroke="#ffffff" strokeWidth="1.5" opacity="0.6"/>
       <defs><filter id="ga"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
   if (id === "override") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <polygon points="20,2 38,32 2,32" fill="none" stroke="#D4AF37" strokeWidth="2"/>
-      <polygon points="20,8 34,30 6,30" fill="#D4AF3730"/>
-      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#D4AF37" filter="url(#go)"/>
+      <polygon points="20,2 38,32 2,32" fill="none" stroke="#ffffff" strokeWidth="2"/>
+      <polygon points="20,8 34,30 6,30" fill="#ffffff30"/>
+      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#ffffff" filter="url(#go)"/>
       <defs><filter id="go"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
   if (id === "monolith") return (
     <svg width={size} height={size} viewBox="0 0 40 40">
-      <rect x="8" y="4" width="24" height="32" rx="3" fill="none" stroke="#D4AF37" strokeWidth="2"/>
-      <rect x="12" y="8" width="16" height="24" rx="2" fill="#D4AF3720"/>
-      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#D4AF37" filter="url(#gm)"/>
+      <rect x="8" y="4" width="24" height="32" rx="3" fill="none" stroke="#ffffff" strokeWidth="2"/>
+      <rect x="12" y="8" width="16" height="24" rx="2" fill="#ffffff20"/>
+      <path d="M21 12L14 24h6l-1 8 10-14h-6l1-6z" fill="#ffffff" filter="url(#gm)"/>
       <defs><filter id="gm"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
     </svg>
   );
@@ -552,7 +552,7 @@ if (document.activeElement instanceof HTMLElement) {
         @keyframes giftSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes eclipseExpand { 0% { transform: scale(0); opacity: 0; } 40% { opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
         @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes glowPulse { 0%, 100% { box-shadow: 0 0 8px rgba(212,175,55,0.4); } 50% { box-shadow: 0 0 20px rgba(212,175,55,0.7), 0 0 40px rgba(212,175,55,0.2); } }
+        @keyframes glowPulse { 0%, 100% { box-shadow: 0 0 8px rgba(255,255,255,0.4); } 50% { box-shadow: 0 0 20px rgba(255,255,255,0.7), 0 0 40px rgba(255,255,255,0.2); } }
         @keyframes giftNameFlash { 0% { opacity: 0; transform: scale(0.7); } 20% { opacity: 1; transform: scale(1.05); } 80% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95) translateY(-10px); } }
         @keyframes giftBoltFly { 0% { opacity: 0; transform: translateY(60px) scale(0.5); } 30% { opacity: 1; } 100% { opacity: 0; transform: translateY(-200px) scale(1.3); } }
         @keyframes edgeFlashCyan { 0% { opacity: 0; } 20% { opacity: 0.6; } 100% { opacity: 0; } }
@@ -578,8 +578,8 @@ if (document.activeElement instanceof HTMLElement) {
       {/* Eclipse overlay */}
       {eclipseActive && (
         <div style={{ position: "absolute", inset: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.55)", pointerEvents: "none" }}>
-          <div style={{ width: 120, height: 120, borderRadius: "50%", border: "3px solid #00e5ff", boxShadow: "0 0 60px #00e5ff, 0 0 120px #00e5ff40", animation: "eclipseExpand 3s ease-out forwards" }} />
-          <div style={{ position: "absolute", color: "#00e5ff", fontSize: 13, fontFamily: "monospace", letterSpacing: "0.2em", marginTop: 180 }}>ECLIPSE</div>
+          <div style={{ width: 120, height: 120, borderRadius: "50%", border: "3px solid #ffffff", boxShadow: "0 0 60px #ffffff, 0 0 120px #ffffff40", animation: "eclipseExpand 3s ease-out forwards" }} />
+          <div style={{ position: "absolute", color: "#ffffff", fontSize: 13, fontFamily: "monospace", letterSpacing: "0.2em", marginTop: 180 }}>ECLIPSE</div>
         </div>
       )}
 
@@ -590,10 +590,10 @@ if (document.activeElement instanceof HTMLElement) {
           {activeGiftEffect.tier === "pulse" && (
             <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <div style={{ animation: "giftBoltFly 1.2s ease-out forwards", position: "absolute", bottom: "30%" }}>
-                <BoltIcon size={32} color="#00e5ff" />
+                <BoltIcon size={32} color="#ffffff" />
               </div>
               <div style={{ animation: "giftNameFlash 1.2s ease-out forwards", textAlign: "center" }}>
-                <div style={{ color: "#00e5ff", fontSize: 14, fontWeight: 700, fontFamily: "monospace", textShadow: "0 0 20px rgba(0,229,255,0.6)" }}>{activeGiftEffect.senderName}</div>
+                <div style={{ color: "#ffffff", fontSize: 14, fontWeight: 700, fontFamily: "monospace", textShadow: "0 0 20px rgba(255,255,255,0.6)" }}>{activeGiftEffect.senderName}</div>
                 <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 10, fontFamily: "monospace", marginTop: 2 }}>sent PULSE</div>
               </div>
             </div>
@@ -603,15 +603,15 @@ if (document.activeElement instanceof HTMLElement) {
           {activeGiftEffect.tier === "amp" && (
             <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none" }}>
               {/* Edge flash */}
-              <div style={{ position: "absolute", inset: 0, border: "3px solid #00e5ff", borderRadius: 0, animation: "edgeFlashCyan 1.8s ease-out forwards", pointerEvents: "none" }} />
+              <div style={{ position: "absolute", inset: 0, border: "3px solid #ffffff", borderRadius: 0, animation: "edgeFlashCyan 1.8s ease-out forwards", pointerEvents: "none" }} />
               {/* Center content */}
               <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ animation: "giftBoltFly 1.5s ease-out forwards", position: "absolute", bottom: "25%" }}>
-                  <BoltIcon size={44} color="#00e5ff" />
+                  <BoltIcon size={44} color="#ffffff" />
                 </div>
                 <div style={{ animation: "giftNameFlash 1.8s ease-out forwards", textAlign: "center" }}>
-                  <div style={{ color: "#00e5ff", fontSize: 20, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 30px rgba(0,229,255,0.7)" }}>{activeGiftEffect.senderName}</div>
-                  <div style={{ color: "#00e5ff", fontSize: 12, fontFamily: "monospace", marginTop: 4, opacity: 0.7 }}>⚡ AMP</div>
+                  <div style={{ color: "#ffffff", fontSize: 20, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 30px rgba(255,255,255,0.7)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#ffffff", fontSize: 12, fontFamily: "monospace", marginTop: 4, opacity: 0.7 }}>⚡ AMP</div>
                 </div>
               </div>
             </div>
@@ -623,14 +623,14 @@ if (document.activeElement instanceof HTMLElement) {
               <div style={{
                 position: "absolute", top: "40%", left: 0, right: 0,
                 animation: "bannerSlide 2.5s ease-in-out forwards",
-                background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.3), rgba(212,175,55,0.15), transparent)",
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), rgba(255,255,255,0.15), transparent)",
                 padding: "14px 20px",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
               }}>
                 <GiftAsset id="override" size={40} />
                 <div>
-                  <div style={{ color: "#D4AF37", fontSize: 18, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 20px rgba(212,175,55,0.6)" }}>{activeGiftEffect.senderName}</div>
-                  <div style={{ color: "#D4AF37", fontSize: 11, fontFamily: "monospace", opacity: 0.7 }}>⚡ OVERRIDE</div>
+                  <div style={{ color: "#ffffff", fontSize: 18, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 20px rgba(255,255,255,0.6)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#ffffff", fontSize: 11, fontFamily: "monospace", opacity: 0.7 }}>⚡ OVERRIDE</div>
                 </div>
               </div>
             </div>
@@ -642,15 +642,15 @@ if (document.activeElement instanceof HTMLElement) {
               {/* Dark overlay */}
               <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.5)", animation: "giftNameFlash 3.5s ease-out forwards" }} />
               {/* Light rays */}
-              <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(212,175,55,0.3) 0%, transparent 70%)", animation: "lightRays 3s ease-out forwards" }} />
+              <div style={{ position: "absolute", top: "35%", left: "50%", transform: "translate(-50%,-50%)", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)", animation: "lightRays 3s ease-out forwards" }} />
               {/* Monolith icon */}
               <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ animation: "monolithDrop 3.5s ease-out forwards" }}>
                   <GiftAsset id="monolith" size={64} />
                 </div>
                 <div style={{ animation: "giftNameFlash 3.5s ease-out 0.5s forwards", opacity: 0, textAlign: "center", marginTop: 12 }}>
-                  <div style={{ color: "#D4AF37", fontSize: 24, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 30px rgba(212,175,55,0.7)" }}>{activeGiftEffect.senderName}</div>
-                  <div style={{ color: "#D4AF37", fontSize: 13, fontFamily: "monospace", marginTop: 4 }}>⚡ MONOLITH</div>
+                  <div style={{ color: "#ffffff", fontSize: 24, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 30px rgba(255,255,255,0.7)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#ffffff", fontSize: 13, fontFamily: "monospace", marginTop: 4 }}>⚡ MONOLITH</div>
                 </div>
               </div>
             </div>
@@ -661,12 +661,12 @@ if (document.activeElement instanceof HTMLElement) {
             <div style={{ position: "absolute", inset: 0, zIndex: 80, pointerEvents: "none" }}>
               {/* Shockwave ring */}
               <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 100, height: 100, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.6)", animation: "eclipseShockwave 2s ease-out forwards" }} />
-              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 100, height: 100, borderRadius: "50%", border: "2px solid rgba(0,229,255,0.4)", animation: "eclipseShockwave 2s ease-out 0.3s forwards", opacity: 0 }} />
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 100, height: 100, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", animation: "eclipseShockwave 2s ease-out 0.3s forwards", opacity: 0 }} />
               {/* Sender name */}
               <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", marginTop: 160 }}>
                 <div style={{ animation: "giftNameFlash 4s ease-out 0.5s forwards", opacity: 0, textAlign: "center" }}>
-                  <div style={{ color: "#fff", fontSize: 28, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 40px rgba(0,229,255,0.8), 0 0 80px rgba(0,229,255,0.3)" }}>{activeGiftEffect.senderName}</div>
-                  <div style={{ color: "#00e5ff", fontSize: 14, fontFamily: "monospace", marginTop: 6, letterSpacing: "0.2em" }}>⚡ ECLIPSE ⚡</div>
+                  <div style={{ color: "#fff", fontSize: 28, fontWeight: 800, fontFamily: "monospace", textShadow: "0 0 40px rgba(255,255,255,0.8), 0 0 80px rgba(255,255,255,0.3)" }}>{activeGiftEffect.senderName}</div>
+                  <div style={{ color: "#ffffff", fontSize: 14, fontFamily: "monospace", marginTop: 6, letterSpacing: "0.2em" }}>⚡ ECLIPSE ⚡</div>
                 </div>
               </div>
             </div>
@@ -756,7 +756,7 @@ if (document.activeElement instanceof HTMLElement) {
             width: "fit-content",
             maxWidth: "100%",
           }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#00e5ff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#ffffff", flexShrink: 0 }}>{msg.display_name ?? msg.user_email?.split("@")[0] ?? "viewer"}</span>
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.9)" }}>{msg.message}</span>
           </div>
         ))}
@@ -790,13 +790,13 @@ if (document.activeElement instanceof HTMLElement) {
       {battleAvailable && battleState === "idle" && !ended && stream?.creatorEmail === userEmail && (
         <div style={{
           position: "absolute", bottom: 155, left: 14,
-          background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.4)",
+          background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.4)",
           borderRadius: 4, padding: "4px 10px", zIndex: 25,
           display: "flex", alignItems: "center", gap: 5,
           animation: "livePulse 1.5s ease-in-out infinite",
         }}>
-          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#D4AF37" }} />
-          <span style={{ color: "#D4AF37", fontSize: 9, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.08em" }}>BATTLE AVAILABLE</span>
+          <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#ffffff" }} />
+          <span style={{ color: "#ffffff", fontSize: 9, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.08em" }}>BATTLE AVAILABLE</span>
         </div>
       )}
 
@@ -852,12 +852,12 @@ if (document.activeElement instanceof HTMLElement) {
           </div>
           {!ended && stream?.creatorEmail === userEmail && battleState === "idle" && (
             <button onClick={seekBattle} style={{
-              background: "#D4AF37", border: "none",
+              background: "#ffffff", border: "none",
               color: "#000", fontSize: 10, fontWeight: 800,
               padding: "5px 14px", borderRadius: 4, cursor: "pointer",
               letterSpacing: "0.08em",
               display: "flex", alignItems: "center", gap: 5,
-              boxShadow: "0 0 14px rgba(212,175,55,0.5)",
+              boxShadow: "0 0 14px rgba(255,255,255,0.5)",
             }}>
               <svg width={10} height={10} viewBox="0 0 24 24" fill="#000"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" /></svg>
               BATTLE
@@ -865,9 +865,9 @@ if (document.activeElement instanceof HTMLElement) {
           )}
           {!ended && stream?.creatorEmail === userEmail && battleState === "seeking" && (
             <div style={{
-              background: "rgba(212,175,55,0.15)",
-              border: "1px solid rgba(212,175,55,0.4)",
-              color: "#D4AF37", fontSize: 10, fontFamily: "monospace",
+              background: "rgba(255,255,255,0.15)",
+              border: "1px solid rgba(255,255,255,0.4)",
+              color: "#ffffff", fontSize: 10, fontFamily: "monospace",
               padding: "5px 14px", borderRadius: 4, letterSpacing: "0.1em",
               fontWeight: 700,
             }}>SEEKING…</div>
@@ -928,20 +928,20 @@ if (document.activeElement instanceof HTMLElement) {
             onTouchStart={handleGiftPressStart} onTouchEnd={handleGiftPressEnd}
             style={{
               width: 40, height: 40, borderRadius: "50%",
-              background: giftOpen ? "rgba(212,175,55,0.25)" : "rgba(0,0,0,0.4)",
-              border: `1.5px solid ${giftOpen ? "#D4AF37" : "rgba(212,175,55,0.5)"}`,
+              background: giftOpen ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.4)",
+              border: `1.5px solid ${giftOpen ? "#ffffff" : "rgba(255,255,255,0.5)"}`,
               display: "flex", alignItems: "center", justifyContent: "center",
               cursor: "pointer", flexShrink: 0,
               animation: giftOpen ? "none" : "glowPulse 2.5s ease-in-out infinite",
             }}
           >
-            <BoltIcon size={18} color="#D4AF37" />
+            <BoltIcon size={18} color="#ffffff" />
           </button>
 
           {/* Send */}
           <button onClick={sendMessage} style={{
             background: "transparent", border: "none",
-            color: "#D4AF37", fontSize: 18, cursor: "pointer",
+            color: "#ffffff", fontSize: 18, cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
             padding: 0, flexShrink: 0,
           }}>➤</button>
@@ -950,12 +950,12 @@ if (document.activeElement instanceof HTMLElement) {
 
       {/* Top-up modal */}
       {topUpOpen && (
-        <div style={{ position: "absolute", right: 14, bottom: 160, zIndex: 40, background: "rgba(0,0,0,0.92)", border: "1px solid rgba(0,229,255,0.3)", borderRadius: 16, padding: "14px 16px", backdropFilter: "blur(12px)", minWidth: 200 }}>
-          <div style={{ color: "#00e5ff", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 10 }}>TOP UP SPARKS</div>
+        <div style={{ position: "absolute", right: 14, bottom: 160, zIndex: 40, background: "rgba(0,0,0,0.92)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 16, padding: "14px 16px", backdropFilter: "blur(12px)", minWidth: 200 }}>
+          <div style={{ color: "#ffffff", fontSize: 11, fontFamily: "monospace", letterSpacing: "0.15em", marginBottom: 10 }}>TOP UP SPARKS</div>
           {[{ sparks: 100, price: "$2.99" }, { sparks: 300, price: "$7.99" }, { sparks: 750, price: "$17.99" }, { sparks: 2000, price: "$39.99" }].map(b => (
             <button key={b.sparks} onClick={() => { setTopUpOpen(false); router.push("/spark/buy"); }} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "8px 12px", cursor: "pointer", marginBottom: 6, color: "#fff" }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>{b.sparks} ⚡</span>
-              <span style={{ fontSize: 12, color: "#D4AF37" }}>{b.price}</span>
+              <span style={{ fontSize: 12, color: "#ffffff" }}>{b.price}</span>
             </button>
           ))}
           <button onClick={() => setTopUpOpen(false)} style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, background: "none", border: "none", cursor: "pointer", width: "100%", marginTop: 4 }}>Cancel</button>

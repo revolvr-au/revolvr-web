@@ -39,7 +39,7 @@ const TIER_DIM: Record<VoltageTier, { w: string; h: number }> = {
 
 const TYPE_BADGE: Record<string, { label: string; color: string }> = {
   FEED:    { label: "RESONANCE", color: "#3B82F6" },
-  SPARK:   { label: "SPARK",     color: "#F59E0B" },
+  SPARK:   { label: "SPARK",     color: "#ffffff" },
   RAW:     { label: "RAW",       color: "#EF4444" },
   PODCAST: { label: "PODCAST",   color: "#8B5CF6" },
 };
@@ -238,12 +238,12 @@ function SparkCard({
             width: 6,
             height: 6,
             borderRadius: "50%",
-            background: "#F59E0B",
+            background: "#ffffff",
             animation: "voltPulse 1.5s ease-in-out infinite",
           }} />
           <span style={{
             fontSize: tier === "NEW" ? 10 : 12,
-            color: "#F59E0B",
+            color: "#ffffff",
             fontFamily: "monospace",
             fontWeight: 700,
           }}>
@@ -336,8 +336,8 @@ function FullScreenCard({
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#F59E0B", animation: "voltPulse 1.5s ease-in-out infinite" }} />
-          <span style={{ fontSize: 14, color: "#F59E0B", fontFamily: "monospace", fontWeight: 700 }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#ffffff", animation: "voltPulse 1.5s ease-in-out infinite" }} />
+          <span style={{ fontSize: 14, color: "#ffffff", fontFamily: "monospace", fontWeight: 700 }}>
             {post.voltage}V
           </span>
         </div>
@@ -430,7 +430,7 @@ function UpgradeModal({
 }) {
   const router = useRouter();
   const isGold = ringRequired === "GOLD";
-  const color = isGold ? "#F59E0B" : "#3B82F6";
+  const color = isGold ? "#ffffff" : "#3B82F6";
 
   return (
     <div
@@ -539,7 +539,6 @@ export function SparkContent() {
   return (
     <FeedLayout>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         @keyframes sparkPulse {
           0%,100% { transform: scale(1); }
           50%      { transform: scale(1.012); }
@@ -561,7 +560,7 @@ export function SparkContent() {
         <div style={{ padding: "0 20px 0" }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 4 }}>
             <h1 style={{
-              fontFamily: "'Bebas Neue', sans-serif",
+              fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700,
               fontSize: 64,
               letterSpacing: 3,
               color: "white",
