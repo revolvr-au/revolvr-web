@@ -15,7 +15,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        // no-store applies to HTML/dynamic routes only. Exclude Next's hashed
+        // build assets (/_next/static, /_next/image) so they keep their default
+        // `immutable` caching instead of being refetched on every load.
+        source: "/((?!_next/static|_next/image).*)",
         headers: [
           {
             key: "Cache-Control",

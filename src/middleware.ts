@@ -6,10 +6,13 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const isLiveRoute = url.pathname.startsWith("/live");
 
-  // Canonical redirect for non-production domains
+  // Canonical-domain enforcement, production only. Any non-canonical host in
+  // production (apex revolvr.net, the *.vercel.app alias, etc.) is redirected to
+  // www.revolvr.net. Preview/dev deploys (VERCEL_ENV !== "production") skip this
+  // entirely so their *.vercel.app URLs stay viewable.
   if (
+    process.env.VERCEL_ENV === "production" &&
     !isLiveRoute &&
-    host.endsWith(".vercel.app") &&
     host !== "www.revolvr.net"
   ) {
     url.protocol = "https:";
