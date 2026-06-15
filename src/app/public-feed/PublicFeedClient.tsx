@@ -25,6 +25,8 @@ import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
 import GathWindow from "@/components/GathWindow";
 import TopBar from "@/components/TopBar";
 import { useRevolveConfig } from "@/lib/revolve/useRevolveConfig";
+import { useRevolve } from "@/hooks/useRevolve";
+import ChargeBar from "@/components/revolve/ChargeBar";
 
 const GOLD = "#ffffff";
 const ACTION_KEYS = ["LIKE", "COMMENT", "MESSAGE", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
@@ -144,9 +146,10 @@ export default function PublicFeedClient({
   dmEnabled: boolean;
   revolveEnabled: boolean;
 }) {
-  // Phase 1: resolve the Revolve config (off by default; dev URL/localStorage overrides
-  // apply on top in dev). Not consumed in render or scroll yet — Phase 2 wires it in.
+  // Revolve config (off by default; dev URL/localStorage overrides apply on top in dev).
   const revolveConfig = useRevolveConfig(revolveEnabled);
+  // Phase 2: flick counter + charge. resetCharge wires to the revolve trigger in Phase 3.
+  const revolve = useRevolve(revolveConfig);
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
   const [loading, setLoading] = useState(feedCache === null);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
@@ -613,7 +616,8 @@ useEffect(() => {
   const handleFeedScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const index = Math.round(e.currentTarget.scrollTop / window.innerHeight);
     setActiveIndex((prev) => (prev === index ? prev : index));
-  }, []);
+    revolve.registerScrollIndex(index);
+  }, [revolve.registerScrollIndex]);
 
   return (
     <div
@@ -703,6 +707,10 @@ useEffect(() => {
         userEmail={userEmail}
         seedPostId={gathWindowPostId}
       />
+
+      {revolveConfig.enabled && (
+        <ChargeBar charge={revolve.chargeCount} cadenceN={revolveConfig.cadenceN} />
+      )}
     </div>
   );
 }
