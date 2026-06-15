@@ -24,6 +24,7 @@ import MediaCarousel from "@/components/MediaCarousel";
 import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
 import GathWindow from "@/components/GathWindow";
 import TopBar from "@/components/TopBar";
+import { useRevolveConfig } from "@/lib/revolve/useRevolveConfig";
 
 const GOLD = "#ffffff";
 const ACTION_KEYS = ["LIKE", "COMMENT", "MESSAGE", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
@@ -136,7 +137,16 @@ function PostSkeleton() {
   );
 }
 
-export default function PublicFeedClient({ dmEnabled }: { dmEnabled: boolean }) {
+export default function PublicFeedClient({
+  dmEnabled,
+  revolveEnabled,
+}: {
+  dmEnabled: boolean;
+  revolveEnabled: boolean;
+}) {
+  // Phase 1: resolve the Revolve config (off by default; dev URL/localStorage overrides
+  // apply on top in dev). Not consumed in render or scroll yet — Phase 2 wires it in.
+  const revolveConfig = useRevolveConfig(revolveEnabled);
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
   const [loading, setLoading] = useState(feedCache === null);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
