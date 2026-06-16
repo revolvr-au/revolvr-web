@@ -27,6 +27,14 @@ import TopBar from "@/components/TopBar";
 import { useRevolveConfig } from "@/lib/revolve/useRevolveConfig";
 import { useRevolve } from "@/hooks/useRevolve";
 import ChargeBar from "@/components/revolve/ChargeBar";
+import dynamic from "next/dynamic";
+
+// Lazy-loaded so the overlay's (heavy) code stays out of the feed bundle when the flag is off.
+// dynamic() only fetches the chunk on first render, which is gated behind revolveConfig.enabled
+// below — so a flag-off feed never pulls it over the network.
+const RevolveOverlay = dynamic(() => import("@/components/revolve/RevolveOverlay"), {
+  ssr: false,
+});
 
 const GOLD = "#ffffff";
 const ACTION_KEYS = ["LIKE", "COMMENT", "MESSAGE", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
@@ -619,6 +627,12 @@ useEffect(() => {
     revolve.registerScrollIndex(index);
   }, [revolve.registerScrollIndex]);
 
+  // The overlay owns the screen while open/closing. Folds in the flag so a single
+  // truthy guard covers both "feature on" and "revolve actually showing".
+  const revolveActive =
+    revolveConfig.enabled &&
+    (revolve.status === "open" || revolve.status === "closing");
+
   return (
     <div
   style={{
@@ -710,6 +724,14 @@ useEffect(() => {
 
       {revolveConfig.enabled && (
         <ChargeBar charge={revolve.chargeCount} cadenceN={revolveConfig.cadenceN} />
+      )}
+
+      {revolveConfig.enabled && revolveActive && (
+        <RevolveOverlay
+          status={revolve.status as "open" | "closing"}
+          chamberCount={6}
+          onClose={revolve.closeRevolve}
+        />
       )}
     </div>
   );
