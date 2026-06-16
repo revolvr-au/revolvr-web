@@ -729,7 +729,7 @@ useEffect(() => {
       {revolveConfig.enabled && revolveActive && (
         <RevolveOverlay
           status={revolve.status as "open" | "closing"}
-          chamberCount={6}
+          chamberCount={revolveConfig.chamberCount}
           onClose={revolve.closeRevolve}
         />
       )}
