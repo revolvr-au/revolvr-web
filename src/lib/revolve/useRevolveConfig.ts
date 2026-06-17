@@ -73,13 +73,20 @@ function readDevOverrides(): Partial<RevolveConfig> {
  * server-resolved value (so hydration matches); dev overrides are applied in an effect
  * after mount.
  */
-export function useRevolveConfig(serverEnabled: boolean): RevolveConfig {
+export function useRevolveConfig(
+  serverEnabled: boolean,
+  previewMode = false,
+): RevolveConfig {
   const [config, setConfig] = useState<RevolveConfig>(() =>
     normalizeConfig({ ...REVOLVE_DEFAULTS, enabled: serverEnabled }),
   );
 
   useEffect(() => {
-    if (!isDev()) {
+    // URL/localStorage overrides are allowed in dev OR on a Vercel preview deployment
+    // (previewMode is server-resolved from VERCEL_ENV === "preview"). In production
+    // previewMode is false and isDev() is false, so this short-circuits and the server
+    // flag is the only switch.
+    if (!isDev() && !previewMode) {
       setConfig(normalizeConfig({ ...REVOLVE_DEFAULTS, enabled: serverEnabled }));
       return;
     }
@@ -87,7 +94,7 @@ export function useRevolveConfig(serverEnabled: boolean): RevolveConfig {
     setConfig(
       normalizeConfig({ ...REVOLVE_DEFAULTS, enabled: serverEnabled, ...overrides }),
     );
-  }, [serverEnabled]);
+  }, [serverEnabled, previewMode]);
 
   return config;
 }

@@ -150,12 +150,15 @@ function PostSkeleton() {
 export default function PublicFeedClient({
   dmEnabled,
   revolveEnabled,
+  previewMode,
 }: {
   dmEnabled: boolean;
   revolveEnabled: boolean;
+  previewMode: boolean;
 }) {
-  // Revolve config (off by default; dev URL/localStorage overrides apply on top in dev).
-  const revolveConfig = useRevolveConfig(revolveEnabled);
+  // Revolve config (off by default; URL/localStorage overrides apply on top in dev,
+  // and on Vercel preview deployments only — never in production).
+  const revolveConfig = useRevolveConfig(revolveEnabled, previewMode);
   // Phase 2: flick counter + charge. resetCharge wires to the revolve trigger in Phase 3.
   const revolve = useRevolve(revolveConfig);
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);

@@ -69,3 +69,15 @@ export function normalizeConfig(raw: Partial<RevolveConfig>): RevolveConfig {
 export function isRevolveEnabled(): boolean {
   return process.env.REVOLVE_ENABLED === "true";
 }
+
+/**
+ * Server-only preview detector. TRUE only on Vercel Preview deployments
+ * (VERCEL_ENV === "preview"). Production deployments report VERCEL_ENV === "production"
+ * and local/unset reports undefined, so BOTH return false here. This is the ONLY thing
+ * that unlocks the client-side URL override outside dev — and it can never be true in
+ * production. NODE_ENV is deliberately NOT consulted: it is "production" for both Vercel
+ * preview AND production builds, so it cannot distinguish them.
+ */
+export function isRevolvePreview(): boolean {
+  return process.env.VERCEL_ENV === "preview";
+}
