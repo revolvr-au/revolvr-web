@@ -23,11 +23,11 @@ export default function Chamber({
         position: "absolute",
         top: "50%",
         left: "50%",
-        width: "26vw",
-        maxWidth: 150,
+        width: "20vw",
+        maxWidth: 110,
         aspectRatio: "3 / 4",
-        marginLeft: "-13vw",
-        marginTop: "-17.3vw", // half of width * 4/3, keeps the box centred before transform
+        marginLeft: "-10vw",
+        marginTop: "-13.3vw", // half of width * 4/3, keeps the box centred before transform
         borderRadius: 14,
         background:
           "linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04))",

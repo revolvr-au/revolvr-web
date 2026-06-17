@@ -16,7 +16,7 @@ import { chambersForCount } from "@/lib/revolve/chambers";
 import Chamber from "./Chamber";
 
 /** Distance from centre to each chamber. CSS length so layout stays resolution-independent. */
-const RADIUS = "min(38vw, 30vh)";
+const RADIUS = "min(42vw, 34vh)";
 /** Per-chamber stagger; with ≤6 chambers the last starts at 5×40 = 200ms (+200ms move ≤400ms). */
 const STAGGER_MS = 40;
 const MOVE_MS = 200;
