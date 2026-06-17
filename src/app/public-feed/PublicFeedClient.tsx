@@ -646,10 +646,6 @@ useEffect(() => {
     overflow: "hidden"
   }}
 >
-        {/* TEMP DEBUG — remove after diagnosing the previewMode/VERCEL_ENV gate. */}
-        <div style={{ position: "fixed", top: 0, left: 0, zIndex: 9999, background: "#000", color: "#0f0", fontSize: 10, padding: 4 }}>
-          VE:{String(process.env.NEXT_PUBLIC_VERCEL_ENV)} pm:{String(previewMode)} en:{String(revolveConfig.enabled)} n:{revolveConfig.cadenceN} ch:{revolveConfig.chamberCount} p:{posts.length} idx:{activeIndex} chg:{revolve.chargeCount}
-        </div>
         <TopBar />
         <div
   ref={scrollContainerRef}
