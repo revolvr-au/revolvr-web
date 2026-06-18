@@ -632,6 +632,56 @@ useEffect(() => {
     revolve.registerScrollIndex(index);
   }, [revolve.registerScrollIndex]);
 
+  // A chamber pick records the cycle's outcome (read by the dismissed effect to avoid
+  // double-counting a selection as a dismissal) and fires its own discovery event.
+  const handleRevolveSelect = useCallback((slot: ChamberSlot) => {
+    setLastChamber(slot);
+    fireAnalytics({
+      surface: "discovery",
+      eventName: "revolve_chamber_selected",
+      userEmail: userEmailRef.current,
+      postId: null,
+      creatorEmail: null,
+      properties: { slot, chamberCount: revolveConfig.chamberCount },
+    });
+  }, [revolveConfig.chamberCount]);
+
+  // Opening a fresh cycle clears the prior pick so the dismissed effect can tell a
+  // real dismissal from a selection, then logs the open on the discovery surface.
+  useEffect(() => {
+    if (revolve.status !== "open") return;
+    setLastChamber(null);
+    fireAnalytics({
+      surface: "discovery",
+      eventName: "revolve_opened",
+      userEmail: userEmailRef.current,
+      postId: null,
+      creatorEmail: null,
+      properties: {
+        chamberCount: revolveConfig.chamberCount,
+        cadenceN: revolveConfig.cadenceN,
+        chargeCount: revolve.chargeCount,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revolve.status]);
+
+  // A close with no recorded pick is a genuine dismissal; if lastChamber is set the
+  // selection already fired its own event, so we stay silent to avoid double-counting.
+  useEffect(() => {
+    if (revolve.status !== "closing") return;
+    if (lastChamber !== null) return;
+    fireAnalytics({
+      surface: "discovery",
+      eventName: "revolve_dismissed",
+      userEmail: userEmailRef.current,
+      postId: null,
+      creatorEmail: null,
+      properties: { chamberCount: revolveConfig.chamberCount },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revolve.status]);
+
   // The overlay owns the screen while open/closing. Folds in the flag so a single
   // truthy guard covers both "feature on" and "revolve actually showing".
   const revolveActive =
@@ -736,7 +786,7 @@ useEffect(() => {
           status={revolve.status as "open" | "closing"}
           chamberCount={revolveConfig.chamberCount}
           onClose={revolve.closeRevolve}
-          onSelect={setLastChamber}
+          onSelect={handleRevolveSelect}
         />
       )}
     </div>
