@@ -11,8 +11,8 @@
 // Feel spec: fan-out ≤400ms, transform/opacity ONLY (GPU-composited, no layout thrash), total
 // revolve ≤1.5s. Honours prefers-reduced-motion (instant, no stagger).
 
-import { useEffect, useState } from "react";
-import { chambersForCount } from "@/lib/revolve/chambers";
+import { useEffect, useRef, useState } from "react";
+import { chambersForCount, type ChamberSlot } from "@/lib/revolve/chambers";
 import Chamber from "./Chamber";
 
 /** Distance from centre to each chamber. CSS length so layout stays resolution-independent. */
@@ -25,14 +25,18 @@ export default function RevolveOverlay({
   status,
   chamberCount,
   onClose,
+  onSelect,
 }: {
   status: "open" | "closing";
   chamberCount: number;
   onClose: () => void;
+  onSelect: (slot: ChamberSlot) => void;
 }) {
   const chambers = chambersForCount(chamberCount);
   const [expanded, setExpanded] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<ChamberSlot | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Detect reduced-motion preference (overlay is ssr:false, so window is available).
   useEffect(() => {
@@ -58,6 +62,13 @@ export default function RevolveOverlay({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // Clear any pending pre-close flash timer if the overlay unmounts mid-flash.
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   return (
     <div
@@ -111,6 +122,13 @@ export default function RevolveOverlay({
           <Chamber
             key={c.slot}
             label={c.label}
+            highlighted={c.slot === selectedSlot}
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedSlot(c.slot);
+              onSelect(c.slot);
+              closeTimerRef.current = setTimeout(onClose, 150);
+            }}
             style={{
               transform: expanded ? target : collapsed,
               opacity: expanded ? 1 : 0,

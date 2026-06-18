@@ -27,6 +27,7 @@ import TopBar from "@/components/TopBar";
 import { useRevolveConfig } from "@/lib/revolve/useRevolveConfig";
 import { useRevolve } from "@/hooks/useRevolve";
 import ChargeBar from "@/components/revolve/ChargeBar";
+import { type ChamberSlot } from "@/lib/revolve/chambers";
 import dynamic from "next/dynamic";
 
 // Lazy-loaded so the overlay's (heavy) code stays out of the feed bundle when the flag is off.
@@ -161,6 +162,7 @@ export default function PublicFeedClient({
   const revolveConfig = useRevolveConfig(revolveEnabled, previewMode);
   // Phase 2: flick counter + charge. resetCharge wires to the revolve trigger in Phase 3.
   const revolve = useRevolve(revolveConfig);
+  const [lastChamber, setLastChamber] = useState<ChamberSlot | null>(null);
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
   const [loading, setLoading] = useState(feedCache === null);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
@@ -734,6 +736,7 @@ useEffect(() => {
           status={revolve.status as "open" | "closing"}
           chamberCount={revolveConfig.chamberCount}
           onClose={revolve.closeRevolve}
+          onSelect={setLastChamber}
         />
       )}
     </div>
