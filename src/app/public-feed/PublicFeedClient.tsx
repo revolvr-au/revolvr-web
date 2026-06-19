@@ -660,7 +660,6 @@ useEffect(() => {
       properties: {
         chamberCount: revolveConfig.chamberCount,
         cadenceN: revolveConfig.cadenceN,
-        chargeCount: revolve.chargeCount,
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
