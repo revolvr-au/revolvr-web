@@ -24,6 +24,18 @@ import MediaCarousel from "@/components/MediaCarousel";
 import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
 import GathWindow from "@/components/GathWindow";
 import TopBar from "@/components/TopBar";
+import { useRevolveConfig } from "@/lib/revolve/useRevolveConfig";
+import { useRevolve } from "@/hooks/useRevolve";
+import ChargeBar from "@/components/revolve/ChargeBar";
+import { type ChamberSlot } from "@/lib/revolve/chambers";
+import dynamic from "next/dynamic";
+
+// Lazy-loaded so the overlay's (heavy) code stays out of the feed bundle when the flag is off.
+// dynamic() only fetches the chunk on first render, which is gated behind revolveConfig.enabled
+// below — so a flag-off feed never pulls it over the network.
+const RevolveOverlay = dynamic(() => import("@/components/revolve/RevolveOverlay"), {
+  ssr: false,
+});
 
 const GOLD = "#ffffff";
 const ACTION_KEYS = ["LIKE", "COMMENT", "MESSAGE", "GATH", "GIFT", "CREATE", "REPOST", "SAVE"] as const;
@@ -136,7 +148,21 @@ function PostSkeleton() {
   );
 }
 
-export default function PublicFeedClient({ dmEnabled }: { dmEnabled: boolean }) {
+export default function PublicFeedClient({
+  dmEnabled,
+  revolveEnabled,
+  previewMode,
+}: {
+  dmEnabled: boolean;
+  revolveEnabled: boolean;
+  previewMode: boolean;
+}) {
+  // Revolve config (off by default; URL/localStorage overrides apply on top in dev,
+  // and on Vercel preview deployments only — never in production).
+  const revolveConfig = useRevolveConfig(revolveEnabled, previewMode);
+  // Phase 2: flick counter + charge. resetCharge wires to the revolve trigger in Phase 3.
+  const revolve = useRevolve(revolveConfig);
+  const [lastChamber, setLastChamber] = useState<ChamberSlot | null>(null);
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
   const [loading, setLoading] = useState(feedCache === null);
   const [visiblePosts, setVisiblePosts] = useState<any[]>([]);
@@ -603,7 +629,63 @@ useEffect(() => {
   const handleFeedScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const index = Math.round(e.currentTarget.scrollTop / window.innerHeight);
     setActiveIndex((prev) => (prev === index ? prev : index));
-  }, []);
+    revolve.registerScrollIndex(index);
+  }, [revolve.registerScrollIndex]);
+
+  // A chamber pick records the cycle's outcome (read by the dismissed effect to avoid
+  // double-counting a selection as a dismissal) and fires its own discovery event.
+  const handleRevolveSelect = useCallback((slot: ChamberSlot) => {
+    setLastChamber(slot);
+    fireAnalytics({
+      surface: "discovery",
+      eventName: "revolve_chamber_selected",
+      userEmail: userEmailRef.current,
+      postId: null,
+      creatorEmail: null,
+      properties: { slot, chamberCount: revolveConfig.chamberCount },
+    });
+  }, [revolveConfig.chamberCount]);
+
+  // Opening a fresh cycle clears the prior pick so the dismissed effect can tell a
+  // real dismissal from a selection, then logs the open on the discovery surface.
+  useEffect(() => {
+    if (revolve.status !== "open") return;
+    setLastChamber(null);
+    fireAnalytics({
+      surface: "discovery",
+      eventName: "revolve_opened",
+      userEmail: userEmailRef.current,
+      postId: null,
+      creatorEmail: null,
+      properties: {
+        chamberCount: revolveConfig.chamberCount,
+        cadenceN: revolveConfig.cadenceN,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revolve.status]);
+
+  // A close with no recorded pick is a genuine dismissal; if lastChamber is set the
+  // selection already fired its own event, so we stay silent to avoid double-counting.
+  useEffect(() => {
+    if (revolve.status !== "closing") return;
+    if (lastChamber !== null) return;
+    fireAnalytics({
+      surface: "discovery",
+      eventName: "revolve_dismissed",
+      userEmail: userEmailRef.current,
+      postId: null,
+      creatorEmail: null,
+      properties: { chamberCount: revolveConfig.chamberCount },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revolve.status]);
+
+  // The overlay owns the screen while open/closing. Folds in the flag so a single
+  // truthy guard covers both "feature on" and "revolve actually showing".
+  const revolveActive =
+    revolveConfig.enabled &&
+    (revolve.status === "open" || revolve.status === "closing");
 
   return (
     <div
@@ -693,6 +775,19 @@ useEffect(() => {
         userEmail={userEmail}
         seedPostId={gathWindowPostId}
       />
+
+      {revolveConfig.enabled && (
+        <ChargeBar charge={revolve.chargeCount} cadenceN={revolveConfig.cadenceN} />
+      )}
+
+      {revolveConfig.enabled && revolveActive && (
+        <RevolveOverlay
+          status={revolve.status as "open" | "closing"}
+          chamberCount={revolveConfig.chamberCount}
+          onClose={revolve.closeRevolve}
+          onSelect={handleRevolveSelect}
+        />
+      )}
     </div>
   );
 }
