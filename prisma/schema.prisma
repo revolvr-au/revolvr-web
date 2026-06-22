@@ -764,6 +764,15 @@ model profiles {
   subscription_status String?  @default("inactive")
   isMinor             Boolean  @default(false) // age-gate source of truth for the DM minor block
 
+  // Age Gate Phase 1 — no raw DOB stored; only flags + derived crossover dates.
+  age_status          String    @default("PENDING") // PENDING | CLEARED | EXCLUDED
+  age_method          String?   // HOW the decision was made (provenance), e.g. "self_attest_v1"
+  age_attested_over16 Boolean?  // user's explicit "I am 16+" affirmation; null = none on record. NEVER drives the decision.
+  age_jurisdiction    String?   // country code used for THIS decision, e.g. "AU"
+  age_verified_at     DateTime? @db.Timestamptz(6)
+  adult_at            DateTime? @db.Timestamptz(6) // derived: crosses minorThreshold (18)
+  eligible_at         DateTime? @db.Timestamptz(6) // derived: crosses accountMinAge; null if already eligible
+
   @@schema("public")
 }
 
