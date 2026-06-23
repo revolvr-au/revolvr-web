@@ -17,11 +17,9 @@ import { prisma } from "@/lib/prisma";
 import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 import { normalizeEmail } from "@/lib/dm";
 import { decideAge } from "@/lib/age";
+import { resolveJurisdiction } from "@/lib/jurisdiction";
 
-// Phase 1 is the AU self-attestation gate. Geo/IP resolution is out of scope for
-// age.ts; until it exists we record the jurisdiction THIS decision was made under
-// and default it to AU. An unknown code falls back to DEFAULT inside decideAge().
-const DEFAULT_JURISDICTION = "AU";
+// Jurisdiction is now derived server-side from the Vercel edge header via resolveJurisdiction — never from client input.
 
 // Reject implausible years outright so a typo like "0202-01-01" can't slip through
 // as a "cleared adult". Generous on purpose — a sanity floor, not an age policy.
@@ -36,7 +34,6 @@ export async function GET() {
 
 type AgeVerificationBody = {
   dateOfBirth?: string;
-  jurisdiction?: string;
   confirmOver16?: boolean;
 };
 
@@ -93,7 +90,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const jurisdiction = (body.jurisdiction?.trim() || DEFAULT_JURISDICTION).toUpperCase();
+  const jurisdiction = resolveJurisdiction(request);
 
   // THE DECISION — a pure function of (dob, jurisdiction, now). Note confirmOver16
   // is NOT an argument: it cannot influence the outcome.
