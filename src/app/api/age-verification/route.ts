@@ -25,8 +25,7 @@ import { resolveJurisdiction } from "@/lib/jurisdiction";
 // as a "cleared adult". Generous on purpose — a sanity floor, not an age policy.
 const MIN_PLAUSIBLE_YEAR = 1900;
 
-export async function GET(request: Request) {
-  console.log("GEO-PROBE x-vercel-ip-country:", request.headers.get("x-vercel-ip-country"));
+export async function GET() {
   // Unchanged in Phase 1. WHEN the gate is required / where it redirects is a
   // separate client-flow change; this step only lands the write path. Left as the
   // existing no-op status so current callers keep their behaviour.
