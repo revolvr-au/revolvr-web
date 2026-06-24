@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveAgeRouting } from "@/lib/ageGate";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const url = request.nextUrl.clone();
   const isLiveRoute = url.pathname.startsWith("/live");
