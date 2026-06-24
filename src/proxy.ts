@@ -76,13 +76,24 @@ export async function proxy(request: NextRequest) {
     );
 
     if (!isExcluded) {
-      const profile = await prisma.profiles.findUnique({
-        where: { email: user.email! },
-        select: { age_status: true },
-      });
+      // Fail-closed on every failure mode. A returned null row / null status
+      // funnels through resolveAgeRouting; a THROWN read (DB unreachable / pool
+      // timeout) is caught and converted to the same undefined -> verify path,
+      // so a DB hiccup degrades to a clean /age-verification redirect instead of
+      // a site-wide 500 across every gated route.
+      let ageStatus: string | null | undefined;
+      try {
+        const profile = await prisma.profiles.findUnique({
+          where: { email: user.email! },
+          select: { age_status: true },
+        });
+        ageStatus = profile?.age_status;
+      } catch (e) {
+        console.error("[proxy] age_status read failed, failing closed", e);
+        ageStatus = undefined; // -> resolveAgeRouting -> NEEDS_VERIFICATION
+      }
 
-      // Fail-closed: null profile / null age_status -> NEEDS_VERIFICATION.
-      const routing = resolveAgeRouting(profile?.age_status);
+      const routing = resolveAgeRouting(ageStatus);
 
       if (routing === "NEEDS_VERIFICATION") {
         const target = url.clone();
