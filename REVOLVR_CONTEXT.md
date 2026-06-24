@@ -11,7 +11,7 @@ Stack: Next.js 16.1.6, Supabase, Prisma, Vercel Pro
 - SPARK tab with voltage grid
 - PEOPLE tab
 - TRANCHE tab (gated Gold+)
-- Middleware auth (src/middleware.ts)
+- Proxy auth (src/proxy.ts)
 - TabShell keeps all tabs mounted
 
 ## Current Issue — PRIORITY
@@ -29,7 +29,7 @@ Need to either enable MP4 in Mux dashboard OR switch to HLS
 - src/app/api/video/status/[uploadId]/route.ts — Mux polling
 - src/app/api/public-feed/route.ts — feed API
 - src/app/api/ring/checkout/route.ts — Stripe
-- src/middleware.ts — Supabase session refresh
+- src/proxy.ts — Supabase session refresh (Next 16 proxy convention)
 - prisma/schema.prisma — DB schema
 
 ## Env Vars in Vercel
