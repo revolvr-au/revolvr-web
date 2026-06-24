@@ -1,5 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { resolveAgeRouting } from "@/lib/ageGate";
 
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host") || "";
@@ -44,7 +46,57 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Age-gate enforcement. Inert by default — only runs when AGE_GATE_ENABLED is
+  // explicitly "true". Applies ONLY to authenticated users; unauthenticated
+  // requests fall through (auth is enforced elsewhere). Reuses the supabase
+  // client + getUser() result above; reads age_status via Prisma (Next 16
+  // middleware runs on Node, so Prisma works here). Fail-closed: a missing row
+  // or absent age_status routes to verification, never PROCEED.
+  if (process.env.AGE_GATE_ENABLED === "true" && user) {
+    const pathname = url.pathname;
+
+    // Skip the gate for surfaces that must stay reachable: studio, the
+    // self-gating API, auth/onboarding/login surfaces, the gate pages
+    // themselves (to avoid redirect loops), Next internals, and legal copy.
+    const EXCLUDED_PREFIXES = [
+      "/studio",
+      "/api",
+      "/auth",
+      "/age-verification",
+      "/underage",
+      "/welcome",
+      "/onboard",
+      "/_next",
+      "/legal",
+    ];
+    const isExcluded = EXCLUDED_PREFIXES.some((prefix) =>
+      pathname.startsWith(prefix)
+    );
+
+    if (!isExcluded) {
+      const profile = await prisma.profiles.findUnique({
+        where: { email: user.email! },
+        select: { age_status: true },
+      });
+
+      // Fail-closed: null profile / null age_status -> NEEDS_VERIFICATION.
+      const routing = resolveAgeRouting(profile?.age_status);
+
+      if (routing === "NEEDS_VERIFICATION") {
+        const target = url.clone();
+        target.pathname = "/age-verification";
+        return NextResponse.redirect(target, 307);
+      }
+      if (routing === "EXCLUDED") {
+        const target = url.clone();
+        target.pathname = "/underage";
+        return NextResponse.redirect(target, 307);
+      }
+      // "PROCEED" -> fall through, return the existing response unchanged.
+    }
+  }
 
   return response;
 }
