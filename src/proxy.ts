@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveAgeRouting } from "@/lib/ageGate";
+import { normalizeEmail } from "@/lib/dm";
 
 export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") || "";
@@ -71,8 +72,11 @@ export async function proxy(request: NextRequest) {
       "/_next",
       "/legal",
     ];
-    const isExcluded = EXCLUDED_PREFIXES.some((prefix) =>
-      pathname.startsWith(prefix)
+    // Segment-boundary match: a prefix excludes only its exact path or a
+    // descendant (prefix + "/..."), so "/onboard" never accidentally excludes
+    // a future "/onboarding".
+    const isExcluded = EXCLUDED_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
     );
 
     if (!isExcluded) {
@@ -83,8 +87,10 @@ export async function proxy(request: NextRequest) {
       // a site-wide 500 across every gated route.
       let ageStatus: string | null | undefined;
       try {
+        // Normalize the read key to match the write path (profiles.age_status
+        // is written under normalizeEmail(...)), so read-key == write-key.
         const profile = await prisma.profiles.findUnique({
-          where: { email: user.email! },
+          where: { email: normalizeEmail(user.email!) },
           select: { age_status: true },
         });
         ageStatus = profile?.age_status;
