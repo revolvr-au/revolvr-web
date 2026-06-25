@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import { isAdminEmail } from "@/lib/isAdmin";
+import { normalizeEmail } from "@/lib/email";
 import StudioDashboard from "./StudioDashboard";
 
 const supabase = createSupabaseBrowserClient();
@@ -86,7 +87,10 @@ export default function StudioPage() {
     e.preventDefault();
     setLoginError(null);
     setLoginStep("submitting");
-    const { error } = await supabase.auth.signInWithOtp({ email: emailInput });
+    // Normalize so the auth identity Supabase establishes matches the key our DB rows
+    // are written under; verify re-derives the same value below.
+    const cleanEmail = normalizeEmail(emailInput);
+    const { error } = await supabase.auth.signInWithOtp({ email: cleanEmail });
     if (error) {
       setLoginError(error.message);
       setLoginStep("email");
@@ -101,8 +105,9 @@ export default function StudioPage() {
     setLoginError(null);
     setLoginStep("verifying");
 
+    const cleanEmail = normalizeEmail(emailInput);
     const { error: verifyError } = await supabase.auth.verifyOtp({
-      email: emailInput,
+      email: cleanEmail,
       token: codeInput,
       type: "email",
     });

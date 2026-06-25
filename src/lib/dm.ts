@@ -6,6 +6,12 @@
 // RLS policy on realtime.messages only guards the realtime *subscription* path. Every
 // server-side write MUST authorize in code using these guards before touching the DB.
 import { prisma } from "@/lib/prisma";
+// normalizeEmail lives in the pure (Prisma-free) email module so client components
+// can import it without dragging Prisma into the client bundle. Imported here (so the
+// helpers below can call it) and re-exported so existing server-side importers
+// (proxy, age-verification, messages/*) are unaffected.
+import { normalizeEmail } from "@/lib/email";
+export { normalizeEmail };
 
 /**
  * Master switch for Direct Messages. Default OFF — DMs stay dark until age
@@ -35,11 +41,6 @@ export class NotParticipantError extends Error {
     super("You are not a participant in this conversation.");
     this.name = "NotParticipantError";
   }
-}
-
-/** Trim + lowercase so identity comparisons and directKey are stable. */
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
 }
 
 /**
