@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeEmail } from "@/lib/dm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,11 @@ export async function POST(req: Request) {
     if (!avatarUrl || !email) {
       return NextResponse.json({ error: "Missing params" }, { status: 400 });
     }
+
+    // DB where-key only — normalized to match the row profile/setup writes and the
+    // minor-block reads (isUserMinor). The storage filename below intentionally stays
+    // on the raw email; the no-match-throw on profiles.update is left as a follow-up.
+    const dbEmail = normalizeEmail(email);
 
     // Call fal-ai/bria-rmbg via HF router
    const hfRes = await fetch("https://fal.run/fal-ai/birefnet", {
@@ -59,12 +65,12 @@ const pngBuffer = Buffer.from(await pngRes.arrayBuffer());
     // Update both tables
     await Promise.all([
       prisma.profiles.update({
-        where: { email },
+        where: { email: dbEmail },
         data: { avatar_live_url: publicUrl },
       }),
-      prisma.creatorProfile.findUnique({ where: { email }, select: { id: true } }).then((c) => {
+      prisma.creatorProfile.findUnique({ where: { email: dbEmail }, select: { id: true } }).then((c) => {
         if (c) return prisma.creatorProfile.update({
-          where: { email },
+          where: { email: dbEmail },
           data: { avatarLiveUrl: publicUrl },
         });
       }),
