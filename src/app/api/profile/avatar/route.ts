@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
+import { normalizeEmail } from "@/lib/dm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: Request) {
-  const email = await getAuthedEmailOrNull();
-  if (!email) {
+  const rawEmail = await getAuthedEmailOrNull();
+  if (!rawEmail) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  // Normalize so this upsert keys the same profiles row profile/setup writes and the
+  // minor-block reads (isUserMinor) — defense-in-depth against a case-forked dup row.
+  const email = normalizeEmail(rawEmail);
 
   const body = await req.json();
   const avatarUrl =
