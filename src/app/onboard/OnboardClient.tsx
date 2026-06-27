@@ -42,7 +42,7 @@ export default function OnboardClient() {
       fetch("/api/avatar/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatarUrl: publicUrl, email: user.email }),
+        body: JSON.stringify({ avatarUrl: publicUrl }),
       }).catch(console.error);
     } catch (e: any) {
       setError(e?.message || "Upload failed.");
