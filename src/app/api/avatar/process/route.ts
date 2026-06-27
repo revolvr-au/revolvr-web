@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@supabase/supabase-js";
 import { normalizeEmail } from "@/lib/dm";
+import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,15 +15,23 @@ const supabaseAdmin = createClient(
 
 export async function POST(req: Request) {
   try {
-    const { avatarUrl, email } = await req.json();
-    if (!avatarUrl || !email) {
+    const { avatarUrl } = await req.json();
+    if (!avatarUrl) {
       return NextResponse.json({ error: "Missing params" }, { status: 400 });
+    }
+
+    // Auth-derived identity — the email is taken from the caller's session, never the
+    // request body, so a caller can only ever modify their own avatar (closes the IDOR
+    // where any email could be passed to the service-role client).
+    const rawEmail = await getAuthedEmailOrNull();
+    if (!rawEmail) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
     // DB where-key only — normalized to match the row profile/setup writes and the
     // minor-block reads (isUserMinor). The storage filename below intentionally stays
     // on the raw email; the no-match-throw on profiles.update is left as a follow-up.
-    const dbEmail = normalizeEmail(email);
+    const dbEmail = normalizeEmail(rawEmail);
 
     // Call fal-ai/bria-rmbg via HF router
    const hfRes = await fetch("https://fal.run/fal-ai/birefnet", {
@@ -51,7 +60,7 @@ const pngRes = await fetch(imageUrl);
 const pngBuffer = Buffer.from(await pngRes.arrayBuffer());
 
     // Upload to avatars-live bucket
-    const filename = `${email.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.png`;
+    const filename = `${rawEmail.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.png`;
     const { error: uploadErr } = await supabaseAdmin.storage
       .from("avatars-live")
       .upload(filename, pngBuffer, { contentType: "image/png", upsert: true });
