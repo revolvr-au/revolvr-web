@@ -401,7 +401,7 @@ export default function MeClient() {
                     fetch("/api/avatar/process", {
                       method: "POST",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ avatarUrl: url, email }),
+                      body: JSON.stringify({ avatarUrl: url }),
                     }).catch(console.error);
                   } catch (err: unknown) {
                     setError(err instanceof Error ? err.message : "Upload failed.");
