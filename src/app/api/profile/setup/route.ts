@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { prisma } from "@/lib/prisma";
+import { normalizeEmail } from "@/lib/dm";
 
 export async function PATCH(req: NextRequest) {
   const cookieStore = await cookies();
@@ -33,7 +34,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Display name is required." }, { status: 400 });
   }
 
-  const email = user.email;
+  // Normalize ourselves so the row we write is keyed identically to the row the
+  // minor-block safety read looks up (isUserMinor -> normalizeEmail in src/lib/dm.ts).
+  // Don't rely on Supabase lowercasing the email for us — if write-key and read-key
+  // diverge, the isMinor guard silently misses.
+  const email = normalizeEmail(user.email);
   const now = new Date();
   const bioTrimmed = bio?.trim() ?? null;
   const handleTrimmed = handle?.trim().toLowerCase() || null;
