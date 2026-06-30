@@ -30,7 +30,9 @@ export async function POST(req: Request) {
 
     // DB where-key only — normalized to match the row profile/setup writes and the
     // minor-block reads (isUserMinor). The storage filename below intentionally stays
-    // on the raw email; the no-match-throw on profiles.update is left as a follow-up.
+    // on the raw email. The profiles write below uses updateMany so a missing row
+    // (normal during onboarding, before profile/setup creates it) no-ops instead of
+    // throwing P2025.
     const dbEmail = normalizeEmail(rawEmail);
 
     // Call fal-ai/bria-rmbg via HF router
@@ -73,7 +75,7 @@ const pngBuffer = Buffer.from(await pngRes.arrayBuffer());
 
     // Update both tables
     await Promise.all([
-      prisma.profiles.update({
+      prisma.profiles.updateMany({
         where: { email: dbEmail },
         data: { avatar_live_url: publicUrl },
       }),
