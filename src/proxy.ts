@@ -58,6 +58,20 @@ export async function proxy(request: NextRequest) {
   if (process.env.AGE_GATE_ENABLED === "true" && user) {
     const pathname = url.pathname;
 
+    // Jurisdiction scope: the gate is AU-only. Country is derived from the Vercel
+    // edge header (set upstream of app code, unspoofable by the browser) — never
+    // from client input. Non-AU authed users pass through untouched: no age_status
+    // read, no DOB wall, no redirect.
+    //
+    // Missing/empty header -> fail-closed to AU (gate it), consistent with
+    // resolveJurisdiction's existing strict default. In Vercel production this
+    // header is reliably present, so this only bites genuinely header-absent
+    // requests, never normal non-AU traffic (US/GB/... carry a country and fall
+    // through). The trade: a rare one-time DOB wall vs. an AU user bypassing on a
+    // header glitch.
+    const country = (request.headers.get("x-vercel-ip-country") ?? "").trim().toUpperCase();
+    const inGatedJurisdiction = country === "AU" || country === "";
+
     // Skip the gate for surfaces that must stay reachable: studio, the
     // self-gating API, auth/onboarding/login surfaces, the gate pages
     // themselves (to avoid redirect loops), Next internals, and legal copy.
@@ -79,7 +93,7 @@ export async function proxy(request: NextRequest) {
       (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
     );
 
-    if (!isExcluded) {
+    if (inGatedJurisdiction && !isExcluded) {
       // Fail-closed on every failure mode. A returned null row / null status
       // funnels through resolveAgeRouting; a THROWN read (DB unreachable / pool
       // timeout) is caught and converted to the same undefined -> verify path,
