@@ -13,20 +13,20 @@ export async function GET(_req: Request, { params }: { params: any }) {
     }
 
     const p = await prisma.post.findUnique({
-  where: { id },
-  include: {
-    user: true,
-    media: { orderBy: { order: "asc" } },
-    _count: { select: { likes: true } },
-  },
-});
-const creator = await prisma.creatorProfile.findUnique({
-  where: { email: p.userEmail },
-});
+      where: { id },
+      include: {
+        media: { orderBy: { order: "asc" } },
+        _count: { select: { likes: true } },
+      },
+    });
 
     if (!p) {
       return NextResponse.json({ ok: false, error: "not_found" }, { status: 404 });
     }
+
+    const creator = await prisma.creatorProfile.findUnique({
+      where: { email: p.userEmail },
+    });
 
     return NextResponse.json({
       id: p.id,
