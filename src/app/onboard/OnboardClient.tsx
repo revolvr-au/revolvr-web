@@ -4,6 +4,10 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 
+// Max time onSubmit waits on in-flight avatar bg-removal before proceeding without
+// the live URL (user recovers via /me). Must never trap the user on this screen.
+const LIVE_AVATAR_WAIT_MS = 12_000;
+
 export default function OnboardClient() {
   const router = useRouter();
   const [handle, setHandle] = useState("");
@@ -14,6 +18,9 @@ export default function OnboardClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // In-flight avatar/process promise → resolves to the live URL (or null). Carried
+  // through to profile/setup at submit, since the profiles row doesn't exist yet.
+  const liveAvatarPromiseRef = useRef<Promise<string | null> | null>(null);
 
   const handleValid = handle.trim().length > 0 && /^[a-zA-Z0-9_]+$/.test(handle.trim());
   const canSubmit = handleValid && displayName.trim().length > 0 && !loading && !uploading;
@@ -39,11 +46,20 @@ export default function OnboardClient() {
       if (uploadErr) { setError(uploadErr.message); return; }
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       setAvatarUrl(publicUrl);
-      fetch("/api/avatar/process", {
+      // Kick off bg-removal and KEEP the promise. The profiles row is created later
+      // by profile/setup, so avatar/process's own write no-ops here — we carry the
+      // returned live URL through to setup instead. Never rejects (failure → null).
+      liveAvatarPromiseRef.current = fetch("/api/avatar/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ avatarUrl: publicUrl }),
-      }).catch(console.error);
+      })
+        .then(async (res) => {
+          if (!res.ok) return null;
+          const json = await res.json().catch(() => null);
+          return (json?.avatarLiveUrl as string | undefined) ?? null;
+        })
+        .catch(() => null);
     } catch (e: any) {
       setError(e?.message || "Upload failed.");
     } finally {
@@ -55,6 +71,20 @@ export default function OnboardClient() {
     setError(null);
     setLoading(true);
     try {
+      // Carry the bg-removed "live" avatar through to setup. If processing is still
+      // in-flight, wait up to LIVE_AVATAR_WAIT_MS — but never trap the user: on
+      // timeout or failure we send null and they recover via /me.
+      let avatarLiveUrl: string | null = null;
+      const pending = liveAvatarPromiseRef.current;
+      if (pending) {
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const timeout = new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), LIVE_AVATAR_WAIT_MS);
+        });
+        avatarLiveUrl = await Promise.race([pending, timeout]);
+        clearTimeout(timer);
+      }
+
       const res = await fetch("/api/profile/setup", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -62,6 +92,7 @@ export default function OnboardClient() {
           handle: handle.trim(),
           displayName: displayName.trim(),
           avatarUrl,
+          avatarLiveUrl,
         }),
       });
       const json = await res.json().catch(() => null);

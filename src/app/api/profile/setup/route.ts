@@ -23,10 +23,11 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { handle, displayName, avatarUrl, bio } = body as {
+  const { handle, displayName, avatarUrl, avatarLiveUrl, bio } = body as {
     handle?: string;
     displayName?: string;
     avatarUrl?: string | null;
+    avatarLiveUrl?: string | null;
     bio?: string;
   };
 
@@ -51,6 +52,7 @@ export async function PATCH(req: NextRequest) {
         email,
         display_name: displayName.trim(),
         avatar_url: avatarUrl ?? null,
+        avatar_live_url: avatarLiveUrl ?? null,
         bio: bioTrimmed,
         created_at: now,
         updated_at: now,
@@ -58,6 +60,10 @@ export async function PATCH(req: NextRequest) {
       update: {
         display_name: displayName.trim(),
         avatar_url: avatarUrl ?? null,
+        // Conditional: /me's profile save calls this route WITHOUT avatarLiveUrl
+        // after avatar/process already wrote it directly. An unconditional `?? null`
+        // here would wipe it on every save.
+        ...(avatarLiveUrl != null ? { avatar_live_url: avatarLiveUrl } : {}),
         bio: bioTrimmed,
         updated_at: now,
       },
@@ -71,6 +77,7 @@ export async function PATCH(req: NextRequest) {
         displayName: displayName.trim(),
         handle: handleTrimmed,
         avatarUrl: avatarUrl ?? null,
+        avatarLiveUrl: avatarLiveUrl ?? null,
         bio: bioTrimmed,
         createdAt: now,
         updatedAt: now,
@@ -79,6 +86,7 @@ export async function PATCH(req: NextRequest) {
         displayName: displayName.trim(),
         handle: handleTrimmed,
         avatarUrl: avatarUrl ?? null,
+        ...(avatarLiveUrl != null ? { avatarLiveUrl } : {}),
         bio: bioTrimmed,
         updatedAt: now,
       },
