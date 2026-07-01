@@ -1,6 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import {
+  AGE_POLICY_TEXT,
+  AGE_POLICY_LAST_UPDATED,
+  AGE_POLICY_IS_DRAFT,
+} from "@/legal/age-verification.en";
 
 export default function AgeVerificationPage() {
   const router = useRouter();
@@ -26,13 +31,40 @@ export default function AgeVerificationPage() {
         <div style={{ width: 22 }} />
       </div>
 
-      <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#ffffff", textTransform: "uppercase", marginBottom: 24 }}>
+      <h1 style={{ fontFamily: "monospace", fontSize: 16, letterSpacing: 3, color: "#ffffff", textTransform: "uppercase", marginBottom: 8 }}>
         Age Verification Policy
       </h1>
+      <p style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.6)", marginBottom: 32 }}>
+        Last updated: {AGE_POLICY_LAST_UPDATED}
+      </p>
 
-      <div style={{ fontSize: 11, fontFamily: "monospace", letterSpacing: 2, color: "rgba(255,255,255,0.6)", textTransform: "uppercase", padding: "32px 0", textAlign: "center" }}>
-        Coming Soon
-      </div>
+      {AGE_POLICY_IS_DRAFT && (
+        <div style={{
+          border: "1px solid rgba(255,180,60,0.5)",
+          background: "rgba(255,180,60,0.08)",
+          color: "#ffcc66",
+          fontFamily: "monospace",
+          fontSize: 11,
+          letterSpacing: 1,
+          lineHeight: 1.6,
+          padding: "12px 14px",
+          marginBottom: 28,
+        }}>
+          DRAFT — PENDING LEGAL REVIEW. This policy is not yet final and does not
+          represent Revolvr&apos;s published position.
+        </div>
+      )}
+
+      <pre style={{
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+        fontSize: 13,
+        lineHeight: 1.8,
+        color: "#aaa",
+        fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      }}>
+        {AGE_POLICY_TEXT.trim()}
+      </pre>
     </div>
   );
 }
