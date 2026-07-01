@@ -627,7 +627,7 @@ useEffect(() => {
   }, [posts]);
 
   const handleFeedScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
-    const index = Math.round(e.currentTarget.scrollTop / window.innerHeight);
+    const index = Math.round(e.currentTarget.scrollTop / e.currentTarget.clientHeight);
     setActiveIndex((prev) => (prev === index ? prev : index));
     revolve.registerScrollIndex(index);
   }, [revolve.registerScrollIndex]);
