@@ -704,7 +704,11 @@ useEffect(() => {
   style={{
     height: "100dvh",
     overflowY: "auto",
+    overflowX: "hidden",
     scrollSnapType: "y mandatory",
+    // Lock feed gestures to the vertical axis: without this, native scroll-snap
+    // pans freely on both axes, so slightly-diagonal flicks drift left-right.
+    touchAction: "pan-y",
     scrollbarWidth: "none",
     msOverflowStyle: "none",
   }}
@@ -1752,7 +1756,10 @@ function PeopleCylinder({
         justifyContent: "center",
         gap: 4,
         userSelect: "none",
-        touchAction: "pan-y",
+        // Horizontal-swipe rail: JS owns the gesture (clientX delta below), so let
+        // the browser pan neither axis — "pan-y" here leaks vertical scroll to the
+        // feed and yanks the page up on a sideways flick.
+        touchAction: "none",
       }}
     >
       {visible.map((p, i) => {
@@ -1861,7 +1868,10 @@ function ActionCylinder({
         alignItems: "center",
         gap: 4,
         userSelect: "none",
-        touchAction: "pan-y",
+        // Horizontal-swipe rail: JS owns the gesture (clientX delta below), so let
+        // the browser pan neither axis — "pan-y" here leaks vertical scroll to the
+        // feed and yanks the page up on a sideways flick.
+        touchAction: "none",
       }}
     >
       <div
