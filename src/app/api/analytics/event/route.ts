@@ -22,9 +22,6 @@ export async function POST(req: NextRequest) {
         }),
       ];
 
-      if (eventName === "post_view" && postId) {
-        writes.push(prisma.postView.create({ data: { postId, userEmail: userEmail ?? null } }));
-      }
       if (eventName === "post_share" && postId) {
         writes.push(prisma.postShare.create({ data: { postId, userEmail: userEmail ?? null } }));
       }
