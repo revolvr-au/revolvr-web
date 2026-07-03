@@ -25,8 +25,13 @@ import PeopleCard, { type PeopleCardUser } from "@/components/PeopleCard";
 import GathWindow from "@/components/GathWindow";
 import TopBar from "@/components/TopBar";
 import { useRevolveConfig } from "@/lib/revolve/useRevolveConfig";
-import { useRevolve } from "@/hooks/useRevolve";
+import { useRevolve, type RevolveDebugEvent } from "@/hooks/useRevolve";
 import ChargeBar from "@/components/revolve/ChargeBar";
+// TEMP (testmode HUD): remove with the branch — see RevolveDebugHud header.
+import {
+  RevolveDebugHud,
+  type RevolveDebugState,
+} from "@/components/revolve/RevolveDebugHud";
 import { type ChamberSlot } from "@/lib/revolve/chambers";
 import dynamic from "next/dynamic";
 
@@ -160,8 +165,34 @@ export default function PublicFeedClient({
   // Revolve config (off by default; URL/localStorage overrides apply on top in dev,
   // and on Vercel preview deployments only — never in production).
   const revolveConfig = useRevolveConfig(revolveEnabled, previewMode);
+  // TEMP (testmode HUD): accumulate the charge-path event stream for on-device diagnosis
+  // of the desktop-works / mobile-doesn't-charge split. Only wired when testMode is on.
+  const [revolveDebug, setRevolveDebug] = useState<RevolveDebugState>({
+    scrollCount: 0,
+    lastIndex: 0,
+    settleCount: 0,
+    lastPrev: 0,
+    lastSettled: 0,
+    lastCharged: false,
+  });
+  const handleRevolveDebug = useCallback((e: RevolveDebugEvent) => {
+    setRevolveDebug((d) =>
+      e.type === "scroll"
+        ? { ...d, scrollCount: d.scrollCount + 1, lastIndex: e.index }
+        : {
+            ...d,
+            settleCount: d.settleCount + 1,
+            lastPrev: e.prev,
+            lastSettled: e.settled,
+            lastCharged: e.charged,
+          },
+    );
+  }, []);
   // Phase 2: flick counter + charge. resetCharge wires to the revolve trigger in Phase 3.
-  const revolve = useRevolve(revolveConfig);
+  const revolve = useRevolve(
+    revolveConfig,
+    revolveConfig.testMode ? handleRevolveDebug : undefined,
+  );
   const [lastChamber, setLastChamber] = useState<ChamberSlot | null>(null);
   const [posts, setPosts] = useState<any[]>(() => feedCache?.posts ?? []);
   const [loading, setLoading] = useState(feedCache === null);
@@ -782,6 +813,16 @@ useEffect(() => {
 
       {revolveConfig.enabled && (
         <ChargeBar charge={revolve.chargeCount} cadenceN={revolveConfig.cadenceN} />
+      )}
+
+      {/* TEMP (testmode HUD): remove with the branch — see RevolveDebugHud header. */}
+      {revolveConfig.enabled && revolveConfig.testMode && (
+        <RevolveDebugHud
+          debug={revolveDebug}
+          charge={revolve.chargeCount}
+          cadenceN={revolveConfig.cadenceN}
+          status={revolve.status}
+        />
       )}
 
       {revolveConfig.enabled && revolveActive && (

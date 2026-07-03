@@ -24,6 +24,22 @@ const CLOSE_MS = 320;
 
 export type RevolveStatus = "idle" | "armed" | "open" | "closing";
 
+/**
+ * Debug-only event stream (testMode HUD). `scroll` fires on every raw registerScrollIndex
+ * call — so the HUD reveals whether mobile onScroll even fires; `settle` fires when the
+ * quiet-period timer resolves, exposing the exact desktop/mobile divergence point.
+ */
+export type RevolveDebugEvent =
+  | { type: "scroll"; index: number }
+  | {
+      type: "settle";
+      settled: number;
+      prev: number;
+      charged: boolean;
+      charge: number;
+      status: RevolveStatus;
+    };
+
 export type UseRevolve = {
   /** 0 → cadenceN. Full bar telegraphs the imminent revolve. */
   chargeCount: number;
@@ -37,9 +53,17 @@ export type UseRevolve = {
   resetCharge: () => void;
 };
 
-export function useRevolve(config: RevolveConfig): UseRevolve {
+export function useRevolve(
+  config: RevolveConfig,
+  onDebug?: (e: RevolveDebugEvent) => void,
+): UseRevolve {
   const [chargeCount, setChargeCount] = useState(0);
   const [status, setStatus] = useState<RevolveStatus>("idle");
+
+  // Mirror the debug sink in a ref so registerScrollIndex needn't list it as a dep
+  // (it stays a stable callback; the HUD wiring is a pure read-out with no behavior).
+  const onDebugRef = useRef(onDebug);
+  onDebugRef.current = onDebug;
 
   const lastSettledIndexRef = useRef(0);
   const latestIndexRef = useRef(0);
@@ -62,6 +86,9 @@ export function useRevolve(config: RevolveConfig): UseRevolve {
   const registerScrollIndex = useCallback(
     (index: number) => {
       if (!config.enabled) return;
+      // Emit the raw event first — before any early return — so the HUD shows whether
+      // onScroll fires at all on mobile, even when the overlay is currently paused.
+      onDebugRef.current?.({ type: "scroll", index });
       // Feed is paused while the overlay owns the screen — ignore any stray scroll.
       if (statusRef.current === "open" || statusRef.current === "closing") return;
       latestIndexRef.current = index;
@@ -83,6 +110,16 @@ export function useRevolve(config: RevolveConfig): UseRevolve {
           }
         }
         lastSettledIndexRef.current = settled;
+        // Report the settle decision with post-update charge/status so the HUD shows the
+        // exact moment (and whether) a settled forward advance was counted.
+        onDebugRef.current?.({
+          type: "settle",
+          settled,
+          prev,
+          charged: settled > prev,
+          charge: chargeRef.current,
+          status: statusRef.current,
+        });
       }, SETTLE_MS);
     },
     [config.enabled, config.cadenceN, setCharge, setRevolveStatus],
