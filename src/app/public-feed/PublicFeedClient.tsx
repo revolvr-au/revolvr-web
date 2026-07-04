@@ -663,19 +663,6 @@ useEffect(() => {
     revolve.registerScrollIndex(index);
   }, [revolve.registerScrollIndex]);
 
-  // Primary settle signal for The Revolve: `scrollend` fires authoritatively when scrolling
-  // (momentum included) fully stops. iOS momentum scrolling never yields the quiet gap the
-  // debounce fallback needs, so without this the charge never accrues on mobile. React has
-  // no onScrollEnd prop, so attach natively to the scroll container. Browsers without
-  // `scrollend` simply never fire it and fall back to the hook's debounce timer.
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const onScrollEnd = () => revolve.commitSettle();
-    el.addEventListener("scrollend", onScrollEnd);
-    return () => el.removeEventListener("scrollend", onScrollEnd);
-  }, [revolve.commitSettle]);
-
   // A chamber pick records the cycle's outcome (read by the dismissed effect to avoid
   // double-counting a selection as a dismissal) and fires its own discovery event.
   const handleRevolveSelect = useCallback((slot: ChamberSlot) => {

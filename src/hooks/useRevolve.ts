@@ -47,8 +47,6 @@ export type UseRevolve = {
   status: RevolveStatus;
   /** Feed onScroll hook: report the current rounded index; counting happens on settle. */
   registerScrollIndex: (index: number) => void;
-  /** Commit the settle now — wire to the container's native `scrollend` (primary signal). */
-  commitSettle: () => void;
   /** Begin the exit animation, then return to idle after the close budget. */
   closeRevolve: () => void;
   /** Reset charge to 0 and rebase the flick origin to the current index. */
@@ -85,49 +83,6 @@ export function useRevolve(
     setStatus(s);
   }, []);
 
-  // The settle decision, factored out so it can be driven by EITHER trigger:
-  //   • `scrollend` (primary, wired in the feed via commitSettle) — fires authoritatively
-  //     when scrolling STOPS, momentum included. This is what iOS needs: momentum scrolling
-  //     never yields a quiet gap, so the debounce below never resolves on mobile.
-  //   • the SETTLE_MS quiet-gap debounce (fallback) — for browsers without `scrollend`.
-  // Whichever fires first cancels the pending debounce, so a settle commits exactly once.
-  const commitSettle = useCallback(() => {
-    if (!config.enabled) return;
-    // Feed is paused while the overlay owns the screen — ignore any stray settle.
-    if (statusRef.current === "open" || statusRef.current === "closing") return;
-    // First trigger wins: cancel the fallback timer so the other path can't double-fire.
-    if (settleTimerRef.current) {
-      clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = null;
-    }
-    const settled = latestIndexRef.current;
-    const prev = lastSettledIndexRef.current;
-    // Only a forward, settled advance counts. Snap-back (settled === prev) is ignored;
-    // backward scroll updates the baseline without charging.
-    if (settled > prev) {
-      if (chargeRef.current >= config.cadenceN) {
-        // Already armed AND a fresh forward flick landed — THIS is the trigger.
-        setCharge(0); // opening resets charge (Phase 3 spec)
-        setRevolveStatus("open");
-      } else {
-        const next = Math.min(config.cadenceN, chargeRef.current + (settled - prev));
-        setCharge(next);
-        if (next >= config.cadenceN) setRevolveStatus("armed");
-      }
-    }
-    lastSettledIndexRef.current = settled;
-    // Report the settle decision with post-update charge/status so the HUD shows the
-    // exact moment (and whether) a settled forward advance was counted.
-    onDebugRef.current?.({
-      type: "settle",
-      settled,
-      prev,
-      charged: settled > prev,
-      charge: chargeRef.current,
-      status: statusRef.current,
-    });
-  }, [config.enabled, config.cadenceN, setCharge, setRevolveStatus]);
-
   const registerScrollIndex = useCallback(
     (index: number) => {
       if (!config.enabled) return;
@@ -137,13 +92,37 @@ export function useRevolve(
       // Feed is paused while the overlay owns the screen — ignore any stray scroll.
       if (statusRef.current === "open" || statusRef.current === "closing") return;
       latestIndexRef.current = index;
-      // Arm the fallback quiet-gap debounce. On iOS this never resolves (momentum never
-      // goes quiet for SETTLE_MS) — `scrollend` commits the settle there instead. Where
-      // both fire, commitSettle's first-wins cancel keeps it to one settle.
       if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-      settleTimerRef.current = setTimeout(commitSettle, SETTLE_MS);
+      settleTimerRef.current = setTimeout(() => {
+        const settled = latestIndexRef.current;
+        const prev = lastSettledIndexRef.current;
+        // Only a forward, settled advance counts. Snap-back (settled === prev) is ignored;
+        // backward scroll updates the baseline without charging.
+        if (settled > prev) {
+          if (chargeRef.current >= config.cadenceN) {
+            // Already armed AND a fresh forward flick landed — THIS is the trigger.
+            setCharge(0); // opening resets charge (Phase 3 spec)
+            setRevolveStatus("open");
+          } else {
+            const next = Math.min(config.cadenceN, chargeRef.current + (settled - prev));
+            setCharge(next);
+            if (next >= config.cadenceN) setRevolveStatus("armed");
+          }
+        }
+        lastSettledIndexRef.current = settled;
+        // Report the settle decision with post-update charge/status so the HUD shows the
+        // exact moment (and whether) a settled forward advance was counted.
+        onDebugRef.current?.({
+          type: "settle",
+          settled,
+          prev,
+          charged: settled > prev,
+          charge: chargeRef.current,
+          status: statusRef.current,
+        });
+      }, SETTLE_MS);
     },
-    [config.enabled, commitSettle],
+    [config.enabled, config.cadenceN, setCharge, setRevolveStatus],
   );
 
   const closeRevolve = useCallback(() => {
@@ -177,5 +156,5 @@ export function useRevolve(
     [],
   );
 
-  return { chargeCount, status, registerScrollIndex, commitSettle, closeRevolve, resetCharge };
+  return { chargeCount, status, registerScrollIndex, closeRevolve, resetCharge };
 }
