@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import KeyboardHandler from "@/components/KeyboardHandler";
 import TabShell from "@/components/TabShell";
+import { isDmEnabled } from "@/lib/dm";
+import { isRevolveEnabled, isRevolvePreview } from "@/lib/revolve/config";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,7 +34,11 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-[#050814] text-white">
         <KeyboardHandler />
-        <TabShell />
+        <TabShell
+          dmEnabled={isDmEnabled()}
+          revolveEnabled={isRevolveEnabled()}
+          previewMode={isRevolvePreview()}
+        />
         {children}
       </body>
     </html>
