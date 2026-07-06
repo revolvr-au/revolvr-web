@@ -553,10 +553,10 @@ export default function ControlPanel({
           <MenuSection label="PLATFORM">
             <MenuItem onClick={() => navigate("/about")}>About REVOLVR</MenuItem>
             <MenuItem onClick={() => navigate("/about/tranche")}>About TRANCHE</MenuItem>
-            <MenuItem onClick={() => { onClose(); window.location.href = "mailto:revolvrassist@gmail.com"; }}>
+            <MenuItem onClick={() => navigate("/support")}>
               Help & Support
             </MenuItem>
-            <MenuItem onClick={() => { onClose(); window.location.href = "mailto:revolvrassist@gmail.com"; }}>
+            <MenuItem onClick={() => navigate("/support")}>
               Contact Us
             </MenuItem>
           </MenuSection>
