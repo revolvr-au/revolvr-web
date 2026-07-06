@@ -56,8 +56,8 @@ export default function AboutPage() {
         </div>
         <p style={{ fontSize: 13, color: "#888", lineHeight: 1.8, margin: 0 }}>
           Revolvr is a short-form video platform built around live battles, creator-first monetisation,
-          and real connection. We believe creators deserve more — which is why we pay out
-          75% of all earnings directly to the people who make the content.
+          and real connection. We believe creators deserve more — which is why creators keep up to
+          50% of their earnings, rising with your ring: No Ring 15%, Blue Ring 30%, Gold Ring 50%.
           No middlemen. No algorithm games. Just creators and their audience.
         </p>
       </div>
@@ -84,10 +84,10 @@ export default function AboutPage() {
           Contact
         </div>
         <a
-          href="mailto:revolvrassist@gmail.com"
+          href="/support"
           style={{ fontSize: 13, color: "#ffffff", textDecoration: "none", letterSpacing: 0.3 }}
         >
-          revolvrassist@gmail.com
+          Get help
         </a>
       </div>
 
