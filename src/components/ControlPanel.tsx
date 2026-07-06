@@ -45,6 +45,8 @@ export default function ControlPanel({
   const [myGaths, setMyGaths] = useState<MyGath[] | null>(null);
   const [canApplyTfc, setCanApplyTfc] = useState(false);
   const [resolvedHandle, setResolvedHandle] = useState<string | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -98,17 +100,25 @@ export default function ControlPanel({
   // because the actual handle is set at onboarding and is usually different —
   // guessing routes "View Profile" to /u/<wrong> and 404s the user's own page.
   useEffect(() => {
-    if (handle || !userId) return;
+    if (!userId) return;
     let cancelled = false;
     fetch(`/api/creator/me`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (cancelled) return;
-        const h = data?.creator?.handle;
-        setResolvedHandle(typeof h === "string" && h.trim() ? h : null);
+        // Only resolve the handle here when the caller didn't pass one.
+        if (!handle) {
+          const h = data?.creator?.handle;
+          setResolvedHandle(typeof h === "string" && h.trim() ? h : null);
+        }
+        const a = data?.creator?.avatarUrl;
+        setAvatarUrl(typeof a === "string" && a.trim() ? a : null);
+        setAvatarError(false);
       })
       .catch(() => {
-        if (!cancelled) setResolvedHandle(null);
+        if (cancelled) return;
+        if (!handle) setResolvedHandle(null);
+        setAvatarUrl(null);
       });
     return () => {
       cancelled = true;
@@ -241,8 +251,36 @@ export default function ControlPanel({
                 border: "1.5px solid rgba(255, 255, 255, 0.4)",
                 background: "linear-gradient(135deg, #1a2030, #0a0e18)",
                 flexShrink: 0,
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
-            />
+            >
+              {avatarUrl && !avatarError ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  onError={() => setAvatarError(true)}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <span
+                  style={{
+                    color: "rgba(255,255,255,0.7)",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                  }}
+                >
+                  {(profileHandle ?? userId ?? "")
+                    .replace(/[^a-zA-Z0-9]/g, "")
+                    .charAt(0)
+                    .toUpperCase()}
+                </span>
+              )}
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               <span style={{ color: "#fff", fontSize: 16, fontWeight: 700, fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", letterSpacing: "0.02em" }}>
                 {profileHandle ? `@${profileHandle}` : "View Profile"}
@@ -515,10 +553,10 @@ export default function ControlPanel({
           <MenuSection label="PLATFORM">
             <MenuItem onClick={() => navigate("/about")}>About REVOLVR</MenuItem>
             <MenuItem onClick={() => navigate("/about/tranche")}>About TRANCHE</MenuItem>
-            <MenuItem onClick={() => { onClose(); window.location.href = "mailto:revolvrassist@gmail.com"; }}>
+            <MenuItem onClick={() => navigate("/support")}>
               Help & Support
             </MenuItem>
-            <MenuItem onClick={() => { onClose(); window.location.href = "mailto:revolvrassist@gmail.com"; }}>
+            <MenuItem onClick={() => navigate("/support")}>
               Contact Us
             </MenuItem>
           </MenuSection>
