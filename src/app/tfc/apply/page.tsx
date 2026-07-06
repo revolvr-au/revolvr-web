@@ -54,6 +54,20 @@ export default function TFCApplyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  // Track the *visual* viewport height so the scroll container shrinks when the
+  // iOS keyboard opens. A fixed 100dvh doesn't shrink for the keyboard, which
+  // traps the bottom-anchored submit button behind it. null → fall back to
+  // 100dvh (SSR + no-keyboard/desktop = current behaviour).
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : null;
+    if (!vv) return;
+    const sync = () => setViewportHeight(vv.height);
+    sync();
+    vv.addEventListener("resize", sync);
+    return () => vv.removeEventListener("resize", sync);
+  }, []);
 
   useEffect(() => {
     const sb = createSupabaseBrowserClient();
@@ -117,7 +131,7 @@ export default function TFCApplyPage() {
     <FeedLayout>
       <div
         style={{
-          height: "100dvh",
+          height: viewportHeight ? `${viewportHeight}px` : "100dvh",
           overflowY: "auto",
           paddingTop: 72,
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 80px)",
@@ -435,6 +449,7 @@ function Counter({ count, ok }: { count: number; ok: boolean }) {
 
 const textareaStyle: React.CSSProperties = {
   width: "100%",
+  boxSizing: "border-box",
   padding: "10px 12px",
   background: PASCAL_HIGH,
   border: `1px solid rgba(15,17,21,0.12)`,
