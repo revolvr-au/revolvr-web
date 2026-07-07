@@ -118,7 +118,6 @@ export default function CreatePage() {
         body: JSON.stringify({
           caption: finalCaption,
           isTranche,
-          userEmail: "revolvrassist@gmail.com"
         })
       });
 
