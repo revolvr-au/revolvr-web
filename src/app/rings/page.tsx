@@ -441,7 +441,7 @@ function RingsPageInner() {
           lineHeight: 1.8,
         }}>
           Subscriptions renew monthly. Cancel anytime.<br />
-          Questions? revolvrassist@gmail.com
+          Questions? Visit revolvr.net/support
         </div>
       </div>
     </div>

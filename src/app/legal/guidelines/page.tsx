@@ -46,7 +46,7 @@ export default function GuidelinesPage() {
         { heading: "Intellectual Property", body: "Only post content you own or have the rights to share." },
         { heading: "Self-harm", body: "Content that promotes, glorifies, or encourages self-harm or suicide is strictly prohibited." },
         { heading: "Creator Responsibility", body: "Creators must clearly disclose paid partnerships and sponsored content in accordance with applicable advertising laws." },
-        { heading: "Reporting", body: "If you feel unsafe or see a violation, contact us at revolvrassist@gmail.com." },
+        { heading: "Reporting", body: "If you feel unsafe or see a violation, report it using our safety form at revolvr.net/report." },
         { heading: "Enforcement", body: "We may remove content, restrict access, or suspend accounts to maintain platform safety." },
       ].map((item, i) => (
         <div key={i} style={{ marginBottom: 24, borderTop: "1px solid #1a1510", paddingTop: 20 }}>
