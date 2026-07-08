@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Red Ring is invite-only. Contact Revolvr to apply." }, { status: 403 });
     }
     if (tier === "GOVERNMENT") {
-      return NextResponse.json({ error: "Government Ring is granted manually. Contact revolvrassist@gmail.com." }, { status: 403 });
+      return NextResponse.json({ error: "Government Ring is granted manually. Contact us at revolvr.net/support to request access." }, { status: 403 });
     }
     return NextResponse.json({ error: "Invalid ring tier" }, { status: 400 });
   }

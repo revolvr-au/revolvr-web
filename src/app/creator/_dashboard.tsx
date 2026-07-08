@@ -1,5 +1,3 @@
-import { SUPPORT_EMAIL } from "@/lib/constants";
-
 type CreatorProfile = {
   displayName?: string | null;
   display_name?: string | null;
@@ -46,9 +44,9 @@ export default function CreatorDashboard({ me }: { me: CreatorMeResponse }) {
       <section className="rounded-xl bg-white/5 p-4">
         <div className="text-sm font-semibold">Support</div>
         <div className="mt-2 text-sm opacity-70">
-          Issues? Email{" "}
-          <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>
-            {SUPPORT_EMAIL}
+          Issues?{" "}
+          <a className="underline" href="/support">
+            Contact support
           </a>
         </div>
       </section>
