@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { awardVoltage } from "@/lib/serverVoltage";
+import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 
 // GET posts
 export async function GET() {
@@ -31,36 +32,34 @@ export async function GET() {
 // POST create
 export async function POST(req: Request) {
   try {
+    const authed = await getAuthedEmailOrNull();
+    if (!authed) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+    }
+    const email = authed.trim().toLowerCase();
+
     const body = await req.json();
 
     console.log("POST BODY:", body); // 👈 debug (important)
-
-    if (!body.userEmail) {
-      return NextResponse.json(
-        { error: "userEmail missing" },
-        { status: 400 }
-      );
-    }
 
     const post = await prisma.post.create({
       data: {
         caption: body.caption || "",
         imageUrl: body.media_url || "",
-        userEmail: body.userEmail,
+        userEmail: email,
         cloudflareVideoId: body.cloudflareVideoId ?? null,
         muxPlaybackId: body.muxPlaybackId ?? null,
       },
     });
-const email = body.userEmail;
 
-await awardVoltage({
-  creatorEmail: email,
-  eventType: "post_created",
-  actorEmail: email,
-  targetType: "post",
-  targetId: post.id,
-  dedupeKey: `post:${post.id}`,
-});
+    await awardVoltage({
+      creatorEmail: email,
+      eventType: "post_created",
+      actorEmail: email,
+      targetType: "post",
+      targetId: post.id,
+      dedupeKey: `post:${post.id}`,
+    });
 
     return NextResponse.json({ post });
 

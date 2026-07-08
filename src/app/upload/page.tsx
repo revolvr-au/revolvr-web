@@ -62,7 +62,6 @@ export default function UploadPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userEmail: "test@revolvr.net",
           media: [{ url: publicUrl }],
           filter: selectedFilter,
         }),
