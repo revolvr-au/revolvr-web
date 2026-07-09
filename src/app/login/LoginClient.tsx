@@ -103,7 +103,10 @@ export default function LoginClient() {
         return;
       }
 
-      router.push(redirect);
+      // Route through the "/" hub so the profile/age checks run — don't jump
+      // straight to a feed URL. (This component is currently orphaned — login/page
+      // redirects to /welcome — so this is defensive hardening for if it's ever wired up.)
+      router.push("/");
       router.refresh();
     } catch (e) {
       console.error("[login] unexpected verify", e);

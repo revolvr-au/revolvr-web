@@ -7,7 +7,6 @@ import { isAdminEmail } from "@/lib/isAdmin";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
-  const redirectTo = url.searchParams.get("redirectTo") ?? "/public-feed";
 
   const origin = url.origin;
 
@@ -39,7 +38,11 @@ export async function GET(req: Request) {
   }
 
   const { data: { user } } = await supabase.auth.getUser();
-  const destination = isAdminEmail(user?.email ?? null) ? "/studio" : redirectTo;
+  // Route non-admins through the "/" hub, NOT straight to a feed URL. The hub is
+  // the single place that enforces the profile check (and, when enabled, the age
+  // gate via proxy). Landing directly on /public-feed here would skip that and
+  // could strand a session with no profile. Admins still go to /studio.
+  const destination = isAdminEmail(user?.email ?? null) ? "/studio" : "/";
 
   const res = NextResponse.redirect(`${origin}${destination}`);
   pendingCookies.forEach(({ name, value, options }) => {
