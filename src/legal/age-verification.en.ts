@@ -10,10 +10,13 @@
 // AGE_POLICY_LAST_UPDATED must change with them.
 //
 // STATUS: DRAFT — PENDING LEGAL REVIEW. Do not remove the in-page review banner
-// or set AGE_POLICY_IS_DRAFT to false until legal signs off. Legal must review
-// this policy AND Terms & Conditions section 2 together: the Terms currently
-// state a minimum age of 13, which contradicts the 16 enforced here and by the
-// live gate. That cross-document contradiction must be reconciled before publish.
+// or set AGE_POLICY_IS_DRAFT to false until legal signs off. All legal surfaces
+// now state a 16+ minimum consistently (Terms §2 flat-16 via PR #34; Privacy §9
+// and Community Guidelines aligned to 16 everywhere) — the earlier 13-vs-16
+// cross-document conflict is RESOLVED and is no longer a publish blocker.
+// NOTE the stated-vs-enforced gap: copy states 16+ everywhere, while the live
+// gate enforces 16 in AU only (src/proxy.ts). Global enforcement is a tracked
+// post-launch fast-follow, not reflected in this copy yet.
 
 export const AGE_POLICY_IS_DRAFT = true;
 export const AGE_POLICY_VERSION = "2026-07-01";

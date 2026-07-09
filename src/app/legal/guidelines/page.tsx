@@ -39,7 +39,7 @@ export default function GuidelinesPage() {
         { heading: "No scams or fraud", body: "Do not attempt to deceive users, solicit money off-platform dishonestly, or impersonate payment flows." },
         { heading: "No impersonation", body: "Do not pretend to be another person, brand, or organisation." },
         { heading: "No illegal or exploitative content", body: "Content that is illegal, exploitative, or harmful is not permitted." },
-        { heading: "Minors", body: "Revolvr requires users to be at least 16 years of age in Australia (in compliance with the Online Safety Amendment (Social Media Minimum Age) Act 2024) and at least 13 years of age in other jurisdictions. Payments and creator tools are restricted to users 18 and over." },
+        { heading: "Minors", body: "Revolvr requires all users to be at least 16 years of age. In Australia this complies with the Online Safety Amendment (Social Media Minimum Age) Act 2024. Payments and creator tools are restricted to users 18 and over." },
         { heading: "Misinformation", body: "Do not spread false, misleading, or deceptive information." },
         { heading: "Spam", body: "Repetitive, automated, or unsolicited content is not permitted." },
         { heading: "Privacy", body: "Do not share another person's private information without their consent." },
