@@ -82,7 +82,7 @@ Depending on your jurisdiction, you may have rights to:
 Requests can be made by contacting us using the details below.
 
 ## 9. Children’s Privacy
-The Platform is **not intended for children under the age of 16 in Australia, or under 13 in other applicable jurisdictions**.
+The Platform is **not intended for children under the age of 16**.
 
 In compliance with the Online Safety Amendment (Social Media Minimum Age) Act 2024, users in Australia must be at least 16 years of age. We do not knowingly collect personal information from children below the applicable minimum age. If we become aware that personal information has been collected from a child below the applicable minimum age without verified parental consent, we will take reasonable steps to delete such information.
 
