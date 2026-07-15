@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import WelcomeCarousel from "./WelcomeCarousel";
 
 type Step = "email" | "code";
 
@@ -144,45 +145,10 @@ export default function WelcomeClient() {
   };
 
   return (
-    <div style={{ position: "relative", minHeight: "100dvh", overflow: "hidden", background: "#060606" }}>
+    <div style={{ position: "relative", minHeight: "100dvh", overflowX: "hidden", background: "#060606" }}>
       <style>{`
         .rvlr-input:focus { border-color: #ffffff !important; }
-        @keyframes arcSpin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
       `}</style>
-
-      {/* Background image tiles */}
-      <img
-        src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400"
-        alt=""
-        aria-hidden="true"
-        style={{ position: "absolute", left: 0, top: 60, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
-      />
-      <img
-        src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400"
-        alt=""
-        aria-hidden="true"
-        style={{ position: "absolute", right: 0, top: 60, width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
-      />
-      <img
-        src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400"
-        alt=""
-        aria-hidden="true"
-        style={{ position: "absolute", left: "50%", top: 60, transform: "translateX(-50%)", width: 180, height: 220, objectFit: "cover", opacity: 0.12, filter: "blur(2px)" }}
-      />
-
-      {/* Dark gradient overlay */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        background: "linear-gradient(to bottom, rgba(6,6,6,0.4) 0%, rgba(6,6,6,0.85) 60%, #060606 100%)",
-      }} />
 
       {/* Wordmark — centred header */}
       <div style={{
@@ -199,96 +165,10 @@ export default function WelcomeClient() {
       }}>REVOLVR</div>
 
       {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: "clamp(160px, 35vw, 200px)", paddingLeft: 24, paddingRight: 24, paddingBottom: 48 }}>
+      <div style={{ position: "relative", zIndex: 2, textAlign: "center", paddingTop: "clamp(88px, 13vh, 108px)", paddingBottom: 48 }}>
 
-        {/* Avatar cluster */}
-        <div style={{ position: "relative", width: "100%", maxWidth: 420, margin: "0 auto", marginTop: "-60px", height: 220 }}>
-
-          {/* Avatar 1 — top left: spinning cyan arc */}
-          <div style={{ position: "absolute", left: "10%", top: 40 }}>
-            <div style={{
-              position: "absolute",
-              inset: -4,
-              borderRadius: "50%",
-              border: "2px solid transparent",
-              borderTopColor: "#ffffff",
-              borderRightColor: "#ffffff",
-              animation: "arcSpin 3s linear infinite",
-            }} />
-            <img
-              src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
-              alt=""
-              aria-hidden="true"
-              style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", display: "block" }}
-            />
-          </div>
-
-          {/* Avatar 2 — top right: solid cyan ring */}
-          <div style={{ position: "absolute", right: "10%", top: 20 }}>
-            <img
-              src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150"
-              alt=""
-              aria-hidden="true"
-              style={{ width: 76, height: 76, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #ffffff" }}
-            />
-          </div>
-
-          {/* Avatar 3 — centre middle: red ring + pulsing LIVE badge */}
-          <div style={{ position: "absolute", left: "50%", top: 90, transform: "translateX(-50%)" }}>
-            <div style={{
-              position: "absolute",
-              top: -18,
-              left: "50%",
-              transform: "translateX(-50%)",
-              background: "#ff3b30",
-              color: "white",
-              fontFamily: "monospace",
-              fontSize: 8,
-              borderRadius: 999,
-              padding: "2px 6px",
-              whiteSpace: "nowrap",
-              animation: "pulse 1.5s ease-in-out infinite",
-            }}>
-              ● LIVE
-            </div>
-            <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
-              alt=""
-              aria-hidden="true"
-              style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", display: "block", border: "2px solid #ff3b30" }}
-            />
-          </div>
-
-          {/* Avatar 4 — bottom centre-left: spinning cyan arc */}
-          <div style={{ position: "absolute", left: "25%", bottom: 10 }}>
-            <div style={{
-              position: "absolute",
-              inset: -4,
-              borderRadius: "50%",
-              border: "2px solid transparent",
-              borderTopColor: "#ffffff",
-              borderRightColor: "#ffffff",
-              animation: "arcSpin 3s linear infinite",
-            }} />
-            <img
-              src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?w=150"
-              alt=""
-              aria-hidden="true"
-              style={{ width: 68, height: 68, borderRadius: "50%", objectFit: "cover", display: "block" }}
-            />
-          </div>
-
-        </div>
-
-        {/* Headline */}
-        <h1 style={{ fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontWeight: 700, fontSize: 44, color: "white", lineHeight: 1.05, margin: "12px 0 0", letterSpacing: 1 }}>
-          THE STAGE IS YOURS.
-        </h1>
-
-        {/* Subline */}
-        <p style={{ fontFamily: "monospace", fontSize: 13, color: "rgba(255,255,255,0.6)", letterSpacing: 2, margin: "8px 0 0" }}>
-          Live. Create. Earn.
-        </p>
+        {/* Showcase carousel */}
+        <WelcomeCarousel />
 
         {/* Form */}
         <div style={{ marginTop: 32, maxWidth: 340, margin: "32px auto 0" }}>
