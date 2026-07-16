@@ -6,7 +6,8 @@ import FeedLayout from "@/components/FeedLayout";
 import { RevolvrIcon } from "@/components/RevolvrIcon";
 import RingRim from "@/components/RingRim";
 import { useRingStatus } from "@/hooks/useRingStatus";
-import { createSupabaseBrowserClient } from "@/supabase-browser";
+import { getAuthedEmail } from "@/lib/clientAuthedEmail";
+import { fetchPeopleRail, getCachedPeopleRail } from "@/lib/peopleRailCache";
 
 const GOLD = "#ffffff";
 
@@ -582,13 +583,12 @@ function GathCard({
   );
 }
 
-let peopleCache: { data: PeopleData; ts: number } | null = null;
 const PEOPLE_CACHE_TTL = 30_000;
 
 export function PeoplePageContent() {
   const router = useRouter();
-  const [data, setData] = useState<PeopleData | null>(() => peopleCache?.data ?? null);
-  const [loading, setLoading] = useState(peopleCache === null);
+  const [data, setData] = useState<PeopleData | null>(() => getCachedPeopleRail() as PeopleData | null);
+  const [loading, setLoading] = useState(getCachedPeopleRail() === null);
   const { } = useRingStatus();
   const showGate = false;
 
@@ -599,32 +599,23 @@ export function PeoplePageContent() {
   const [joinedIds, setJoinedIds] = useState<Set<string>>(new Set());
   const [joiningIds, setJoiningIds] = useState<Set<string>>(new Set());
 
-  const fetchData = useCallback(() => {
-    fetch("/api/people-rail")
-      .then(r => r.json())
-      .then((d: PeopleData) => {
-        peopleCache = { data: d, ts: Date.now() };
-        setData(d);
-      })
+  const load = useCallback((force: boolean) => {
+    fetchPeopleRail(force)
+      .then((d) => setData(d as PeopleData))
       .catch(() => setData({ live: [], creators: [], newPeople: [] }))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
-    if (peopleCache && Date.now() - peopleCache.ts < PEOPLE_CACHE_TTL) {
-      // Cache is fresh — no network request needed
-      return;
-    }
-    fetchData();
-    const interval = setInterval(fetchData, PEOPLE_CACHE_TTL);
+    // Cold load shares the feed's in-flight fetch; a re-nav within TTL is served
+    // from the shared cache. The 30s poll (unchanged) force-refreshes.
+    load(false);
+    const interval = setInterval(() => load(true), PEOPLE_CACHE_TTL);
     return () => clearInterval(interval);
-  }, [fetchData]);
+  }, [load]);
 
   useEffect(() => {
-    const sb = createSupabaseBrowserClient();
-    sb.auth.getUser().then(({ data: userData }) => {
-      setUserEmail(userData.user?.email ?? null);
-    }).catch(() => setUserEmail(null));
+    getAuthedEmail().then(setUserEmail);
   }, []);
 
   useEffect(() => {

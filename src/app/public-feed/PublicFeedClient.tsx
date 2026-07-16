@@ -15,7 +15,8 @@ import {
   ChevronRight,
   X,
 } from "lucide-react";
-import { createSupabaseBrowserClient } from "@/supabase-browser";
+import { getAuthedEmail } from "@/lib/clientAuthedEmail";
+import { fetchPeopleRail } from "@/lib/peopleRailCache";
 import CommentsPanel from "@/components/CommentsPanel";
 import { useRouter } from "next/navigation";
 import ControlPanel from "@/components/ControlPanel";
@@ -195,8 +196,7 @@ export default function PublicFeedClient({
   const [gathWindowPostId, setGathWindowPostId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/people-rail")
-      .then((r) => r.json())
+    fetchPeopleRail()
       .then((data) => {
         const merged: PeopleCardUser[] = [
           ...(Array.isArray(data.live) ? data.live : []),
@@ -215,9 +215,7 @@ export default function PublicFeedClient({
   }, []);
 
   useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data }) => {
-      const email = data.user?.email ?? null;
+    getAuthedEmail().then((email) => {
       userEmailRef.current = email;
       setUserEmail(email);
     });
@@ -855,6 +853,7 @@ const Post = memo(function Post({
   const [showBurst, setShowBurst] = useState(false);
   const [localBoost, setLocalBoost] = useState(0);
   const [liveAvatarSrc, setLiveAvatarSrc] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
   const lastTapRef = useRef(0);
 
   useEffect(() => {
@@ -1057,7 +1056,7 @@ const Post = memo(function Post({
           animation: "livePulseRing 1.5s ease-in-out infinite 0.3s",
         }} />
         {liveAvatarSrc ? (
-          <img src={liveAvatarSrc} style={{
+          <img src={liveAvatarSrc} onError={() => setLiveAvatarSrc(null)} style={{
             width: 80, height: 80, borderRadius: "50%",
             objectFit: "cover", border: "3px solid #fff",
           }} />
@@ -1156,11 +1155,12 @@ const Post = memo(function Post({
   />
 ) : post.media?.length > 1 ? (
   <MediaCarousel media={post.media} onTap={handleTap} />
-) : post.imageUrl ? (
+) : post.imageUrl && !imgError ? (
   <img
     src={post.imageUrl}
     loading="lazy"
     onClick={handleTap}
+    onError={() => setImgError(true)}
     style={{
       position: "absolute", top: 0, left: 0,
       width: "100%", height: "100%",
