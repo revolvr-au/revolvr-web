@@ -122,7 +122,12 @@ export default function WelcomeCarousel() {
         }
       `}</style>
 
-      <div className="wc-row" ref={rowRef}>
+      <div
+        className="wc-row"
+        ref={rowRef}
+        role="region"
+        aria-label="What REVOLVR does"
+      >
         {CARDS.map((card, i) => (
           <div
             key={card.id}
