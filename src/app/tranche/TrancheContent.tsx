@@ -7,7 +7,7 @@ import HotTrancheCard, { HotEvent } from "@/components/tranche/HotTrancheCard";
 import TMenuSheet from "@/components/tranche/TMenuSheet";
 import OriginalCard, { OriginalItem } from "@/components/tranche/OriginalCard";
 import OriginalComposer from "@/components/tranche/OriginalComposer";
-import { createSupabaseBrowserClient } from "@/supabase-browser";
+import { getAuthedEmail } from "@/lib/clientAuthedEmail";
 
 const GOLD = "#ffffff";
 const SLATE = "#2C3E50";
@@ -68,10 +68,7 @@ export function TrancheContent() {
   }, []);
 
   useEffect(() => {
-    const sb = createSupabaseBrowserClient();
-    sb.auth.getUser().then(({ data }) => {
-      setViewerEmail(data.user?.email ?? null);
-    });
+    getAuthedEmail().then(setViewerEmail);
   }, []);
 
   const loadPage = useCallback(
