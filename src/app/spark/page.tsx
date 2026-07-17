@@ -1,8 +1,10 @@
-"use client";
+import { redirect } from "next/navigation";
 
-// SparkContent is defined in SparkClient.tsx and re-exported here
-// so TabShell can import it the same way it imports TrancheContent.
-export { SparkContent } from "./SparkClient";
-
-// Route stub — content rendered by TabShell
-export default function SparkPage() { return null; }
+// The SPARK feed tab was removed (feat/remove-people-spark-tabs). This route is
+// now a stub: any stray link or bookmark is redirected to the feed. The old
+// surface (SparkContent, formerly in SparkClient.tsx) lives in git history.
+// The sparks *purchase* flow is unaffected and still lives at /spark/buy,
+// /spark/checkout and /spark/success.
+export default function SparkPage() {
+  redirect("/public-feed");
+}
