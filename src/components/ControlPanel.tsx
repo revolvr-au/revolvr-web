@@ -431,24 +431,6 @@ export default function ControlPanel({
                 ))}
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={() => navigate("/people")}
-              style={{
-                marginTop: 10,
-                background: "transparent",
-                border: "none",
-                color: GOLD,
-                fontFamily: "monospace",
-                fontSize: 9,
-                letterSpacing: "0.24em",
-                cursor: "pointer",
-                padding: 0,
-              }}
-            >
-              SEE ALL GATHS →
-            </button>
           </div>
 
           <MenuDivider />
