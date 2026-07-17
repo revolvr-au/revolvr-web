@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation";
 
 const GOLD = "#ffffff";
+const INK = "#0F1115"; // dark treatment for the light TRANCHE surface
 
 function VoltageSpark({ size = 8, color = GOLD }: { size?: number; color?: string }) {
   return (
@@ -31,9 +32,9 @@ export default function TopBar() {
 
   // Contrast the vertical treatment against each surface: light-on-dark on the
   // feed, dark-on-light on the TRANCHE surface (a white sweep would vanish there).
-  const destColor = onTranche ? "#0F1115" : "rgba(255,255,255,0.9)";
+  const destColor = onTranche ? INK : "rgba(255,255,255,0.9)";
   const lineBase = onTranche ? "rgba(15,17,21,0.18)" : "rgba(255,255,255,0.18)";
-  const sweepColor = onTranche ? "#0F1115" : "#ffffff";
+  const sweepColor = onTranche ? INK : GOLD;
 
   return (
     <>
@@ -48,7 +49,9 @@ export default function TopBar() {
           background: "transparent",
           border: "none",
           padding: 0,
-          color: onTranche ? GOLD : "rgba(255,255,255,0.95)",
+          // Contrast against its own surface: ink on the light TRANCHE
+          // surface, white on the dark feed (same rule the sweep follows).
+          color: onTranche ? INK : "rgba(255,255,255,0.95)",
           fontSize: 14,
           fontWeight: 700,
           fontFamily: "monospace",
@@ -58,9 +61,8 @@ export default function TopBar() {
           alignItems: "center",
           gap: 6,
           transition: "color 220ms ease, text-shadow 220ms ease",
-          textShadow: onTranche
-            ? `0 0 10px ${GOLD}, 0 0 18px rgba(255,255,255,0.55)`
-            : "none",
+          // The white glow only reads on the dark feed; drop it on the light surface.
+          textShadow: "none",
         }}
       >
         <span
@@ -69,7 +71,7 @@ export default function TopBar() {
             animation: "voltPulse 2s ease-in-out infinite",
           }}
         >
-          <VoltageSpark size={8} />
+          <VoltageSpark size={8} color={onTranche ? INK : GOLD} />
         </span>
         <span
           key={label}
