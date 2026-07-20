@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Zap } from "lucide-react";
+import { ChevronLeft, Zap, ImagePlus, SwitchCamera } from "lucide-react";
 import { resetFeedCache } from "@/app/public-feed/PublicFeedClient";
 
 export default function CreatePage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Core Application States
   const [mode, setMode] = useState<"UPLOAD" | "LIVE">("UPLOAD");
@@ -16,7 +17,8 @@ export default function CreatePage() {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+
   // Pipeline Tracking States
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export default function CreatePage() {
     async function enableCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1920 } },
+          video: { facingMode },
           audio: true
         });
         activeStream = stream;
@@ -50,7 +52,7 @@ export default function CreatePage() {
         activeStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [previews.length]);
+  }, [previews.length, facingMode]);
 
   // Bind stream context dynamically to viewport element
   useEffect(() => {
@@ -70,9 +72,11 @@ export default function CreatePage() {
 
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        // Correct composition mirroring for natural selfie layout snapshot
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
+        // Mirror only the front-facing selfie so the snapshot matches the preview
+        if (facingMode === "user") {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+        }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
@@ -101,6 +105,26 @@ export default function CreatePage() {
         }
       }
     }
+  };
+
+  // 2b. LIBRARY ASSET INGESTION (images) — rides the same submit path
+  const handleLibrarySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length === 0) return;
+
+    const urls = selected.map(f => URL.createObjectURL(f));
+    setFiles(prev => [...prev, ...selected]);
+    setPreviews(prev => [...prev, ...urls]);
+    setActiveIndex(0);
+
+    // Release live camera hardware now that a library asset is staged
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      setMediaStream(null);
+    }
+
+    // Allow re-selecting the same files again later
+    e.target.value = "";
   };
 
   // 3. STORAGE & PRISMA DISPATCH DEPLOYMENT PIPELINE
@@ -132,17 +156,21 @@ export default function CreatePage() {
       }
 
       if (files.length > 0) {
-        setStatusMsg("Ingesting binary assets directly to storage...");
-        const formData = new FormData();
-        formData.append("file", files[0]);
+        // Upload sequentially so the endpoint's order index (existing-row count)
+        // matches the picked order — parallel calls would race that count.
+        for (let i = 0; i < files.length; i++) {
+          setStatusMsg(`Ingesting binary assets directly to storage... (${i + 1}/${files.length})`);
+          const formData = new FormData();
+          formData.append("file", files[i]);
 
-        // Route to the validated target database identifier row cleanly
-        const mediaRes = await fetch(`/api/posts/${targetPostId}/media`, {
-          method: "POST",
-          body: formData
-        });
+          // Route to the validated target database identifier row cleanly
+          const mediaRes = await fetch(`/api/posts/${targetPostId}/media`, {
+            method: "POST",
+            body: formData
+          });
 
-        if (!mediaRes.ok) throw new Error("Binary payload allocation handshake failed.");
+          if (!mediaRes.ok) throw new Error(`Binary payload allocation handshake failed on asset ${i + 1}/${files.length}.`);
+        }
       }
 
       setStatusMsg("Deployment complete.");
@@ -168,7 +196,7 @@ export default function CreatePage() {
         <>
           {/* CAMERA RUNTIME VISUALIZER */}
           <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "#000" }}>
-            <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
+            <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: facingMode === "user" ? "scaleX(-1)" : "none" }} />
             {!mediaStream && mode === "LIVE" && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: 2 }}>
                 [ AWS WEBRTC FEED OFFLINE ]
@@ -191,7 +219,11 @@ export default function CreatePage() {
       ) : (
         /* INSTANT POST-CAPTURE DISPLAY LAYER */
         <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "#000" }}>
-          <img src={previews[0]} alt="Captured transmission snapshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          {files[activeIndex]?.type?.startsWith("video/") ? (
+            <video src={previews[activeIndex]} autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <img src={previews[activeIndex]} alt="Captured transmission snapshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          )}
         </div>
       )}
 
@@ -210,7 +242,7 @@ export default function CreatePage() {
           </div>
           <div style={{ width: 28, display: "flex", justifyContent: "flex-end" }}>
             {previews.length > 0 && (
-              <button onClick={() => { setFiles([]); setPreviews([]); setCaption(""); }} style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", width: 28, height: 28, color: "white", fontSize: 12, cursor: "pointer" }}>✕</button>
+              <button onClick={() => { previews.forEach(p => { if (p.startsWith("blob:")) URL.revokeObjectURL(p); }); setFiles([]); setPreviews([]); setActiveIndex(0); setCaption(""); }} style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", width: 28, height: 28, color: "white", fontSize: 12, cursor: "pointer" }}>✕</button>
             )}
           </div>
         </div>
@@ -225,7 +257,23 @@ export default function CreatePage() {
 
       {/* BOTTOM CONSOLE OVERLAYS */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 20, display: "flex", flexDirection: "column", padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}>
-        
+
+        {/* MULTI-ASSET REVIEW STRIP — preview every staged image before deploy */}
+        {previews.length > 1 && (
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }}>
+            {previews.map((p, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                aria-label={`Preview asset ${i + 1} of ${previews.length}`}
+                style={{ flex: "0 0 auto", width: 52, height: 52, borderRadius: 8, overflow: "hidden", padding: 0, cursor: "pointer", background: "#000", border: `2px solid ${i === activeIndex ? "#ffffff" : "rgba(255,255,255,0.25)"}`, opacity: i === activeIndex ? 1 : 0.6, transition: "all 0.15s" }}
+              >
+                <img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* HUD TELEMETRY DATA FORM BLOCK */}
         <div style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255, 255, 255, 0.15)", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -249,7 +297,36 @@ export default function CreatePage() {
         </div>
 
         {/* UNIVERSAL CONCENTRIC SHUTTER TRIGGER */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 80 }}>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: 80 }}>
+          {/* LIBRARY INGESTION PORT */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleLibrarySelect}
+            style={{ display: "none" }}
+          />
+          {previews.length === 0 && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              aria-label="Select from library"
+              style={{ position: "absolute", left: 20, width: 48, height: 48, borderRadius: 10, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              <ImagePlus size={22} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }} />
+            </button>
+          )}
+          {previews.length === 0 && (
+            <button
+              onClick={() => setFacingMode(prev => (prev === "user" ? "environment" : "user"))}
+              disabled={loading}
+              aria-label="Flip camera"
+              style={{ position: "absolute", right: 20, width: 48, height: 48, borderRadius: 10, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              <SwitchCamera size={22} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }} />
+            </button>
+          )}
           <button
             onClick={previews.length === 0 ? (mode === "UPLOAD" ? handleInstantCapture : handleSubmit) : handleSubmit}
             disabled={loading}
