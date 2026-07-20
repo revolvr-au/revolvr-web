@@ -109,12 +109,12 @@ export default function CreatePage() {
 
   // 2b. LIBRARY ASSET INGESTION (images) — rides the same submit path
   const handleLibrarySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const selected = Array.from(e.target.files ?? []);
+    if (selected.length === 0) return;
 
-    const url = URL.createObjectURL(file);
-    setFiles([file]);
-    setPreviews([url]);
+    const urls = selected.map(f => URL.createObjectURL(f));
+    setFiles(prev => [...prev, ...selected]);
+    setPreviews(prev => [...prev, ...urls]);
     setActiveIndex(0);
 
     // Release live camera hardware now that a library asset is staged
@@ -123,7 +123,7 @@ export default function CreatePage() {
       setMediaStream(null);
     }
 
-    // Allow re-selecting the same file again later
+    // Allow re-selecting the same files again later
     e.target.value = "";
   };
 
@@ -156,17 +156,21 @@ export default function CreatePage() {
       }
 
       if (files.length > 0) {
-        setStatusMsg("Ingesting binary assets directly to storage...");
-        const formData = new FormData();
-        formData.append("file", files[0]);
+        // Upload sequentially so the endpoint's order index (existing-row count)
+        // matches the picked order — parallel calls would race that count.
+        for (let i = 0; i < files.length; i++) {
+          setStatusMsg(`Ingesting binary assets directly to storage... (${i + 1}/${files.length})`);
+          const formData = new FormData();
+          formData.append("file", files[i]);
 
-        // Route to the validated target database identifier row cleanly
-        const mediaRes = await fetch(`/api/posts/${targetPostId}/media`, {
-          method: "POST",
-          body: formData
-        });
+          // Route to the validated target database identifier row cleanly
+          const mediaRes = await fetch(`/api/posts/${targetPostId}/media`, {
+            method: "POST",
+            body: formData
+          });
 
-        if (!mediaRes.ok) throw new Error("Binary payload allocation handshake failed.");
+          if (!mediaRes.ok) throw new Error(`Binary payload allocation handshake failed on asset ${i + 1}/${files.length}.`);
+        }
       }
 
       setStatusMsg("Deployment complete.");
@@ -215,10 +219,10 @@ export default function CreatePage() {
       ) : (
         /* INSTANT POST-CAPTURE DISPLAY LAYER */
         <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "#000" }}>
-          {files[0]?.type?.startsWith("video/") ? (
-            <video src={previews[0]} autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          {files[activeIndex]?.type?.startsWith("video/") ? (
+            <video src={previews[activeIndex]} autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           ) : (
-            <img src={previews[0]} alt="Captured transmission snapshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <img src={previews[activeIndex]} alt="Captured transmission snapshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           )}
         </div>
       )}
@@ -238,7 +242,7 @@ export default function CreatePage() {
           </div>
           <div style={{ width: 28, display: "flex", justifyContent: "flex-end" }}>
             {previews.length > 0 && (
-              <button onClick={() => { if (previews[0]?.startsWith("blob:")) URL.revokeObjectURL(previews[0]); setFiles([]); setPreviews([]); setCaption(""); }} style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", width: 28, height: 28, color: "white", fontSize: 12, cursor: "pointer" }}>✕</button>
+              <button onClick={() => { previews.forEach(p => { if (p.startsWith("blob:")) URL.revokeObjectURL(p); }); setFiles([]); setPreviews([]); setActiveIndex(0); setCaption(""); }} style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", width: 28, height: 28, color: "white", fontSize: 12, cursor: "pointer" }}>✕</button>
             )}
           </div>
         </div>
@@ -253,7 +257,23 @@ export default function CreatePage() {
 
       {/* BOTTOM CONSOLE OVERLAYS */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 20, display: "flex", flexDirection: "column", padding: "20px 20px calc(20px + env(safe-area-inset-bottom))" }}>
-        
+
+        {/* MULTI-ASSET REVIEW STRIP — preview every staged image before deploy */}
+        {previews.length > 1 && (
+          <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4, marginBottom: 12 }}>
+            {previews.map((p, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                aria-label={`Preview asset ${i + 1} of ${previews.length}`}
+                style={{ flex: "0 0 auto", width: 52, height: 52, borderRadius: 8, overflow: "hidden", padding: 0, cursor: "pointer", background: "#000", border: `2px solid ${i === activeIndex ? "#ffffff" : "rgba(255,255,255,0.25)"}`, opacity: i === activeIndex ? 1 : 0.6, transition: "all 0.15s" }}
+              >
+                <img src={p} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* HUD TELEMETRY DATA FORM BLOCK */}
         <div style={{ background: "rgba(0, 0, 0, 0.6)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid rgba(255, 255, 255, 0.15)", borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -283,6 +303,7 @@ export default function CreatePage() {
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            multiple
             onChange={handleLibrarySelect}
             style={{ display: "none" }}
           />
