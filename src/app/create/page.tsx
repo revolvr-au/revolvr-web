@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Zap } from "lucide-react";
+import { ChevronLeft, Zap, ImagePlus } from "lucide-react";
 import { resetFeedCache } from "@/app/public-feed/PublicFeedClient";
 
 export default function CreatePage() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Core Application States
   const [mode, setMode] = useState<"UPLOAD" | "LIVE">("UPLOAD");
@@ -103,6 +104,26 @@ export default function CreatePage() {
     }
   };
 
+  // 2b. LIBRARY ASSET INGESTION (images) — rides the same submit path
+  const handleLibrarySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = URL.createObjectURL(file);
+    setFiles([file]);
+    setPreviews([url]);
+    setActiveIndex(0);
+
+    // Release live camera hardware now that a library asset is staged
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      setMediaStream(null);
+    }
+
+    // Allow re-selecting the same file again later
+    e.target.value = "";
+  };
+
   // 3. STORAGE & PRISMA DISPATCH DEPLOYMENT PIPELINE
   const handleSubmit = async () => {
     if (loading) return;
@@ -191,7 +212,11 @@ export default function CreatePage() {
       ) : (
         /* INSTANT POST-CAPTURE DISPLAY LAYER */
         <div style={{ position: "absolute", inset: 0, zIndex: 1, background: "#000" }}>
-          <img src={previews[0]} alt="Captured transmission snapshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          {files[0]?.type?.startsWith("video/") ? (
+            <video src={previews[0]} autoPlay loop muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <img src={previews[0]} alt="Captured transmission snapshot" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          )}
         </div>
       )}
 
@@ -210,7 +235,7 @@ export default function CreatePage() {
           </div>
           <div style={{ width: 28, display: "flex", justifyContent: "flex-end" }}>
             {previews.length > 0 && (
-              <button onClick={() => { setFiles([]); setPreviews([]); setCaption(""); }} style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", width: 28, height: 28, color: "white", fontSize: 12, cursor: "pointer" }}>✕</button>
+              <button onClick={() => { if (previews[0]?.startsWith("blob:")) URL.revokeObjectURL(previews[0]); setFiles([]); setPreviews([]); setCaption(""); }} style={{ background: "rgba(0,0,0,0.6)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: "50%", width: 28, height: 28, color: "white", fontSize: 12, cursor: "pointer" }}>✕</button>
             )}
           </div>
         </div>
@@ -249,7 +274,25 @@ export default function CreatePage() {
         </div>
 
         {/* UNIVERSAL CONCENTRIC SHUTTER TRIGGER */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: 80 }}>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: 80 }}>
+          {/* LIBRARY INGESTION PORT */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleLibrarySelect}
+            style={{ display: "none" }}
+          />
+          {previews.length === 0 && (
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              aria-label="Select from library"
+              style={{ position: "absolute", left: 20, width: 48, height: 48, borderRadius: 10, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              <ImagePlus size={22} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }} />
+            </button>
+          )}
           <button
             onClick={previews.length === 0 ? (mode === "UPLOAD" ? handleInstantCapture : handleSubmit) : handleSubmit}
             disabled={loading}
