@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Zap, ImagePlus } from "lucide-react";
+import { ChevronLeft, Zap, ImagePlus, SwitchCamera } from "lucide-react";
 import { resetFeedCache } from "@/app/public-feed/PublicFeedClient";
 
 export default function CreatePage() {
@@ -17,7 +17,8 @@ export default function CreatePage() {
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
+
   // Pipeline Tracking States
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ export default function CreatePage() {
     async function enableCamera() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 1080 }, height: { ideal: 1920 } },
+          video: { facingMode },
           audio: true
         });
         activeStream = stream;
@@ -51,7 +52,7 @@ export default function CreatePage() {
         activeStream.getTracks().forEach(track => track.stop());
       }
     };
-  }, [previews.length]);
+  }, [previews.length, facingMode]);
 
   // Bind stream context dynamically to viewport element
   useEffect(() => {
@@ -71,9 +72,11 @@ export default function CreatePage() {
 
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        // Correct composition mirroring for natural selfie layout snapshot
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
+        // Mirror only the front-facing selfie so the snapshot matches the preview
+        if (facingMode === "user") {
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+        }
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
         const dataUrl = canvas.toDataURL("image/jpeg", 0.95);
@@ -189,7 +192,7 @@ export default function CreatePage() {
         <>
           {/* CAMERA RUNTIME VISUALIZER */}
           <div style={{ position: "absolute", inset: 0, zIndex: 0, background: "#000" }}>
-            <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
+            <video ref={videoRef} autoPlay playsInline muted style={{ width: "100%", height: "100%", objectFit: "cover", transform: facingMode === "user" ? "scaleX(-1)" : "none" }} />
             {!mediaStream && mode === "LIVE" && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "rgba(255,255,255,0.6)", letterSpacing: 2 }}>
                 [ AWS WEBRTC FEED OFFLINE ]
@@ -291,6 +294,16 @@ export default function CreatePage() {
               style={{ position: "absolute", left: 20, width: 48, height: 48, borderRadius: 10, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: loading ? "not-allowed" : "pointer" }}
             >
               <ImagePlus size={22} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }} />
+            </button>
+          )}
+          {previews.length === 0 && (
+            <button
+              onClick={() => setFacingMode(prev => (prev === "user" ? "environment" : "user"))}
+              disabled={loading}
+              aria-label="Flip camera"
+              style={{ position: "absolute", right: 20, width: 48, height: 48, borderRadius: 10, border: "1px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              <SwitchCamera size={22} style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.8))" }} />
             </button>
           )}
           <button
