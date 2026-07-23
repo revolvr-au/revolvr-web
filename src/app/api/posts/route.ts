@@ -7,6 +7,7 @@ import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 export async function GET() {
   try {
     const posts = await prisma.post.findMany({
+      where: { deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 20,
     });

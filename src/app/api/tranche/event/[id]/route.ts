@@ -79,6 +79,7 @@ export async function GET(
           userEmail: true,
           imageUrl: true,
           voltage: true,
+          deletedAt: true,
         },
       }),
       prisma.trancheWitness.findMany({
@@ -88,6 +89,14 @@ export async function GET(
         select: { witnessEmail: true },
       }),
     ]);
+
+    // A tranche event whose underlying post was soft-deleted no longer exists.
+    if (post?.deletedAt) {
+      return NextResponse.json(
+        { ok: false, error: "not_found" },
+        { status: 404 },
+      );
+    }
 
     const witnessEmails = recentWitnesses.map((w) => w.witnessEmail);
     const witnessProfiles = witnessEmails.length

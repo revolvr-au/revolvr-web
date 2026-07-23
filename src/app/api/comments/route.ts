@@ -12,6 +12,15 @@ export async function GET(req: Request) {
       return NextResponse.json({ ok: false, comments: [] });
     }
 
+    // A soft-deleted (or missing) parent post serves no comments.
+    const parent = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { deletedAt: true },
+    });
+    if (!parent || parent.deletedAt) {
+      return NextResponse.json({ ok: true, comments: [] });
+    }
+
     const comments = await prisma.comment.findMany({
       where: { postId },
       orderBy: { createdAt: "asc" },
@@ -43,6 +52,15 @@ export async function POST(req: Request) {
 
     if (!postId || !userEmail || !body) {
       return NextResponse.json({ ok: false }, { status: 400 });
+    }
+
+    // No new comments on a soft-deleted (or missing) parent post.
+    const parent = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { deletedAt: true },
+    });
+    if (!parent || parent.deletedAt) {
+      return NextResponse.json({ ok: false, error: "post_not_found" }, { status: 404 });
     }
 
     const comment = await prisma.comment.create({

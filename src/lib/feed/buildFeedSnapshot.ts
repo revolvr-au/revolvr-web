@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 export async function buildFeedSnapshot(viewerEmail: string) {
 
   const posts = await prisma.post.findMany({
+    where: { deletedAt: null },
     orderBy: { createdAt: "desc" },
     take: 20,
     include: {

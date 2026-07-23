@@ -45,7 +45,7 @@ export async function GET() {
           })
         : Promise.resolve([]),
       prisma.post.findMany({
-        where: { userEmail: { in: topEmails } },
+        where: { deletedAt: null, userEmail: { in: topEmails } },
         select: { id: true, userEmail: true },
       }),
     ]);

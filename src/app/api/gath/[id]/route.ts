@@ -35,7 +35,7 @@ export async function GET(
     const seededPosts =
       seededPostIds.length > 0
         ? await prisma.post.findMany({
-            where: { id: { in: seededPostIds } },
+            where: { deletedAt: null, id: { in: seededPostIds } },
             select: {
               id: true,
               caption: true,

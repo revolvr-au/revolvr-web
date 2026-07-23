@@ -21,9 +21,9 @@ export async function POST(req: Request) {
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { id: true },
+      select: { id: true, deletedAt: true },
     });
-    if (!post) {
+    if (!post || post.deletedAt) {
       return NextResponse.json(
         { ok: false, error: "post_not_found" },
         { status: 404 },

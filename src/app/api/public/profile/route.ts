@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     // Fetch posts using email (because Post model uses userEmail)
     const [posts, recentVoltageEvents] = await Promise.all([
       prisma.post.findMany({
-        where: { userEmail: user.email },
+        where: { deletedAt: null, userEmail: user.email },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,

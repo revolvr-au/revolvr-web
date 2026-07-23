@@ -23,6 +23,7 @@ export async function GET() {
       // Active LIVE posts — always float to top (IVS or Mux)
       prisma.post.findMany({
         where: {
+          deletedAt: null,
           postType: "LIVE",
           OR: [
             { ivsPlaybackUrl: { not: null }, liveEndedAt: null },
@@ -39,7 +40,7 @@ export async function GET() {
       }),
       // Regular feed
       prisma.post.findMany({
-        where: { postType: { not: "LIVE" } },
+        where: { deletedAt: null, postType: { not: "LIVE" } },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: {

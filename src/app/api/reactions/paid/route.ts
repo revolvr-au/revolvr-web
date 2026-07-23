@@ -114,10 +114,14 @@ export async function POST(req: NextRequest) {
 
     const post = await prisma.post.findUnique({
       where: { id: postId },
-      select: { userEmail: true },
+      select: { userEmail: true, deletedAt: true },
     });
 
-    const creatorEmail = String(post?.userEmail ?? "").trim().toLowerCase();
+    if (!post || post.deletedAt) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 });
+    }
+
+    const creatorEmail = String(post.userEmail ?? "").trim().toLowerCase();
 
     if (!creatorEmail) {
       return NextResponse.json({ error: "Post not found" }, { status: 404 });

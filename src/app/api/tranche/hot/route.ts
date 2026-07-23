@@ -100,7 +100,7 @@ export async function GET(req: Request) {
       }),
       prisma.post.findUnique({
         where: { id: chosen.postId },
-        select: { id: true, caption: true, userEmail: true, imageUrl: true, voltage: true },
+        select: { id: true, caption: true, userEmail: true, imageUrl: true, voltage: true, deletedAt: true },
       }),
       prisma.creatorProfile.findUnique({
         where: { email: chosen.commentAuthorEmail },
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
       }),
     ]);
 
-    if (!comment) {
+    if (!comment || post?.deletedAt) {
       return NextResponse.json({ ok: true, event: null });
     }
 

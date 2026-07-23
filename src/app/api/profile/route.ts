@@ -53,7 +53,7 @@ export async function GET(req: Request) {
     const [posts, recentVoltageEvents] = await Promise.all([
       (await prisma.post
         .findMany({
-          where: { userEmail: email },
+          where: { deletedAt: null, userEmail: email },
           orderBy: { createdAt: "desc" },
           take: 60,
         })

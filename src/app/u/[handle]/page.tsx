@@ -78,7 +78,7 @@ export default async function ProfilePage({
 
   const [posts, recentVoltageEvents, followRecord, savedCount] = await Promise.all([
     prisma.post.findMany({
-      where: { userEmail: email },
+      where: { deletedAt: null, userEmail: email },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
