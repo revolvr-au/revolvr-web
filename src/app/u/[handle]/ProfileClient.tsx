@@ -561,9 +561,9 @@ export default function ProfileClient({
                             padding: "10px 14px",
                             background: "transparent",
                             border: "none",
-                            color: "#ff6b6b",
+                            color: "#ffffff",
                             fontSize: 13,
-                            fontFamily: "monospace",
+                            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
                             letterSpacing: 0.5,
                             cursor: "pointer",
                           }}
