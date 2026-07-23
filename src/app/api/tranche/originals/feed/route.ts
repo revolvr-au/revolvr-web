@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     );
 
     const posts = await prisma.post.findMany({
-      where: { postType: "TRANCHE_ORIGINAL" },
+      where: { deletedAt: null, postType: "TRANCHE_ORIGINAL" },
       orderBy: [{ voltage: "desc" }, { createdAt: "desc" }, { id: "desc" }],
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),

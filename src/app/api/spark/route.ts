@@ -24,6 +24,7 @@ export async function GET() {
   try {
     const posts = await prisma.post.findMany({
       where: {
+        deletedAt: null,
         OR: [
           { sparkEligible: true },
           { voltage: { gte: SPARK_VOLTAGE_THRESHOLD } },
