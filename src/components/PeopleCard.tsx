@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/supabase-browser";
 import GathWindow from "@/components/GathWindow";
@@ -35,48 +35,10 @@ const LINK_STATES: LinkState[] = ["LINK", "WATCHING", "CONSIDERING", "LINKED"];
 
 const GOLD = "#ffffff";
 
-const ORBIT_RADIUS = 115;
-const ROTATION_DEG_PER_SEC = 8;
-const SLOTS = 6;
-
-const SLOT_TINTS = [
-  "rgba(30,20,50,0.95)",
-  "rgba(20,35,50,0.95)",
-  "rgba(20,45,30,0.95)",
-  "rgba(50,25,15,0.95)",
-  "rgba(50,15,20,0.95)",
-  "rgba(30,30,15,0.95)",
-];
-
-function PlayIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="rgba(255,255,255,0.75)">
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
 function SparkIcon({ size = 12, color = GOLD }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
       <path d="M13 2L3 14h7l-1 8 11-14h-7l1-6z" />
-    </svg>
-  );
-}
-
-function SquareIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth="2">
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-    </svg>
-  );
-}
-
-function ClockIcon({ size = 14, color = GOLD }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
     </svg>
   );
 }
@@ -94,17 +56,6 @@ function GathIcon({ size = 16 }: { size?: number }) {
   );
 }
 
-function BattleIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 4l6 0 0 6-9 9-3-3z" />
-      <path d="M4 4l-0 6 9 9 3-3-6-6" transform="translate(0)" />
-      <path d="M3 21l4-4" />
-      <path d="M21 21l-4-4" />
-    </svg>
-  );
-}
-
 function CloseIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="2" strokeLinecap="round">
@@ -112,13 +63,6 @@ function CloseIcon({ size = 14 }: { size?: number }) {
       <path d="M18 6L6 18" />
     </svg>
   );
-}
-
-function PostSlotIcon({ type }: { type: PeopleCardPost["type"] }) {
-  if (type === "video") return <PlayIcon size={16} />;
-  if (type === "tranche") return <SparkIcon size={14} color="rgba(255,255,255,0.85)" />;
-  if (type === "timed") return <ClockIcon size={14} />;
-  return <SquareIcon size={14} />;
 }
 
 function MiniStack({
@@ -222,10 +166,8 @@ export default function PeopleCard({
   const [bioPlaying, setBioPlaying] = useState(false);
   const [bioCount, setBioCount] = useState(233);
   const [linkStateIndex, setLinkStateIndex] = useState(0);
-  const [activeSlot, setActiveSlot] = useState<number | null>(null);
   const [gathOpen, setGathOpen] = useState(false);
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const goToProfile = () => router.push(`/u/${user.handle}`);
 
@@ -235,27 +177,9 @@ export default function PeopleCard({
       setViewerEmail(data.user?.email ?? null);
     });
   }, []);
-  const [avatarCenter, setAvatarCenter] = useState<{ x: number; y: number } | null>(null);
-  const [slotCenters, setSlotCenters] = useState<Record<number, { x: number; y: number }>>({});
-  const rotationRef = useRef(0);
-  const orbitWrapperRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
 
   const linkState: LinkState = LINK_STATES[linkStateIndex];
   const isLinked = linkState === "LINKED";
-
-  const posts: PeopleCardPost[] = useMemo(() => {
-    if (user.posts && user.posts.length > 0) return user.posts.slice(0, SLOTS);
-    const fallback: PeopleCardPost[] = [
-      { id: "p1", type: "image" },
-      { id: "p2", type: "video" },
-      { id: "p3", type: "tranche" },
-      { id: "p4", type: "video", views: 12400 },
-      { id: "p5", type: "timed", releaseDate: "2026-06-01" },
-      { id: "p6", type: "image" },
-    ];
-    return fallback;
-  }, [user.posts]);
 
   const leftStack: PeopleCardMini[] = useMemo(() => {
     const mutuals = user.mutuals ?? [];
@@ -325,60 +249,6 @@ export default function PeopleCard({
     setLinkStateIndex((i) => (i + 1) % LINK_STATES.length);
   };
 
-  const handleSlot = (index: number) => {
-    setActiveSlot((cur) => (cur === index ? null : index));
-  };
-
-  // Compute geometry for spoke
-  useEffect(() => {
-    if (!cardRef.current) return;
-    const root = cardRef.current;
-
-    const avatarEl = root.querySelector('[data-people-card="avatar"]') as HTMLElement | null;
-    if (!avatarEl) return;
-    const rootRect = root.getBoundingClientRect();
-    const avRect = avatarEl.getBoundingClientRect();
-    setAvatarCenter({
-      x: avRect.left - rootRect.left + avRect.width / 2,
-      y: avRect.top - rootRect.top + avRect.height / 2,
-    });
-
-    const newSlots: Record<number, { x: number; y: number }> = {};
-    for (let i = 0; i < SLOTS; i += 1) {
-      const el = root.querySelector(`[data-slot="${i}"]`) as HTMLElement | null;
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
-      newSlots[i] = {
-        x: r.left - rootRect.left + r.width / 2,
-        y: r.top - rootRect.top + r.height / 2,
-      };
-    }
-    setSlotCenters(newSlots);
-  }, [activeSlot, posts.length]);
-
-  useEffect(() => {
-    if (activeSlot !== null) return;
-    let last = performance.now();
-    const tick = (now: number) => {
-      const dt = (now - last) / 1000;
-      last = now;
-      rotationRef.current = (rotationRef.current + ROTATION_DEG_PER_SEC * dt) % 360;
-      if (orbitWrapperRef.current) {
-        orbitWrapperRef.current.style.transform = `rotateZ(${rotationRef.current}deg)`;
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-    };
-  }, [activeSlot]);
-
-  const activePost = activeSlot != null ? posts[activeSlot] : null;
-  const spoke = activeSlot != null && avatarCenter && slotCenters[activeSlot]
-    ? { from: avatarCenter, to: slotCenters[activeSlot] }
-    : null;
-
   const initial = (user.displayName || user.handle || "?").charAt(0).toUpperCase();
 
   return (
@@ -398,7 +268,6 @@ export default function PeopleCard({
       }}
     >
       <div
-        ref={cardRef}
         onClick={(e) => e.stopPropagation()}
         style={{
           position: "relative",
@@ -452,82 +321,15 @@ export default function PeopleCard({
           <CloseIcon />
         </button>
 
-        {/* Spoke SVG overlay */}
-        {spoke && (
-          <svg
-            style={{
-              position: "absolute",
-              inset: 0,
-              width: "100%",
-              height: "100%",
-              pointerEvents: "none",
-              zIndex: 5,
-            }}
-          >
-            <defs>
-              <path
-                id="peopleCardSpokePath"
-                d={`M${spoke.from.x} ${spoke.from.y} L${spoke.to.x} ${spoke.to.y}`}
-              />
-            </defs>
-            <line
-              x1={spoke.from.x}
-              y1={spoke.from.y}
-              x2={spoke.to.x}
-              y2={spoke.to.y}
-              stroke="rgba(255,255,255,0.9)"
-              strokeWidth="1.8"
-              strokeDasharray="4 4"
-              strokeLinecap="round"
-              style={{
-                animation: "peopleCardDashMove 0.9s linear infinite",
-              }}
-            />
-            <circle r="3" fill="#ffffff" opacity="0.8">
-              <animateMotion dur="0.8s" repeatCount="indefinite">
-                <mpath href="#peopleCardSpokePath" />
-              </animateMotion>
-            </circle>
-          </svg>
-        )}
-
-        {/* ORBIT ZONE - centred avatar + 6 posts revolving on a 360° ring */}
+        {/* AVATAR ZONE - centred avatar + presence glow */}
         <div
           style={{
             position: "relative",
-            height: 260,
+            height: 150,
             margin: "10px 0 0",
             zIndex: 10,
           }}
         >
-          {/* Orbit ring track */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              width: ORBIT_RADIUS * 2,
-              height: ORBIT_RADIUS * 2,
-              left: `calc(50% - ${ORBIT_RADIUS}px)`,
-              top: `calc(50% - ${ORBIT_RADIUS}px)`,
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.12)",
-              pointerEvents: "none",
-            }}
-          />
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              width: ORBIT_RADIUS * 2 - 4,
-              height: ORBIT_RADIUS * 2 - 4,
-              left: `calc(50% - ${ORBIT_RADIUS - 2}px)`,
-              top: `calc(50% - ${ORBIT_RADIUS - 2}px)`,
-              borderRadius: "50%",
-              border: "1px solid rgba(255,255,255,0.05)",
-              pointerEvents: "none",
-            }}
-          />
-
           {/* Avatar presence glow */}
           <div
             aria-hidden
@@ -660,65 +462,9 @@ export default function PeopleCard({
             </button>
           </div>
 
-          {/* 6 posts revolving on a full 360° ring — wrapper rotates via ref, no re-renders */}
-          <div
-            ref={orbitWrapperRef}
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              willChange: "transform",
-            }}
-          >
-            {posts.map((post, i) => {
-              const angleDeg = i * 60;
-              const rad = (angleDeg * Math.PI) / 180;
-              const x = Math.cos(rad) * ORBIT_RADIUS;
-              const y = Math.sin(rad) * ORBIT_RADIUS;
-              const isTimed = post.type === "timed";
-              const isActive = activeSlot === i;
-
-              return (
-                <button
-                  key={post.id}
-                  data-slot={i}
-                  onClick={() => handleSlot(i)}
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${isActive ? 1.3 : 1})`,
-                    width: 44,
-                    height: 44,
-                    borderRadius: 10,
-                    background: SLOT_TINTS[i % 6],
-                    border: isActive
-                      ? `1.5px solid rgba(255,255,255,0.9)`
-                      : isTimed
-                      ? `1px solid rgba(255,255,255,0.55)`
-                      : "1px solid rgba(255,255,255,0.06)",
-                    boxShadow: isActive
-                      ? "0 0 20px rgba(255,255,255,0.4), 0 0 40px rgba(255,255,255,0.15)"
-                      : "none",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    padding: 0,
-                    animation: isTimed ? "peopleCardTimedGlow 2.2s ease-in-out infinite" : "none",
-                    transition: "all 220ms cubic-bezier(0.34,1.56,0.64,1)",
-                    boxSizing: "border-box",
-                    pointerEvents: "auto",
-                  }}
-                >
-                  <PostSlotIcon type={post.type} />
-                </button>
-              );
-            })}
-          </div>
         </div>
 
-        {/* Name + handle BELOW orbit zone */}
+        {/* Name + handle BELOW avatar zone */}
         <div
           onClick={goToProfile}
           role="button"
@@ -748,56 +494,6 @@ export default function PeopleCard({
           </div>
 
           {isLinked && <VoltageFlow from={user.voltage ?? 0} to={(user.voltage ?? 0) + 88} />}
-        </div>
-
-        {/* Detail strip */}
-        <div
-          style={{
-            position: "relative",
-            minHeight: 22,
-            margin: "0 16px 10px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10,
-          }}
-        >
-          {activePost ? (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "4px 10px",
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 999,
-                fontSize: 8,
-                letterSpacing: "0.16em",
-                color: "rgba(255,255,255,0.65)",
-                textTransform: "uppercase",
-                animation: "peopleCardFadeIn 200ms ease-out",
-              }}
-            >
-              <span>{activePost.type}</span>
-              {typeof activePost.views === "number" && (
-                <>
-                  <span style={{ opacity: 0.3 }}>•</span>
-                  <span>{activePost.views.toLocaleString()} views</span>
-                </>
-              )}
-              {activePost.type === "timed" && activePost.releaseDate && (
-                <>
-                  <span style={{ opacity: 0.3 }}>•</span>
-                  <span style={{ color: GOLD }}>release {activePost.releaseDate}</span>
-                </>
-              )}
-            </div>
-          ) : (
-            <span style={{ fontSize: 8, letterSpacing: "0.2em", color: "rgba(255,255,255,0.6)" }}>
-              TAP A POST
-            </span>
-          )}
         </div>
 
         {/* LINK BAR */}
@@ -867,32 +563,6 @@ export default function PeopleCard({
             <MiniStack people={rightStack} side="right" borderColor={linkStyles.avatarBorder} />
           </button>
 
-          {/* BATTLE — disabled for launch: no route/handler yet, parked product
-              decision. Inert affordance is intentional (a dead click is worse). */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: 44, opacity: 0.4 }}>
-            <button
-              disabled
-              aria-disabled="true"
-              title="Battle — coming soon"
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: "50%",
-                background: "rgba(22,28,40,0.95)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "default",
-                padding: 0,
-              }}
-            >
-              <BattleIcon />
-            </button>
-            <span style={{ fontSize: 7, letterSpacing: "0.2em", color: "rgba(255,255,255,0.35)" }}>
-              BATTLE
-            </span>
-          </div>
         </div>
 
         {/* COMMERCE STRIP */}
@@ -904,15 +574,10 @@ export default function PeopleCard({
             position: "relative",
           }}
         >
-          {/* TRANCHE links to /tranche; SHOP/MUSIC/BRAND/PODCAST have no launch
-              surface yet — rendered disabled/inert pending the first-visitor
-              review (no handler, no placeholder route). */}
+          {/* TRANCHE links to /tranche. The inert SHOP/MUSIC/BRAND/PODCAST
+              destinations were removed pre-launch (no handler/route yet). */}
           {[
             { label: "TRANCHE", href: "/tranche" },
-            { label: "SHOP", href: null },
-            { label: "MUSIC", href: null },
-            { label: "BRAND", href: null },
-            { label: "PODCAST", href: null },
           ].map((item, i, arr) => {
             const href = item.href;
             return (
@@ -970,14 +635,6 @@ export default function PeopleCard({
             0% { transform: scale(1); }
             50% { transform: scale(1.06); }
             100% { transform: scale(1); }
-          }
-          @keyframes peopleCardTimedGlow {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.0); border-color: rgba(255,255,255,0.55); }
-            50% { box-shadow: 0 0 14px 1px rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.85); }
-          }
-          @keyframes peopleCardDashMove {
-            0% { stroke-dashoffset: 0; }
-            100% { stroke-dashoffset: -16; }
           }
           @keyframes peopleCardWaveBar {
             0%, 100% { transform: scaleY(0.4); }
