@@ -6,9 +6,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // GET /api/posts/[id] -> fetch a single post (legacy + media[])
-export async function GET(_req: Request, { params }: { params: any }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const id = String(params?.id ?? "").trim();
+    const { id: rawId } = await params;
+    const id = String(rawId ?? "").trim();
     if (!id) {
       return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
     }
@@ -52,7 +53,7 @@ export async function GET(_req: Request, { params }: { params: any }) {
 // DELETE /api/posts/[id] -> soft-delete a post (owner only).
 // Sets deletedAt; the post becomes invisible to every read/action path.
 // Media, likes, comments, and ledger rows are left intact but unreachable.
-export async function DELETE(_req: Request, { params }: { params: any }) {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Auth first — never touch the DB for an unauthenticated caller.
     const authed = await getAuthedEmailOrNull();
@@ -61,7 +62,8 @@ export async function DELETE(_req: Request, { params }: { params: any }) {
     }
     const email = authed.trim().toLowerCase();
 
-    const id = String(params?.id ?? "").trim();
+    const { id: rawId } = await params;
+    const id = String(rawId ?? "").trim();
     if (!id) {
       return NextResponse.json({ ok: false, error: "missing_id" }, { status: 400 });
     }
