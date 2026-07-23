@@ -14,7 +14,6 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  Trash2,
 } from "lucide-react";
 import { getAuthedEmail } from "@/lib/clientAuthedEmail";
 import { fetchPeopleRail } from "@/lib/peopleRailCache";
@@ -600,37 +599,6 @@ useEffect(() => {
       });
   }, []);
 
-  // Owner soft-delete. Optimistically remove the card; on failure re-insert it
-  // at its original position and surface the error — no lying splice.
-  const handleDeletePost = useCallback(async (postId: string) => {
-    let removed: any = null;
-    let removedIndex = -1;
-    setPosts((prev) => {
-      const idx = prev.findIndex((p) => String(p.id) === String(postId));
-      if (idx === -1) return prev;
-      removed = prev[idx];
-      removedIndex = idx;
-      return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
-    });
-
-    try {
-      const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error(`delete_failed_${res.status}`);
-    } catch (err) {
-      console.error("Post delete failed:", err);
-      if (removed) {
-        setPosts((prev) => {
-          if (prev.some((p) => String(p.id) === String(postId))) return prev; // already restored
-          const at = removedIndex < 0 ? prev.length : Math.min(removedIndex, prev.length);
-          return [...prev.slice(0, at), removed, ...prev.slice(at)];
-        });
-      }
-      if (typeof window !== "undefined") {
-        window.alert("Couldn't delete that post. Please try again.");
-      }
-    }
-  }, []);
-
   const handleInteract = useCallback((postId: string) => {
     const post = posts.find((candidate) => String(candidate.id) === postId);
     const cluster = getClusterKey(post);
@@ -761,7 +729,6 @@ useEffect(() => {
         reposted={!!repostedMap[String(post.id ?? i)]}
         onToggleSave={handleToggleSave}
         onToggleRepost={handleToggleRepost}
-        onDelete={handleDeletePost}
         onDoubleTapLike={handleDoubleTapLike}
         onOpenComments={openComments}
         onShare={handleShare}
@@ -834,7 +801,6 @@ const Post = memo(function Post({
   reposted,
   onToggleSave,
   onToggleRepost,
-  onDelete,
   onDoubleTapLike,
   onOpenComments,
   onShare,
@@ -862,7 +828,6 @@ const Post = memo(function Post({
   reposted: boolean;
   onToggleSave: (postId: string) => void;
   onToggleRepost: (postId: string) => void;
-  onDelete: (postId: string) => void;
   onDoubleTapLike: (postId: string) => void;
   onOpenComments: (postId: string) => void;
   onShare: (postId: string) => void;
@@ -1009,14 +974,6 @@ const Post = memo(function Post({
     onToggleRepost(postId);
   }, [onToggleRepost, postId]);
 
-  const handleDelete = useCallback(() => {
-    if (typeof window !== "undefined" &&
-        !window.confirm("Delete this post? This can't be undone.")) {
-      return;
-    }
-    onDelete(postId);
-  }, [onDelete, postId]);
-
   const handleCreate = useCallback(() => {
     onCreate();
   }, [onCreate]);
@@ -1062,36 +1019,6 @@ const Post = memo(function Post({
         justifyContent: "flex-end",
       }}
     >
-      {isOwner && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete();
-          }}
-          aria-label="Delete post"
-          style={{
-            position: "absolute",
-            top: "calc(env(safe-area-inset-top, 0px) + 12px)",
-            right: 12,
-            zIndex: 40,
-            width: 34,
-            height: 34,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(6,10,15,0.55)",
-            border: "1px solid rgba(255,255,255,0.14)",
-            color: "rgba(255,255,255,0.85)",
-            cursor: "pointer",
-            pointerEvents: "auto",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          <Trash2 size={16} />
-        </button>
-      )}
       {post.isLive && (post.livePlaybackId || post.ivsPlaybackUrl) ? (
     <div
     style={{
