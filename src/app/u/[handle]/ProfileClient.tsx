@@ -136,10 +136,6 @@ export default function ProfileClient({
   const postsCount = gridPosts?.length ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
 
-  const offerings = isCreator
-    ? ["🎵 Music", "🎛️ Production", "🎤 Features", "🎬 Videos", "📻 Podcasts", "🎧 Sessions"]
-    : ["🎵 Music", "🏋️ Fitness", "🎮 Gaming", "📸 Photography", "✈️ Travel", "🍔 Food"];
-
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -415,48 +411,6 @@ export default function ProfileClient({
           >
             {followed ? "LINKED" : "LINK"}
           </button>
-          <button style={{
-            flex: 1, padding: "11px 0",
-            borderRadius: 50,
-            background: "transparent",
-            border: "1px solid #1a1a1a",
-            color: "rgba(255,255,255,0.6)",
-            fontSize: 13, fontWeight: 600,
-            cursor: "pointer",
-            letterSpacing: 0.5,
-            fontFamily: "monospace",
-          }}>
-            {isCreator ? "⚡ Gift" : "Message"}
-          </button>
-        </div>
-
-        {/* Offerings shelf — single horizontal scroll row */}
-        <div style={{
-          display: "flex",
-          flexDirection: "row",
-          overflowX: "auto",
-          gap: 8,
-          padding: "4px 20px",
-          scrollbarWidth: "none",
-          width: "100%",
-        }}>
-          {offerings.map((item, i) => (
-            <div key={i} style={{
-              flexShrink: 0,
-              background: "#f5f0e8",
-              borderRadius: 20,
-              padding: "6px 14px",
-              fontSize: 11,
-              fontFamily: "monospace",
-              color: "#0a0806",
-              whiteSpace: "nowrap",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}>
-              {item}
-            </div>
-          ))}
         </div>
 
         {/* Bio */}
