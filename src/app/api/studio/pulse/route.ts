@@ -15,9 +15,9 @@ export async function GET() {
     await Promise.all([
       prisma.profiles.count(),
       prisma.creatorProfile.count(),
-      prisma.post.count(),
+      prisma.post.count({ where: { deletedAt: null } }),
       prisma.follow.count(),
-      prisma.post.count({ where: { createdAt: { gte: yesterday } } }),
+      prisma.post.count({ where: { deletedAt: null, createdAt: { gte: yesterday } } }),
       prisma.analyticsEvent.count({ where: { createdAt: { gte: yesterday } } }),
     ]);
 

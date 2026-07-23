@@ -17,10 +17,12 @@ export async function GET(
       liveEndedAt: true,
       userEmail: true,
       caption: true,
+      deletedAt: true,
     }
   });
 
-  if (post && post.postType === 'LIVE') {
+  // A soft-deleted LIVE post must not serve its stream via direct URL.
+  if (post && post.postType === 'LIVE' && !post.deletedAt) {
     const [profile, creator] = await Promise.all([
       prisma.profiles.findUnique({
         where: { email: post.userEmail ?? '' },
