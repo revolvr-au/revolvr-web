@@ -47,6 +47,8 @@ export default function ProfileClient({
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [gridPosts, setGridPosts] = useState<ProfilePost[]>(posts);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const ringColor = getRingColor(profile.ringTier);
 
   useEffect(() => {
@@ -93,7 +95,45 @@ export default function ProfileClient({
     }
   };
 
-  const postsCount = posts?.length ?? 0;
+  // Owner post delete. Optimistically remove the tile; on failure re-insert it
+  // at its original position and surface the error. DELETE endpoint enforces
+  // ownership server-side — this UI is only shown on the owner's own profile.
+  const handleDeletePost = async (postId: string) => {
+    setOpenMenuId(null);
+    if (typeof window !== "undefined" &&
+        !window.confirm("Delete this post? This can't be undone.")) {
+      return;
+    }
+
+    let removed: ProfilePost | null = null;
+    let removedIndex = -1;
+    setGridPosts((prev) => {
+      const idx = prev.findIndex((p) => String(p.id) === String(postId));
+      if (idx === -1) return prev;
+      removed = prev[idx];
+      removedIndex = idx;
+      return [...prev.slice(0, idx), ...prev.slice(idx + 1)];
+    });
+
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`delete_failed_${res.status}`);
+    } catch (err) {
+      console.error("Post delete failed:", err);
+      if (removed) {
+        setGridPosts((prev) => {
+          if (prev.some((p) => String(p.id) === String(postId))) return prev; // already restored
+          const at = removedIndex < 0 ? prev.length : Math.min(removedIndex, prev.length);
+          return [...prev.slice(0, at), removed as ProfilePost, ...prev.slice(at)];
+        });
+      }
+      if (typeof window !== "undefined") {
+        window.alert("Couldn't delete that post. Please try again.");
+      }
+    }
+  };
+
+  const postsCount = gridPosts?.length ?? 0;
   const initial = (profile.displayName || profile.email || "U")[0]?.toUpperCase();
 
   const offerings = isCreator
@@ -453,7 +493,7 @@ export default function ProfileClient({
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: 2,
         }}>
-          {posts.map((p) => {
+          {gridPosts.map((p) => {
             const url = p.imageUrl ?? p.image_Url ?? "";
             return (
               <div key={p.id} style={{
@@ -472,6 +512,65 @@ export default function ProfileClient({
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 9, color: "#1a1a1a", fontFamily: "monospace",
                   }}>—</div>
+                )}
+                {/* Owner-only tile menu. Structured as a dropdown list so more
+                    items (edit, share, …) can be appended later; ships Delete only. */}
+                {isOwnProfile && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setOpenMenuId((cur) => (cur === p.id ? null : p.id))}
+                      aria-label="Post options"
+                      style={{
+                        position: "absolute",
+                        top: 4, right: 4,
+                        zIndex: 2,
+                        width: 26, height: 26,
+                        borderRadius: "50%",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        background: "rgba(0,0,0,0.55)",
+                        border: "none",
+                        color: "rgba(255,255,255,0.9)",
+                        fontSize: 15, lineHeight: 1,
+                        cursor: "pointer",
+                      }}
+                    >⋮</button>
+                    {openMenuId === p.id && (
+                      <div
+                        role="menu"
+                        style={{
+                          position: "absolute",
+                          top: 32, right: 4,
+                          zIndex: 3,
+                          minWidth: 120,
+                          background: "#141019",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          borderRadius: 10,
+                          overflow: "hidden",
+                          boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => handleDeletePost(p.id)}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            textAlign: "left",
+                            padding: "10px 14px",
+                            background: "transparent",
+                            border: "none",
+                            color: "#ffffff",
+                            fontSize: 13,
+                            fontFamily: "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                            letterSpacing: 0.5,
+                            cursor: "pointer",
+                          }}
+                        >Delete</button>
+                      </div>
+                    )}
+                  </>
                 )}
                 <div style={{
                   position: "absolute",
