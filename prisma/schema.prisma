@@ -23,6 +23,7 @@ model Post {
   sparkEligible     Boolean        @default(false)
   voltage           Int            @default(0)
   expiresAt         DateTime?
+  deletedAt         DateTime?      @map("deleted_at")
   originalVariants  String[]       @map("original_variants")
   liveViewerCount   Int            @default(0) @map("live_viewer_count")
   liveStreamId  String?   @map("live_stream_id")
@@ -42,6 +43,7 @@ ivsPlaybackUrl String?   @map("ivs_playback_url")
   @@index([createdAt])
   @@index([userEmail], map: "Post_userEmail_idx")
   @@index([sparkEligible, voltage(sort: Desc)], map: "Post_spark_voltage_idx")
+  @@index([deletedAt, createdAt(sort: Desc)], map: "Post_deletedAt_null_createdAt_idx")
   @@schema("public")
 }
 
