@@ -113,6 +113,15 @@ const FRESH_POST_WINDOW_MS = 300_000;
 // Module-level so dismissals survive Post unmount/remount during scroll.
 const dismissedTranches = new Set<string>();
 
+// Which id a LIVE post's stream is keyed by: IVS streams hang off the post row
+// itself, Mux streams off their MuxLiveStream id. The JOIN LIVE link and the
+// gift call both need this, and they drifted apart once already — resolve it in
+// one place so they can't disagree again.
+function liveStreamIdFor(post: any): string | null {
+  if (post.ivsPlaybackUrl) return String(post.id);
+  return post.liveStreamId ? String(post.liveStreamId) : null;
+}
+
 function PostSkeleton() {
   return (
     <div
@@ -1117,9 +1126,10 @@ const Post = memo(function Post({
       <button
         onClick={(e) => {
           e.stopPropagation();
+          const id = liveStreamIdFor(post);
           const url = post.ivsPlaybackUrl
-            ? `/live/${post.id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
-            : `/live/${post.liveStreamId}`;
+            ? `/live/${id}?ivs=1&playback=${encodeURIComponent(post.ivsPlaybackUrl)}`
+            : `/live/${id}`;
           window.location.href = url;
         }}
         style={{
@@ -1327,9 +1337,10 @@ function FeedOverlay({
         case "MESSAGE":
           onMessage();
           break;
-        case "GIFT":
+        case "GIFT": {
           if (giftPending) break;
-          if (post.isLive && post.liveStreamId) {
+          const liveStreamId = liveStreamIdFor(post);
+          if (post.isLive && liveStreamId) {
             onReward();
             setGiftPending(true);
             fetch("/api/live/gift", {
@@ -1337,7 +1348,7 @@ function FeedOverlay({
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 giftId: "pulse",
-                streamId: post.liveStreamId,
+                streamId: liveStreamId,
                 creatorEmail: post.userEmail,
               }),
             })
@@ -1356,6 +1367,7 @@ function FeedOverlay({
             showFlash("GIFTS FOR LIVE STREAMS");
           }
           break;
+        }
         case "CREATE":
           onCreate();
           break;
