@@ -3,6 +3,12 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
+// No IVS webhook clears liveEndedAt when a broadcast drops, so liveness is
+// bounded by age instead: a post stops counting as live this long after
+// liveStartedAt. Shared by the query filter and the isLive flag so the row we
+// fetch and the flag we serve can never disagree.
+const LIVE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+
 function sanitizeImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   if (url.startsWith("http")) {
@@ -19,12 +25,17 @@ function sanitizeImageUrl(url: string | null | undefined): string | null {
 
 export async function GET() {
   try {
+    const liveCutoff = new Date(Date.now() - LIVE_MAX_AGE_MS);
+
     const [livePosts, feedPosts] = await Promise.all([
       // Active LIVE posts — always float to top (IVS or Mux)
       prisma.post.findMany({
         where: {
           deletedAt: null,
           postType: "LIVE",
+          // Stale broadcasts must not occupy one of the 5 slots. A NULL start
+          // fails `gt`, which matches isLive treating an undateable post as ended.
+          liveStartedAt: { gt: liveCutoff },
           OR: [
             { ivsPlaybackUrl: { not: null }, liveEndedAt: null },
             { liveStream: { status: "ACTIVE" } },
@@ -110,12 +121,15 @@ export async function GET() {
         // can stay null forever. Treat a stale — or undateable — start as ended.
         isLive: p.postType === "LIVE"
           && p.liveStartedAt != null
-          && now.getTime() - p.liveStartedAt.getTime() < 6 * 60 * 60 * 1000
+          && p.liveStartedAt > liveCutoff
           && (live?.status === "ACTIVE" || (!!(p as any).ivsPlaybackUrl && !(p as any).liveEndedAt)),
         liveStreamId: live?.id ?? null,
         livePlaybackId: live?.muxPlaybackId ?? null,
         ivsPlaybackUrl: (p as any).ivsPlaybackUrl ?? null,
-        liveStartedAt: live?.liveStartedAt ?? null,
+        // Post's own field first — both live creators write it, and IVS posts have
+        // liveStreamId: null, so the relation alone reported null for every IVS
+        // broadcast while the cutoff above judged liveness from p.liveStartedAt.
+        liveStartedAt: p.liveStartedAt ?? live?.liveStartedAt ?? null,
       };
     });
 
