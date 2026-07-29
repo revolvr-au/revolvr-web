@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { RingTier } from "@prisma/client";
+import { getSparkTier } from "@/lib/sparkTiers";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,88 @@ function tierFromPriceId(priceId: string): RingTier | null {
 function periodEnd(sub: Stripe.Subscription): Date | null {
   const ts = (sub as any).current_period_end as number | undefined;
   return ts ? new Date(ts * 1000) : null;
+}
+
+/**
+ * One-off Sparks top-up (mode: "payment", metadata.purpose === "sparks").
+ *
+ * Idempotency: the processed Stripe session id is recorded in
+ * stripe_checkout_receipts.session_id, which is UNIQUE. The insert and the
+ * balance increment run in ONE transaction, so a Stripe retry hits the unique
+ * violation and rolls back before the increment can apply twice.
+ */
+async function creditSparks(session: Stripe.Checkout.Session, event: Stripe.Event) {
+  if (session.payment_status !== "paid") {
+    console.log(`[ring/webhook] sparks session ${session.id} not paid (${session.payment_status}) — skipping`);
+    return;
+  }
+
+  const email = (
+    session.metadata?.email ||
+    session.customer_details?.email ||
+    session.customer_email ||
+    ""
+  ).trim().toLowerCase();
+
+  if (!email) {
+    console.error(`[ring/webhook] sparks session ${session.id} has no email — skipping`);
+    return;
+  }
+
+  // Re-resolve the amount from the server tier table rather than trusting the
+  // metadata integer, and cross-check it against what Stripe actually charged.
+  const tier = getSparkTier(session.metadata?.tierId);
+  if (!tier) {
+    console.error(`[ring/webhook] sparks session ${session.id} unknown tierId=${session.metadata?.tierId} — skipping`);
+    return;
+  }
+  if (typeof session.amount_total === "number" && session.amount_total !== tier.cents) {
+    console.error(
+      `[ring/webhook] sparks session ${session.id} amount_total=${session.amount_total} ` +
+      `does not match tier ${tier.id} (${tier.cents}) — skipping`,
+    );
+    return;
+  }
+
+  const paymentIntent =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      // Throws P2002 on the UNIQUE session_id if already credited, which aborts
+      // the upsert below.
+      await tx.stripeCheckoutReceipt.create({
+        data: {
+          sessionId:     session.id,
+          paymentIntent,
+          eventId:       event.id,
+          livemode:      event.livemode,
+          amountTotal:   session.amount_total ?? null,
+          currency:      session.currency ?? null,
+          status:        session.status ?? null,
+          paymentStatus: session.payment_status ?? null,
+          customerEmail: email,
+          metadata:      { purpose: "sparks", tierId: tier.id, sparks: tier.sparks },
+        },
+      });
+
+      await tx.userCredits.upsert({
+        where:  { email },
+        create: { email, sparks: tier.sparks },
+        update: { sparks: { increment: tier.sparks } },
+      });
+    });
+
+    console.log(`[ring/webhook] credited ${tier.sparks} sparks to ${email} (session ${session.id})`);
+  } catch (err: unknown) {
+    if ((err as { code?: string } | null)?.code === "P2002") {
+      console.log(`[ring/webhook] sparks session ${session.id} already credited — ignoring retry`);
+      return;
+    }
+    throw err;
+  }
 }
 
 export async function POST(req: Request) {
@@ -52,6 +135,14 @@ export async function POST(req: Request) {
       // ── Checkout completed → activate ring ──────────────────────────────
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session;
+
+        // Sparks top-ups arrive on this same endpoint (already registered with a
+        // working signing secret) and were previously discarded by the gate below.
+        if (session.metadata?.purpose === "sparks") {
+          await creditSparks(session, event);
+          break;
+        }
+
         if (session.metadata?.purpose !== "ring") break;
 
         const email = session.metadata?.creatorEmail?.toLowerCase();

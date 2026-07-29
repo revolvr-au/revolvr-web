@@ -2,13 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SPARK_TIERS } from "@/lib/sparkTiers";
 
-const BUNDLES = [
-  { sparks: 100,  price: "$2.99",  cents: 299,  label: "STARTER" },
-  { sparks: 300,  price: "$7.99",  cents: 799,  label: "CHARGED" },
-  { sparks: 750,  price: "$17.99", cents: 1799, label: "AMPLIFIED" },
-  { sparks: 2000, price: "$39.99", cents: 3999, label: "OVERLOADED" },
-];
+// Pricing lives in @/lib/sparkTiers — the server resolves cents/sparks from the
+// tier id, this list is for rendering only.
+const BUNDLES = SPARK_TIERS;
 
 export default function BuySparksPage() {
   const router = useRouter();
@@ -25,7 +23,7 @@ export default function BuySparksPage() {
       const res = await fetch("/spark/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cents: bundle.cents, sparks: bundle.sparks }),
+        body: JSON.stringify({ tier: bundle.id }),
       });
       const data = await res.json().catch(() => ({} as { url?: string; error?: string }));
 
