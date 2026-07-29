@@ -2,31 +2,42 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SPARK_TIERS } from "@/lib/sparkTiers";
 
-const BUNDLES = [
-  { sparks: 100,  price: "$2.99",  cents: 299,  label: "STARTER" },
-  { sparks: 300,  price: "$7.99",  cents: 799,  label: "CHARGED" },
-  { sparks: 750,  price: "$17.99", cents: 1799, label: "AMPLIFIED" },
-  { sparks: 2000, price: "$39.99", cents: 3999, label: "OVERLOADED" },
-];
+// Pricing lives in @/lib/sparkTiers — the server resolves cents/sparks from the
+// tier id, this list is for rendering only.
+const BUNDLES = SPARK_TIERS;
 
 export default function BuySparksPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handlePurchase = async () => {
     if (selected === null) return;
     setLoading(true);
+    setError(null);
     const bundle = BUNDLES[selected];
-    const res = await fetch("/api/sparks/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cents: bundle.cents, sparks: bundle.sparks }),
-    });
-    const data = await res.json();
-    if (data.url) window.location.href = data.url;
-    else setLoading(false);
+    try {
+      const res = await fetch("/spark/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tier: bundle.id }),
+      });
+      const data = await res.json().catch(() => ({} as { url?: string; error?: string }));
+
+      if (res.status === 401) throw new Error("Sign in to buy Sparks.");
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || `Checkout failed (${res.status}). Please try again.`);
+      }
+
+      // Leaving the page — deliberately keep the button in its REDIRECTING… state.
+      window.location.href = data.url;
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,7 +94,7 @@ export default function BuySparksPage() {
         {BUNDLES.map((bundle, i) => (
           <button
             key={bundle.sparks}
-            onClick={() => setSelected(i)}
+            onClick={() => { setSelected(i); setError(null); }}
             style={{
               display: "flex",
               alignItems: "center",
@@ -146,6 +157,25 @@ export default function BuySparksPage() {
           </button>
         ))}
       </div>
+
+      {/* Checkout failure */}
+      {error && (
+        <div
+          role="alert"
+          style={{
+            background: "rgba(255,80,80,0.08)",
+            border: "1px solid rgba(255,80,80,0.35)",
+            borderRadius: 12,
+            padding: "12px 14px",
+            marginBottom: 12,
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: "#ffb4b4",
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       {/* Purchase button */}
       <button
