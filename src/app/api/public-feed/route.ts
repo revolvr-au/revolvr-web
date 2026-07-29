@@ -106,7 +106,12 @@ export async function GET() {
         ringTier,
         voltage: p.voltage ?? 0,
         // Live fields
-        isLive: p.postType === "LIVE" && (live?.status === "ACTIVE" || (!!(p as any).ivsPlaybackUrl && !(p as any).liveEndedAt)),
+        // Nothing ends a dropped IVS broadcast (no IVS webhook), so liveEndedAt
+        // can stay null forever. Treat a stale — or undateable — start as ended.
+        isLive: p.postType === "LIVE"
+          && p.liveStartedAt != null
+          && now.getTime() - p.liveStartedAt.getTime() < 6 * 60 * 60 * 1000
+          && (live?.status === "ACTIVE" || (!!(p as any).ivsPlaybackUrl && !(p as any).liveEndedAt)),
         liveStreamId: live?.id ?? null,
         livePlaybackId: live?.muxPlaybackId ?? null,
         ivsPlaybackUrl: (p as any).ivsPlaybackUrl ?? null,
