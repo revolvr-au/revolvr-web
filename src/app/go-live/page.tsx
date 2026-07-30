@@ -118,10 +118,10 @@ export default function GoLivePage() {
       const res = await fetch("/api/live/create-ivs", { method: "POST" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
-      const { streamId, playbackUrl, ingestEndpoint } = data;
 
-      // Hand the channel off to /live/[streamId], which starts the only broadcast.
-      router.push(`/live/${streamId}?ivs=1&creator=1&key=${encodeURIComponent(data.streamKey)}&playback=${encodeURIComponent(playbackUrl ?? '')}&ingest=${encodeURIComponent(ingestEndpoint ?? '')}`);
+      // Hand the channel off to /live/[streamId], which starts the only broadcast
+      // and fetches its own ingest credentials. Nothing secret goes in this URL.
+      router.push(`/live/${data.streamId}?ivs=1&creator=1`);
 
     } catch (err: any) {
       console.error('Go live error:', err);

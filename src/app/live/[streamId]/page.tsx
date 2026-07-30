@@ -68,7 +68,6 @@ export default function LivePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCreator = searchParams.get('creator') === '1';
-  const creatorStreamKey = searchParams.get('key');
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -155,7 +154,7 @@ useEffect(() => {
   useEffect(() => { return () => {}; }, []);
 
   useEffect(() => {
-  if (!isCreator || !creatorStreamKey) return;
+  if (!isCreator || !streamId) return;
   let cancelled = false;
   let ivsBroadcastClient: any = null;
   let croppedStream: MediaStream | null = null;
@@ -166,6 +165,30 @@ useEffect(() => {
 
   const startIvsBroadcast = async () => {
     try {
+      // Ingest credentials come from an owner-gated endpoint, not the URL. Fetched
+      // before the camera so an auth/ownership failure doesn't grab the device.
+      const credRes = await fetch(`/api/live/broadcast-credentials/${streamId}`, {
+        cache: 'no-store',
+      });
+      if (!credRes.ok) {
+        const detail = await credRes.json().catch(() => ({}));
+        console.error('[LIVE] credentials fetch failed:', credRes.status, detail);
+        if (!cancelled) {
+          setBroadcastError(
+            credRes.status === 403 || credRes.status === 401
+              ? "You're not the owner of this stream."
+              : `Could not get broadcast credentials (${credRes.status}).`
+          );
+        }
+        return;
+      }
+      const { streamKey, ingestEndpoint: rawIngestEndpoint } = await credRes.json();
+      if (!streamKey) {
+        if (!cancelled) setBroadcastError('Broadcast credentials were incomplete.');
+        return;
+      }
+      if (cancelled) return;
+
       const cameraStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
@@ -230,8 +253,7 @@ useEffect(() => {
       const videoTrack = croppedStream.getVideoTracks()[0];
       const audioTrack = cameraStream.getAudioTracks()[0];
 
-      const ingestRaw = new URLSearchParams(window.location.search).get('ingest') ?? '';
-      const ingestEndpoint = decodeURIComponent(ingestRaw)
+      const ingestEndpoint = (rawIngestEndpoint ?? '')
         .replace('rtmps://', '')
         .replace(':443/app/', '');
 
@@ -256,7 +278,7 @@ useEffect(() => {
         await ivsBroadcastClient.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
       }
 
-      await ivsBroadcastClient.startBroadcast(creatorStreamKey);
+      await ivsBroadcastClient.startBroadcast(streamKey);
       console.log('[LIVE] IVS broadcast started from live page');
       setBroadcastError(null);
 
@@ -267,7 +289,7 @@ useEffect(() => {
           setBroadcastError('Connection dropped — reconnecting…');
           setTimeout(() => {
             if (!cancelled) {
-              ivsBroadcastClient.startBroadcast(creatorStreamKey)
+              ivsBroadcastClient.startBroadcast(streamKey)
                 .then(() => setBroadcastError(null))
                 .catch((e: any) => {
                   console.error('[LIVE] reconnect failed:', e);
@@ -311,7 +333,7 @@ useEffect(() => {
       }
     }
   };
-}, [isCreator, creatorStreamKey]);
+}, [isCreator, streamId]);
   
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
