@@ -68,7 +68,6 @@ export default function LivePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCreator = searchParams.get('creator') === '1';
-  const creatorStreamKey = searchParams.get('key');
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -85,6 +84,7 @@ export default function LivePage() {
   const [isMuted, setIsMuted] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [battleAvailable, setBattleAvailable] = useState(false);
+  const [broadcastError, setBroadcastError] = useState<string | null>(null);
 
 
   // Gift state
@@ -154,16 +154,41 @@ useEffect(() => {
   useEffect(() => { return () => {}; }, []);
 
   useEffect(() => {
-  if (!isCreator || !creatorStreamKey) return;
+  if (!isCreator || !streamId) return;
   let cancelled = false;
   let ivsBroadcastClient: any = null;
   let croppedStream: MediaStream | null = null;
   let cropVideoEl: HTMLVideoElement | null = null;
   let drawInterval: ReturnType<typeof setInterval> | null = null;
   let visibilityHandler: (() => void) | null = null;
+  let previewEl: HTMLVideoElement | null = null;
 
   const startIvsBroadcast = async () => {
     try {
+      // Ingest credentials come from an owner-gated endpoint, not the URL. Fetched
+      // before the camera so an auth/ownership failure doesn't grab the device.
+      const credRes = await fetch(`/api/live/broadcast-credentials/${streamId}`, {
+        cache: 'no-store',
+      });
+      if (!credRes.ok) {
+        const detail = await credRes.json().catch(() => ({}));
+        console.error('[LIVE] credentials fetch failed:', credRes.status, detail);
+        if (!cancelled) {
+          setBroadcastError(
+            credRes.status === 403 || credRes.status === 401
+              ? "You're not the owner of this stream."
+              : `Could not get broadcast credentials (${credRes.status}).`
+          );
+        }
+        return;
+      }
+      const { streamKey, ingestEndpoint: rawIngestEndpoint } = await credRes.json();
+      if (!streamKey) {
+        if (!cancelled) setBroadcastError('Broadcast credentials were incomplete.');
+        return;
+      }
+      if (cancelled) return;
+
       const cameraStream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
@@ -179,6 +204,15 @@ useEffect(() => {
       });
       if (cancelled) { cameraStream.getTracks().forEach(t => t.stop()); return; }
       cameraStreamRef.current = cameraStream;
+
+      // Creator preview is the local camera, not the playback stream — the creator
+      // must not decode what they're encoding.
+      if (videoRef.current) {
+        previewEl = videoRef.current;
+        previewEl.srcObject = cameraStream;
+        previewEl.muted = true;
+        previewEl.play().catch(() => {});
+      }
 
       // Offscreen canvas crop pipeline — gives IVS a clean 480x854 portrait
       const canvas = document.createElement('canvas');
@@ -219,8 +253,7 @@ useEffect(() => {
       const videoTrack = croppedStream.getVideoTracks()[0];
       const audioTrack = cameraStream.getAudioTracks()[0];
 
-      const ingestRaw = new URLSearchParams(window.location.search).get('ingest') ?? '';
-      const ingestEndpoint = decodeURIComponent(ingestRaw)
+      const ingestEndpoint = (rawIngestEndpoint ?? '')
         .replace('rtmps://', '')
         .replace(':443/app/', '');
 
@@ -245,25 +278,38 @@ useEffect(() => {
         await ivsBroadcastClient.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
       }
 
-      await ivsBroadcastClient.startBroadcast(creatorStreamKey);
+      await ivsBroadcastClient.startBroadcast(streamKey);
       console.log('[LIVE] IVS broadcast started from live page');
+      setBroadcastError(null);
 
       ivsBroadcastClient.on('connectionStateChange', (state: string) => {
         console.log('[LIVE] broadcast connection state:', state);
         if (state === 'failed' || state === 'disconnected') {
           console.warn('[LIVE] broadcast dropped, reconnecting in 2s');
+          setBroadcastError('Connection dropped — reconnecting…');
           setTimeout(() => {
             if (!cancelled) {
-              ivsBroadcastClient.startBroadcast(creatorStreamKey)
-                .catch((e: any) => console.error('[LIVE] reconnect failed:', e));
+              ivsBroadcastClient.startBroadcast(streamKey)
+                .then(() => setBroadcastError(null))
+                .catch((e: any) => {
+                  console.error('[LIVE] reconnect failed:', e);
+                  setBroadcastError('Reconnect failed — end the stream and start again.');
+                });
             }
           }, 2000);
+        } else if (state === 'connected') {
+          setBroadcastError(null);
         }
       });
 
       try { await (navigator as any).wakeLock?.request('screen'); } catch {}
-    } catch (err) {
+    } catch (err: any) {
       console.error('[LIVE] Failed to start IVS broadcast:', err);
+      if (!cancelled) {
+        setBroadcastError(
+          `Broadcast failed to start: ${err?.message ?? 'unknown error'}`
+        );
+      }
     }
   };
 
@@ -274,6 +320,10 @@ useEffect(() => {
     if (drawInterval) { clearInterval(drawInterval); drawInterval = null; }
     if (visibilityHandler) { document.removeEventListener('visibilitychange', visibilityHandler); visibilityHandler = null; }
     if (!navigatingToBattleRef.current) {
+      if (previewEl) {
+        try { previewEl.pause(); previewEl.srcObject = null; } catch { /* element already gone */ }
+        previewEl = null;
+      }
       cameraStreamRef.current?.getTracks().forEach(t => t.stop());
       croppedStream?.getTracks().forEach(t => t.stop());
       if (cropVideoEl) { try { cropVideoEl.pause(); cropVideoEl.srcObject = null; } catch {} }
@@ -283,7 +333,7 @@ useEffect(() => {
       }
     }
   };
-}, [isCreator, creatorStreamKey]);
+}, [isCreator, streamId]);
   
   useEffect(() => {
     const supabase = createSupabaseBrowserClient();
@@ -301,20 +351,30 @@ useEffect(() => {
   }, [streamId]);
 
   useEffect(() => {
+    // The creator is the source — they render the local camera (see the broadcast
+    // effect above) and never decode their own playback stream.
+    if (isCreator) return;
     if (!videoRef.current || !stream || stream.status === 'IDLE') return;
     const video = videoRef.current;
     const src = stream?.ivsPlaybackUrl ? decodeURIComponent(stream.ivsPlaybackUrl) : stream?.muxPlaybackId ? `https://stream.mux.com/${stream.muxPlaybackId}.m3u8` : null;
     if (!src) return;
     let ivsPlayer: any = null, hls: any = null;
     let bufferTimer: ReturnType<typeof setTimeout> | null = null;
+    let playerScriptPoll: ReturnType<typeof setInterval> | null = null;
     const initPlayer = async () => {
       if (stream?.ivsPlaybackUrl) {
         await new Promise<void>((resolve) => {
           if ((window as any).IVSPlayer) { resolve(); return; }
-          const interval = setInterval(() => {
-            if ((window as any).IVSPlayer) { clearInterval(interval); resolve(); }
+          playerScriptPoll = setInterval(() => {
+            if ((window as any).IVSPlayer) {
+              if (playerScriptPoll) { clearInterval(playerScriptPoll); playerScriptPoll = null; }
+              resolve();
+            }
           }, 50);
-          window.addEventListener('load', () => { clearInterval(interval); if ((window as any).IVSPlayer) resolve(); }, { once: true });
+          window.addEventListener('load', () => {
+            if (playerScriptPoll) { clearInterval(playerScriptPoll); playerScriptPoll = null; }
+            if ((window as any).IVSPlayer) resolve();
+          }, { once: true });
         });
         const IVSPlayer = (window as any).IVSPlayer;
         ivsPlayer = IVSPlayer.create();
@@ -353,8 +413,14 @@ useEffect(() => {
       if (Hls.isSupported()) { hls = new Hls({ lowLatencyMode: true }); hls.loadSource(src); hls.attachMedia(video); hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(() => {}); }); }
     };
     initPlayer();
-    return () => { if (bufferTimer) { clearTimeout(bufferTimer); bufferTimer = null; } if (ivsPlayer) ivsPlayer.delete(); if (hls) hls.destroy(); video.pause(); video.removeAttribute('src'); video.load(); };
-  }, [stream?.muxPlaybackId, stream?.ivsPlaybackUrl, stream?.status]);
+    return () => {
+      if (playerScriptPoll) { clearInterval(playerScriptPoll); playerScriptPoll = null; }
+      if (bufferTimer) { clearTimeout(bufferTimer); bufferTimer = null; }
+      if (ivsPlayer) ivsPlayer.delete();
+      if (hls) hls.destroy();
+      video.pause(); video.removeAttribute('src'); video.load();
+    };
+  }, [stream?.muxPlaybackId, stream?.ivsPlaybackUrl, stream?.status, isCreator]);
 
   useEffect(() => {
     if (!streamId || stream?.status === 'ACTIVE') return;
@@ -567,6 +633,24 @@ if (document.activeElement instanceof HTMLElement) {
       {/* ── FULL SCREEN VIDEO ── */}
       <video ref={videoRef} autoPlay playsInline muted style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", background: "#000" }} />
 
+      {/* ── BROADCAST FAILURE — creator-facing, must never be console-only ── */}
+      {broadcastError && isCreator && (
+        <div style={{
+          position: "absolute", top: 58, left: 16, right: 16, zIndex: 60,
+          background: "rgba(239,68,68,0.92)", border: "1px solid rgba(255,255,255,0.25)",
+          borderRadius: 10, padding: "10px 14px",
+          display: "flex", alignItems: "center", gap: 10,
+          animation: "toastIn 0.25s ease-out",
+          backdropFilter: "blur(8px)",
+        }}>
+          <div style={{ width: 7, height: 7, borderRadius: "50%", background: "#fff", flexShrink: 0, animation: "livePulse 1.2s ease-in-out infinite" }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "#fff", fontSize: 11, fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.08em" }}>NOT BROADCASTING</div>
+            <div style={{ color: "rgba(255,255,255,0.92)", fontSize: 12, marginTop: 2 }}>{broadcastError}</div>
+          </div>
+        </div>
+      )}
+
       {/* Bottom gradient */}
       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "40%", background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)", pointerEvents: "none", zIndex: 1 }} />
 
@@ -729,7 +813,8 @@ if (document.activeElement instanceof HTMLElement) {
         zIndex: 30, backdropFilter: "blur(4px)",
       }}>‹</button>
 
-      {isMuted && (
+      {/* Creators stay muted — unmuting a local preview is a mic feedback loop */}
+      {isMuted && !isCreator && (
         <button onClick={() => { if (videoRef.current) { videoRef.current.muted = false; setIsMuted(false); } }} style={{
           position: "absolute", top: 16, right: 16,
           background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.15)",

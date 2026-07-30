@@ -74,13 +74,20 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({
-      streamId: post.id,
-      streamKey,
-      playbackUrl,
-      ingestEndpoint,
-      channelArn,
+    // Ingest credentials are stored server-side and fetched by the owner from
+    // /api/live/broadcast-credentials/[streamId]. They are deliberately NOT
+    // returned here — they used to travel to the broadcast page in the URL.
+    await prisma.ivsBroadcast.create({
+      data: {
+        postId: post.id,
+        creatorEmail: user.email!,
+        streamKey,
+        ingestEndpoint,
+        channelArn,
+      },
     });
+
+    return NextResponse.json({ streamId: post.id });
 
   } catch (err: any) {
     console.error("create-ivs error:", err);

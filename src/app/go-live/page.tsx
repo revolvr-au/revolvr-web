@@ -7,7 +7,6 @@ import { createSupabaseBrowserClient } from "@/supabase-browser";
 export default function GoLivePage() {
   const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const clientRef = useRef<any>(null);
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user");
   const [muted, setMuted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -15,19 +14,16 @@ export default function GoLivePage() {
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const croppedStreamRef = useRef<MediaStream | null>(null);
-  const broadcastingRef = useRef(false);
 
+  // This page is preview + setup only. /live/[streamId] is the sole owner of the
+  // IVS broadcast — starting one here too put two ingests on one stream key.
   useEffect(() => {
     let active = true;
     let drawInterval: ReturnType<typeof setInterval> | null = null;
-    let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
     let visibilityHandler: (() => void) | null = null;
-    let canvasCtx: CanvasRenderingContext2D | null = null;
+    let previewVideoEl: HTMLVideoElement | null = null;
     const init = async () => {
       try {
-        const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
-
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode, width: { ideal: 480 }, height: { ideal: 854 }, aspectRatio: { ideal: 9/16 }, frameRate: { ideal: 30, max: 30 }, focusMode: 'continuous', exposureMode: 'continuous', whiteBalanceMode: 'continuous' } as MediaTrackConstraints,
           audio: true,
@@ -36,11 +32,10 @@ export default function GoLivePage() {
         if (!active) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
 
-        // Draw camera to canvas (preview + crop source for IVS)
+        // Draw camera to canvas — preview only; nothing here feeds an ingest
         if (canvasRef.current && streamRef.current) {
           const canvas = canvasRef.current;
           const ctx = canvas.getContext('2d');
-          canvasCtx = ctx;
           const videoEl = document.createElement('video');
           videoEl.srcObject = streamRef.current;
           videoEl.autoplay = true;
@@ -69,58 +64,13 @@ export default function GoLivePage() {
             if (document.visibilityState === "visible") draw();
           };
           document.addEventListener("visibilitychange", visibilityHandler);
-          croppedStreamRef.current = canvas.captureStream(30);
-        }
-
-        const ingestEndpoint = (process.env.NEXT_PUBLIC_IVS_INGEST_ENDPOINT ?? '')
-          .replace('rtmps://', '')
-          .replace(':443/app/', '');
-
-        const client = IVSBroadcastClient.create({
-          streamConfig: {
-            ...IVSBroadcastClient.BASIC_PORTRAIT,
-            maxResolution: { width: 480, height: 854 },
-          },
-          ingestEndpoint,
-        });
-        clientRef.current = client;
-
-        const videoTrack = croppedStreamRef.current?.getVideoTracks()[0];
-        const audioTrack = stream.getAudioTracks()[0];
-
-        if (videoTrack) {
-          await client.addVideoInputDevice(
-            new MediaStream([videoTrack]),
-            'camera1',
-            { index: 0 }
-          );
-          client.updateVideoDeviceComposition('camera1', {
-            index: 0,
-            x: 0,
-            y: 0,
-            width: 480,
-            height: 854,
-          });
-        }
-        if (audioTrack) {
-          await client.addAudioInputDevice(new MediaStream([audioTrack]), 'mic1');
-        }
-
-        // Keepalive: prevent canvas captureStream from going idle while broadcasting
-        if (typeof (client as any).enableVideo === 'function') {
-          (client as any).enableVideo();
-        } else {
-          keepAliveInterval = setInterval(() => {
-            if (broadcastingRef.current && canvasCtx) {
-              canvasCtx.fillRect(0, 0, 1, 1);
-            }
-          }, 5000);
+          previewVideoEl = videoEl;
         }
 
         setCameraReady(true);
         setError(null);
       } catch (err: any) {
-        console.error('IVS init error:', err);
+        console.error('Camera init error:', err);
         setError("Camera access denied.");
         setCameraReady(false);
       }
@@ -128,15 +78,19 @@ export default function GoLivePage() {
 
     init();
 
+    // Unconditional teardown. The old `if (!broadcastingRef.current)` guard held the
+    // camera open forever once the user tapped GO LIVE, so the phone was still
+    // capturing here while /live/[streamId] opened its own capture.
     return () => {
       active = false;
       if (drawInterval) clearInterval(drawInterval);
-      if (keepAliveInterval) clearInterval(keepAliveInterval);
       if (visibilityHandler) document.removeEventListener("visibilitychange", visibilityHandler);
-      if (!broadcastingRef.current) {
-        streamRef.current?.getTracks().forEach(t => t.stop());
-        try { clientRef.current?.delete(); } catch {}
+      if (previewVideoEl) {
+        try { previewVideoEl.pause(); previewVideoEl.srcObject = null; } catch {}
+        previewVideoEl = null;
       }
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
     };
   }, [facingMode]);
 
@@ -146,7 +100,7 @@ export default function GoLivePage() {
   };
 
   const handleGoLive = async () => {
-    if (!cameraReady || !clientRef.current) return;
+    if (!cameraReady) return;
     setLoading(true);
     setError(null);
 
@@ -162,23 +116,12 @@ export default function GoLivePage() {
       setCountdown(null);
 
       const res = await fetch("/api/live/create-ivs", { method: "POST" });
-const data = await res.json();
-if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
-const { streamId, playbackUrl, ingestEndpoint } = data;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to create stream");
 
-const newIngest = (ingestEndpoint ?? '')
-  .replace('rtmps://', '')
-  .replace(':443/app/', '');
-
-// Update ingest endpoint on the existing client (built on mount) and broadcast
-if (clientRef.current?.config) {
-  clientRef.current.config.ingestEndpoint = newIngest;
-}
-
-broadcastingRef.current = true;
-await clientRef.current.startBroadcast(data.streamKey);
-
-      router.push(`/live/${streamId}?ivs=1&creator=1&key=${encodeURIComponent(data.streamKey)}&playback=${encodeURIComponent(playbackUrl ?? '')}&ingest=${encodeURIComponent(ingestEndpoint ?? '')}`);
+      // Hand the channel off to /live/[streamId], which starts the only broadcast
+      // and fetches its own ingest credentials. Nothing secret goes in this URL.
+      router.push(`/live/${data.streamId}?ivs=1&creator=1`);
 
     } catch (err: any) {
       console.error('Go live error:', err);

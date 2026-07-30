@@ -1125,6 +1125,26 @@ enum RingTier {
   @@schema("public")
 }
 
+/// IVS ingest credentials for one broadcast, keyed by the LIVE Post id.
+/// Deliberately NOT a relation on Post: the stream key is a live credential and
+/// Post is read by ~22 call sites, several returning whole rows. Keeping it in a
+/// standalone table means no Post query — present or future — can leak it, and
+/// there is no relation field to `include`. Read only by the owner-gated
+/// /api/live/broadcast-credentials/[streamId] route.
+model IvsBroadcast {
+  id             String   @id @default(uuid())
+  postId         String   @unique @map("post_id")
+  creatorEmail   String   @map("creator_email")
+  streamKey      String   @map("stream_key")
+  ingestEndpoint String   @map("ingest_endpoint")
+  channelArn     String   @map("channel_arn")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([creatorEmail])
+  @@map("ivs_broadcasts")
+  @@schema("public")
+}
+
 model MuxLiveStream {
   id              String           @id @default(uuid())
   muxLiveStreamId String           @unique
