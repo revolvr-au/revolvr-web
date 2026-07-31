@@ -45,6 +45,21 @@ export async function PATCH(req: NextRequest) {
   const handleTrimmed = handle?.trim().toLowerCase() || null;
 
   try {
+    // Pre-flight the handle before ANY write. CreatorProfile.handle is @unique, so a
+    // handle owned by another account would otherwise blow up the SECOND upsert below,
+    // after profiles has already been written. Same shape as /api/creator/activate.
+    // A null handle (/me saving with the field cleared) skips the check — nullable
+    // unique columns allow many nulls.
+    if (handleTrimmed) {
+      const owner = await prisma.creatorProfile.findFirst({
+        where: { handle: handleTrimmed },
+        select: { email: true },
+      });
+      if (owner && owner.email !== email) {
+        return NextResponse.json({ error: "Handle already taken." }, { status: 409 });
+      }
+    }
+
     // Always upsert profiles
     await prisma.profiles.upsert({
       where: { email },
@@ -93,6 +108,20 @@ export async function PATCH(req: NextRequest) {
     });
 
   } catch (e) {
+    // Backstop for the race the pre-flight above can't close: a concurrent claim
+    // between the read and the write surfaces as a unique-constraint violation on
+    // CreatorProfile.handle. Report it as the same 409, not a generic 500 — handle is
+    // a required field on /onboard, so the user needs to know to pick another one.
+    // meta.target is a column-name array on some Prisma/driver combinations and the
+    // constraint name ("CreatorProfile_handle_key") on others; stringify and match so
+    // either shape is caught, and so an unrelated unique violation still falls to 500.
+    const err = e as { code?: string; meta?: { target?: unknown } };
+    if (
+      err?.code === "P2002" &&
+      JSON.stringify(err.meta?.target ?? "").includes("handle")
+    ) {
+      return NextResponse.json({ error: "Handle already taken." }, { status: 409 });
+    }
     console.error("profile setup failed:", e);
     return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
   }

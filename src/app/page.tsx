@@ -33,7 +33,12 @@ export default async function Page() {
     prisma.creatorProfile.findUnique({ where: { email }, select: { handle: true } }),
   ]);
 
-  const hasProfile = !!(profile?.display_name?.trim() || creator?.handle?.trim());
+  // BOTH fields required, not either. An OR here treated a bare CreatorProfile.handle
+  // as "onboarded", so accounts that got a handle from the legacy /creator/activate
+  // path (which never writes profiles) were waved past /onboard permanently — with no
+  // display_name on record. Same rule as the onboarding guard in src/proxy.ts; if these
+  // two ever disagree, "/" and every other route disagree about who is onboarded.
+  const hasProfile = !!(profile?.display_name?.trim() && creator?.handle?.trim());
   if (!hasProfile) redirect("/onboard");
   redirect("/public-feed");
 }
