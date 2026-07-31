@@ -4,6 +4,39 @@ import { prisma } from "@/lib/prisma";
 import { resolveAgeRouting } from "@/lib/ageGate";
 import { normalizeEmail } from "@/lib/dm";
 
+// Surfaces that must stay reachable for a user who has cleared NEITHER gate: studio,
+// the self-gating APIs, auth/login, the gate pages themselves, /onboard (excluded from
+// its OWN guard below, or it would redirect to itself), Next internals, and legal copy.
+//
+// Shared by BOTH the age gate and the onboarding guard on purpose. These were one list
+// duplicated the moment a second guard appeared, and a prefix present in one but not the
+// other is a redirect loop — so there is only ever one list.
+const EXCLUDED_PREFIXES = [
+  "/studio",
+  "/api",
+  "/auth",
+  "/age-verification",
+  "/underage",
+  "/welcome",
+  "/onboard",
+  "/_next",
+  "/legal",
+];
+
+// Segment-boundary match: a prefix excludes only its exact path or a descendant
+// (prefix + "/..."), so "/onboard" never accidentally excludes a future "/onboarding".
+function isExcludedPath(pathname: string): boolean {
+  return EXCLUDED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
+  );
+}
+
+type ProfileGateRow = {
+  age_status: string | null;
+  display_name: string | null;
+  handle: string | null;
+};
+
 export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") || "";
   const url = request.nextUrl.clone();
@@ -49,19 +82,56 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Age-gate enforcement. Inert by default — only runs when AGE_GATE_ENABLED is
-  // explicitly "true". Applies ONLY to authenticated users; unauthenticated
-  // requests fall through (auth is enforced elsewhere). Reuses the supabase
-  // client + getUser() result above; reads age_status via Prisma (Next 16
-  // middleware runs on Node, so Prisma works here). Fail-closed: a missing row
-  // or absent age_status routes to verification, never PROCEED.
-  if (process.env.AGE_GATE_ENABLED === "true" && user) {
-    const pathname = url.pathname;
+  const pathname = url.pathname;
+  const isExcluded = isExcludedPath(pathname);
 
+  // ── ONE profile read, shared by both guards below ──────────────────────────────
+  // The age gate needs age_status and the onboarding guard needs display_name +
+  // handle. Both are per-request, and the connection pool has NO headroom
+  // (connection_limit=5), so this is a single round-trip rather than two reads.
+  //
+  // Why raw SQL: `handle` lives on CreatorProfile, a different table with no Prisma
+  // relation to `profiles` (they are joined only by email), so no findUnique/include
+  // can fetch both. A LEFT JOIN is the only single-round-trip option.
+  //
+  // Why the join is driven off a subquery instead of `FROM profiles`: a row can exist
+  // in EITHER table alone. wesbuhagiar@gmail.com has a CreatorProfile and no profiles
+  // row — `FROM profiles` would return zero rows there and silently lose the handle.
+  // Selecting the email first guarantees exactly one row back in every case, with
+  // NULLs for whichever side is missing.
+  //
+  // Email keys match the hub's reads exactly (src/app/page.tsx findUnique on the
+  // normalized email, equality on both tables) so the proxy and the hub can never
+  // disagree about who is onboarded.
+  let profileRow: ProfileGateRow | undefined;
+  let readFailed = false;
+
+  if (user && !isExcluded) {
+    try {
+      const email = normalizeEmail(user.email!);
+      const rows = await prisma.$queryRaw<ProfileGateRow[]>`
+        SELECT p."age_status", p."display_name", c."handle"
+        FROM (SELECT ${email}::text AS email) k
+        LEFT JOIN public."profiles" p ON p."email" = k.email
+        LEFT JOIN public."CreatorProfile" c ON c."email" = k.email
+      `;
+      profileRow = rows[0];
+    } catch (e) {
+      console.error("[proxy] profile gate read failed", e);
+      readFailed = true;
+    }
+  }
+
+  // ── 1. Age gate ───────────────────────────────────────────────────────────────
+  // Runs FIRST so an AU user gets age -> onboard -> feed, never onboard -> age.
+  // Inert by default — only when AGE_GATE_ENABLED is explicitly "true". Applies ONLY
+  // to authenticated users; unauthenticated requests fall through (auth is enforced
+  // elsewhere).
+  if (process.env.AGE_GATE_ENABLED === "true" && user && !isExcluded) {
     // Jurisdiction scope: the gate is AU-only. Country is derived from the Vercel
     // edge header (set upstream of app code, unspoofable by the browser) — never
-    // from client input. Non-AU authed users pass through untouched: no age_status
-    // read, no DOB wall, no redirect.
+    // from client input. Non-AU authed users pass through untouched: no DOB wall,
+    // no redirect.
     //
     // Missing/empty header -> fail-closed to AU (gate it), consistent with
     // resolveJurisdiction's existing strict default. In Vercel production this
@@ -72,48 +142,14 @@ export async function proxy(request: NextRequest) {
     const country = (request.headers.get("x-vercel-ip-country") ?? "").trim().toUpperCase();
     const inGatedJurisdiction = country === "AU" || country === "";
 
-    // Skip the gate for surfaces that must stay reachable: studio, the
-    // self-gating API, auth/onboarding/login surfaces, the gate pages
-    // themselves (to avoid redirect loops), Next internals, and legal copy.
-    const EXCLUDED_PREFIXES = [
-      "/studio",
-      "/api",
-      "/auth",
-      "/age-verification",
-      "/underage",
-      "/welcome",
-      "/onboard",
-      "/_next",
-      "/legal",
-    ];
-    // Segment-boundary match: a prefix excludes only its exact path or a
-    // descendant (prefix + "/..."), so "/onboard" never accidentally excludes
-    // a future "/onboarding".
-    const isExcluded = EXCLUDED_PREFIXES.some(
-      (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
-    );
-
-    if (inGatedJurisdiction && !isExcluded) {
-      // Fail-closed on every failure mode. A returned null row / null status
-      // funnels through resolveAgeRouting; a THROWN read (DB unreachable / pool
-      // timeout) is caught and converted to the same undefined -> verify path,
-      // so a DB hiccup degrades to a clean /age-verification redirect instead of
-      // a site-wide 500 across every gated route.
-      let ageStatus: string | null | undefined;
-      try {
-        // Normalize the read key to match the write path (profiles.age_status
-        // is written under normalizeEmail(...)), so read-key == write-key.
-        const profile = await prisma.profiles.findUnique({
-          where: { email: normalizeEmail(user.email!) },
-          select: { age_status: true },
-        });
-        ageStatus = profile?.age_status;
-      } catch (e) {
-        console.error("[proxy] age_status read failed, failing closed", e);
-        ageStatus = undefined; // -> resolveAgeRouting -> NEEDS_VERIFICATION
-      }
-
-      const routing = resolveAgeRouting(ageStatus);
+    if (inGatedJurisdiction) {
+      // Fail-CLOSED on every failure mode. A missing row / null status funnels
+      // through resolveAgeRouting; a THROWN read (DB unreachable / pool timeout)
+      // becomes the same undefined -> verify path, so a DB hiccup degrades to a
+      // clean /age-verification redirect instead of a site-wide 500.
+      const routing = resolveAgeRouting(
+        readFailed ? undefined : profileRow?.age_status
+      );
 
       if (routing === "NEEDS_VERIFICATION") {
         const target = url.clone();
@@ -125,7 +161,33 @@ export async function proxy(request: NextRequest) {
         target.pathname = "/underage";
         return NextResponse.redirect(target, 307);
       }
-      // "PROCEED" -> fall through, return the existing response unchanged.
+      // "PROCEED" -> fall through to the onboarding guard.
+    }
+  }
+
+  // ── 2. Onboarding guard ───────────────────────────────────────────────────────
+  // Runs AFTER the age gate, and deliberately NOT behind AGE_GATE_ENABLED and NOT
+  // jurisdiction-scoped: onboarding applies to every authenticated user everywhere.
+  //
+  // This exists because src/app/page.tsx was the ONLY redirect("/onboard") in the
+  // codebase, and every tab under it (/public-feed, /people, /spark, /tranche) is a
+  // `return null` stub rendered by TabShell — so a deep link to any of them walked
+  // straight past onboarding. Middleware is the only layer that catches that.
+  //
+  // Fails OPEN, unlike the age gate above. A thrown read is an infra symptom, and
+  // failing closed here would dump fully-onboarded users onto /onboard during a pool
+  // hiccup — worse than letting them through one extra request. The age gate keeps
+  // its fail-CLOSED semantics on the very same failure, so the legal wall is
+  // unaffected by this choice.
+  if (user && !isExcluded && !readFailed) {
+    // Same BOTH-fields rule as src/app/page.tsx. Keep them identical.
+    const hasProfile = !!(
+      profileRow?.display_name?.trim() && profileRow?.handle?.trim()
+    );
+    if (!hasProfile) {
+      const target = url.clone();
+      target.pathname = "/onboard";
+      return NextResponse.redirect(target, 307);
     }
   }
 
