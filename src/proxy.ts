@@ -3,33 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveAgeRouting } from "@/lib/ageGate";
 import { normalizeEmail } from "@/lib/dm";
-
-// Surfaces that must stay reachable for a user who has cleared NEITHER gate: studio,
-// the self-gating APIs, auth/login, the gate pages themselves, /onboard (excluded from
-// its OWN guard below, or it would redirect to itself), Next internals, and legal copy.
-//
-// Shared by BOTH the age gate and the onboarding guard on purpose. These were one list
-// duplicated the moment a second guard appeared, and a prefix present in one but not the
-// other is a redirect loop — so there is only ever one list.
-const EXCLUDED_PREFIXES = [
-  "/studio",
-  "/api",
-  "/auth",
-  "/age-verification",
-  "/underage",
-  "/welcome",
-  "/onboard",
-  "/_next",
-  "/legal",
-];
-
-// Segment-boundary match: a prefix excludes only its exact path or a descendant
-// (prefix + "/..."), so "/onboard" never accidentally excludes a future "/onboarding".
-function isExcludedPath(pathname: string): boolean {
-  return EXCLUDED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/")
-  );
-}
+import {
+  EXCLUDED_PREFIXES,
+  ONBOARDING_EXEMPT_PREFIXES,
+  matchesPrefix,
+} from "@/lib/routeGates";
 
 type ProfileGateRow = {
   age_status: string | null;
@@ -83,7 +61,9 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const pathname = url.pathname;
-  const isExcluded = isExcludedPath(pathname);
+  const isExcluded = matchesPrefix(pathname, EXCLUDED_PREFIXES);
+  // Age gate still applies here, so this must NOT suppress the read below.
+  const isOnboardingExempt = matchesPrefix(pathname, ONBOARDING_EXEMPT_PREFIXES);
 
   // ── ONE profile read, shared by both guards below ──────────────────────────────
   // The age gate needs age_status and the onboarding guard needs display_name +
@@ -179,7 +159,10 @@ export async function proxy(request: NextRequest) {
   // hiccup — worse than letting them through one extra request. The age gate keeps
   // its fail-CLOSED semantics on the very same failure, so the legal wall is
   // unaffected by this choice.
-  if (user && !isExcluded && !readFailed) {
+  //
+  // ONBOARDING_EXEMPT_PREFIXES applies here and nowhere else: watching is open to an
+  // un-onboarded user, broadcasting (/go-live) is not.
+  if (user && !isExcluded && !isOnboardingExempt && !readFailed) {
     // Same BOTH-fields rule as src/app/page.tsx. Keep them identical.
     const hasProfile = !!(
       profileRow?.display_name?.trim() && profileRow?.handle?.trim()
