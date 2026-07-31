@@ -163,8 +163,6 @@ export default function PeopleCard({
   user: PeopleCardUser;
   onClose: () => void;
 }) {
-  const [bioPlaying, setBioPlaying] = useState(false);
-  const [bioCount, setBioCount] = useState(233);
   const [linkStateIndex, setLinkStateIndex] = useState(0);
   const [gathOpen, setGathOpen] = useState(false);
   const [viewerEmail, setViewerEmail] = useState<string | null>(null);
@@ -238,12 +236,6 @@ export default function PeopleCard({
         };
     }
   }, [linkState]);
-
-  const handleBio = () => {
-    setBioCount((c) => c + 1);
-    setBioPlaying(true);
-    window.setTimeout(() => setBioPlaying(false), 1400);
-  };
 
   const handleLink = () => {
     setLinkStateIndex((i) => (i + 1) % LINK_STATES.length);
@@ -408,58 +400,6 @@ export default function PeopleCard({
               <SparkIcon size={9} color="#0a0e16" />
               {user.voltage ?? 0}
             </div>
-
-            {/* BIO badge */}
-            <button
-              onClick={handleBio}
-              style={{
-                position: "absolute",
-                top: -4,
-                left: -10,
-                display: "flex",
-                alignItems: "center",
-                gap: 5,
-                padding: "3px 8px",
-                borderRadius: 999,
-                background: "rgba(10,14,22,0.95)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                cursor: "pointer",
-                fontFamily: "monospace",
-                color: "#fff",
-                animation: bioPlaying ? "peopleCardBioPulse 1.2s ease-out" : "none",
-              }}
-            >
-              <span
-                style={{
-                  width: 5,
-                  height: 5,
-                  borderRadius: "50%",
-                  background: bioPlaying ? GOLD : "rgba(255,255,255,0.5)",
-                }}
-              />
-              <span style={{ fontSize: 7, letterSpacing: "0.18em", color: "rgba(255,255,255,0.7)" }}>
-                BIO
-              </span>
-              {bioPlaying ? (
-                <span style={{ display: "flex", alignItems: "center", gap: 1.5, height: 8 }}>
-                  {[0, 1, 2, 3].map((i) => (
-                    <span
-                      key={i}
-                      style={{
-                        display: "block",
-                        width: 1.5,
-                        height: 6,
-                        background: GOLD,
-                        borderRadius: 1,
-                        animation: `peopleCardWaveBar 0.6s ease-in-out ${i * 0.08}s infinite`,
-                      }}
-                    />
-                  ))}
-                </span>
-              ) : (
-                <span style={{ fontSize: 8, color: "rgba(255,255,255,0.6)" }}>{bioCount}</span>
-              )}
-            </button>
           </div>
 
         </div>
@@ -630,15 +570,6 @@ export default function PeopleCard({
             0% { transform: scale(0.96); }
             60% { transform: scale(1.02); }
             100% { transform: scale(1); }
-          }
-          @keyframes peopleCardBioPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.06); }
-            100% { transform: scale(1); }
-          }
-          @keyframes peopleCardWaveBar {
-            0%, 100% { transform: scaleY(0.4); }
-            50% { transform: scaleY(1); }
           }
           @keyframes peopleCardScan {
             0% { background-position: 0 0; }

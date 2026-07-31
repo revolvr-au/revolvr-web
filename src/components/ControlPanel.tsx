@@ -44,6 +44,7 @@ export default function ControlPanel({
   const [logoutPending, setLogoutPending] = useState(false);
   const [myGaths, setMyGaths] = useState<MyGath[] | null>(null);
   const [canApplyTfc, setCanApplyTfc] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [resolvedHandle, setResolvedHandle] = useState<string | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState(false);
@@ -62,6 +63,34 @@ export default function ControlPanel({
       })
       .catch(() => {
         if (!cancelled) setCanApplyTfc(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  // Admin-only Studio entry. This is VISIBILITY ONLY, not a security boundary:
+  // /studio self-gates behind its own OTP step plus isAdminEmail, and all eight
+  // /api/studio/* routes check isAdminEmail server-side. So a plain hide is enough and
+  // this deliberately isn't a second gate — forging isAdmin here reveals a menu row and
+  // nothing else.
+  //
+  // The admin list stays on the server. /api/studio/me takes no parameters (it derives
+  // the email from the session via getAuthedEmailOrNull) and answers 401 for non-admins,
+  // so the verdict is read off the status code alone. No address, no env var, and no
+  // client-side copy of who counts as an admin.
+  useEffect(() => {
+    if (!userId) {
+      setIsAdmin(false);
+      return;
+    }
+    let cancelled = false;
+    fetch("/api/studio/me", { cache: "no-store" })
+      .then((res) => {
+        if (!cancelled) setIsAdmin(res.ok);
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
       });
     return () => {
       cancelled = true;
@@ -542,6 +571,19 @@ export default function ControlPanel({
               Contact Us
             </MenuItem>
           </MenuSection>
+
+          {/* ADMIN — hidden unless /api/studio/me returns 200. Last so it never shifts
+              the position of the rows every other user sees. */}
+          {isAdmin && (
+            <>
+              <MenuDivider />
+              <MenuSection label="ADMIN">
+                <MenuItem onClick={() => navigate("/studio")} badge="admin">
+                  Revolvr Studio
+                </MenuItem>
+              </MenuSection>
+            </>
+          )}
         </div>
       </div>
     </SlideUpSheet>
