@@ -18,6 +18,7 @@ import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 import { normalizeEmail } from "@/lib/dm";
 import { decideAge } from "@/lib/age";
 import { resolveJurisdiction } from "@/lib/jurisdiction";
+import { anonAgeCookie } from "@/lib/anonAgeCookie";
 
 // Jurisdiction is now derived server-side from the Vercel edge header via resolveJurisdiction — never from client input.
 
@@ -66,10 +67,11 @@ function parseDob(input: string, now: Date): Date | null {
 }
 
 export async function POST(request: Request) {
+  // No longer 401s on an absent session. The age gate now walls anonymous visitors too
+  // (see src/proxy.ts), so the wall needs a submit endpoint they can actually reach.
+  // An anonymous submission writes NOTHING to the database — it only sets a cookie on
+  // the caller's own browser — so this is not an unauthenticated write path.
   const authedEmail = await getAuthedEmailOrNull();
-  if (!authedEmail) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const body = (await request.json().catch(() => ({}))) as AgeVerificationBody;
 
@@ -95,6 +97,37 @@ export async function POST(request: Request) {
   // THE DECISION — a pure function of (dob, jurisdiction, now). Note confirmOver16
   // is NOT an argument: it cannot influence the outcome.
   const decision = decideAge(dob, jurisdiction, now);
+
+  // Translate the internal decision vocabulary (age.ts: CLEARED | EXCLUDED) into the
+  // PUBLIC response contract the client branches on (VERIFIED | UNDERAGE_LOCKED — see
+  // src/app/age-verification/page.tsx). age.ts's words must not leak onto the wire:
+  // an unrecognised status falls through to a generic error on the client, so an
+  // under-16 (EXCLUDED) would never reach /underage — i.e. the gate failing open at
+  // the UI. EXCLUDED -> hard lock; CLEARED (adult OR 16-17 minor) -> allowed in, with
+  // the DM block enforced server-side off isMinor regardless. Shared by both branches
+  // below so the anonymous wall and the authed wall cannot answer differently.
+  const responseStatus = decision.status === "EXCLUDED" ? "UNDERAGE_LOCKED" : "VERIFIED";
+
+  // ── ANONYMOUS branch — cookie only, no row ─────────────────────────────────────
+  // There is no account to attach a verdict to, so it goes in the visitor's own cookie
+  // (src/lib/anonAgeCookie.ts owns the name and the two lifetimes). Deliberately absent
+  // here: any DB write, the attestation record, and the crossover dates. All three need
+  // an identity, and inventing one — a device row, a pre-auth profile — would create a
+  // second, weaker provenance for age data that the authed path would later have to
+  // reconcile against.
+  //
+  // Which is also why signing up does NOT promote this cookie: a new account is asked
+  // again, and its age_status is only ever written by the authed branch below, from a
+  // DOB submitted while signed in. One writer, one provenance. The cost is one extra
+  // form for someone who just attested anonymously; the alternative is an
+  // age_method that means "self-attested, by someone, on this browser, at some point".
+  //
+  // Raw DOB is discarded here exactly as it is below — only the verdict persists.
+  if (!authedEmail) {
+    const res = NextResponse.json({ ok: true, status: responseStatus });
+    res.cookies.set(anonAgeCookie(decision.status));
+    return res;
+  }
 
   // GUARD 2 — confirmOver16 is an ATTESTATION, recorded for audit/evidence only. It
   // must NEVER override or gate the DOB-derived decision above, so it lives in its
@@ -144,15 +177,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Translate the internal decision vocabulary (age.ts: CLEARED | EXCLUDED) into the
-  // PUBLIC response contract the client branches on (VERIFIED | UNDERAGE_LOCKED — see
-  // src/app/age-verification/page.tsx). age.ts's words must not leak onto the wire:
-  // an unrecognised status falls through to a generic error on the client, so an
-  // under-16 (EXCLUDED) would never reach /underage — i.e. the gate failing open at
-  // the UI. EXCLUDED -> hard lock; CLEARED (adult OR 16-17 minor) -> allowed in, with
-  // the DM block enforced server-side off isMinor regardless.
-  const responseStatus = decision.status === "EXCLUDED" ? "UNDERAGE_LOCKED" : "VERIFIED";
-
-  // Raw DOB is intentionally never returned (nor stored).
+  // Raw DOB is intentionally never returned (nor stored). responseStatus is computed
+  // above, before the anonymous branch, so both walls share one translation.
   return NextResponse.json({ ok: true, status: responseStatus });
 }

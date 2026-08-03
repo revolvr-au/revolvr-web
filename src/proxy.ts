@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { resolveAgeRouting } from "@/lib/ageGate";
 import { normalizeEmail } from "@/lib/dm";
 import {
+  ANON_AGE_EXEMPT_PREFIXES,
   EXCLUDED_PREFIXES,
   ONBOARDING_EXEMPT_PREFIXES,
   matchesPrefix,
 } from "@/lib/routeGates";
+import { ANON_AGE_COOKIE } from "@/lib/anonAgeCookie";
 
 type ProfileGateRow = {
   age_status: string | null;
@@ -64,6 +66,9 @@ export async function proxy(request: NextRequest) {
   const isExcluded = matchesPrefix(pathname, EXCLUDED_PREFIXES);
   // Age gate still applies here, so this must NOT suppress the read below.
   const isOnboardingExempt = matchesPrefix(pathname, ONBOARDING_EXEMPT_PREFIXES);
+  // Anonymous-only age-gate exemption: the redirect-only front door. Authed users are
+  // unaffected by this flag.
+  const isAnonAgeExempt = matchesPrefix(pathname, ANON_AGE_EXEMPT_PREFIXES);
 
   // ── ONE profile read, shared by both guards below ──────────────────────────────
   // The age gate needs age_status and the onboarding guard needs display_name +
@@ -104,13 +109,24 @@ export async function proxy(request: NextRequest) {
 
   // ── 1. Age gate ───────────────────────────────────────────────────────────────
   // Runs FIRST so an AU user gets age -> onboard -> feed, never onboard -> age.
-  // Inert by default — only when AGE_GATE_ENABLED is explicitly "true". Applies ONLY
-  // to authenticated users; unauthenticated requests fall through (auth is enforced
-  // elsewhere).
-  if (process.env.AGE_GATE_ENABLED === "true" && user && !isExcluded) {
+  // Inert by default — only when AGE_GATE_ENABLED is explicitly "true".
+  //
+  // Applies to AUTHENTICATED AND ANONYMOUS visitors. It used to be authed-only, on the
+  // reasoning that auth is enforced elsewhere — but /public-feed is a public surface, so
+  // "elsewhere" never ran and an anonymous AU visitor read gated content without ever
+  // being asked. An age wall that only applies after sign-up is not an age wall.
+  //
+  // The two branches differ only in WHERE the verdict is stored: authed reads
+  // profiles.age_status (already fetched above), anonymous reads its own cookie. Both
+  // resolve through the same fail-closed resolveAgeRouting, so an absent verdict means
+  // NEEDS_VERIFICATION on either path. Anonymous costs NO database read, which matters
+  // on a 5-connection pool now that the gate runs for untrusted traffic too.
+  const skipAgeGate = isExcluded || (!user && isAnonAgeExempt);
+
+  if (process.env.AGE_GATE_ENABLED === "true" && !skipAgeGate) {
     // Jurisdiction scope: the gate is AU-only. Country is derived from the Vercel
     // edge header (set upstream of app code, unspoofable by the browser) — never
-    // from client input. Non-AU authed users pass through untouched: no DOB wall,
+    // from client input. Non-AU visitors pass through untouched: no DOB wall,
     // no redirect.
     //
     // Missing/empty header -> fail-closed to AU (gate it), consistent with
@@ -123,22 +139,30 @@ export async function proxy(request: NextRequest) {
     const inGatedJurisdiction = country === "AU" || country === "";
 
     if (inGatedJurisdiction) {
-      // Fail-CLOSED on every failure mode. A missing row / null status funnels
-      // through resolveAgeRouting; a THROWN read (DB unreachable / pool timeout)
-      // becomes the same undefined -> verify path, so a DB hiccup degrades to a
-      // clean /age-verification redirect instead of a site-wide 500.
-      const routing = resolveAgeRouting(
-        readFailed ? undefined : profileRow?.age_status
-      );
+      // Fail-CLOSED on every failure mode. For an authed user a missing row / null
+      // status funnels through resolveAgeRouting, and a THROWN read (DB unreachable /
+      // pool timeout) becomes the same undefined -> verify path, so a DB hiccup degrades
+      // to a clean /age-verification redirect instead of a site-wide 500. For an
+      // anonymous visitor a missing or tampered cookie value hits the same default.
+      const routing = user
+        ? resolveAgeRouting(readFailed ? undefined : profileRow?.age_status)
+        : resolveAgeRouting(request.cookies.get(ANON_AGE_COOKIE)?.value);
 
       if (routing === "NEEDS_VERIFICATION") {
         const target = url.clone();
         target.pathname = "/age-verification";
+        // Hand the blocked destination forward so clearing the wall lands them where
+        // they were going. Without this, an anonymous visitor clears the gate and gets
+        // bounced to "/" -> /welcome, i.e. back to the front door they just left.
+        // /age-verification re-validates this value before using it (safeNextPath).
+        target.search = "";
+        target.searchParams.set("next", pathname + url.search);
         return NextResponse.redirect(target, 307);
       }
       if (routing === "EXCLUDED") {
         const target = url.clone();
         target.pathname = "/underage";
+        target.search = "";
         return NextResponse.redirect(target, 307);
       }
       // "PROCEED" -> fall through to the onboarding guard.

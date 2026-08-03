@@ -1,16 +1,23 @@
 // src/app/age-verification/page.tsx
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { safeNextPath } from "@/lib/routeGates";
 
 type ApiResponse =
   | { status: "VERIFIED" | "SKIPPED" | "UNDERAGE_LOCKED"; error?: string }
   | { error: string }
   | Record<string, unknown>;
 
-export default function AgeVerificationPage() {
+function AgeVerificationForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Where the gate interrupted them. Re-validated here rather than trusted: the proxy
+  // put it in the URL, but by the time it reaches this component it is just a query
+  // param anyone can edit, so an off-site value must not become a redirect. Falls back
+  // to "/", which routes by auth state on its own.
+  const next = safeNextPath(searchParams?.get("next")) ?? "/";
   const [dob, setDob] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,7 +55,8 @@ export default function AgeVerificationPage() {
           : null;
 
       if (status === "VERIFIED" || status === "SKIPPED") {
-        router.push("/");
+        // replace, not push: the wall should not sit in history for Back to land on.
+        router.replace(next);
       } else if (status === "UNDERAGE_LOCKED") {
         router.push("/underage");
       } else if (typeof (data as { error?: unknown }).error === "string") {
@@ -108,5 +116,15 @@ export default function AgeVerificationPage() {
         </button>
       </form>
     </main>
+  );
+}
+
+export default function AgeVerificationPage() {
+  // useSearchParams requires a Suspense boundary above it, or the build bails on this
+  // route. Same shape as /welcome.
+  return (
+    <Suspense>
+      <AgeVerificationForm />
+    </Suspense>
   );
 }
