@@ -42,7 +42,6 @@ const TIERS: TierConfig[] = [
       "Everything in No Ring",
       "30% revenue share on gifts",
       "Blue ring badge",
-      "Verified creator status",
     ],
     buttonLabel: "Get Blue Ring",
     buttonAction: "checkout",
