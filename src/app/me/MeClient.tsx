@@ -12,7 +12,7 @@ const supabase = createSupabaseBrowserClient();
 const RING_DISPLAY: Record<string, { color: string; label: string }> = {
   NONE:       { color: "rgba(255,255,255,0.25)", label: "No Ring" },
   BLUE:       { color: "#3B82F6",  label: "Blue Ring" },
-  GOLD:       { color: "#ffffff",  label: "Gold Ring" },
+  GOLD:       { color: "#FACC15",  label: "Gold Ring" },
   BUSINESS:   { color: "#8B5CF6",  label: "Business Ring" },
   CORPORATE:  { color: "#6366F1",  label: "Corporate Ring" },
   RED:        { color: "#EF4444",  label: "Red Ring" },

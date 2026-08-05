@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthedEmailOrNull } from "@/lib/supabaseServer";
 import { createClient } from "@supabase/supabase-js";
+import { payoutRateFor } from "@/lib/ringPayout";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,16 +15,7 @@ const GIFT_COSTS: Record<string, number> = {
   eclipse:  1500,
 };
 
-const RING_PAYOUT: Record<string, number> = {
-  NONE:      0.18,
-  BLUE:      0.30,
-  GOLD:      0.50,
-  BUSINESS:  0.65,
-  CORPORATE: 0.65,
-};
-
 const CENTS_PER_SPARK = 2.99 / 100;
-const TAX_WITHHOLD_RATE = 0.10;
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -64,13 +56,12 @@ export async function POST(req: Request) {
       select: { ringTier: true },
     });
 
-    const ringTier = creator?.ringTier ?? "NONE";
-    const payoutRate = RING_PAYOUT[ringTier] ?? 0.18;
+    // The creator's full share is credited; Revolvr does not withhold tax on
+    // their behalf.
+    const payoutRate = payoutRateFor(creator?.ringTier);
     const grossCents = Math.round(sparkCost * CENTS_PER_SPARK * 100);
-    const creatorGrossCents = Math.round(grossCents * payoutRate);
-    const taxReserveCents = Math.round(creatorGrossCents * TAX_WITHHOLD_RATE);
-    const creatorNetCents = creatorGrossCents - taxReserveCents;
-    const platformCents = grossCents - creatorGrossCents;
+    const creatorCents = Math.round(grossCents * payoutRate);
+    const platformCents = grossCents - creatorCents;
     const voltageGain = Math.ceil(sparkCost / 10);
 
     // Execute transaction
@@ -82,13 +73,13 @@ export async function POST(req: Request) {
       prisma.creatorBalance.upsert({
         where: { creatorEmail },
         update: {
-          totalEarnedCents: { increment: creatorNetCents },
-          availableCents: { increment: creatorNetCents },
+          totalEarnedCents: { increment: creatorCents },
+          availableCents: { increment: creatorCents },
         },
         create: {
           creatorEmail,
-          totalEarnedCents: creatorNetCents,
-          availableCents: creatorNetCents,
+          totalEarnedCents: creatorCents,
+          availableCents: creatorCents,
           updatedAt: new Date(),
         },
       }),
@@ -102,7 +93,7 @@ export async function POST(req: Request) {
           units: sparkCost,
           currency: "AUD",
           grossCents,
-          creatorCents: creatorNetCents,
+          creatorCents,
           platformCents,
         },
       }),

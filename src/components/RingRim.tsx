@@ -1,8 +1,13 @@
 import type { ReactNode } from "react";
 
+// Ring tiers are the one place Revolvr's "gold" is an actual gold. The app-wide
+// GOLD accent token is #ffffff (declared in TopBar, PublicFeedClient,
+// notifications, TrancheContent, GathWindow, GathRoomClient, ControlPanel and
+// PeopleCard); a paid tier called Gold Ring needs to read as gold, so this
+// deliberately diverges. Keep in sync with RING_DISPLAY in me/MeClient.tsx.
 export const RING_COLORS: Record<string, string> = {
   BLUE: "#3B82F6",
-  GOLD: "#ffffff",
+  GOLD: "#FACC15",
 };
 
 export function getRingColor(tier?: string | null): string | null {
