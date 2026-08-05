@@ -199,8 +199,7 @@ export default function BuySparksPage() {
       </button>
 
       <p style={{ textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.6)", marginTop: 16, lineHeight: 1.6 }}>
-        Sparks are used to gift creators and fuel battles.<br />
-        10% of all creator earnings are held as tax reserve.
+        Sparks are used to gift creators and fuel battles.
       </p>
     </div>
   );

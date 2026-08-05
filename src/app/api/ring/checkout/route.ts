@@ -29,7 +29,10 @@ const TIER_RANK: Record<RingTier, number> = {
   GOVERNMENT: 6,
 };
 
-const PAID_TIERS = new Set<RingTier>(["BLUE", "GOLD", "BUSINESS", "CORPORATE", "RED"]);
+// Self-serve purchasable tiers. RED and GOVERNMENT are not in use and are not
+// listed anywhere in the UI; keeping them out of this set means a direct POST
+// cannot reach Stripe checkout for them even though a RED price ID exists.
+const PAID_TIERS = new Set<RingTier>(["BLUE", "GOLD", "BUSINESS", "CORPORATE"]);
 
 export async function POST(req: NextRequest) {
   try {
@@ -114,11 +117,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Government Ring is granted manually. Contact us at revolvr.net/support to request access." }, { status: 403 });
     }
     return NextResponse.json({ error: "Invalid ring tier" }, { status: 400 });
-  }
-
-  // Red Ring — invite only regardless
-  if (tier === "RED") {
-    return NextResponse.json({ error: "Red Ring is invite-only. Contact Revolvr to apply." }, { status: 403 });
   }
 
   const priceId = PRICE_ID[tier];

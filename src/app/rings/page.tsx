@@ -28,7 +28,7 @@ const TIERS: TierConfig[] = [
       "Post content",
       "Basic profile",
       "Link with creators",
-      "25% revenue share on gifts",
+      "18% revenue share on gifts",
     ],
     buttonLabel: "Current plan",
     buttonAction: "none",
@@ -40,7 +40,7 @@ const TIERS: TierConfig[] = [
     priceNote: "/month",
     features: [
       "Everything in No Ring",
-      "35% revenue share on gifts",
+      "30% revenue share on gifts",
       "Blue ring badge",
       "Verified creator status",
       "PEOPLE tab access",
@@ -56,7 +56,7 @@ const TIERS: TierConfig[] = [
     priceNote: "/month",
     features: [
       "Everything in Blue",
-      "45% revenue share on gifts",
+      "50% revenue share on gifts",
       "Gold ring badge",
       "TRANCHE early access",
       "Priority in feed",
