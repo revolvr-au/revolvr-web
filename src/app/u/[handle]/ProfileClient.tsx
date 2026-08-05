@@ -21,7 +21,6 @@ export type Profile = {
   handle: string;
   avatarUrl?: string | null;
   bio?: string | null;
-  isVerified?: boolean | null;
   totalVoltage: number;
   recentVoltage: number;
   postCount: number;
