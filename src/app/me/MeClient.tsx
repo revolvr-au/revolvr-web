@@ -545,7 +545,7 @@ export default function MeClient() {
                       cursor: "pointer",
                     }}
                   >
-                    GET VERIFIED →
+                    GET A RING
                   </button>
                 </>
               )}
