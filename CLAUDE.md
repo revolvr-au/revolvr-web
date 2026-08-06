@@ -40,7 +40,7 @@ npx prisma studio        # Prisma Studio GUI
 
 ## Architecture
 
-Revolvr is a creator-focused social platform with live streaming, monetization, and a public feed. **Next.js App Router** — `src/pages/` holds only a legacy `_app.tsx` and no page files, so the Pages Router is inert. **Supabase** for auth/realtime/storage, **Prisma + PostgreSQL** for data, **Stripe** for payments, **AWS IVS** for live video, **Mux** for uploaded video playback.
+Revolvr is a creator-focused social platform with live streaming, monetization, and a public feed. **Next.js App Router only** — `src/pages/` no longer exists; the Pages Router is gone entirely, not merely unused. **Supabase** for auth/realtime/storage, **Prisma + PostgreSQL** for data, **Stripe** for payments, **AWS IVS** for live video, **Mux** for uploaded video playback.
 
 ### Request path
 
@@ -109,7 +109,7 @@ Two separate pipelines. Do not assume one covers the other.
 
 **Uploaded video playback — Mux.** `muxPlaybackId` on the schema, read by `/api/posts` and `/api/public-feed`; routes at `/api/video/upload`, `/api/video/status/[uploadId]`, `/api/webhooks/mux`.
 
-**LiveKit is not the video stack.** `livekit-client` and `@livekit/components-react` are **not dependencies at all**. `livekit-server-sdk` and `@livekit/components-styles` are installed, but their only consumers are dead code (see below).
+**LiveKit is not the video stack.** `livekit-client` and `@livekit/components-react` are **not dependencies at all**. `livekit-server-sdk` and `@livekit/components-styles` remain in `package.json` but now have **zero consumers in `src/`** — the LiveKit code was deleted in the orphan sweep. They are uninstall candidates.
 
 ## Database patterns
 
@@ -133,12 +133,14 @@ Tailwind CSS v4, dark theme. Background `#050814` (`globals.css`, `layout.tsx`);
 
 ## Known dead code (documented so it is not mistaken for architecture)
 
-Verified zero-importer at `cccd9a5`. Do not extend these; delete or revive deliberately.
+An orphan sweep is in progress, in batches. Re-verify zero-importer status at deletion time — this list goes stale fast.
 
-- `src/lib/credits.ts` — zero importers; `loadCreditsForUser` and `spendOneCredit` are unused anywhere. Credits do **not** flow through this file.
-- `src/hooks/usePurchase.ts` — zero importers (`src/lib/purchase.ts` is the live path).
-- `/api/live/create` — the Mux live-create route has zero callers; `/api/live/create-ivs` is the live one.
-- The LiveKit chain: `src/components/live/_legacy/LiveClient.tsx` → `LiveRoom.tsx` → `VideoCanvas.tsx`, plus `src/pages/_app.tsx` and `src/app/pages/lib/livekit.ts`.
-- Stray tracked files: `.eslintrc.json.bak`, `src/app/creator/DashboardClient.tsx.broken_backup`.
+**Already deleted** (batch 1): `src/lib/credits.ts`, `src/hooks/usePurchase.ts`, `/api/live/create`, the whole LiveKit chain (`_legacy/LiveClient.tsx`, `LiveRoom.tsx`, `VideoCanvas.tsx`, `src/pages/_app.tsx`, `src/app/pages/lib/livekit.ts`, `src/styles/livekit-overrides.css`), and two stray tracked files.
 
-A broader zero-importer inventory exists outside this file; treat the list above as the part that was actively misdocumented, not the whole set.
+**Still zero-importer, deliberately kept:**
+
+- `src/components/live/**` — the live-streaming component cluster (chat overlay, composer, comment rail, hearts, `_legacy/` bars and reaction layers). A real build, orphaned rather than accidental; held pending a decision on what returns. Batch 1 stranded three more of these (`live/TopBar.tsx`, `LiveChatOverlay.tsx`, `RevolvrComposer.tsx`) by removing `LiveRoom.tsx`, which was their only importer.
+- `src/app/login/LoginClient.tsx` — 227 lines of OAuth, parked pending Apple/Google developer accounts. **Do not delete**; see the Authentication section.
+- `src/hooks/useUnreadCount.ts` — DM unread poller. DMs are dark behind a flag and the feature lives on an unmerged branch. **Do not delete.**
+
+Note `src/components/live/TopBar.tsx` is *not* the live `TopBar` — `src/components/FeedLayout.tsx` imports `src/components/TopBar.tsx`, a different file with the same basename. Duplicate basenames are the main way this cluster gets misread.
