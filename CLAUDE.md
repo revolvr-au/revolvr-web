@@ -56,7 +56,6 @@ Browser → **`src/proxy.ts`** (middleware) → Next.js route (`src/app/`) → A
 | `src/components/` | Shared React components |
 | `src/lib/` | Server-side utilities (Prisma client, Supabase server client, auth helpers, purchase logic) |
 | `src/hooks/` | Client-side React hooks |
-| `src/services/` | Supabase realtime, user presence, orbit/social graph |
 | `prisma/schema.prisma` | Database schema — single source of truth for all models |
 
 ## Middleware — `src/proxy.ts`
@@ -135,7 +134,11 @@ Tailwind CSS v4, dark theme. Background `#050814` (`globals.css`, `layout.tsx`);
 
 An orphan sweep is in progress, in batches. Re-verify zero-importer status at deletion time — this list goes stale fast.
 
-**Already deleted** (batch 1): `src/lib/credits.ts`, `src/hooks/usePurchase.ts`, `/api/live/create`, the whole LiveKit chain (`_legacy/LiveClient.tsx`, `LiveRoom.tsx`, `VideoCanvas.tsx`, `src/pages/_app.tsx`, `src/app/pages/lib/livekit.ts`, `src/styles/livekit-overrides.css`), and two stray tracked files.
+**Already deleted.** Batch 1: `src/lib/credits.ts`, `src/hooks/usePurchase.ts`, `/api/live/create`, the whole LiveKit chain (`_legacy/LiveClient.tsx`, `LiveRoom.tsx`, `VideoCanvas.tsx`, `src/pages/_app.tsx`, `src/app/pages/lib/livekit.ts`, `src/styles/livekit-overrides.css`), two stray tracked files. Batch 2: the PeopleRail cluster and `src/screens/FeedScreen.tsx`, a set of unused UI helpers (`SafeImage`, `GiftAnimation`, `icons.ts`, `spinner.ts`, `imageUtils.ts`, `bottomBarConstants.ts`, `LayoutShell.tsx`), misc libs (`clientCredits.ts`, `env.ts`, `feed/buildFeedSnapshot.ts`, `supabase/middlewareClient.ts`), all of `src/services/`, and `src/app/creator/DashboardClient.tsx` (superseded by the live `/dashboard/page.tsx`).
+
+These directories no longer exist: `src/pages/`, `src/styles/`, `src/app/pages/`, `src/services/`, `src/utils/`, `src/screens/`, `src/hook/`, `src/components/peoplerail/`, `src/components/ui/`, `src/components/navigation/`, `src/lib/feed/`.
+
+**Blocked, not kept on merit:** `src/lib/actionsClient.ts` is zero-importer *except* from `_legacy/LiveSupportBar.tsx` inside the held live cluster. It goes when that cluster is decided — deleting it sooner would leave a dangling import in held code.
 
 **Still zero-importer, deliberately kept:**
 
