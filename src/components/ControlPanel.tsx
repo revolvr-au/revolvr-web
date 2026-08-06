@@ -526,7 +526,6 @@ export default function ControlPanel({
             <>
               <MenuSection label="CREATOR">
                 <MenuItem onClick={() => navigate("/creator/earnings")}>Earnings Dashboard</MenuItem>
-                <MenuItem onClick={() => navigate("/creator/payout")}>Payout Settings</MenuItem>
                 <MenuItem onClick={() => navigate("/legal/creator-terms")}>Creator Terms</MenuItem>
               </MenuSection>
               <MenuDivider />
