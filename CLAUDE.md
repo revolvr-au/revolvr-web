@@ -136,9 +136,16 @@ An orphan sweep is in progress, in batches. Re-verify zero-importer status at de
 
 **Already deleted.** Batch 1: `src/lib/credits.ts`, `src/hooks/usePurchase.ts`, `/api/live/create`, the whole LiveKit chain (`_legacy/LiveClient.tsx`, `LiveRoom.tsx`, `VideoCanvas.tsx`, `src/pages/_app.tsx`, `src/app/pages/lib/livekit.ts`, `src/styles/livekit-overrides.css`), two stray tracked files. Batch 2: the PeopleRail cluster and `src/screens/FeedScreen.tsx`, a set of unused UI helpers (`SafeImage`, `GiftAnimation`, `icons.ts`, `spinner.ts`, `imageUtils.ts`, `bottomBarConstants.ts`, `LayoutShell.tsx`), misc libs (`clientCredits.ts`, `env.ts`, `feed/buildFeedSnapshot.ts`, `supabase/middlewareClient.ts`), all of `src/services/`, and `src/app/creator/DashboardClient.tsx` (superseded by the live `/dashboard/page.tsx`).
 
-These directories no longer exist: `src/pages/`, `src/styles/`, `src/app/pages/`, `src/services/`, `src/utils/`, `src/screens/`, `src/hook/`, `src/components/peoplerail/`, `src/components/ui/`, `src/components/navigation/`, `src/lib/feed/`.
+Batch 3: `StripeConnectCTA.tsx`, `PaidReactionBar.tsx`, `FeedVideo.tsx`, `api/stripe/webhook/_verification.ts`, `media/MediaUploader.tsx`, `LiveStartOverlay.tsx`, `RevolvrDrawer.tsx`, `studio/UsersPanel.tsx`, `LiveCard.tsx`, `MenuSheet.tsx`, `hooks/useCreatorFeedback.ts`.
 
-**Blocked, not kept on merit:** `src/lib/actionsClient.ts` is zero-importer *except* from `_legacy/LiveSupportBar.tsx` inside the held live cluster. It goes when that cluster is decided — deleting it sooner would leave a dangling import in held code.
+These directories no longer exist: `src/pages/`, `src/styles/`, `src/app/pages/`, `src/services/`, `src/utils/`, `src/screens/`, `src/hook/`, `src/components/peoplerail/`, `src/components/ui/`, `src/components/navigation/`, `src/components/media/`, `src/components/studio/`, `src/lib/feed/`.
+
+**Blocked, not kept on merit.** Both of these are zero-importer *except* from `_legacy/LiveSupportBar.tsx` inside the held live cluster, so deleting them would leave dangling imports in held code. They go when that cluster is decided:
+
+- `src/lib/actionsClient.ts`
+- `src/components/PostActionModal.tsx` (377 lines — the largest single orphan left)
+
+Note `_verification.ts` was dead despite the underscore-prefixed "private helper" convention suggesting the webhook used it. `verificationStatus` is still written, but by `blue-tick/route.ts` doing its own inline writes.
 
 **Still zero-importer, deliberately kept:**
 
